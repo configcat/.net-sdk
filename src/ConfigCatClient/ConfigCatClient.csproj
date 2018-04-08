@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>        
+    <TargetFrameworks>net45;netstandard1.3;netstandard2.0</TargetFrameworks>
+    <AssemblyName>ConfigCat.Client</AssemblyName>
+    <RootNamespace>ConfigCat.Client</RootNamespace>
+    <SignAssembly>true</SignAssembly>
+    <DelaySign>false</DelaySign>
+    <AssemblyOriginatorKeyFile>strongname.snk</AssemblyOriginatorKeyFile>    
+    <Version>1.0.7-beta</Version>    
+    <Copyright>Copyright © ConfigCat 2018</Copyright>    
+    <Company>ConfigCat</Company>    
+    <Authors>ConfigCat</Authors>    
+    <PackageLicenseUrl>https://raw.githubusercontent.com/ConfigCat/.net-sdk/master/LICENSE</PackageLicenseUrl>    
+    <PackageProjectUrl>https://github.com/ConfigCat/.net-sdk</PackageProjectUrl>    
+    <RepositoryUrl>https://github.com/ConfigCat/.net-sdk</RepositoryUrl>    
+    <RepositoryType>git</RepositoryType>    
+    <PackageReleaseNotes>Version 1.0.7
+     * Implement LazyLoad, AutoPoll, ManualPoll feature
+     Version 1.0.6
+     * Finalize logging
+     Version 1.0.5
+     * Implement tracing, add clear cache ability to client
+     Version 1.0.4
+     * Initial release</PackageReleaseNotes>    
+    <PackageTags>configcat config configuration remoteconfiguration configcatclient</PackageTags>    
+    <Description>ConfigCat is a cloud based configuration as a service. It integrates with your apps, backends, websites, and other programs, so you can configure them through this website (https://www.configcat.com) even after they are deployed.</Description>    
+    <PackageIconUrl>https://raw.githubusercontent.com/ConfigCat/.net-sdk/master/media/icon-64x64.png</PackageIconUrl>    
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>    
+    <FileVersion>0.1.0.0</FileVersion>    
+    <NeutralLanguage></NeutralLanguage>
+    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\ConfigCatClient.xml</DocumentationFile>
+  </PropertyGroup>
+  
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
+    <Reference Include="System" />    
+    <Reference Include="System.Net.Http" />
+    <Reference Include="Microsoft.CSharp" />
+  </ItemGroup>  
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
+  </ItemGroup>
+
+</Project>

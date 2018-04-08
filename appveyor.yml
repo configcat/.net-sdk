@@ -1,0 +1,25 @@
+version: 1.1.{build}
+branches:
+  only:
+  - master
+image: Visual Studio 2017
+configuration: Release
+platform: Any CPU
+dotnet_csproj:
+  patch: true
+  file: '**\*.csproj'
+  version: '{version}'
+  package_version: '{version}'
+  assembly_version: '{version}'
+  file_version: '{version}'
+  informational_version: '{version}'
+before_build:
+- cmd: nuget.exe restore src/ConfigCatClient.sln
+build:
+  project: src/ConfigCat.sln
+  verbosity: normal
+after_build:
+- msbuild /t:Pack /p:IncludeSymbols=true /p:Configuration=%configuration% /p:PackageOutputPath=..\..\artifacts src\ConfigCatClient\ConfigCatClient.csproj
+artifacts:
+- path: artifacts\ConfigCat.Client.*.nupkg
+  name: NuGet

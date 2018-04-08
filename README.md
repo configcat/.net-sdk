@@ -1,4 +1,4 @@
-# ConfigCat client for .NET
+# ConfigCat SDK for .NET
 ConfigCat is a cloud based configuration as a service. It integrates with your apps, backends, websites, and other programs, so you can configure them through this website even after they are deployed.
 https://configcat.com  
 

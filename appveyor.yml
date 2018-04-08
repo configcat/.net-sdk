@@ -16,7 +16,7 @@ dotnet_csproj:
 before_build:
 - cmd: nuget.exe restore src/ConfigCatClient.sln
 build:
-  project: src/ConfigCat.sln
+  project: src/ConfigCatClient.sln
   verbosity: normal
 after_build:
 - msbuild /t:Pack /p:IncludeSymbols=true /p:Configuration=%configuration% /p:PackageOutputPath=..\..\artifacts src\ConfigCatClient\ConfigCatClient.csproj

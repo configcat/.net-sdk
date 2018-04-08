@@ -9,7 +9,7 @@ namespace ConsoleApp
         {            
             const string projectSecret = "samples/01";
 
-            var client = ConfigCatClient
+            var client = ConfigCatClientBuilder
                 .Initialize(projectSecret)
                 .WithAutoPoll()
                 .WithMaxInitWaitTimeSeconds(10)

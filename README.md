@@ -2,7 +2,7 @@
 ConfigCat is a cloud based configuration as a service. It integrates with your apps, backends, websites, and other programs, so you can configure them through this website even after they are deployed.
 https://configcat.com  
 
-[![Build status](https://ci.appveyor.com/api/projects/status/lbvu9ttawoioaprg?svg=true)](https://ci.appveyor.com/project/ConfigCat/.net-sdk) [![NuGet Version](https://buildstats.info/nuget/ConfigCat.Client)](https://www.nuget.org/packages/ConfigCat.Client/)
+[![Build status](https://ci.appveyor.com/api/projects/status/juw224hv0u7iwjev?svg=true)](https://ci.appveyor.com/project/ConfigCat/net-sdk) [![NuGet Version](https://buildstats.info/nuget/ConfigCat.Client)](https://www.nuget.org/packages/ConfigCat.Client/)
 ## Getting Started
 
  1. Install [NuGet](http://docs.nuget.org/docs/start-here/using-the-package-manager-console) package: [ConfigCat.Client](https://www.nuget.org/packages/ConfigCat.Client)

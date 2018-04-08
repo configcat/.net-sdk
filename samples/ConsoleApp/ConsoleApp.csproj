@@ -33,11 +33,11 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="ConfigCat.Client, Version=1.0.9.0, Culture=neutral, PublicKeyToken=d28b16a067d7bbe2, processorArchitecture=MSIL">
-      <HintPath>packages\ConfigCat.Client.1.0.9\lib\net45\ConfigCat.Client.dll</HintPath>
+    <Reference Include="ConfigCat.Client, Version=1.1.2.0, Culture=neutral, PublicKeyToken=d28b16a067d7bbe2, processorArchitecture=MSIL">
+      <HintPath>packages\ConfigCat.Client.1.1.2\lib\net45\ConfigCat.Client.dll</HintPath>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>packages\ConfigCat.Client.1.0.9\lib\net45\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>packages\Newtonsoft.Json.11.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="Microsoft.CSharp" />

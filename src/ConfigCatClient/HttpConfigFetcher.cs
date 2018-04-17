@@ -86,7 +86,7 @@ namespace ConfigCat.Client
                     Timeout = TimeSpan.FromSeconds(30)
                 };
 
-                this.httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("ConfigCat-Dotnet", productVersion));                
+                this.httpClient.DefaultRequestHeaders.Add("X-ConfigCat-UserAgent", new ProductInfoHeaderValue("ConfigCat-Dotnet", productVersion).ToString());
             }
         }
     }

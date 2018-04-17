@@ -7,7 +7,7 @@ namespace ConsoleApp
     {
         static void Main(string[] args)
         {            
-            const string projectSecret = "samples/01";
+            const string projectSecret = "PKDVCLf-Hq-h-kCzMp-L7Q/PaDVCFk9EpmD6sLpGLltTA";
 
             var client = ConfigCatClientBuilder
                 .Initialize(projectSecret)

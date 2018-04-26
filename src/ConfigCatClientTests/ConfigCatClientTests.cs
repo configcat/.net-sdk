@@ -100,7 +100,7 @@ namespace ConfigCat.Client.Tests
         [TestMethod]
         public void CreateAnInstance_WithApiKey_ShouldCreateAnInstance()
         {
-            string ApiKey = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf";
+            string apiKey = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf";
 
             new ConfigCatClient(apiKey);
         }        

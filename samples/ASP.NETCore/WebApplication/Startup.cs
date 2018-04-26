@@ -24,7 +24,7 @@ namespace WebApplication
 
             services.AddSingleton<IConfigCatClient>(new ConfigCatClient(new LazyLoadConfiguration
             {
-                ProjectSecret = Configuration["ConfigCatProjectSecret"],
+                ApiKey = Configuration["ConfigCatApiKey"],
 
                 CacheTimeToLiveSeconds = 120
             }));

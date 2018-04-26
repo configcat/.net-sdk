@@ -8,7 +8,7 @@ namespace ConfigCat.Client.Configuration
     /// </summary>
     public abstract class ConfigurationBase
     {
-        private string projectSecret;
+        private string apiKey;
 
         internal Uri Url { get; private set; }       
 
@@ -18,27 +18,27 @@ namespace ConfigCat.Client.Configuration
         public ILoggerFactory LoggerFactory { get; set; } = new NullLoggerFactory();
 
         /// <summary>
-        /// Project secret to get your configuration
+        /// Api key to get your configuration
         /// </summary>
-        public string ProjectSecret
+        public string ApiKey
         {
             set
             {
-                this.projectSecret = value;
+                this.apiKey = value;
 
                 this.Url = CreateUrl(value);
             }
             get
             {
-                return this.projectSecret;
+                return this.apiKey;
             }
         }
 
         internal virtual void Validate()
         {
-            if (string.IsNullOrEmpty(this.ProjectSecret))
+            if (string.IsNullOrEmpty(this.ApiKey))
             {
-                throw new ArgumentException("Invalid project secret value.", nameof(this.ProjectSecret));
+                throw new ArgumentException("Invalid api key value.", nameof(this.ApiKey));
             }
 
             if (this.LoggerFactory == null)
@@ -47,9 +47,9 @@ namespace ConfigCat.Client.Configuration
             }
         }
 
-        private static Uri CreateUrl(string projectSecret)
+        private static Uri CreateUrl(string apiKey)
         {
-            return new Uri("https://cdn.configcat.com/configuration-files/" + projectSecret + "/config.json");
+            return new Uri("https://cdn.configcat.com/configuration-files/" + apiKey + "/config.json");
         }
     }
 }

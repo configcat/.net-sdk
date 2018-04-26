@@ -10,29 +10,29 @@ namespace ConfigCat.Client.Tests
     {
         [ExpectedException(typeof(ArgumentException))]
         [TestMethod]
-        public void CreateAnInstance_WhenProjectSecretIsEmpty_ShouldThrowArgumentNullException()
+        public void CreateAnInstance_WhenApiKeyIsEmpty_ShouldThrowArgumentNullException()
         {
-            string projectSecret = string.Empty;
+            string apiKey = string.Empty;
 
-            new ConfigCatClient(projectSecret);
+            new ConfigCatClient(apiKey);
         }
 
         [ExpectedException(typeof(ArgumentException))]
         [TestMethod]
-        public void CreateAnInstance_WhenProjectSecretIsNull_ShouldThrowArgumentNullException()
+        public void CreateAnInstance_WhenApiKeyIsNull_ShouldThrowArgumentNullException()
         {
-            string projectSecret = null;
+            string apiKey = null;
 
-            new ConfigCatClient(projectSecret);
+            new ConfigCatClient(apiKey);
         }
 
         [ExpectedException(typeof(ArgumentException))]
         [TestMethod]
-        public void CreateAnInstance_WhenAutoPollConfigurationProjectSecretIsNull_ShouldThrowArgumentNullException()
+        public void CreateAnInstance_WhenAutoPollConfigurationApiKeyIsNull_ShouldThrowArgumentNullException()
         {
             var clientConfiguration = new AutoPollConfiguration
             {
-                ProjectSecret = null
+                ApiKey = null
             };
 
             new ConfigCatClient(clientConfiguration);
@@ -40,11 +40,11 @@ namespace ConfigCat.Client.Tests
 
         [ExpectedException(typeof(ArgumentException))]
         [TestMethod]
-        public void CreateAnInstance_WhenConfigurationProjectSecretIsEmpty_ShouldThrowArgumentNullException()
+        public void CreateAnInstance_WhenConfigurationApiKeyIsEmpty_ShouldThrowArgumentNullException()
         {
             var clientConfiguration = new AutoPollConfiguration
             {
-                ProjectSecret = string.Empty
+                ApiKey = string.Empty
             };
 
             new ConfigCatClient(clientConfiguration);
@@ -56,7 +56,7 @@ namespace ConfigCat.Client.Tests
         {
             var clientConfiguration = new LazyLoadConfiguration
             {
-                ProjectSecret = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf",
+                ApiKey = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf",
                 CacheTimeToLiveSeconds = 0
             };
 
@@ -69,7 +69,7 @@ namespace ConfigCat.Client.Tests
         {
             var clientConfiguration = new AutoPollConfiguration
             {
-                ProjectSecret = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf",
+                ApiKey = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf",
                 LoggerFactory = null
             };
 
@@ -91,18 +91,18 @@ namespace ConfigCat.Client.Tests
         {
             var config = new AutoPollConfiguration
             {
-                ProjectSecret = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf"
+                ApiKey = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf"
             };
 
             new ConfigCatClient(config);
         }
 
         [TestMethod]
-        public void CreateAnInstance_WithProjectToken_ShouldCreateAnInstance()
+        public void CreateAnInstance_WithApiKey_ShouldCreateAnInstance()
         {
-            string projectSecret = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf";
+            string ApiKey = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf";
 
-            new ConfigCatClient(projectSecret);
+            new ConfigCatClient(apiKey);
         }        
     }
 

@@ -26,9 +26,9 @@ namespace ConfigCat.Client
         /// <summary>
         /// Create an instance of ConfigCatClient and setup AutoPoll mode
         /// </summary>
-        /// <param name="projectSecret">Project secret to access configuration</param>
-        /// <exception cref="ArgumentException">When the <paramref name="projectSecret"/> is null or empty</exception>                
-        public ConfigCatClient(string projectSecret) : this(new AutoPollConfiguration { ProjectSecret = projectSecret })
+        /// <param name="apiKey">Api key to access configuration</param>
+        /// <exception cref="ArgumentException">When the <paramref name="apiKey"/> is null or empty</exception>                
+        public ConfigCatClient(string apiKey) : this(new AutoPollConfiguration { ApiKey = apiKey })
         {
         }
 
@@ -259,11 +259,11 @@ namespace ConfigCat.Client
         /// <summary>
         /// Create a <see cref="ConfigCatClientBuilder"/> instance to setup the client
         /// </summary>
-        /// <param name="projectSecret"></param>
+        /// <param name="apiKey"></param>
         /// <returns></returns>
-        public static ConfigCatClientBuilder Create(string projectSecret)
+        public static ConfigCatClientBuilder Create(string apiKey)
         {
-            return ConfigCatClientBuilder.Initialize(projectSecret);
+            return ConfigCatClientBuilder.Initialize(apiKey);
         }
     }
 }

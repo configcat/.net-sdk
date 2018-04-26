@@ -7,17 +7,17 @@ namespace ConfigCat.Client
     /// </summary>
     public class ConfigCatClientBuilder
     {
-        internal string ProjectSecret { get; private set; }
+        internal string ApiKey { get; private set; }
 
         /// <summary>
-        /// Create a <see cref="ConfigCatClientBuilder"/> instance with <paramref name="projectSecret"/>
+        /// Create a <see cref="ConfigCatClientBuilder"/> instance with <paramref name="apiKey"/>
         /// </summary>
         /// <returns></returns>
-        public static ConfigCatClientBuilder Initialize(string projectSecret)
+        public static ConfigCatClientBuilder Initialize(string apiKey)
         {
             return new ConfigCatClientBuilder
             {
-                ProjectSecret = projectSecret
+                ApiKey = apiKey
             };
         }
 

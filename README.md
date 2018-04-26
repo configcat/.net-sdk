@@ -9,12 +9,12 @@ https://configcat.com
  ```PowerShell
  Install-Package ConfigCat.Client
  ```
- 2. Get your Project secret from [configcat.com](https://configcat.com) portal:
-![ProjectSecret](https://raw.githubusercontent.com/ConfigCat/.net-sdk/master/media/readme02.png  "ProjectSecret")
+ 2. Get your Api Key from [configcat.com](https://configcat.com) portal:
+![ApiKey](https://raw.githubusercontent.com/ConfigCat/.net-sdk/master/media/readme02.png  "ApiKey")
 
  3. Create a **ConfigCatClient** instance:
 ```c#
-var client = new ConfigCatClient("#YOUR-PROJECT-SECRET#");
+var client = new ConfigCatClient("#YOUR-API-KEY#");
 ```
  4. Get your config value:
 ```c#
@@ -49,7 +49,7 @@ Configuration parameters are different in each mode:
 ### Base configuration
 | PropertyName        | Description           | Default  |
 | --- | --- | --- |
-| ```ProjectSecret```      | Project secret to access your configuration.  | REQUIRED |
+| ```ApiKey```      | Api Key to access your configuration.  | REQUIRED |
 | ```LoggerFactory``` | Factory to create an `ILogger` instance for tracing.        | `NullTrace` (no default tracing method) | 
 ### Auto polling
 | PropertyName        | Description           | Default  |
@@ -65,7 +65,7 @@ Configuration parameters are different in each mode:
 ``` c#
 var clientConfiguration = new ConfigCat.Client.Configuration.LazyLoadConfiguration
             {
-                ProjectSecret = "#YOUR-PROJECT-SECRET#",
+                ApiKey = "#YOUR-API-KEY#",
                 CacheTimeToLiveSeconds = 600
             };
 
@@ -74,7 +74,7 @@ IConfigCatClient client = new ConfigCatClient(clientConfiguration);
 ### Example - OnConfigurationChanged 
 In Auto polling mode you can subscribe an event to get notification about changes.
 ``` c#
-var client = new ConfigCatClient(projectSecret);
+var client = new ConfigCatClient(apiKey);
 
 client.OnConfigurationChanged += (s, a) => 
 {
@@ -84,7 +84,7 @@ client.OnConfigurationChanged += (s, a) =>
 ### Example - default value handling
 You can easily manage default values with this technique when you use your configuration in many locations in the code.
 ``` c#
-var client = new ConfigCatClient("#YOUR-PROJECT-SECRET#");
+var client = new ConfigCatClient("#YOUR-API-KEY#");
 
 bool isMyAwesomeFeatureEnabled = client.GetConfiguration(MyApplicationFeatureConfig.Default).MyNewFeatureEnabled;
 
@@ -114,7 +114,7 @@ It is possible to use ```ConfigCatClientBuilder``` to build ConfigCatClient inst
 
 ``` c#
 IConfigCatClient client = ConfigCatClientBuilder
-	.Initialize("YOUR-PROJECT-SECRET")
+	.Initialize("YOUR-API-KEY")
 	.WithLazyLoad()
 	.WithCacheTimeToLiveSeconds(120)
 	.Build();

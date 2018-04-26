@@ -7,10 +7,10 @@ namespace ConsoleApp
     {
         static void Main(string[] args)
         {            
-            const string projectSecret = "PKDVCLf-Hq-h-kCzMp-L7Q/PaDVCFk9EpmD6sLpGLltTA";
+            const string apiKey = "PKDVCLf-Hq-h-kCzMp-L7Q/PaDVCFk9EpmD6sLpGLltTA";
 
             var client = ConfigCatClientBuilder
-                .Initialize(projectSecret)
+                .Initialize(apiKey)
                 .WithAutoPoll()
                 .WithMaxInitWaitTimeSeconds(10)
                 .Create();

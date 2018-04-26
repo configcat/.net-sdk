@@ -12,7 +12,7 @@
         {
             this.configuration = new T
             {
-                ProjectSecret = clientBuilder.ProjectSecret
+                ApiKey = clientBuilder.ApiKey
             };
         }
     }

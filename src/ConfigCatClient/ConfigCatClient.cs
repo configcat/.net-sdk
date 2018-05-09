@@ -20,9 +20,6 @@ namespace ConfigCat.Client
 
         private static readonly string version = typeof(ConfigCatClient).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
 
-        /// <inheritdoc />
-        public event OnConfigurationChangedEventHandler OnConfigurationChanged;
-
         /// <summary>
         /// Create an instance of ConfigCatClient and setup AutoPoll mode
         /// </summary>
@@ -56,7 +53,7 @@ namespace ConfigCat.Client
                     TimeSpan.FromSeconds(configuration.MaxInitWaitTimeSeconds),
                     configuration.LoggerFactory);
 
-            configService.OnConfigurationChanged += (sender, args) => { this.OnConfigurationChanged?.Invoke(sender, args); };
+            configService.OnConfigurationChanged += configuration.RaiseOnConfigurationChanged;
 
             this.configService = configService;
         }

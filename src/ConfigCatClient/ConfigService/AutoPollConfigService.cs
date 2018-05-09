@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
+using ConfigCat.Client.Configuration;
 using ConfigCat.Client.Logging;
 
 namespace ConfigCat.Client.ConfigService

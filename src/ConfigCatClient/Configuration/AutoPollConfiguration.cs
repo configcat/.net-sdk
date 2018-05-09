@@ -3,6 +3,13 @@
 namespace ConfigCat.Client.Configuration
 {
     /// <summary>
+    /// Represents the method that will handle an OnConfigurationChangedEvent with <see cref="OnConfigurationChangedEventArgs"/> arguments
+    /// </summary>
+    /// <param name="sender">Sender object</param>
+    /// <param name="eventArgs">Arguments of the event</param>
+    public delegate void OnConfigurationChangedEventHandler(object sender, OnConfigurationChangedEventArgs eventArgs);
+
+    /// <summary>
     /// AutoPoll configuration settings object for <see cref="ConfigCatClient"/>
     /// </summary>
     public class AutoPollConfiguration : ConfigurationBase
@@ -11,11 +18,20 @@ namespace ConfigCat.Client.Configuration
         /// Configuration refresh period (Default value is 60.)
         /// </summary>
         public uint PollIntervalSeconds { get; set; } = 60;
-
+        
         /// <summary>
         /// Maximum waiting time between initialization and the first config acquisition in secconds. (Default value is 5.)
         /// </summary>
         public uint MaxInitWaitTimeSeconds { get; set; } = 5;
+
+
+        /// <summary>
+        /// <see cref="OnConfigurationChanged"/> raised when the configuration was updated
+        /// </summary>
+        public event OnConfigurationChangedEventHandler OnConfigurationChanged;
+
+        internal void RaiseOnConfigurationChanged(object sender, OnConfigurationChangedEventArgs args) => 
+            this.OnConfigurationChanged?.Invoke(sender, args);
 
         internal override void Validate()
         {

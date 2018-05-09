@@ -74,12 +74,14 @@ IConfigCatClient client = new ConfigCatClient(clientConfiguration);
 ### Example - OnConfigurationChanged 
 In Auto polling mode you can subscribe an event to get notification about changes.
 ``` c#
-var client = new ConfigCatClient(apiKey);
+var autopoll = new AutoPollConfiguration { ApiKey = apiKey };
 
-client.OnConfigurationChanged += (s, a) => 
+autopoll.OnConfigurationChanged += (s, a) => 
 {
 	  // Configuration changed. Update UI!
 }
+
+var client = new ConfigCatClient(autopoll);
 ```
 ### Example - default value handling
 You can easily manage default values with this technique when you use your configuration in many locations in the code.

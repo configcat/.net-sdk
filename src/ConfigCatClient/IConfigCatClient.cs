@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ConfigCat.Client.Evaluate;
+using System;
 using System.Threading.Tasks;
 
 namespace ConfigCat.Client
@@ -44,8 +45,9 @@ namespace ConfigCat.Client
         /// <typeparam name="T">Setting type</typeparam>
         /// <param name="key">Key for programs</param>
         /// <param name="defaultValue">In case of failure return this value</param>
+        /// <param name="user">The user object for variation evaluation</param>
         /// <returns></returns>
-        T GetValue<T>(string key, T defaultValue);
+        T GetValue<T>(string key, T defaultValue, User user = null);
 
         /// <summary>
         /// Return a value of the key (Key for programs)
@@ -53,8 +55,9 @@ namespace ConfigCat.Client
         /// <typeparam name="T">Setting type</typeparam>
         /// <param name="key">Key for programs</param>
         /// <param name="defaultValue">In case of failure return this value</param>
+        /// <param name="user">The user object for variation evaluation</param>
         /// <returns></returns>
-        Task<T> GetValueAsync<T>(string key, T defaultValue);
+        Task<T> GetValueAsync<T>(string key, T defaultValue, User user = null);
 
         /// <summary>
         /// Refresh the configuration

@@ -6,6 +6,7 @@ using ConfigCat.Client.Logging;
 using ConfigCat.Client.ConfigService;
 using ConfigCat.Client.Cache;
 using ConfigCat.Client.Configuration;
+using ConfigCat.Client.Evaluate;
 
 namespace ConfigCat.Client
 {
@@ -17,6 +18,8 @@ namespace ConfigCat.Client
         private ILogger log;
 
         private readonly IConfigService configService;
+
+        private readonly IConfigEvaluator configEvaluator;
 
         private static readonly string version = typeof(ConfigCatClient).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
 
@@ -131,13 +134,13 @@ namespace ConfigCat.Client
         }
 
         /// <inheritdoc />
-        public T GetValue<T>(string key, T defaultValue)
+        public T GetValue<T>(string key, T defaultValue, User user = null)
         {
             try
             {
                 var c = this.configService.GetConfigAsync().Result;
 
-                return this.GetValueLogic<T>(c, key, defaultValue);
+                return this.configEvaluator.GetValue<T>(c, key, defaultValue, user);                
             }
             catch (Exception ex)
             {
@@ -148,13 +151,13 @@ namespace ConfigCat.Client
         }
 
         /// <inheritdoc />
-        public async Task<T> GetValueAsync<T>(string key, T defaultValue)
+        public async Task<T> GetValueAsync<T>(string key, T defaultValue, User user = null)
         {
             try
             {
                 var c = await this.configService.GetConfigAsync().ConfigureAwait(false);
 
-                return this.GetValueLogic<T>(c, key, defaultValue);
+                return this.configEvaluator.GetValue<T>(c, key, defaultValue, user);
             }
             catch (Exception ex)
             {
@@ -162,7 +165,6 @@ namespace ConfigCat.Client
 
                 return defaultValue;
             }
-
         }
 
         /// <inheritdoc />

@@ -83,34 +83,6 @@ autopoll.OnConfigurationChanged += (s, a) =>
 
 var client = new ConfigCatClient(autopoll);
 ```
-### Example - default value handling
-You can easily manage default values with this technique when you use your configuration in many locations in the code.
-``` c#
-var client = new ConfigCatClient("#YOUR-API-KEY#");
-
-bool isMyAwesomeFeatureEnabled = client.GetConfiguration(MyApplicationFeatureConfig.Default).MyNewFeatureEnabled;
-
-if (isMyAwesomeFeatureEnabled)
-{
-	//show your awesome feature to the world!
-}
-
-internal sealed class MyApplicationFeatureConfig
-{
-	public static readonly MyApplicationFeatureConfig Default = new MyApplicationFeatureConfig
-		{
-			// set my default values here
-			MyNewFeatureEnabled = false
-		};
-
-	public bool MyNewFeatureEnabled { get; set; }
-}
-```
-You can customize deserialization settings with [```Newtonsoft.Json.JsonProperty```](https://www.newtonsoft.com/json/help/html/JsonPropertyName.htm):
-``` c#
-[JsonProperty("My_New_Feature_Enabled")]
-public bool MyNewFeatureEnabled { get; set; }
-```
 ### Configuration with clientbuilder
 It is possible to use ```ConfigCatClientBuilder``` to build ConfigCatClient instance:
 
@@ -122,19 +94,54 @@ IConfigCatClient client = ConfigCatClientBuilder
 	.Build();
 ```
 
+## User object
+If you want to get advantage from our percentage rollout and targeted rollout features, you should pass a ```User``` object to the ```GetValue<T>(string key, T defaultValue, User user)``` calls.
+We strongly recommend you to pass the ```User``` object in every call so later you can use these awesome features without rebuilding your application.
+
+```ConfigCat.Client.Evaluate.User```
+
+| ParameterName        | Description           | Default  |
+| --- | --- | --- |
+| ```Id```      | Mandatory, unique identifier for the User or Session. e.g. Email address, Primary key, Session Id  | REQUIRED |
+| ```Email ```      | Optional parameter for easier targeting rule definitions |   None |
+| ```Country```      | Optional parameter for easier targeting rule definitions |   None | 
+| ```Custom```      | Optional dictionary for custom attributes of the User for advanced targeting rule definitions. e.g. User role, Subscription type. |   None |
+
+Example simple user object:  
+``` c#
+User myUser = new User("123456789");
+```
+
+Example user object with optional custom attributes:  
+``` c#
+User myUser = new User("123456789")
+		{
+                	Email = "readme.user@configcat.com",
+                	Country = "United Kingdom",
+                	Custom = new Dictionary<string, string> { { "SubscriptionType", "Pro" } }
+		});
+```
+
+Usage:
+``` c#
+var isMyAwesomeFeatureEnabled = client.GetValue(
+	"isMyAwesomeFeatureEnabled",
+	defaultValue: false,
+	new User("123456789"));
+```
+
 ## Members
+
 ### Methods
 | Name        | Description           |
 | :------- | :--- |
 | ``` GetValue<T>(string key, T defaultValue) ``` | Returns the value of the key |
 | ``` ForceRefresh() ``` | Fetches the latest configuration from the server. You can use this method with WebHooks to ensure up to date configuration values in your application. ([see ASP.Net sample project to use webhook for cache invalidation](https://github.com/ConfigCat/.net-sdk/blob/master/samples/ASP.NETCore/WebApplication/Controllers/BackdoorController.cs)) |
-| ``` GetConfigurationJsonString() ``` | Return configuration as a json string |
-| ``` T GetConfiguration<T>(T defaultValue) ``` | Serialize the configuration to a passed **T** type. You can customize your **T** with Newtonsoft attributes |
+
 ### Events
 | Name        | Description           |
 | :------- | :--- |
 | ``` OnConfigurationChanged ``` | Only with AutoPolling policy. Occurs when the configuration changed |
-
 
 ## Lifecycle of the client
 We're recommend to use client as a singleton in your application. Today you can do this easily with any IoC contanier ([see ASP.Net sample project](https://github.com/ConfigCat/.net-sdk/blob/master/samples/ASP.NETCore/WebApplication/Startup.cs#L25)).

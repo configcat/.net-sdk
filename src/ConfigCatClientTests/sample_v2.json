@@ -1,0 +1,332 @@
+﻿{
+  "stringDefaultCat": {
+    "Value": "Cat",
+    "SettingType": 1,
+    "RolloutPercentageItems": [],
+    "RolloutRules": []
+  },
+  "stringIsInDogDefaultCat": {
+    "Value": "Cat",
+    "SettingType": 1,
+    "RolloutPercentageItems": [],
+    "RolloutRules": [
+      {
+        "Order": 0,
+        "ComparisonAttribute": "Email",
+        "Comparator": 0,
+        "ComparisonValue": "a@configcat.com, b@configcat.com",
+        "Value": "Dog"
+      },
+      {
+        "Order": 1,
+        "ComparisonAttribute": "Custom1",
+        "Comparator": 0,
+        "ComparisonValue": "admin",
+        "Value": "Dog"
+      }
+    ]
+  },
+  "stringIsNotInDogDefaultCat": {
+    "Value": "Cat",
+    "SettingType": 1,
+    "RolloutPercentageItems": [],
+    "RolloutRules": [
+      {
+        "Order": 0,
+        "ComparisonAttribute": "Email",
+        "Comparator": 1,
+        "ComparisonValue": "a@configcat.com,b@configcat.com",
+        "Value": "Dog"
+      }
+    ]
+  },
+  "stringContainsDogDefaultCat": {
+    "Value": "Cat",
+    "SettingType": 1,
+    "RolloutPercentageItems": [],
+    "RolloutRules": [
+      {
+        "Order": 0,
+        "ComparisonAttribute": "Email",
+        "Comparator": 2,
+        "ComparisonValue": "@configcat.com",
+        "Value": "Dog"
+      }
+    ]
+  },
+  "stringNotContainsDogDefaultCat": {
+    "Value": "Cat",
+    "SettingType": 1,
+    "RolloutPercentageItems": [],
+    "RolloutRules": [
+      {
+        "Order": 0,
+        "ComparisonAttribute": "Email",
+        "Comparator": 3,
+        "ComparisonValue": "@configcat.com",
+        "Value": "Dog"
+      }
+    ]
+  },
+  "string25Cat25Dog25Falcon25Horse": {
+    "Value": "Chicken",
+    "SettingType": 1,
+    "RolloutPercentageItems": [
+      {
+        "Order": 0,
+        "Value": "Cat",
+        "Percentage": 25
+      },
+      {
+        "Order": 1,
+        "Value": "Dog",
+        "Percentage": 25
+      },
+      {
+        "Order": 2,
+        "Value": "Falcon",
+        "Percentage": 25
+      },
+      {
+        "Order": 3,
+        "Value": "Horse",
+        "Percentage": 25
+      }
+    ],
+    "RolloutRules": []
+  },
+  "string75Cat0Dog25Falcon0Horse": {
+    "Value": "Chicken",
+    "SettingType": 1,
+    "RolloutPercentageItems": [
+      {
+        "Order": 0,
+        "Value": "Cat",
+        "Percentage": 75
+      },
+      {
+        "Order": 1,
+        "Value": "Dog",
+        "Percentage": 0
+      },
+      {
+        "Order": 2,
+        "Value": "Falcon",
+        "Percentage": 25
+      },
+      {
+        "Order": 3,
+        "Value": "Horse",
+        "Percentage": 0
+      }
+    ],
+    "RolloutRules": []
+  },
+  "string25Cat25Dog25Falcon25HorseAdvancedRules": {
+    "Value": "Chicken",
+    "SettingType": 1,
+    "RolloutPercentageItems": [
+      {
+        "Order": 0,
+        "Value": "Cat",
+        "Percentage": 25
+      },
+      {
+        "Order": 1,
+        "Value": "Dog",
+        "Percentage": 25
+      },
+      {
+        "Order": 2,
+        "Value": "Falcon",
+        "Percentage": 25
+      },
+      {
+        "Order": 3,
+        "Value": "Horse",
+        "Percentage": 25
+      }
+    ],
+    "RolloutRules": [
+      {
+        "Order": 0,
+        "ComparisonAttribute": "Country",
+        "Comparator": 0,
+        "ComparisonValue": "Hungary, United Kingdom",
+        "Value": "Dolphin"
+      },
+      {
+        "Order": 1,
+        "ComparisonAttribute": "Custom1",
+        "Comparator": 2,
+        "ComparisonValue": "admi",
+        "Value": "Lion"
+      },
+      {
+        "Order": 2,
+        "ComparisonAttribute": "Email",
+        "Comparator": 2,
+        "ComparisonValue": "@configcat.com",
+        "Value": "Kitten"
+      }
+    ]
+  },
+  "boolDefaultTrue": {
+    "Value": true,
+    "SettingType": 0,
+    "RolloutPercentageItems": [],
+    "RolloutRules": []
+  },
+  "boolDefaultFalse": {
+    "Value": false,
+    "SettingType": 0,
+    "RolloutPercentageItems": [],
+    "RolloutRules": []
+  },
+  "bool30TrueAdvancedRules": {
+    "Value": true,
+    "SettingType": 0,
+    "RolloutPercentageItems": [
+      {
+        "Order": 0,
+        "Value": true,
+        "Percentage": 30
+      },
+      {
+        "Order": 1,
+        "Value": false,
+        "Percentage": 70
+      }
+    ],
+    "RolloutRules": [
+      {
+        "Order": 0,
+        "ComparisonAttribute": "Email",
+        "Comparator": 0,
+        "ComparisonValue": "a@configcat.com, b@configcat.com",
+        "Value": false
+      },
+      {
+        "Order": 1,
+        "ComparisonAttribute": "Country",
+        "Comparator": 2,
+        "ComparisonValue": "United",
+        "Value": false
+      }
+    ]
+  },
+  "integer25One25Two25Three25FourAdvancedRules": {
+    "Value": -1,
+    "SettingType": 2,
+    "RolloutPercentageItems": [
+      {
+        "Order": 0,
+        "Value": 1,
+        "Percentage": 25
+      },
+      {
+        "Order": 1,
+        "Value": 2,
+        "Percentage": 25
+      },
+      {
+        "Order": 2,
+        "Value": 3,
+        "Percentage": 25
+      },
+      {
+        "Order": 3,
+        "Value": 4,
+        "Percentage": 25
+      }
+    ],
+    "RolloutRules": [
+      {
+        "Order": 0,
+        "ComparisonAttribute": "Email",
+        "Comparator": 2,
+        "ComparisonValue": "@configcat.com",
+        "Value": 5
+      }
+    ]
+  },
+  "integerDefaultOne": {
+    "Value": 1,
+    "SettingType": 2,
+    "RolloutPercentageItems": [],
+    "RolloutRules": []
+  },
+  "doubleDefaultPi": {
+    "Value": 3.1415,
+    "SettingType": 3,
+    "RolloutPercentageItems": [],
+    "RolloutRules": []
+  },
+  "double25Pi25E25Gr25Zero": {
+    "Value": -1.0,
+    "SettingType": 3,
+    "RolloutPercentageItems": [
+      {
+        "Order": 0,
+        "Value": 3.1415,
+        "Percentage": 25
+      },
+      {
+        "Order": 1,
+        "Value": 2.7182,
+        "Percentage": 25
+      },
+      {
+        "Order": 2,
+        "Value": 1.61803,
+        "Percentage": 25
+      },
+      {
+        "Order": 3,
+        "Value": 0.0,
+        "Percentage": 25
+      }
+    ],
+    "RolloutRules": [
+      {
+        "Order": 0,
+        "ComparisonAttribute": "Email",
+        "Comparator": 2,
+        "ComparisonValue": "@configcat.com",
+        "Value": 5.561
+      }
+    ]
+  },
+  "keySampleText": {
+    "Value": "Cat",
+    "SettingType": 1,
+    "RolloutPercentageItems": [
+      {
+        "Order": 0,
+        "Value": "Falcon",
+        "Percentage": 50
+      },
+      {
+        "Order": 1,
+        "Value": "Horse",
+        "Percentage": 50
+      }
+    ],
+    "RolloutRules": [
+      {
+        "Order": 0,
+        "ComparisonAttribute": "Country",
+        "Comparator": 0,
+        "ComparisonValue": "Hungary,Bahamas",
+        "Value": "Dog"
+      },
+      {
+        "Order": 1,
+        "ComparisonAttribute": "SubscriptionType",
+        "Comparator": 0,
+        "ComparisonValue": "unlimited",
+        "Value": "Lion"
+      }
+    ]
+  }
+}

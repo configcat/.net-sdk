@@ -7,7 +7,7 @@
     <SignAssembly>true</SignAssembly>
     <DelaySign>false</DelaySign>
     <AssemblyOriginatorKeyFile>strongname.snk</AssemblyOriginatorKeyFile>    
-    <Version>1.0.7-beta</Version>    
+    <Version>2.0.0-beta</Version>    
     <Copyright>Copyright © ConfigCat 2018</Copyright>    
     <Company>ConfigCat</Company>    
     <Authors>ConfigCat</Authors>    
@@ -15,13 +15,15 @@
     <PackageProjectUrl>https://github.com/ConfigCat/.net-sdk</PackageProjectUrl>    
     <RepositoryUrl>https://github.com/ConfigCat/.net-sdk</RepositoryUrl>    
     <RepositoryType>git</RepositoryType>    
-    <PackageReleaseNotes>Version 1.0.7
+    <PackageReleaseNotes>Version 2.0.0-beta
+     * Implement rollout feature
+Version 1.0.7
      * Implement LazyLoad, AutoPoll, ManualPoll feature
-     Version 1.0.6
+Version 1.0.6
      * Finalize logging
-     Version 1.0.5
+Version 1.0.5
      * Implement tracing, add clear cache ability to client
-     Version 1.0.4
+Version 1.0.4
      * Initial release</PackageReleaseNotes>    
     <PackageTags>configcat config configuration remoteconfiguration configcatclient</PackageTags>    
     <Description>ConfigCat is a cloud based configuration as a service. It integrates with your apps, backends, websites, and other programs, so you can configure them through this website (https://www.configcat.com) even after they are deployed.</Description>    

@@ -16,17 +16,17 @@ namespace ConfigCat.Client.Evaluate
         /// <summary>
         /// Optional parameter for easier targeting rule definitions
         /// </summary>
-        public string Email { get; private set; }
+        public string Email { get; set; }
 
         /// <summary>
         /// Optional parameter for easier targeting rule definitions
         /// </summary>
-        public string Country { get; private set; }
+        public string Country { get; set; }
 
         /// <summary>
         /// Optional dictionary for custom attributes of the User for advanced targeting rule definitions. e.g. User role, Subscription type
         /// </summary>
-        public IDictionary<string, string> Custom { get; private set; }
+        public IDictionary<string, string> Custom { get; set; }
 
         /// <summary>
         /// Serve all user attributes

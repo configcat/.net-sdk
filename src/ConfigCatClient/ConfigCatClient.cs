@@ -6,6 +6,7 @@ using ConfigCat.Client.Logging;
 using ConfigCat.Client.ConfigService;
 using ConfigCat.Client.Cache;
 using ConfigCat.Client.Configuration;
+using ConfigCat.Client.Evaluate;
 
 namespace ConfigCat.Client
 {
@@ -16,7 +17,9 @@ namespace ConfigCat.Client
     {
         private ILogger log;
 
-        private readonly IConfigService configService;
+        private IRolloutEvaluator configEvaluator;
+
+        private readonly IConfigService configService;       
 
         private static readonly string version = typeof(ConfigCatClient).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
 
@@ -107,37 +110,23 @@ namespace ConfigCat.Client
                 configuration.LoggerFactory);
 
             this.configService = configService;
-        }
+        }       
 
         private void InitializeClient(ConfigurationBase configuration)
         {
             this.log = configuration.LoggerFactory.GetLogger(nameof(ConfigCatClient));
+
+            this.configEvaluator = new RolloutEvaluator(this.log);
         }
-
+        
         /// <inheritdoc />
-        public string GetConfigurationJsonString()
-        {
-            var c = this.configService.GetConfigAsync().Result;
-
-            return c.JsonString;
-        }
-
-        /// <inheritdoc />
-        public async Task<string> GetConfigurationJsonStringAsync()
-        {
-            var c = await this.configService.GetConfigAsync();
-
-            return c.JsonString;
-        }
-
-        /// <inheritdoc />
-        public T GetValue<T>(string key, T defaultValue)
+        public T GetValue<T>(string key, T defaultValue, User user = null)
         {
             try
             {
                 var c = this.configService.GetConfigAsync().Result;
 
-                return this.GetValueLogic<T>(c, key, defaultValue);
+                return this.configEvaluator.Evaluate<T>(c, key, defaultValue, user);                
             }
             catch (Exception ex)
             {
@@ -148,13 +137,13 @@ namespace ConfigCat.Client
         }
 
         /// <inheritdoc />
-        public async Task<T> GetValueAsync<T>(string key, T defaultValue)
+        public async Task<T> GetValueAsync<T>(string key, T defaultValue, User user = null)
         {
             try
             {
                 var c = await this.configService.GetConfigAsync().ConfigureAwait(false);
 
-                return this.GetValueLogic<T>(c, key, defaultValue);
+                return this.configEvaluator.Evaluate<T>(c, key, defaultValue, user);
             }
             catch (Exception ex)
             {
@@ -162,43 +151,8 @@ namespace ConfigCat.Client
 
                 return defaultValue;
             }
-
         }
-
-        /// <inheritdoc />
-        public T GetConfiguration<T>(T defaultValue)
-        {
-            try
-            {
-                var c = this.configService.GetConfigAsync().Result;
-
-                return GetConfigurationLogic<T>(c, defaultValue);
-            }
-            catch (Exception ex)
-            {
-                this.log.Error($"Error occured in 'GetConfiguration' method.\n{ex.ToString()}");
-
-                return defaultValue;
-            }
-        }
-
-        /// <inheritdoc />
-        public async Task<T> GetConfigurationAsync<T>(T defaultValue)
-        {
-            try
-            {
-                var c = await this.configService.GetConfigAsync().ConfigureAwait(false);
-
-                return GetConfigurationLogic<T>(c, defaultValue);
-            }
-            catch (Exception ex)
-            {
-                this.log.Error($"Error occured in 'GetConfigurationAsync' method.\n{ex.ToString()}");
-
-                return defaultValue;
-            }
-        }
-
+        
         /// <inheritdoc />
         public void ForceRefresh()
         {
@@ -218,39 +172,6 @@ namespace ConfigCat.Client
             {
                 ((IDisposable)this.configService).Dispose();
             }
-        }
-
-        private T GetValueLogic<T>(ProjectConfig config, string key, T defaultValue)
-        {
-            if (config.JsonString == null)
-            {
-                this.log.Warning("ConfigJson is not present, returning defaultValue");
-
-                return defaultValue;
-            }
-
-            var json = (JObject)Newtonsoft.Json.JsonConvert.DeserializeObject(config.JsonString);
-
-            var rawValue = json.GetValue(key);
-
-            if (rawValue == null)
-            {
-                this.log.Warning($"Unknown key: '{key}'");
-
-                return defaultValue;
-            }
-
-            return rawValue.Value<T>();
-        }
-
-        private T GetConfigurationLogic<T>(ProjectConfig config, T defaultValue)
-        {
-            if (config.JsonString == null)
-            {
-                return defaultValue;
-            }
-
-            return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(config.JsonString);
         }
 
         /// <summary>

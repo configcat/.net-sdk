@@ -49,7 +49,7 @@ namespace ConfigCat.Client.Configuration
 
         private static Uri CreateUrl(string apiKey)
         {
-            return new Uri("https://cdn.configcat.com/configuration-files/" + apiKey + "/config.json");
+            return new Uri("https://cdn.configcat.com/configuration-files/" + apiKey + "/config_v2.json");
         }
     }
 }

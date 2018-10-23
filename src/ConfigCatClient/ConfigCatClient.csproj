@@ -7,7 +7,7 @@
     <SignAssembly>true</SignAssembly>
     <DelaySign>false</DelaySign>
     <AssemblyOriginatorKeyFile>strongname.snk</AssemblyOriginatorKeyFile>    
-    <Version>2.0.0-beta</Version>    
+    <Version>2.0.1</Version>    
     <Copyright>Copyright © ConfigCat 2018</Copyright>    
     <Company>ConfigCat</Company>    
     <Authors>ConfigCat</Authors>    
@@ -15,7 +15,9 @@
     <PackageProjectUrl>https://github.com/ConfigCat/.net-sdk</PackageProjectUrl>    
     <RepositoryUrl>https://github.com/ConfigCat/.net-sdk</RepositoryUrl>    
     <RepositoryType>git</RepositoryType>    
-    <PackageReleaseNotes>Version 2.0.0-beta
+    <PackageReleaseNotes>Version 2.0.1
+     * Bugfix
+Version 2.0.0
      * Implement rollout feature
 Version 1.0.7
      * Implement LazyLoad, AutoPoll, ManualPoll feature

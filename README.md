@@ -109,12 +109,12 @@ We strongly recommend you to pass the ```User``` object in every call so later y
 
 Example simple user object:  
 ``` c#
-User myUser = new User("123456789");
+User myUser = new User("435170f4-8a8b-4b67-a723-505ac7cdea92");
 ```
 
 Example user object with optional custom attributes:  
 ``` c#
-User myUser = new User("123456789")
+User myUser = new User("435170f4-8a8b-4b67-a723-505ac7cdea92")
 		{
                 	Email = "readme.user@configcat.com",
                 	Country = "United Kingdom",
@@ -127,7 +127,7 @@ Usage:
 var isMyAwesomeFeatureEnabled = client.GetValue(
 	"isMyAwesomeFeatureEnabled",
 	defaultValue: false,
-	new User("123456789"));
+	new User("435170f4-8a8b-4b67-a723-505ac7cdea92"));
 ```
 
 ## Members

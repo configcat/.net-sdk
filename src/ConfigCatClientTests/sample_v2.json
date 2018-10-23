@@ -328,5 +328,19 @@
         "Value": "Lion"
       }
     ]
+  },
+  "stringUserWithIdentifier": {
+    "Value": "Dog",
+    "SettingType": 1,
+    "RolloutPercentageItems": [],
+    "RolloutRules": [
+      {
+        "Order": 0,
+        "ComparisonAttribute": "Identifier",
+        "Comparator": 2,
+        "ComparisonValue": "12345",
+        "Value": "Cat"
+      }
+    ]
   }
 }

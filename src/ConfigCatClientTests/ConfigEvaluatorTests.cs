@@ -58,7 +58,24 @@ namespace ConfigCat.Client.Tests
 
             Assert.AreEqual(3.1415, actual);
         }
-        
+
+        [TestMethod]
+        public void GetValue_WithUserWithIdRules_ShouldReturnEvaluatedValue()
+        {
+            var actual = configEvaluator.Evaluate(config, "stringUserWithIdentifier", string.Empty, new User("12345"));
+
+            Assert.AreEqual("Cat", actual);
+        }
+
+        [TestMethod]
+        public void GetValue_WithUserWithOtherIdRules_ShouldReturnEvaluatedValue()
+        {
+            var actual = configEvaluator.Evaluate(config, "stringUserWithIdentifier", string.Empty, new User("98765"));
+
+            Assert.AreEqual("Dog", actual);
+        }
+
+
         [TestMethod]
         public async Task GetValue_MatrixTests()
         {

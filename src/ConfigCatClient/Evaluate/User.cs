@@ -37,9 +37,9 @@ namespace ConfigCat.Client.Evaluate
             {
                 var result = new Dictionary<string, string>
                 {
-                    { nameof(Id).ToLowerInvariant(), this.Id},
-                    { nameof(Email).ToLowerInvariant(), this.Email},
-                    { nameof(Country).ToLowerInvariant(),  this.Country},
+                    { "identifier", this.Id},
+                    { "email", this.Email},
+                    { "country",  this.Country},
                 };
 
                 if (Custom != null && Custom.Count > 0)

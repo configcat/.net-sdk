@@ -10,7 +10,7 @@ https://configcat.com
  Install-Package ConfigCat.Client
  ```
  2. Get your Api Key from [configcat.com](https://configcat.com) portal:
-![ApiKey](https://raw.githubusercontent.com/ConfigCat/.net-sdk/master/media/readme02.png  "ApiKey")
+![ApiKey](https://raw.githubusercontent.com/ConfigCat/.net-sdk/master/media/readme01.png  "ApiKey")
 
  3. Create a **ConfigCatClient** instance:
 ```c#

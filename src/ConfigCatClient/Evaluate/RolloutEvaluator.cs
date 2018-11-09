@@ -71,15 +71,15 @@ namespace ConfigCat.Client.Evaluate
             {
                 var hashCandidate = key + user.Id;
 
-                var hashValue = HashString(hashCandidate).Substring(0, 15);
+                var hashValue = HashString(hashCandidate).Substring(0, 7);
 
-                var hashScale = long.Parse(hashValue, NumberStyles.HexNumber) % 100;
+                var hashScale = int.Parse(hashValue, NumberStyles.HexNumber) % 100;
 
-                var bucket = 0L;
+                var bucket = 0;
 
                 foreach (var variation in rolloutPercentageItems.OrderBy(o => o.Order))
                 {
-                    bucket += (long)variation.Percentage;                    
+                    bucket += variation.Percentage;                    
 
                     if (hashScale < bucket)
                     {

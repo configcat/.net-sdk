@@ -28,7 +28,7 @@ namespace ConfigCat.Client.Evaluate
         [JsonProperty(PropertyName = "Value")]
         public string RawValue { get; private set; }
 
-        public float Percentage { get; set; }        
+        public int Percentage { get; set; }        
     }
 
     internal class RolloutRule

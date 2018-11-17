@@ -20,6 +20,13 @@ build:
   verbosity: normal
 after_build:
 - msbuild /t:Pack /p:IncludeSymbols=true /p:Configuration=%configuration% /p:PackageOutputPath=..\..\artifacts src\ConfigCatClient\ConfigCatClient.csproj
+test_script:
+- cmd: src/coverage.cmd
+after_test:
+  - ps: |
+      $env:PATH = 'C:\msys64\usr\bin;' + $env:PATH
+      Invoke-WebRequest -Uri 'https://codecov.io/bash' -OutFile codecov.sh
+      bash codecov.sh -f "src/coverage.xml"
 artifacts:
 - path: artifacts\ConfigCat.Client.*.nupkg
   name: NuGet

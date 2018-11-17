@@ -29,8 +29,8 @@ Version 1.0.5
      * Implement tracing, add clear cache ability to client
 Version 1.0.4
      * Initial release</PackageReleaseNotes>    
-    <PackageTags>configcat config configuration remoteconfiguration configcatclient</PackageTags>    
-    <Description>ConfigCat is a cloud based configuration as a service. It integrates with your apps, backends, websites, and other programs, so you can configure them through this website (https://www.configcat.com) even after they are deployed.</Description>    
+    <PackageTags>configcat config configuration remoteconfiguration configcatclient featureflags featuretoggle featureswitch canaryrelease softlaunch releasestrategy</PackageTags>    
+    <Description>ConfigCat is a configuration as a service that lets you manage your features and configurations without actually deploying new code.</Description>    
     <PackageIconUrl>https://raw.githubusercontent.com/ConfigCat/.net-sdk/master/media/icon-64x64.png</PackageIconUrl>    
     <AssemblyVersion>0.1.0.0</AssemblyVersion>    
     <FileVersion>0.1.0.0</FileVersion>    

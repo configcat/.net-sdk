@@ -14,19 +14,25 @@ dotnet_csproj:
   file_version: '{version}'
   informational_version: '{version}'
 before_build:
-- cmd: nuget.exe restore src/ConfigCatClient.sln
+ - cmd: nuget.exe restore src/ConfigCatClient.sln
 build:
   project: src/ConfigCatClient.sln
   verbosity: normal
 after_build:
 - msbuild /t:Pack /p:IncludeSymbols=true /p:Configuration=%configuration% /p:PackageOutputPath=..\..\artifacts src\ConfigCatClient\ConfigCatClient.csproj
+before_test:
+ - ps: choco install opencover.portable
+ - ps: choco install codecov
 test_script:
-- cmd: src/coverage.cmd
+ - OpenCover.Console.exe -register:user -target:dotnet.exe -targetargs:"test src\ConfigCatClientTests\ConfigCatClientTests.csproj -f net45 -c Release" -output:src/coverage.xml -oldstyle
 after_test:
-  - ps: |
-      $env:PATH = 'C:\msys64\usr\bin;' + $env:PATH
-      Invoke-WebRequest -Uri 'https://codecov.io/bash' -OutFile codecov.sh
-      bash codecov.sh -f "src/coverage.xml"
+ - codecov -f 'src/coverage.xml'
 artifacts:
 - path: artifacts\ConfigCat.Client.*.nupkg
   name: NuGet
+notifications:
+- provider: Email
+  to:
+  - developer@configcat.com
+  on_build_success: false
+  on_build_failure: false

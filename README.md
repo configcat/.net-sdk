@@ -6,7 +6,7 @@ ConfigCat is a feature flag, feature toggle, and configuration management servic
 https://configcat.com  
 
 [![Build status](https://ci.appveyor.com/api/projects/status/3kygp783vc2uv9xr?svg=true)](https://ci.appveyor.com/project/ConfigCat/net-sdk) [![NuGet Version](https://buildstats.info/nuget/ConfigCat.Client)](https://www.nuget.org/packages/ConfigCat.Client/)
-(https://img.shields.io/github/license/configcat/.net-sdk.svg)
+![License](https://img.shields.io/github/license/configcat/.net-sdk.svg)
 
 ## Getting Started
 

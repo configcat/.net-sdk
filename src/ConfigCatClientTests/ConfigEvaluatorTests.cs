@@ -75,7 +75,6 @@ namespace ConfigCat.Client.Tests
             Assert.AreEqual("Dog", actual);
         }
 
-
         [TestMethod]
         public async Task GetValue_MatrixTests()
         {
@@ -104,13 +103,13 @@ namespace ConfigCat.Client.Tests
 
                     User u = null;
 
-                    if (row[0] != "##nouserobject##")
+                    if (row[0] != "##null##")
                     {
                         u = new User(row[0])
                         {
-                            Email = row[1],
-                            Country = row[2],
-                            Custom = new Dictionary<string, string> { { columns[3], row[3] } }
+                            Email = row[1] == "##null##" ? null : row[1],
+                            Country = row[2] == "##null##" ? null : row[2],
+                            Custom = row[3] == "##null##" ? null : new Dictionary<string, string> { { columns[3], row[3] } }
                         };
                     }
 

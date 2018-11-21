@@ -103,7 +103,16 @@ namespace ConfigCat.Client.Evaluate
                 {
                     result = new JValue(rule.RawValue).Value<T>();
 
+                    if (!user.AllAttributes.ContainsKey(rule.ComparisonAttribute.ToLowerInvariant()))
+                    {
+                        continue;
+                    }
+
                     var comparisonAttributeValue = user.AllAttributes[rule.ComparisonAttribute.ToLowerInvariant()];
+                    if (string.IsNullOrEmpty(comparisonAttributeValue))
+                    {
+                        continue;
+                    }
 
                     switch (rule.Comparator)
                     {

@@ -1,6 +1,7 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using ConfigCat.Client.Configuration;
+using ConfigCat.Client.Evaluate;
 
 namespace ConfigCat.Client.Tests
 {
@@ -104,6 +105,19 @@ namespace ConfigCat.Client.Tests
 
             new ConfigCatClient(apiKey);
         }        
+
+        [TestMethod]
+        public void CreateUser()
+        {
+            var u = new User("sw")
+            {
+                Country = "US",
+                Custom =
+                {
+                    { "key", "value"}
+                }
+            };
+        }
     }
 
     internal class ConfigCatClientConfigurationStub : ConfigurationBase { }

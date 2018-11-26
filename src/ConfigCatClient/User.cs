@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 
-namespace ConfigCat.Client.Evaluate
+namespace ConfigCat.Client
 {
     /// <summary>
     /// Object for variation evaluation
@@ -68,6 +67,7 @@ namespace ConfigCat.Client.Evaluate
         public User(string identifier)
         {
             this.Identifier = identifier;
+            this.Custom = new Dictionary<string, string>(0);
         }
     }
 }

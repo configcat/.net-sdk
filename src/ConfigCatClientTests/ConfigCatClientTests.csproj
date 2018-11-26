@@ -55,6 +55,7 @@
     <Reference Include="System.Data" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="UserTests.cs" />
     <Compile Include="ConfigCatClientTests.cs" />
     <Compile Include="ConfigEvaluatorTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

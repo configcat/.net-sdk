@@ -69,7 +69,7 @@ namespace ConfigCat.Client.Evaluate
 
             if (rolloutPercentageItems != null && rolloutPercentageItems.Count > 0)
             {
-                var hashCandidate = key + user.Id;
+                var hashCandidate = key + user.Identifier;
 
                 var hashValue = HashString(hashCandidate).Substring(0, 7);
 

@@ -33,25 +33,25 @@ namespace ConfigCat.Client.Tests
             {
                 var actual = client.GetValue(keyName, false, user);
 
-                Assert.AreEqual(bool.Parse(expected), actual, $"keyName: {keyName} | userId: {user?.Id}");
+                Assert.AreEqual(bool.Parse(expected), actual, $"keyName: {keyName} | userId: {user?.Identifier}");
             }
             else if (k.StartsWith("double"))
             {
                 var actual = client.GetValue(keyName, double.NaN, user);
 
-                Assert.AreEqual(double.Parse(expected, CultureInfo.InvariantCulture), actual, $"keyName: {keyName} | userId: {user?.Id}");
+                Assert.AreEqual(double.Parse(expected, CultureInfo.InvariantCulture), actual, $"keyName: {keyName} | userId: {user?.Identifier}");
             }
             else if (k.StartsWith("integer"))
             {
                 var actual = client.GetValue(keyName, int.MaxValue, user);
 
-                Assert.AreEqual(int.Parse(expected), actual, $"keyName: {keyName} | userId: {user?.Id}");
+                Assert.AreEqual(int.Parse(expected), actual, $"keyName: {keyName} | userId: {user?.Identifier}");
             }
             else
             {
                 var actual = client.GetValue(keyName, string.Empty, user);
 
-                Assert.AreEqual(expected, actual, $"keyName: {keyName} | userId: {user?.Id}");
+                Assert.AreEqual(expected, actual, $"keyName: {keyName} | userId: {user?.Identifier}");
             }
         }
     }

@@ -129,25 +129,25 @@ namespace ConfigCat.Client.Tests
             {
                 var actual = configEvaluator.Evaluate(config, keyName, false, user);
 
-                Assert.AreEqual(bool.Parse(expected), actual, $"keyName: {keyName} | userId: {user?.Id}");
+                Assert.AreEqual(bool.Parse(expected), actual, $"keyName: {keyName} | userId: {user?.Identifier}");
             }
             else if (k.StartsWith("double"))
             {
                 var actual = configEvaluator.Evaluate(config, keyName, double.NaN, user);
 
-                Assert.AreEqual(double.Parse(expected, CultureInfo.InvariantCulture), actual, $"keyName: {keyName} | userId: {user?.Id}");
+                Assert.AreEqual(double.Parse(expected, CultureInfo.InvariantCulture), actual, $"keyName: {keyName} | userId: {user?.Identifier}");
             }
             else if (k.StartsWith("integer"))
             {
                 var actual = configEvaluator.Evaluate(config, keyName, int.MinValue, user);
 
-                Assert.AreEqual(int.Parse(expected), actual, $"keyName: {keyName} | userId: {user?.Id}");
+                Assert.AreEqual(int.Parse(expected), actual, $"keyName: {keyName} | userId: {user?.Identifier}");
             }
             else
             {
                 var actual = configEvaluator.Evaluate(config, keyName, string.Empty, user);
 
-                Assert.AreEqual(expected, actual, $"keyName: {keyName} | userId: {user?.Id}");
+                Assert.AreEqual(expected, actual, $"keyName: {keyName} | userId: {user?.Identifier}");
             }
         }
 

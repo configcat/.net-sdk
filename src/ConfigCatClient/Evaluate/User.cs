@@ -11,7 +11,7 @@ namespace ConfigCat.Client.Evaluate
         /// <summary>
         /// Unique identifier for the User or Session. e.g. Email address, Primary key, Session Id
         /// </summary>
-        public string Id { get; private set; }
+        public string Identifier { get; private set; }
 
         /// <summary>
         /// Optional parameter for easier targeting rule definitions
@@ -37,7 +37,7 @@ namespace ConfigCat.Client.Evaluate
             {
                 var result = new Dictionary<string, string>
                 {
-                    { "identifier", this.Id},
+                    { "identifier", this.Identifier},
                     { "email", this.Email},
                     { "country",  this.Country},
                 };
@@ -46,7 +46,7 @@ namespace ConfigCat.Client.Evaluate
                 {
                     foreach (var item in this.Custom)
                     {
-                        if (item.Key.ToLowerInvariant() == nameof(Id).ToLowerInvariant() ||
+                        if (item.Key.ToLowerInvariant() == nameof(Identifier).ToLowerInvariant() ||
                             item.Key.ToLowerInvariant() == nameof(Email).ToLowerInvariant() ||
                             item.Key.ToLowerInvariant() == nameof(Country).ToLowerInvariant())
                         {
@@ -64,10 +64,10 @@ namespace ConfigCat.Client.Evaluate
         /// <summary>
         /// Create an instance of User
         /// </summary>
-        /// <param name="id">Unique identifier for the User</param>
-        public User(string id)
+        /// <param name="identifier">Unique identifier for the User</param>
+        public User(string identifier)
         {
-            this.Id = id;
+            this.Identifier = identifier;
         }
     }
 }

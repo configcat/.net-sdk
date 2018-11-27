@@ -1,6 +1,6 @@
-﻿using ConfigCat.Client;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using ConfigCat.Client;
 
 namespace ConsoleApp
 {
@@ -18,20 +18,22 @@ namespace ConsoleApp
                 .Create();
 
             // create a user object to identify the caller
-            ConfigCat.Client.Evaluate.User user = new ConfigCat.Client.Evaluate.User("2605ED59-D7D0-4D84-9CDF-5E37B971DD03")
+            User user = new User("2605ED59-D7D0-4D84-9CDF-5E37B971DD03")
             {
                 Country = "US",
                 Email = "myUser@example.com",
-                Custom = new Dictionary<string, string>
+                Custom =
                 {
                     { "SubscriptionType", "Pro"},
-                    { "Role", "Admin"},
-
+                    { "Role", "Admin"}
                 }
             };
 
-            // current project's setting key name is 'keyBool'            
+            // get setting value - 'keyBool'           
             var myNewFeatureEnabled = client.GetValue("keyBool", false, user);
+
+            Console.WriteLine("'keyBool': {0}", myNewFeatureEnabled);
+            Console.WriteLine();
 
             // is my new feature enabled?
             if (myNewFeatureEnabled)
@@ -46,7 +48,7 @@ namespace ConsoleApp
             Console.WriteLine();
             Console.WriteLine("'mySettingNotExists' value from ConfigCat: {0}", mySettingNotExists);
             
-            Console.WriteLine("\n\nPress any key(s) to exit...");
+            Console.WriteLine("\n\n\nPress any key(s) to exit...");
             Console.ReadKey();            
         }      
     }

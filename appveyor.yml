@@ -25,7 +25,7 @@ before_test:
  - ps: choco install codecov --no-progress
 test_script:
  - ps: . .\set-debug-type.ps1 src\ConfigCatClient\ConfigCatClient.csproj
- - OpenCover.Console.exe -register:user -target:dotnet.exe -targetargs:"test src\ConfigCat.Client.Tests\ConfigCat.Client.Tests.csproj -c Release" -output:src/coverage.xml -filter:"+[*]ConfigCat.Client.* -[ConfigCatClientTests]*"
+ - OpenCover.Console.exe -register:user -target:dotnet.exe -targetargs:"test src\ConfigCat.Client.Tests\ConfigCat.Client.Tests.csproj -c Release" -output:src/coverage.xml -filter:"+[*]ConfigCat.Client.* -[ConfigCatClientTests]*" -oldstyle
 after_test:
  - codecov -f 'src/coverage.xml'
 artifacts:

@@ -36,11 +36,7 @@ Version 1.0.4
     <FileVersion>0.1.0.0</FileVersion>    
     <NeutralLanguage></NeutralLanguage>
     <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\ConfigCatClient.xml</DocumentationFile>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net45|AnyCPU'">
     <DebugType>portable</DebugType>
-    <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   
   <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">

@@ -24,6 +24,8 @@ namespace ConfigCat.Client
 
         public override bool Equals(object obj)
         {
+            if (obj == null) return false;
+
             return this.Equals((ProjectConfig)obj);
         }
 

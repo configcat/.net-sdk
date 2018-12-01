@@ -119,6 +119,4 @@ namespace ConfigCat.Client.Tests
             };
         }
     }
-
-    internal class ConfigCatClientConfigurationStub : ConfigurationBase { }
 }

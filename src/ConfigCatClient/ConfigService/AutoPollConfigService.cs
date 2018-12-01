@@ -20,9 +20,31 @@ namespace ConfigCat.Client.ConfigService
             IConfigCache configCache,
             TimeSpan pollingInterval,
             TimeSpan maxInitWaitTime,
-            ILoggerFactory loggerFactory) : base(configFetcher, configCache, loggerFactory.GetLogger(nameof(AutoPollConfigService)))
+            ILoggerFactory loggerFactory) : this(configFetcher, configCache, pollingInterval, maxInitWaitTime, loggerFactory, true)
         {
-            this.timer = new Timer(RefreshLogic, "auto", TimeSpan.Zero, pollingInterval);
+        }
+
+        /// <summary>
+        /// For test purpose only
+        /// </summary>
+        /// <param name="configFetcher"></param>
+        /// <param name="configCache"></param>
+        /// <param name="pollingInterval"></param>
+        /// <param name="maxInitWaitTime"></param>
+        /// <param name="loggerFactory"></param>
+        /// <param name="startTimer"></param>
+        internal AutoPollConfigService(
+            IConfigFetcher configFetcher,
+            IConfigCache configCache,
+            TimeSpan pollingInterval,
+            TimeSpan maxInitWaitTime,
+            ILoggerFactory loggerFactory,
+            bool startTimer) : base(configFetcher, configCache, loggerFactory.GetLogger(nameof(AutoPollConfigService)))
+        {
+            if (startTimer)
+            {
+                this.timer = new Timer(RefreshLogic, "auto", TimeSpan.Zero, pollingInterval);
+            }
 
             this.maxInitWaitExpire = DateTime.UtcNow.Add(maxInitWaitTime);
         }
@@ -39,7 +61,7 @@ namespace ConfigCat.Client.ConfigService
 
             if (d > TimeSpan.Zero)
             {
-                Task.Run(() => RefreshLogic(null)).Wait(d);
+                Task.Run(() => RefreshLogic("init")).Wait(d);
             }
 
             return Task.FromResult(this.configCache.Get());
@@ -52,7 +74,7 @@ namespace ConfigCat.Client.ConfigService
 
         private async Task RefreshLogicAsync(object sender)
         {
-            this.log.Debug($"RefreshLogic '{0}' start");
+            this.log.Debug($"RefreshLogic start [{sender}]");
 
             var latestConfig = this.configCache.Get();
 

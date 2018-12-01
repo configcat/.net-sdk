@@ -39,6 +39,19 @@ namespace ConfigCat.Client.Tests
             new ConfigCatClient(clientConfiguration);
         }
 
+        [ExpectedException(typeof(ArgumentOutOfRangeException))]
+        [TestMethod]
+        public void CreateAnInstance_WhenAutoPollConfigurationPollIntervalsZero_ShouldThrowArgumentOutOfRangeException()
+        {
+            var clientConfiguration = new AutoPollConfiguration
+            {
+                ApiKey = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf",
+                PollIntervalSeconds = 0
+            };
+
+            new ConfigCatClient(clientConfiguration);
+        }
+
         [ExpectedException(typeof(ArgumentException))]
         [TestMethod]
         public void CreateAnInstance_WhenConfigurationApiKeyIsEmpty_ShouldThrowArgumentNullException()

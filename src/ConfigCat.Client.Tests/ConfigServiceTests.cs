@@ -137,7 +137,7 @@ namespace ConfigCat.Client.Tests
             this.fetcherMock.VerifyAll();
             this.cacheMock.VerifyAll();
         }
-        
+
         [TestMethod]
         public async Task AutoPollConfigService_GetConfigAsync_WithoutTimer_ShouldInvokeFetchAndCacheSetAndCacheGet2x()
         {
@@ -156,7 +156,7 @@ namespace ConfigCat.Client.Tests
             this.cacheMock
                 .Setup(m => m.Set(fetchedPc))
                 .Callback(() => localPc = fetchedPc);
-                
+
             var service = new AutoPollConfigService(
                 fetcherMock.Object,
                 cacheMock.Object,
@@ -173,14 +173,14 @@ namespace ConfigCat.Client.Tests
 
             this.cacheMock.Verify(m => m.Get(), Times.Exactly(2));
             this.cacheMock.Verify(m => m.Set(fetchedPc), Times.Once);
-            this.fetcherMock.Verify(m => m.Fetch(cachedPc), Times.Once);            
+            this.fetcherMock.Verify(m => m.Fetch(cachedPc), Times.Once);
         }
 
         [TestMethod]
         public async Task AutoPollConfigService_GetConfigAsync_WithTimer_ShouldInvokeFetchAndCacheSetAndCacheGet2x()
         {
             // Arrange            
-            
+
             var wd = new ManualResetEventSlim(false);
 
             this.cacheMock
@@ -214,6 +214,143 @@ namespace ConfigCat.Client.Tests
             this.cacheMock.Verify(m => m.Get(), Times.Exactly(2));
             this.cacheMock.Verify(m => m.Set(fetchedPc), Times.Once);
             this.fetcherMock.Verify(m => m.Fetch(cachedPc), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task AutoPollConfigService_RefreshConfigAsync_ShouldNotInvokeCacheGetAndFetchAndCacheSet()
+        {
+            // Arrange
+
+            this.cacheMock
+                .Setup(m => m.Get())
+                .Returns(cachedPc);
+
+            this.fetcherMock
+                .Setup(m => m.Fetch(cachedPc))
+                .Returns(Task.FromResult(fetchedPc));
+
+            this.cacheMock
+                .Setup(m => m.Set(fetchedPc));
+
+            var service = new AutoPollConfigService(
+                fetcherMock.Object,
+                cacheMock.Object,
+                TimeSpan.FromMinutes(1),
+                TimeSpan.Zero,
+                logFactoryMock.Object,
+                false);
+
+            // Act
+
+            await service.RefreshConfigAsync();
+
+            // Assert
+
+            this.cacheMock.Verify(m => m.Get(), Times.Once);
+            this.cacheMock.Verify(m => m.Set(fetchedPc), Times.Once);
+            this.fetcherMock.Verify(m => m.Fetch(cachedPc), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task AutoPollConfigService_RefreshConfigAsync_ConfigCahged_ShouldRaiseEvent()
+        {
+            // Arrange
+
+            byte eventChanged = 0;
+
+            this.cacheMock
+                .Setup(m => m.Get())
+                .Returns(cachedPc);
+
+            this.fetcherMock
+                .Setup(m => m.Fetch(cachedPc))
+                .Returns(Task.FromResult(fetchedPc));
+
+            this.cacheMock
+                .Setup(m => m.Set(fetchedPc));
+
+            var service = new AutoPollConfigService(
+                fetcherMock.Object,
+                cacheMock.Object,
+                TimeSpan.FromMinutes(1),
+                TimeSpan.Zero,
+                logFactoryMock.Object,
+                false);
+
+            service.OnConfigurationChanged += (o, s) => { eventChanged++; };
+
+            // Act
+
+            await service.RefreshConfigAsync();
+
+            // Assert
+
+            Assert.AreEqual(1, eventChanged);
+
+        }
+
+        [TestMethod]
+        public async Task ManualPollConfigService_GetConfigAsync_ShouldInvokeCacheGet()
+        {
+            // Arrange
+
+            this.cacheMock
+                .Setup(m => m.Get())
+                .Returns(cachedPc);
+
+            var service = new ManualPollConfigService(
+                fetcherMock.Object,
+                cacheMock.Object,
+                logFactoryMock.Object);
+
+            // Act
+
+            var projectConfig = await service.GetConfigAsync();
+
+            // Assert
+
+            Assert.AreEqual(cachedPc, projectConfig);
+
+            this.cacheMock.Verify(m => m.Get(), Times.Once);
+            this.fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Never);
+            this.cacheMock.Verify(m => m.Set(It.IsAny<ProjectConfig>()), Times.Never);
+        }
+
+        [TestMethod]
+        public async Task ManualPollConfigService_RefreshConfigAsync_ShouldInvokeCacheGet()
+        {
+            // Arrange
+
+            byte callOrder = 1;
+
+            this.cacheMock
+                .Setup(m => m.Get())
+                .Returns(cachedPc)
+                .Callback(() => Assert.AreEqual(1, callOrder++));
+
+            this.fetcherMock
+                .Setup(m => m.Fetch(cachedPc))
+                .Returns(Task.FromResult(fetchedPc))
+                .Callback(() => Assert.AreEqual(2, callOrder++));
+
+            this.cacheMock
+                .Setup(m => m.Set(fetchedPc))
+                .Callback(() => Assert.AreEqual(3, callOrder++));
+
+            var service = new ManualPollConfigService(
+                fetcherMock.Object,
+                cacheMock.Object,
+                logFactoryMock.Object);
+
+            // Act
+
+            await service.RefreshConfigAsync();
+
+            // Assert
+
+            this.cacheMock.Verify(m => m.Get(), Times.Once);
+            this.fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Once);
+            this.cacheMock.Verify(m => m.Set(It.IsAny<ProjectConfig>()), Times.Once);
         }
     }
 }

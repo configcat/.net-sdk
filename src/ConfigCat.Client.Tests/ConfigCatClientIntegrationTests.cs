@@ -11,7 +11,9 @@ namespace ConfigCat.Client.Tests
     [TestClass]
     public class ConfigCatClientIntegrationTests
     {
-        private static IConfigCatClient client = new ConfigCatClient("PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A");
+        private const string APIKEY = "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A";
+
+        private static IConfigCatClient client = new ConfigCatClient(APIKEY);
 
         [TestMethod]
         public async Task GetValue_MatrixTests()
@@ -53,6 +55,48 @@ namespace ConfigCat.Client.Tests
 
                 Assert.AreEqual(expected, actual, $"keyName: {keyName} | userId: {user?.Identifier}");
             }
+        }
+
+        [TestMethod]
+        public void ManualPollGetValue()
+        {
+            IConfigCatClient manualPollClient = ConfigCatClientBuilder
+                .Initialize(APIKEY)
+                .WithManualPoll()
+                .Create();
+
+            manualPollClient.ForceRefresh();
+
+            GetValueAndAssert(manualPollClient, "stringDefaultCat", "N/A", "Cat");
+        }
+
+        [TestMethod]
+        public async Task ManualPollGetValueAsync()
+        {
+            IConfigCatClient manualPollClient = ConfigCatClientBuilder
+                .Initialize(APIKEY)
+                .WithManualPoll()
+                .Create();
+
+            await manualPollClient.ForceRefreshAsync();
+
+            await GetValueAsyncAndAssert(manualPollClient, "stringDefaultCat", "N/A", "Cat");
+        }
+
+        private static void GetValueAndAssert(IConfigCatClient client, string key, string defaultValue, string expectedValue)
+        {
+            var actual = client.GetValue(key, defaultValue);
+
+            Assert.AreEqual(expectedValue, actual);
+            Assert.AreNotEqual(defaultValue, actual);
+        }
+
+        private static async Task GetValueAsyncAndAssert(IConfigCatClient client, string key, string defaultValue, string expectedValue)
+        {
+            var actual = await client.GetValueAsync(key, defaultValue);
+
+            Assert.AreEqual(expectedValue, actual);
+            Assert.AreNotEqual(defaultValue, actual);
         }
     }
 }

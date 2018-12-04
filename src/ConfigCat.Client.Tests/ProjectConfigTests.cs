@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using ConfigCat.Client.ConfigService;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ConfigCat.Client.Tests
 {
+
     [TestClass]
     public class ProjectConfigTests
     {

@@ -110,7 +110,17 @@ namespace ConfigCat.Client
                 configuration.LoggerFactory);
 
             this.configService = configService;
-        }       
+        }
+
+        /// <summary>
+        /// For test purpose only
+        /// </summary>        
+        internal ConfigCatClient(IConfigService configService, ILogger logger, IRolloutEvaluator evaluator)
+        {
+            this.configService = configService;
+            this.log = logger;
+            this.configEvaluator = evaluator;
+        }
 
         private void InitializeClient(ConfigurationBase configuration)
         {

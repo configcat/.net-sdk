@@ -71,16 +71,67 @@ namespace ConfigCat.Client.Tests
         }
 
         [TestMethod]
+        public void AutoPollGetValue()
+        {
+            IConfigCatClient client = ConfigCatClientBuilder
+                .Initialize(APIKEY)
+                .WithAutoPoll()
+                .WithMaxInitWaitTimeSeconds(30)
+                .WithPollIntervalSeconds(600)
+                .Create();
+            
+            GetValueAndAssert(client, "stringDefaultCat", "N/A", "Cat");
+        }
+
+        [TestMethod]
+        public void LazyLoadGetValue()
+        {
+            IConfigCatClient client = ConfigCatClientBuilder
+                .Initialize(APIKEY)
+                .WithLazyLoad()
+                .WithCacheTimeToLiveSeconds(30)
+                .Create();
+
+            GetValueAndAssert(client, "stringDefaultCat", "N/A", "Cat");
+        }
+
+
+        [TestMethod]
         public async Task ManualPollGetValueAsync()
         {
-            IConfigCatClient manualPollClient = ConfigCatClientBuilder
+            IConfigCatClient client = ConfigCatClientBuilder
                 .Initialize(APIKEY)
                 .WithManualPoll()
                 .Create();
 
-            await manualPollClient.ForceRefreshAsync();
+            await client.ForceRefreshAsync();
 
-            await GetValueAsyncAndAssert(manualPollClient, "stringDefaultCat", "N/A", "Cat");
+            await GetValueAsyncAndAssert(client, "stringDefaultCat", "N/A", "Cat");
+        }
+
+        [TestMethod]
+        public async Task AutoPollGetValueAsync()
+        {
+            IConfigCatClient client = ConfigCatClientBuilder
+                .Initialize(APIKEY)
+                .WithAutoPoll()
+                .WithMaxInitWaitTimeSeconds(30)
+                .WithPollIntervalSeconds(600)
+                .Create();
+
+            await GetValueAsyncAndAssert(client, "stringDefaultCat", "N/A", "Cat");
+        }
+
+        [TestMethod]
+        public async Task LazyLoadGetValueAsync()
+        {
+            IConfigCatClient client = ConfigCatClientBuilder
+                .Initialize(APIKEY)
+                .WithLazyLoad()
+                .WithCacheTimeToLiveSeconds(30)
+                .Create();
+
+            await GetValueAsyncAndAssert(client, "stringDefaultCat", "N/A", "Cat");
         }
 
         private static void GetValueAndAssert(IConfigCatClient client, string key, string defaultValue, string expectedValue)

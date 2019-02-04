@@ -1,3 +1,5 @@
+# DONT MERGE
+
 # ConfigCat SDK for .NET
 
 ConfigCat SDK for .NET provides easy integration between ConfigCat service and applications using .NET.

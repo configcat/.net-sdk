@@ -22,7 +22,7 @@ using ConfigCat.Client;
 ```
 
 ### 3. Go to <a href="https://app.configcat.com/connect" target="_blank">Connect your application</a> tab to get your *API Key*:
-![API-KEY](https://raw.githubusercontent.com/ConfigCat/python-sdk/master/media/readme01.png  "API-KEY")
+![API-KEY](https://raw.githubusercontent.com/ConfigCat/.net-sdk/master/media/readme01.png  "API-KEY")
 
 ### 4. Create a **ConfigCat** client instance:
 ```c#

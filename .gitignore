@@ -289,3 +289,4 @@ __pycache__/
 
 # Custom
 coverage.xml
+.DS_Store

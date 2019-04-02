@@ -1,9 +1,9 @@
 # ConfigCat SDK for .NET
-
-ConfigCat SDK for .NET provides easy integration between ConfigCat service and applications using .NET.
-
-ConfigCat is a feature flag, feature toggle, and configuration management service. That lets you launch new features and change your software configuration remotely without actually (re)deploying code. ConfigCat even helps you do controlled roll-outs like canary releases and blue-green deployments.
 https://configcat.com  
+
+ConfigCat SDK for .NET provides easy integration for your application to ConfigCat.
+
+ConfigCat is a feature flag and configuration management service that lets you separate releases from deployments. You can turn your features ON/OFF using <a href="http://app.configcat.com" target="_blank">ConfigCat Management Console</a> even after they are deployed. ConfigCat lets you target specific groups of users based on region, email or any other custom user attribute.
 
 [![Build status](https://ci.appveyor.com/api/projects/status/3kygp783vc2uv9xr?svg=true)](https://ci.appveyor.com/project/ConfigCat/net-sdk) [![NuGet Version](https://buildstats.info/nuget/ConfigCat.Client)](https://www.nuget.org/packages/ConfigCat.Client/)
 [![codecov](https://codecov.io/gh/configcat/.net-sdk/branch/master/graph/badge.svg)](https://codecov.io/gh/configcat/.net-sdk)
@@ -21,8 +21,8 @@ Install-Package ConfigCat.Client
 using ConfigCat.Client;
 ```
 
-### 3. <a href="https://configcat.com/Account/Login" target="_blank">Log in to ConfigCat Management Console</a> and go to your *Project* to get your *API Key*
-![ApiKey](https://raw.githubusercontent.com/ConfigCat/.net-sdk/master/media/readme01.png  "ApiKey")
+### 3. Go to <a href="https://app.configcat.com/connect" target="_blank">Connect your application</a> tab to get your *API Key*:
+![API-KEY](https://raw.githubusercontent.com/ConfigCat/python-sdk/master/media/readme01.png  "API-KEY")
 
 ### 4. Create a **ConfigCat** client instance:
 ```c#

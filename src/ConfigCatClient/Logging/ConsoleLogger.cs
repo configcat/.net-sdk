@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ConfigCat.Client.Logging
+namespace ConfigCat.Client
 {
     /// <summary>
     /// Write log messages into <see cref="Console"/>

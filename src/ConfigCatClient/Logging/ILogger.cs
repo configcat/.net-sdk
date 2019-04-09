@@ -1,4 +1,4 @@
-﻿namespace ConfigCat.Client.Logging
+﻿namespace ConfigCat.Client
 {
     /// <summary>
     /// Provides logging interface

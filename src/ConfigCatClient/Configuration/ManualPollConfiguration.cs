@@ -1,4 +1,4 @@
-﻿namespace ConfigCat.Client.Configuration
+﻿namespace ConfigCat.Client
 {
     /// <summary>
     /// ManualPoll configuration settings object for <see cref="ConfigCatClient"/>

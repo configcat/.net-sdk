@@ -1,6 +1,6 @@
 ﻿using System.Threading;
 
-namespace ConfigCat.Client.Cache
+namespace ConfigCat.Client
 {
     internal class InMemoryConfigCache : IConfigCache
     {

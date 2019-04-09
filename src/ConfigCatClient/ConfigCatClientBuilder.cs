@@ -1,6 +1,4 @@
-﻿using ConfigCat.Client.Configuration;
-
-namespace ConfigCat.Client
+﻿namespace ConfigCat.Client
 {
     /// <summary>
     /// Configuration settings object for <see cref="ConfigCatClient"/>

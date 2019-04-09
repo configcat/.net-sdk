@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using ConfigCat.Client.Cache;
-using ConfigCat.Client.Logging;
 
 namespace ConfigCat.Client.ConfigService
 {

@@ -1,4 +1,4 @@
-﻿namespace ConfigCat.Client.Configuration
+﻿namespace ConfigCat.Client
 {
     /// <summary>
     /// Base configuration builder

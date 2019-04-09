@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using ConfigCat.Client.Evaluate;
-using ConfigCat.Client.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ConfigCat.Client.Tests

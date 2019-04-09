@@ -1,7 +1,6 @@
 ﻿using System;
-using ConfigCat.Client.Logging;
 
-namespace ConfigCat.Client.Configuration
+namespace ConfigCat.Client
 {
     /// <summary>
     /// Defines base configuration properties

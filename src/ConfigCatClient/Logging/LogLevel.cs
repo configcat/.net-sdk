@@ -1,4 +1,4 @@
-﻿namespace ConfigCat.Client.Logging
+﻿namespace ConfigCat.Client
 {
     /// <summary>
     /// Specifies message's filtering to output for the <see cref="ILogger"/> class.

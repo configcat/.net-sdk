@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ConfigCat.Client.Configuration
+namespace ConfigCat.Client
 {
     /// <summary>
     /// LazyLoad configuration settings object for <see cref="ConfigCatClient"/>

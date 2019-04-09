@@ -1,7 +1,5 @@
-﻿using System;
-using System.Globalization;
+﻿using System.Globalization;
 using System.Threading.Tasks;
-using ConfigCat.Client.Evaluate;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 

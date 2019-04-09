@@ -1,4 +1,4 @@
-﻿namespace ConfigCat.Client.Cache
+﻿namespace ConfigCat.Client
 {
     /// <summary>
     /// Defines cache

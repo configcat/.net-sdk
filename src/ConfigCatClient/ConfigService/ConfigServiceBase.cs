@@ -1,7 +1,4 @@
-﻿using ConfigCat.Client.Cache;
-using ConfigCat.Client.Logging;
-
-namespace ConfigCat.Client.ConfigService
+﻿namespace ConfigCat.Client.ConfigService
 {
     internal abstract class ConfigServiceBase
     {

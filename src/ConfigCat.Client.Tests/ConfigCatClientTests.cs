@@ -1,10 +1,8 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using ConfigCat.Client.Configuration;
 using ConfigCat.Client.Evaluate;
 using Moq;
 using ConfigCat.Client.ConfigService;
-using ConfigCat.Client.Logging;
 using System.Threading.Tasks;
 
 namespace ConfigCat.Client.Tests

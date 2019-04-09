@@ -1,5 +1,4 @@
-﻿using ConfigCat.Client.Evaluate;
-using System;
+﻿using System;
 using System.Threading.Tasks;
 
 namespace ConfigCat.Client

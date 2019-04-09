@@ -1,5 +1,4 @@
-﻿using ConfigCat.Client.Logging;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ConfigCat.Client.Tests
 {

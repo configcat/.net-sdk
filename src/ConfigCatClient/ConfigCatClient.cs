@@ -1,11 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using System.Reflection;
-using Newtonsoft.Json.Linq;
-using ConfigCat.Client.Logging;
 using ConfigCat.Client.ConfigService;
-using ConfigCat.Client.Cache;
-using ConfigCat.Client.Configuration;
 using ConfigCat.Client.Evaluate;
 
 namespace ConfigCat.Client

@@ -1,4 +1,4 @@
-﻿namespace ConfigCat.Client.Configuration
+﻿namespace ConfigCat.Client
 {
     /// <summary>
     /// Configuration builder for LazyLoad mode

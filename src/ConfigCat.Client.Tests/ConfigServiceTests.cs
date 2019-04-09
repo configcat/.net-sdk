@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using ConfigCat.Client.Cache;
 using ConfigCat.Client.ConfigService;
-using ConfigCat.Client.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 

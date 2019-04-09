@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>        
     <TargetFrameworks>net45;netstandard1.3;netstandard2.0</TargetFrameworks>
@@ -15,7 +15,9 @@
     <PackageProjectUrl>https://github.com/ConfigCat/.net-sdk</PackageProjectUrl>    
     <RepositoryUrl>https://github.com/ConfigCat/.net-sdk</RepositoryUrl>    
     <RepositoryType>git</RepositoryType>    
-    <PackageReleaseNotes>Version 2.1.0
+    <PackageReleaseNotes>Version 2.2.0
+     * Namespace clarification
+Version 2.1.0
      * Rollout handling v2
 Version 2.0.1
      * Bugfix

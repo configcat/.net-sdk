@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ConfigCat.Client.Logging
+namespace ConfigCat.Client
 {
     /// <summary>
     /// Provides the abstract base class for the Logger

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ConfigCat.Client.Configuration
+namespace ConfigCat.Client
 {
     /// <summary>
     /// Represents the method that will handle an OnConfigurationChangedEvent with <see cref="OnConfigurationChangedEventArgs"/> arguments

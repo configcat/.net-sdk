@@ -16,7 +16,7 @@
     <RepositoryUrl>https://github.com/ConfigCat/.net-sdk</RepositoryUrl>    
     <RepositoryType>git</RepositoryType>    
     <PackageReleaseNotes>Version 2.2.0
-     * Namespace clarification
+     * Namespace unification
 Version 2.1.0
      * Rollout handling v2
 Version 2.0.1

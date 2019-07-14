@@ -24,7 +24,7 @@ namespace ConfigCat.Client
 
         private bool TargetLogEnabled(LogLevel targetTrace)
         {
-            return (byte)this.logLevel >= (byte)logLevel;
+            return (byte)targetTrace >= (byte)this.logLevel;
         }
 
         /// <summary>

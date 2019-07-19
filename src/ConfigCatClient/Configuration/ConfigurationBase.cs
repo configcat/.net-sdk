@@ -7,10 +7,6 @@ namespace ConfigCat.Client
     /// </summary>
     public abstract class ConfigurationBase
     {
-        private string apiKey;
-
-        internal Uri Url { get; private set; }       
-
         /// <summary>
         /// Factory method of <c>ILogger</c>
         /// </summary>
@@ -19,19 +15,17 @@ namespace ConfigCat.Client
         /// <summary>
         /// Api key to get your configuration
         /// </summary>
-        public string ApiKey
-        {
-            set
-            {
-                this.apiKey = value;
+        public string ApiKey { set; get; }
 
-                this.Url = CreateUrl(value);
-            }
-            get
-            {
-                return this.apiKey;
-            }
-        }
+        /// <summary>
+        /// If you want to use custom caching instead of the client's default InMemoryConfigCache, You can provide an implementation of IConfigCache.
+        /// </summary>
+        public IConfigCache ConfigCache { get; set; }
+
+        /// <summary>
+        /// You can set a BaseUrl if you want to use a proxy server between your application and ConfigCat
+        /// </summary>
+        public Uri BaseUrl { get; set; } = new Uri("https://cdn.configcat.com");
 
         internal virtual void Validate()
         {
@@ -46,9 +40,9 @@ namespace ConfigCat.Client
             }
         }
 
-        private static Uri CreateUrl(string apiKey)
+        internal Uri CreateUrl()
         {
-            return new Uri("https://cdn.configcat.com/configuration-files/" + apiKey + "/config_v2.json");
+            return new Uri(BaseUrl, "configuration-files/" + this.ApiKey + "/config_v2.json");
         }
     }
 }

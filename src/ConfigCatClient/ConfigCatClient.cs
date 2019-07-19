@@ -46,8 +46,8 @@ namespace ConfigCat.Client
             InitializeClient(configuration);
 
             var configService = new AutoPollConfigService(
-                    new HttpConfigFetcher(configuration.Url, "a-" + version, configuration.LoggerFactory),
-                    new InMemoryConfigCache(),
+                    new HttpConfigFetcher(configuration.CreateUrl(), "a-" + version, configuration.LoggerFactory),
+                    configuration.ConfigCache ?? new InMemoryConfigCache(),
                     TimeSpan.FromSeconds(configuration.PollIntervalSeconds),
                     TimeSpan.FromSeconds(configuration.MaxInitWaitTimeSeconds),
                     configuration.LoggerFactory);
@@ -75,8 +75,8 @@ namespace ConfigCat.Client
             InitializeClient(configuration);
 
             var configService = new LazyLoadConfigService(
-                new HttpConfigFetcher(configuration.Url, "l-" + version, configuration.LoggerFactory),
-                new InMemoryConfigCache(),
+                new HttpConfigFetcher(configuration.CreateUrl(), "l-" + version, configuration.LoggerFactory),
+                configuration.ConfigCache ?? new InMemoryConfigCache(),
                 configuration.LoggerFactory,
                 TimeSpan.FromSeconds(configuration.CacheTimeToLiveSeconds));
 
@@ -101,8 +101,8 @@ namespace ConfigCat.Client
             InitializeClient(configuration);
 
             var configService = new ManualPollConfigService(
-                new HttpConfigFetcher(configuration.Url, "m-" + version, configuration.LoggerFactory),
-                new InMemoryConfigCache(),
+                new HttpConfigFetcher(configuration.CreateUrl(), "m-" + version, configuration.LoggerFactory),
+                configuration.ConfigCache ?? new InMemoryConfigCache(),
                 configuration.LoggerFactory);
 
             this.configService = configService;

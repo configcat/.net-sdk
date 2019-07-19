@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace ConfigCat.Client
 {
-    internal struct ProjectConfig : IEquatable<ProjectConfig>
+    public struct ProjectConfig : IEquatable<ProjectConfig>
     {
         public readonly static ProjectConfig Empty = new ProjectConfig(null, DateTime.MinValue, null);
 

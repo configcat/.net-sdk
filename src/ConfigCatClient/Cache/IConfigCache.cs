@@ -3,7 +3,7 @@
     /// <summary>
     /// Defines cache
     /// </summary>
-    internal interface IConfigCache
+    public interface IConfigCache
     {
         /// <summary>
         /// Set a <see cref="ProjectConfig"/> into cache

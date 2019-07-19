@@ -14,7 +14,7 @@ namespace ConfigCat.Client.Tests
         Mock<IConfigService> configService = new Mock<IConfigService>();
         Mock<ILogger> loggerMock = new Mock<ILogger>();
         Mock<IRolloutEvaluator> evaluateMock = new Mock<IRolloutEvaluator>();
-
+        
         [TestInitialize]
         public void TestInitialize()
         {

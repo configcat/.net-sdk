@@ -5,19 +5,19 @@ namespace ConfigCat.Client
 {
     public struct ProjectConfig : IEquatable<ProjectConfig>
     {
-        public readonly static ProjectConfig Empty = new ProjectConfig(null, DateTime.MinValue, null);
+        public static readonly ProjectConfig Empty = new ProjectConfig(null, DateTime.MinValue, null);
 
         public string JsonString { get; set; }
 
-        public DateTime TimeStamp { get; set; }        
+        public DateTime TimeStamp { get; set; }
 
-        public string HttpETag {get; set;}
-        
+        public string HttpETag { get; set; }
+
         internal ProjectConfig(string jsonString, DateTime timeStamp, string httpETag)
         {
             this.JsonString = jsonString;
 
-            this.TimeStamp = timeStamp;            
+            this.TimeStamp = timeStamp;
 
             this.HttpETag = httpETag;
         }
@@ -38,7 +38,7 @@ namespace ConfigCat.Client
         {
             var hashCode = 1098790081;
             hashCode = hashCode * -1521134295 + base.GetHashCode();
-            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(JsonString);            
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(JsonString);
             hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(HttpETag);
 
             return hashCode;

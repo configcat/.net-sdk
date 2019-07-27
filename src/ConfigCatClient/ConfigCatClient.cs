@@ -1,8 +1,9 @@
-﻿using System;
-using System.Threading.Tasks;
-using System.Reflection;
-using ConfigCat.Client.ConfigService;
+﻿using ConfigCat.Client.ConfigService;
 using ConfigCat.Client.Evaluate;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Threading.Tasks;
 
 namespace ConfigCat.Client
 {
@@ -15,7 +16,9 @@ namespace ConfigCat.Client
 
         private IRolloutEvaluator configEvaluator;
 
-        private readonly IConfigService configService;       
+        private readonly IConfigService configService;
+
+        private readonly IConfigDeserializer configDeserializer;
 
         private static readonly string version = typeof(ConfigCatClient).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
 
@@ -35,16 +38,8 @@ namespace ConfigCat.Client
         /// <exception cref="ArgumentException">When the configuration contains any invalid property</exception>
         /// <exception cref="ArgumentNullException">When the configuration is null</exception>                
         public ConfigCatClient(AutoPollConfiguration configuration)
+            : this((ConfigurationBase)configuration)
         {
-            if (configuration == null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
-
-            configuration.Validate();
-
-            InitializeClient(configuration);
-
             var configService = new AutoPollConfigService(
                     new HttpConfigFetcher(configuration.CreateUrl(), "a-" + version, configuration.LoggerFactory),
                     configuration.ConfigCache ?? new InMemoryConfigCache(),
@@ -64,16 +59,8 @@ namespace ConfigCat.Client
         /// <exception cref="ArgumentException">When the configuration contains any invalid property</exception>
         /// <exception cref="ArgumentNullException">When the configuration is null</exception>  
         public ConfigCatClient(LazyLoadConfiguration configuration)
+            : this((ConfigurationBase)configuration)
         {
-            if (configuration == null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
-
-            configuration.Validate();
-
-            InitializeClient(configuration);
-
             var configService = new LazyLoadConfigService(
                 new HttpConfigFetcher(configuration.CreateUrl(), "l-" + version, configuration.LoggerFactory),
                 configuration.ConfigCache ?? new InMemoryConfigCache(),
@@ -90,16 +77,8 @@ namespace ConfigCat.Client
         /// <exception cref="ArgumentException">When the configuration contains any invalid property</exception>
         /// <exception cref="ArgumentNullException">When the configuration is null</exception>  
         public ConfigCatClient(ManualPollConfiguration configuration)
+            : this((ConfigurationBase)configuration)
         {
-            if (configuration == null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
-
-            configuration.Validate();
-
-            InitializeClient(configuration);
-
             var configService = new ManualPollConfigService(
                 new HttpConfigFetcher(configuration.CreateUrl(), "m-" + version, configuration.LoggerFactory),
                 configuration.ConfigCache ?? new InMemoryConfigCache(),
@@ -108,23 +87,31 @@ namespace ConfigCat.Client
             this.configService = configService;
         }
 
+        internal ConfigCatClient(ConfigurationBase configuration)
+        {
+            if (configuration == null)
+            {
+                throw new ArgumentNullException(nameof(configuration));
+            }
+
+            configuration.Validate();
+
+            this.log = configuration.LoggerFactory.GetLogger(nameof(ConfigCatClient));
+            this.configDeserializer = new ConfigDeserializer(this.log);
+            this.configEvaluator = new RolloutEvaluator(this.log, this.configDeserializer);
+        }
+
         /// <summary>
         /// For test purpose only
         /// </summary>        
-        internal ConfigCatClient(IConfigService configService, ILogger logger, IRolloutEvaluator evaluator)
+        internal ConfigCatClient(IConfigService configService, ILogger logger, IRolloutEvaluator evaluator, IConfigDeserializer configDeserializer)
         {
             this.configService = configService;
             this.log = logger;
             this.configEvaluator = evaluator;
+            this.configDeserializer = configDeserializer;
         }
 
-        private void InitializeClient(ConfigurationBase configuration)
-        {
-            this.log = configuration.LoggerFactory.GetLogger(nameof(ConfigCatClient));
-
-            this.configEvaluator = new RolloutEvaluator(this.log);
-        }
-        
         /// <inheritdoc />
         public T GetValue<T>(string key, T defaultValue, User user = null)
         {
@@ -132,11 +119,11 @@ namespace ConfigCat.Client
             {
                 var c = this.configService.GetConfigAsync().Result;
 
-                return this.configEvaluator.Evaluate<T>(c, key, defaultValue, user);                
+                return this.configEvaluator.Evaluate<T>(c, key, defaultValue, user);
             }
             catch (Exception ex)
             {
-                this.log.Error($"Error occured in 'GetValue' method.\n{ex.ToString()}");
+                this.log.Error($"Error occured in 'GetValue' method.\n{ex}");
 
                 return defaultValue;
             }
@@ -153,12 +140,44 @@ namespace ConfigCat.Client
             }
             catch (Exception ex)
             {
-                this.log.Error($"Error occured in 'GetValueAsync' method.\n{ex.ToString()}");
+                this.log.Error($"Error occured in 'GetValueAsync' method.\n{ex}");
 
                 return defaultValue;
             }
         }
-        
+
+        /// <inheritdoc />
+        public IEnumerable<string> GetAllKeys()
+        {
+            try
+            {
+                return this.GetAllKeysAsync().Result;
+            }
+            catch (Exception ex)
+            {
+                this.log.Error($"Error occured in 'GetAllKeys' method.\n{ex}");
+                return new string[0];
+            }
+        }
+
+        /// <inheritdoc />
+        public async Task<IEnumerable<string>> GetAllKeysAsync()
+        {
+            try
+            {
+                var c = await this.configService.GetConfigAsync().ConfigureAwait(false);
+                if (this.configDeserializer.TryDeserialize(c, out var settings)) return settings.Keys;
+
+                this.log.Warning("Config deserialization failed.");
+                return new string[0];
+            }
+            catch (Exception ex)
+            {
+                this.log.Error($"Error occured in 'GetAllKeysAsync' method.\n{ex}");
+                return new string[0];
+            }
+        }
+
         /// <inheritdoc />
         public void ForceRefresh()
         {

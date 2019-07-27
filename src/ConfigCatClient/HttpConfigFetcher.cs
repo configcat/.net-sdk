@@ -55,7 +55,7 @@ namespace ConfigCat.Client
                 {
                     newConfig.HttpETag = response.Headers.ETag.Tag;
 
-                    newConfig.JsonString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);                    
+                    newConfig.JsonString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                 }
                 else
                 {
@@ -66,7 +66,7 @@ namespace ConfigCat.Client
             }
             catch (Exception ex)
             {
-                this.log.Error($"Error occured in 'Fetch' method.\n{ex.ToString()}");
+                this.log.Error($"Error occured in 'Fetch' method.\n{ex}");
 
                 this.ReInitializeHttpClient();
             }

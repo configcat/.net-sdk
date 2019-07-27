@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace ConfigCat.Client
@@ -29,6 +30,18 @@ namespace ConfigCat.Client
         Task<T> GetValueAsync<T>(string key, T defaultValue, User user = null);
 
         /// <summary>
+        /// Returns a collection with all the keys.
+        /// </summary>
+        /// <returns>The key collection.</returns>
+        IEnumerable<string> GetAllKeys();
+
+        /// <summary>
+        /// Returns a collection with all the keys asynchronously.
+        /// </summary>
+        /// <returns>The key collection.</returns>
+        Task<IEnumerable<string>> GetAllKeysAsync();
+
+        /// <summary>
         /// Refresh the configuration
         /// </summary>
         void ForceRefresh();
@@ -37,5 +50,5 @@ namespace ConfigCat.Client
         /// Refresh the configuration
         /// </summary>
         Task ForceRefreshAsync();
-    }    
+    }
 }

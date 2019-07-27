@@ -1,6 +1,7 @@
-﻿using System.Globalization;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 
 namespace ConfigCat.Client.Tests
@@ -77,7 +78,7 @@ namespace ConfigCat.Client.Tests
                 .WithMaxInitWaitTimeSeconds(30)
                 .WithPollIntervalSeconds(600)
                 .Create();
-            
+
             GetValueAndAssert(client, "stringDefaultCat", "N/A", "Cat");
         }
 
@@ -130,6 +131,21 @@ namespace ConfigCat.Client.Tests
                 .Create();
 
             await GetValueAsyncAndAssert(client, "stringDefaultCat", "N/A", "Cat");
+        }
+
+        [TestMethod]
+        public void GetAllKeys()
+        {
+            IConfigCatClient manualPollClient = ConfigCatClientBuilder
+                .Initialize(APIKEY)
+                .WithManualPoll()
+                .Create();
+
+            manualPollClient.ForceRefresh();
+            var keys = manualPollClient.GetAllKeys().ToArray();
+
+            Assert.AreEqual(16, keys.Count());
+            Assert.IsTrue(keys.Contains("stringDefaultCat"));
         }
 
         private static void GetValueAndAssert(IConfigCatClient client, string key, string defaultValue, string expectedValue)

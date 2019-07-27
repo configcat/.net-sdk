@@ -7,7 +7,7 @@
     <SignAssembly>true</SignAssembly>
     <DelaySign>false</DelaySign>
     <AssemblyOriginatorKeyFile>strongname.snk</AssemblyOriginatorKeyFile>    
-    <Version>2.3.0</Version>    
+    <Version>2.4.0</Version>    
     <Copyright>Copyright © ConfigCat 2018</Copyright>    
     <Company>ConfigCat</Company>    
     <Authors>ConfigCat</Authors>    
@@ -15,7 +15,12 @@
     <PackageProjectUrl>https://github.com/ConfigCat/.net-sdk</PackageProjectUrl>    
     <RepositoryUrl>https://github.com/ConfigCat/.net-sdk</RepositoryUrl>    
     <RepositoryType>git</RepositoryType>    
-    <PackageReleaseNotes>Version 2.3.0
+    <PackageReleaseNotes>Version 2.4.0
+     * Add GetAllKeys() function
+Version 2.3.0
+     * BaseUrl override oppurtunity
+     * IConfigCache override oppurtunity
+Version 2.3.0
      * BaseUrl override oppurtunity
      * IConfigCache override oppurtunity
 Version 2.2.1

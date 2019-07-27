@@ -1,8 +1,8 @@
-﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using ConfigCat.Client.ConfigService;
 using ConfigCat.Client.Evaluate;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
-using ConfigCat.Client.ConfigService;
+using System;
 using System.Threading.Tasks;
 
 namespace ConfigCat.Client.Tests
@@ -14,13 +14,15 @@ namespace ConfigCat.Client.Tests
         Mock<IConfigService> configService = new Mock<IConfigService>();
         Mock<ILogger> loggerMock = new Mock<ILogger>();
         Mock<IRolloutEvaluator> evaluateMock = new Mock<IRolloutEvaluator>();
-        
+        Mock<IConfigDeserializer> deserializerMock = new Mock<IConfigDeserializer>();
+
         [TestInitialize]
         public void TestInitialize()
         {
             configService.Reset();
             loggerMock.Reset();
             evaluateMock.Reset();
+            deserializerMock.Reset();
         }
 
         [ExpectedException(typeof(ArgumentException))]
@@ -117,7 +119,7 @@ namespace ConfigCat.Client.Tests
 
             new ConfigCatClient(clientConfiguration);
         }
-               
+
         [ExpectedException(typeof(ArgumentNullException))]
         [TestMethod]
         public void CreateAnInstance_WhenLoggerFactoryIsNull_ShouldThrowArgumentNullException()
@@ -130,8 +132,8 @@ namespace ConfigCat.Client.Tests
 
             new ConfigCatClient(clientConfiguration);
 
-        }        
-        
+        }
+
         [TestMethod]
         public void CreateAnInstance_WithValidConfiguration_ShouldCreateAnInstance()
         {
@@ -149,8 +151,8 @@ namespace ConfigCat.Client.Tests
             string apiKey = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf";
 
             new ConfigCatClient(apiKey);
-        }        
-        
+        }
+
         [TestMethod]
         public void CreateConfigurationBuilderInstance_ShouldCreateAnInstance()
         {
@@ -170,7 +172,7 @@ namespace ConfigCat.Client.Tests
                 .Setup(m => m.GetConfigAsync())
                 .Throws<Exception>();
 
-            var client = new ConfigCatClient(configService.Object, loggerMock.Object, evaluateMock.Object);
+            var client = new ConfigCatClient(configService.Object, loggerMock.Object, evaluateMock.Object, deserializerMock.Object);
 
             // Act
 
@@ -192,7 +194,7 @@ namespace ConfigCat.Client.Tests
                 .Setup(m => m.GetConfigAsync())
                 .Throws<Exception>();
 
-            var client = new ConfigCatClient(configService.Object, loggerMock.Object, evaluateMock.Object);
+            var client = new ConfigCatClient(configService.Object, loggerMock.Object, evaluateMock.Object, deserializerMock.Object);
 
             // Act
 
@@ -214,7 +216,7 @@ namespace ConfigCat.Client.Tests
                 .Setup(m => m.Evaluate(It.IsAny<ProjectConfig>(), It.IsAny<string>(), defaultValue, null))
                 .Throws<Exception>();
 
-            var client = new ConfigCatClient(configService.Object, loggerMock.Object, evaluateMock.Object);
+            var client = new ConfigCatClient(configService.Object, loggerMock.Object, evaluateMock.Object, deserializerMock.Object);
 
             // Act
 
@@ -236,7 +238,7 @@ namespace ConfigCat.Client.Tests
                 .Setup(m => m.Evaluate(It.IsAny<ProjectConfig>(), It.IsAny<string>(), defaultValue, null))
                 .Throws<Exception>();
 
-            var client = new ConfigCatClient(configService.Object, loggerMock.Object, evaluateMock.Object);
+            var client = new ConfigCatClient(configService.Object, loggerMock.Object, evaluateMock.Object, deserializerMock.Object);
 
             // Act
 

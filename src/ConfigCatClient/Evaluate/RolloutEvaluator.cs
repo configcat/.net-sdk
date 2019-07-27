@@ -1,37 +1,34 @@
-﻿using System;
-using System.Linq;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using System.Globalization;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Globalization;
 
 namespace ConfigCat.Client.Evaluate
 {
     internal class RolloutEvaluator : IRolloutEvaluator
     {
-        private ILogger log;
+        private readonly ILogger log;
+        private readonly IConfigDeserializer configDeserializer;
 
-        public RolloutEvaluator(ILogger logger)
+        public RolloutEvaluator(ILogger logger, IConfigDeserializer configDeserializer)
         {
             this.log = logger;
+            this.configDeserializer = configDeserializer;
         }
 
         public T Evaluate<T>(ProjectConfig projectConfig, string key, T defaultValue, User user = null)
         {
-            if (projectConfig.JsonString == null)
+            if (!this.configDeserializer.TryDeserialize(projectConfig, out var settings))
             {
-                this.log.Warning("ConfigJson is not present, returning defaultValue");
+                this.log.Warning("Config deserialization failed, returning defaultValue");
 
                 return defaultValue;
             }
 
-            var json = (JObject)JsonConvert.DeserializeObject(projectConfig.JsonString);
-
-            var setting = (Setting)json.GetValue(key)?.ToObject(typeof(Setting));
-
-            if (setting == null)
+            if (!settings.TryGetValue(key, out var setting))
             {
                 this.log.Warning($"Unknown key: '{key}'");
 
@@ -78,7 +75,7 @@ namespace ConfigCat.Client.Evaluate
 
                 foreach (var variation in rolloutPercentageItems.OrderBy(o => o.Order))
                 {
-                    bucket += variation.Percentage;                    
+                    bucket += variation.Percentage;
 
                     if (hashScale < bucket)
                     {

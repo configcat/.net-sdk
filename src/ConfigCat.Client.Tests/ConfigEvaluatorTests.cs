@@ -1,11 +1,11 @@
-﻿using System;
+﻿using ConfigCat.Client.Evaluate;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using ConfigCat.Client.Evaluate;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ConfigCat.Client.Tests
 {
@@ -14,15 +14,22 @@ namespace ConfigCat.Client.Tests
     {
         private static Lazy<string> sampleData = new Lazy<string>(GetSampleV2Json, true);
 
-        private IRolloutEvaluator configEvaluator = new RolloutEvaluator(new NullLogger());
+        private ILogger logger = new NullLogger();
 
-        private ProjectConfig config = new ProjectConfig(sampleData.Value, DateTime.UtcNow, null);
+        private readonly ProjectConfig config = new ProjectConfig(sampleData.Value, DateTime.UtcNow, null);
+
+        private readonly IRolloutEvaluator configEvaluator;
 
         public TestContext TestContext { get; set; }
 
+        public ConfigEvaluatorTests()
+        {
+            this.configEvaluator = new RolloutEvaluator(logger, new ConfigDeserializer(logger));
+        }
+
         [TestMethod]
         public void GetValue_WithSimpleKey_ShouldReturnCat()
-        {            
+        {
             string actual = configEvaluator.Evaluate(config, "stringDefaultCat", string.Empty);
 
             Assert.AreNotEqual(string.Empty, actual);
@@ -33,7 +40,7 @@ namespace ConfigCat.Client.Tests
         public void GetValue_WithNonExistingKey_ShouldReturnDefaultValue()
         {
             string actual = configEvaluator.Evaluate(config, "NotExistsKey", "NotExistsValue");
-            
+
             Assert.AreEqual("NotExistsValue", actual);
         }
 
@@ -41,7 +48,7 @@ namespace ConfigCat.Client.Tests
         public void GetValue_WithEmptyProjectConfig_ShouldReturnDefaultValue()
         {
             string actual = configEvaluator.Evaluate(ProjectConfig.Empty, "stringDefaultCat", "Default");
-            
+
             Assert.AreEqual("Default", actual);
         }
 
@@ -79,7 +86,7 @@ namespace ConfigCat.Client.Tests
         {
             await MatrixTest(AssertValue);
         }
-        
+
         public static async Task MatrixTest(Action<string, string, User> assertation)
         {
             using (Stream stream = File.OpenRead("testmatrix.csv"))
@@ -160,5 +167,5 @@ namespace ConfigCat.Client.Tests
         }
     }
 
-    
+
 }

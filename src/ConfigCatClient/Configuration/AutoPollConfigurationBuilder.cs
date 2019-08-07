@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net.Http;
 
 namespace ConfigCat.Client
 {
@@ -45,6 +46,16 @@ namespace ConfigCat.Client
         public AutoPollConfigurationBuilder WithBaseUrl(Uri baseUrl)
         {
             this.configuration.BaseUrl = baseUrl;
+
+            return this;
+        }
+
+        /// <summary>
+        /// HttpClientHandler to provide network credentials and proxy settings
+        /// </summary>
+        public AutoPollConfigurationBuilder WithHttpClientHandler(HttpClientHandler httpClientHandler)
+        {
+            this.configuration.HttpClientHandler = httpClientHandler;
 
             return this;
         }

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace ConfigCat.Client
 {
-    internal sealed class HttpConfigFetcher : IConfigFetcher
+    internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
     {
         private readonly object lck = new object();
 
@@ -86,20 +86,24 @@ namespace ConfigCat.Client
             {
                 if (this.httpClientHandler == null)
                 {
-                    this.httpClient = new HttpClient()
-                    {
-                        Timeout = TimeSpan.FromSeconds(30)
-                    };
+                    this.httpClient = new HttpClient();
                 }
                 else
                 {
-                    this.httpClient = new HttpClient(this.httpClientHandler)
-                    {
-                        Timeout = TimeSpan.FromSeconds(30)
-                    };
+                    this.httpClient = new HttpClient(this.httpClientHandler, false);                   
                 }
 
+                this.httpClient.Timeout = TimeSpan.FromSeconds(30);
+
                 this.httpClient.DefaultRequestHeaders.Add("X-ConfigCat-UserAgent", new ProductInfoHeaderValue("ConfigCat-Dotnet", productVersion).ToString());
+            }
+        }
+
+        public void Dispose()
+        {
+            if (httpClient != null)
+            {
+                httpClient.Dispose();
             }
         }
     }

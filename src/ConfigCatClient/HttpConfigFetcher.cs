@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace ConfigCat.Client
 {
-    internal sealed class HttpConfigFetcher : IConfigFetcher
+    internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
     {
         private readonly object lck = new object();
 
@@ -13,17 +13,21 @@ namespace ConfigCat.Client
 
         private readonly ILogger log;
 
+        private readonly HttpClientHandler httpClientHandler;
+
         private HttpClient httpClient;
 
         private readonly Uri requestUri;
-
-        public HttpConfigFetcher(Uri requestUri, string productVersion, ILoggerFactory loggerFactory)
+               
+        public HttpConfigFetcher(Uri requestUri, string productVersion, ILoggerFactory loggerFactory, HttpClientHandler httpClientHandler)
         {
             this.requestUri = requestUri;
 
             this.productVersion = productVersion;
 
             this.log = loggerFactory.GetLogger(nameof(HttpConfigFetcher));
+
+            this.httpClientHandler = httpClientHandler;
 
             ReInitializeHttpClient();
         }
@@ -80,12 +84,26 @@ namespace ConfigCat.Client
         {
             lock (this.lck)
             {
-                this.httpClient = new HttpClient
+                if (this.httpClientHandler == null)
                 {
-                    Timeout = TimeSpan.FromSeconds(30)
-                };
+                    this.httpClient = new HttpClient();
+                }
+                else
+                {
+                    this.httpClient = new HttpClient(this.httpClientHandler, false);                   
+                }
+
+                this.httpClient.Timeout = TimeSpan.FromSeconds(30);
 
                 this.httpClient.DefaultRequestHeaders.Add("X-ConfigCat-UserAgent", new ProductInfoHeaderValue("ConfigCat-Dotnet", productVersion).ToString());
+            }
+        }
+
+        public void Dispose()
+        {
+            if (httpClient != null)
+            {
+                httpClient.Dispose();
             }
         }
     }

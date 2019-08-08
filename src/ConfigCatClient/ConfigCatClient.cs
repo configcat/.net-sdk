@@ -2,6 +2,7 @@
 using ConfigCat.Client.Evaluate;
 using System;
 using System.Collections.Generic;
+using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -36,16 +37,16 @@ namespace ConfigCat.Client
         /// </summary>
         /// <param name="configuration">Configuration for AutoPolling mode</param>
         /// <exception cref="ArgumentException">When the configuration contains any invalid property</exception>
-        /// <exception cref="ArgumentNullException">When the configuration is null</exception>                
+        /// <exception cref="ArgumentNullException">When the configuration is null</exception>
         public ConfigCatClient(AutoPollConfiguration configuration)
             : this((ConfigurationBase)configuration)
         {
             var configService = new AutoPollConfigService(
-                    new HttpConfigFetcher(configuration.CreateUrl(), "a-" + version, configuration.LoggerFactory),
-                    configuration.ConfigCache ?? new InMemoryConfigCache(),
-                    TimeSpan.FromSeconds(configuration.PollIntervalSeconds),
-                    TimeSpan.FromSeconds(configuration.MaxInitWaitTimeSeconds),
-                    configuration.LoggerFactory);
+                   new HttpConfigFetcher(configuration.CreateUrl(), "a-" + version, configuration.LoggerFactory, configuration.HttpClientHandler),
+                   configuration.ConfigCache ?? new InMemoryConfigCache(),
+                   TimeSpan.FromSeconds(configuration.PollIntervalSeconds),
+                   TimeSpan.FromSeconds(configuration.MaxInitWaitTimeSeconds),
+                   configuration.LoggerFactory);
 
             configService.OnConfigurationChanged += configuration.RaiseOnConfigurationChanged;
 
@@ -57,15 +58,15 @@ namespace ConfigCat.Client
         /// </summary>
         /// <param name="configuration">Configuration for LazyLoading mode</param>
         /// <exception cref="ArgumentException">When the configuration contains any invalid property</exception>
-        /// <exception cref="ArgumentNullException">When the configuration is null</exception>  
+        /// <exception cref="ArgumentNullException">When the configuration is null</exception>
         public ConfigCatClient(LazyLoadConfiguration configuration)
             : this((ConfigurationBase)configuration)
         {
             var configService = new LazyLoadConfigService(
-                new HttpConfigFetcher(configuration.CreateUrl(), "l-" + version, configuration.LoggerFactory),
-                configuration.ConfigCache ?? new InMemoryConfigCache(),
-                configuration.LoggerFactory,
-                TimeSpan.FromSeconds(configuration.CacheTimeToLiveSeconds));
+               new HttpConfigFetcher(configuration.CreateUrl(), "l-" + version, configuration.LoggerFactory, configuration.HttpClientHandler),
+               configuration.ConfigCache ?? new InMemoryConfigCache(),
+               configuration.LoggerFactory,
+               TimeSpan.FromSeconds(configuration.CacheTimeToLiveSeconds));
 
             this.configService = configService;
         }
@@ -75,19 +76,19 @@ namespace ConfigCat.Client
         /// </summary>
         /// <param name="configuration">Configuration for LazyLoading mode</param>
         /// <exception cref="ArgumentException">When the configuration contains any invalid property</exception>
-        /// <exception cref="ArgumentNullException">When the configuration is null</exception>  
+        /// <exception cref="ArgumentNullException">When the configuration is null</exception>
         public ConfigCatClient(ManualPollConfiguration configuration)
             : this((ConfigurationBase)configuration)
         {
             var configService = new ManualPollConfigService(
-                new HttpConfigFetcher(configuration.CreateUrl(), "m-" + version, configuration.LoggerFactory),
+                new HttpConfigFetcher(configuration.CreateUrl(), "m-" + version, configuration.LoggerFactory, configuration.HttpClientHandler),
                 configuration.ConfigCache ?? new InMemoryConfigCache(),
                 configuration.LoggerFactory);
 
             this.configService = configService;
         }
 
-        internal ConfigCatClient(ConfigurationBase configuration)
+        private ConfigCatClient(ConfigurationBase configuration)
         {
             if (configuration == null)
             {

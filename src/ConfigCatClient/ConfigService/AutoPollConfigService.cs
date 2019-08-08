@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace ConfigCat.Client.ConfigService
 {
-    internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService, IDisposable
+    internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
     {
         private readonly DateTime maxInitWaitExpire;
 
@@ -45,11 +45,12 @@ namespace ConfigCat.Client.ConfigService
 
             this.maxInitWaitExpire = DateTime.UtcNow.Add(maxInitWaitTime);
         }
-
-        /// <inheritdoc />
-        public void Dispose()
+                
+        protected override void Dispose(bool disposing)
         {
             this.timer?.Dispose();
+
+            base.Dispose(disposing);            
         }
 
         public Task<ProjectConfig> GetConfigAsync()

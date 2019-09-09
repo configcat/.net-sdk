@@ -94,7 +94,6 @@ namespace ConfigCat.Client.Tests
             GetValueAndAssert(client, "stringDefaultCat", "N/A", "Cat");
         }
 
-
         [TestMethod]
         public async Task ManualPollGetValueAsync()
         {

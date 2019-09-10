@@ -4,6 +4,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using System;
 using System.Threading.Tasks;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace ConfigCat.Client.Tests
 {
@@ -250,16 +252,98 @@ namespace ConfigCat.Client.Tests
         }
 
         [TestMethod]
-        public void CreateUser()
+        public void GetAllKeys_ConfigServiceThrowException_ShouldReturnsWithEmptyArray()
         {
-            var u = new User("sw")
-            {
-                Country = "US",
-                Custom =
-                {
-                    { "key", "value"}
-                }
-            };
+            // Arrange
+
+            var configServiceMock = new Mock<IConfigService>();
+            var loggerMock = new Mock<ILogger>();
+            var evaluatorMock = new Mock<IRolloutEvaluator>();
+            var configDeserializerMock = new Mock<IConfigDeserializer>();
+
+            configServiceMock.Setup(m => m.GetConfigAsync()).Throws<Exception>();
+
+            IConfigCatClient instance = new ConfigCatClient(
+                configServiceMock.Object,
+                loggerMock.Object,
+                evaluatorMock.Object,
+                configDeserializerMock.Object);
+
+            // Act
+
+            var actualKeys = instance.GetAllKeys();
+
+            // Assert
+
+            Assert.IsNotNull(actualKeys);
+            Assert.AreEqual(0, actualKeys.Count());
+            loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
+        }
+
+        [TestMethod]
+        public void GetAllKeys_DeserializerThrowException_ShouldReturnsWithEmptyArray()
+        {
+            // Arrange
+
+            var configServiceMock = new Mock<IConfigService>();
+            var loggerMock = new Mock<ILogger>();
+            var evaluatorMock = new Mock<IRolloutEvaluator>();
+            var configDeserializerMock = new Mock<IConfigDeserializer>();
+
+            configServiceMock.Setup(m => m.GetConfigAsync()).ReturnsAsync(ProjectConfig.Empty);
+            IDictionary<string, Setting> o = new Dictionary<string, Setting>();
+            configDeserializerMock
+                .Setup(m => m.TryDeserialize(It.IsAny<ProjectConfig>(), out o))
+                .Throws<Exception>();
+
+            IConfigCatClient instance = new ConfigCatClient(
+                configServiceMock.Object,
+                loggerMock.Object,
+                evaluatorMock.Object,
+                configDeserializerMock.Object);
+
+            // Act
+
+            var actualKeys = instance.GetAllKeys();
+
+            // Assert
+
+            Assert.IsNotNull(actualKeys);
+            Assert.AreEqual(0, actualKeys.Count());
+            loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
+        }
+
+        [TestMethod]
+        public void GetAllKeys_DeserializeFailed_ShouldReturnsWithEmptyArray()
+        {
+            // Arrange
+
+            var configServiceMock = new Mock<IConfigService>();
+            var loggerMock = new Mock<ILogger>();
+            var evaluatorMock = new Mock<IRolloutEvaluator>();
+            var configDeserializerMock = new Mock<IConfigDeserializer>();
+
+            configServiceMock.Setup(m => m.GetConfigAsync()).ReturnsAsync(ProjectConfig.Empty);
+            IDictionary<string, Setting> o = new Dictionary<string, Setting>();
+            configDeserializerMock
+                .Setup(m => m.TryDeserialize(It.IsAny<ProjectConfig>(), out o))
+                .Returns(false);
+
+            IConfigCatClient instance = new ConfigCatClient(
+                configServiceMock.Object,
+                loggerMock.Object,
+                evaluatorMock.Object,
+                configDeserializerMock.Object);
+
+            // Act
+
+            var actualKeys = instance.GetAllKeys();
+
+            // Assert
+
+            Assert.IsNotNull(actualKeys);
+            Assert.AreEqual(0, actualKeys.Count());
+            loggerMock.Verify(m => m.Warning(It.IsAny<string>()), Times.Once);
         }
     }
 }

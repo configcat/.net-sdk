@@ -350,6 +350,67 @@ namespace ConfigCat.Client.Tests
             this.fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Once);
             this.cacheMock.Verify(m => m.Set(It.IsAny<ProjectConfig>()), Times.Once);
         }
+
+        [TestMethod]
+        public void ConfigService_InvokeDisposeManyTimes_ShouldInvokeFetcherDisposeExactlyOnce()
+        {
+            // Arrange
+
+            var configFetcherMock = new Mock<IConfigFetcher>();
+            configFetcherMock
+                .Setup(m => m.Fetch(It.IsAny<ProjectConfig>()))
+                .Returns(Task.FromResult(ProjectConfig.Empty));
+
+            var configFetcherMockDispose = configFetcherMock.As<IDisposable>();
+
+            configFetcherMockDispose.Setup(m => m.Dispose());
+
+            var configServiceMock = new Mock<ConfigServiceBase>(
+                MockBehavior.Loose,
+                configFetcherMock.Object,
+                new InMemoryConfigCache(),
+                new NullLogger())
+            {
+                CallBase = true
+            };
+
+            var configService = configServiceMock.Object as IDisposable;
+
+            // Act
+
+            configService.Dispose();
+            configService.Dispose();
+
+            // Assert
+
+            configFetcherMockDispose.Verify(m => m.Dispose(), Times.Once);
+        }
+
+        [TestMethod]
+        public void ConfigService_WithNonDisposableConfigFetcher_DisposeShouldWork()
+        {
+            // Arrange
+
+            var configFetcherMock = new Mock<IConfigFetcher>();
+            configFetcherMock
+                .Setup(m => m.Fetch(It.IsAny<ProjectConfig>()))
+                .Returns(Task.FromResult(ProjectConfig.Empty));
+
+            var configServiceMock = new Mock<ConfigServiceBase>(
+                MockBehavior.Loose,
+                configFetcherMock.Object,
+                new InMemoryConfigCache(),
+                new NullLogger())
+            {
+                CallBase = true
+            };
+
+            var configService = configServiceMock.Object as IDisposable;
+
+            // Act
+
+            configService.Dispose();
+        }       
     }
 }
 

@@ -1,5 +1,12 @@
 # ConfigCat SDK for .NET
-https://configcat.com  
+
+### Supported frameworks:
+- .NET Core
+- .NET Framework
+- Xamarin
+- .NET Standard
+
+https://configcat.com
 
 ConfigCat SDK for .NET provides easy integration for your application to ConfigCat.
 

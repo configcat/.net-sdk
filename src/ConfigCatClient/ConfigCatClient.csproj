@@ -43,8 +43,9 @@ Version 1.0.5
      * Implement tracing, add clear cache ability to client
 Version 1.0.4
      * Initial release</PackageReleaseNotes>    
-    <PackageTags>configcat config configuration remoteconfiguration configcatclient featureflags featuretoggle featureswitch canaryrelease softlaunch releasestrategy</PackageTags>    
-    <Description>ConfigCat is a configuration as a service that lets you manage your features and configurations without actually deploying new code.</Description>    
+    <PackageTags>configcat configcatclient  "feature flag" featureflag  "feature flags" featureflags "feature toggle" featuretoggle featureswitch canaryrelease softlaunch releasestrategy segmentation configuration config "remote config"</PackageTags>    
+    <Description>Feature Flags created by developers for developers with ❤️. ConfigCat lets you manage feature flags across frontend, backend, mobile, and desktop apps without (re)deploying code. % rollouts, user targeting, segmentation. Feature toggle SDKs for all main languages. Alternative to LaunchDarkly. Host yourself, or use the hosted management app at https://configcat.com.
+</Description>    
     <PackageIconUrl>https://raw.githubusercontent.com/ConfigCat/.net-sdk/master/media/icon-64x64.png</PackageIconUrl>    
     <AssemblyVersion>0.1.0.0</AssemblyVersion>    
     <FileVersion>0.1.0.0</FileVersion>    

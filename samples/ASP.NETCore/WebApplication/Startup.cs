@@ -4,7 +4,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 using ConfigCat.Client;
-using ConfigCat.Client.Configuration;
 
 namespace WebApplication
 {

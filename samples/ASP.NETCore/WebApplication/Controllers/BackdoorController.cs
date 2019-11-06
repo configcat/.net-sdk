@@ -22,9 +22,11 @@ namespace WebApplication.Controllers
         // GET: api/backdoor/configcatchanged
         [HttpGet]
         [Route("configcatchanged")]
-        public void ConfigCatChanged()
+        public IActionResult ConfigCatChanged()
         {
             this.configCatClient.ForceRefresh();
+
+            return this.Ok("configCatClient.ForceRefresh() invoked");
         }
     }
 }

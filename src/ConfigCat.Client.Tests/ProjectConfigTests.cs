@@ -62,7 +62,7 @@ namespace ConfigCat.Client.Tests
             Assert.IsFalse(set.Add(pc1));
             Assert.IsFalse(set.Add(pc2));
             Assert.IsFalse(set.Add(pc3));
-            Assert.AreEqual(pc1.GetHashCode(), pc2.GetHashCode());
+            Assert.AreEqual(pc1.GetHashCode(), pc2.GetHashCode());            
         }
     }
 }

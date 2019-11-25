@@ -19,13 +19,13 @@ namespace ConfigCat.Client
 
         private readonly Uri requestUri;
                
-        public HttpConfigFetcher(Uri requestUri, string productVersion, ILoggerFactory loggerFactory, HttpClientHandler httpClientHandler)
+        public HttpConfigFetcher(Uri requestUri, string productVersion, ILogger logger, HttpClientHandler httpClientHandler)
         {
             this.requestUri = requestUri;
 
             this.productVersion = productVersion;
 
-            this.log = loggerFactory.GetLogger(nameof(HttpConfigFetcher));
+            this.log = logger;
 
             this.httpClientHandler = httpClientHandler;
 
@@ -61,10 +61,14 @@ namespace ConfigCat.Client
 
                     newConfig.JsonString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                 }
+                else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    newConfig = lastConfig;
+
+                    this.log.Error("Double-check your API KEY at https://app.configcat.com/apikey");
+                }
                 else
                 {
-                    this.log.Warning("Unexpected statuscode - " + response.StatusCode);
-
                     this.ReInitializeHttpClient();
                 }
             }
@@ -86,7 +90,10 @@ namespace ConfigCat.Client
             {
                 if (this.httpClientHandler == null)
                 {
-                    this.httpClient = new HttpClient();
+                    this.httpClient = new HttpClient(new HttpClientHandler
+                    {
+                        AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate
+                    });
                 }
                 else
                 {
@@ -107,4 +114,6 @@ namespace ConfigCat.Client
             }
         }
     }
+
+    internal sealed class WrapClientHandler : DelegatingHandler { }
 }

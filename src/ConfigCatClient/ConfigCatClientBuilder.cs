@@ -6,6 +6,7 @@
     public class ConfigCatClientBuilder
     {
         internal string ApiKey { get; private set; }
+        internal ILogger Logger { get; private set; } = new ConsoleLogger();
 
         /// <summary>
         /// Create a <see cref="ConfigCatClientBuilder"/> instance with <paramref name="apiKey"/>
@@ -41,6 +42,18 @@
         public LazyLoadConfigurationBuilder WithLazyLoad()
         {
             return new LazyLoadConfigurationBuilder(this);
+        }
+
+        /// <summary>
+        /// Set Logger instance
+        /// </summary>
+        /// <param name="logger">Implementation of <c>ILogger</c></param>
+        /// <returns></returns>
+        public ConfigCatClientBuilder WithLogger(ILogger logger)
+        {
+            this.Logger = logger;
+
+            return this;
         }
     }
 }

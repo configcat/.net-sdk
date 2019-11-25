@@ -13,15 +13,28 @@ namespace ConfigCat.Client
     /// </summary>
     public class ConfigCatClient : IConfigCatClient
     {
-        private ILogger log;
+        private readonly ILogger log;
 
-        private IRolloutEvaluator configEvaluator;
+        private readonly IRolloutEvaluator configEvaluator;
 
         private readonly IConfigService configService;
 
         private readonly IConfigDeserializer configDeserializer;
 
         private static readonly string version = typeof(ConfigCatClient).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
+
+        /// <inheritdoc />
+        public LogLevel LogLevel
+        {
+            get
+            {
+                return log.LogLevel;
+            }
+            set
+            {
+                log.LogLevel = value;
+            }
+        }
 
         /// <summary>
         /// Create an instance of ConfigCatClient and setup AutoPoll mode
@@ -42,11 +55,11 @@ namespace ConfigCat.Client
             : this((ConfigurationBase)configuration)
         {
             var configService = new AutoPollConfigService(
-                   new HttpConfigFetcher(configuration.CreateUrl(), "a-" + version, configuration.LoggerFactory, configuration.HttpClientHandler),
+                   new HttpConfigFetcher(configuration.CreateUrl(), "a-" + version, configuration.Logger, configuration.HttpClientHandler),
                    configuration.ConfigCache ?? new InMemoryConfigCache(),
                    TimeSpan.FromSeconds(configuration.PollIntervalSeconds),
                    TimeSpan.FromSeconds(configuration.MaxInitWaitTimeSeconds),
-                   configuration.LoggerFactory);
+                   configuration.Logger);
 
             configService.OnConfigurationChanged += configuration.RaiseOnConfigurationChanged;
 
@@ -63,9 +76,9 @@ namespace ConfigCat.Client
             : this((ConfigurationBase)configuration)
         {
             var configService = new LazyLoadConfigService(
-               new HttpConfigFetcher(configuration.CreateUrl(), "l-" + version, configuration.LoggerFactory, configuration.HttpClientHandler),
+               new HttpConfigFetcher(configuration.CreateUrl(), "l-" + version, configuration.Logger, configuration.HttpClientHandler),
                configuration.ConfigCache ?? new InMemoryConfigCache(),
-               configuration.LoggerFactory,
+               configuration.Logger,
                TimeSpan.FromSeconds(configuration.CacheTimeToLiveSeconds));
 
             this.configService = configService;
@@ -81,9 +94,9 @@ namespace ConfigCat.Client
             : this((ConfigurationBase)configuration)
         {
             var configService = new ManualPollConfigService(
-                new HttpConfigFetcher(configuration.CreateUrl(), "m-" + version, configuration.LoggerFactory, configuration.HttpClientHandler),
+                new HttpConfigFetcher(configuration.CreateUrl(), "m-" + version, configuration.Logger, configuration.HttpClientHandler),
                 configuration.ConfigCache ?? new InMemoryConfigCache(),
-                configuration.LoggerFactory);
+                configuration.Logger);
 
             this.configService = configService;
         }
@@ -97,7 +110,7 @@ namespace ConfigCat.Client
 
             configuration.Validate();
 
-            this.log = configuration.LoggerFactory.GetLogger(nameof(ConfigCatClient));
+            this.log = configuration.Logger;
             this.configDeserializer = new ConfigDeserializer(this.log);
             this.configEvaluator = new RolloutEvaluator(this.log, this.configDeserializer);
         }

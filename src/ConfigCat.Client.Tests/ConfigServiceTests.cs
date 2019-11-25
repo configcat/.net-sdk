@@ -14,7 +14,7 @@ namespace ConfigCat.Client.Tests
 
         Mock<IConfigFetcher> fetcherMock = new Mock<IConfigFetcher>(MockBehavior.Strict);
         Mock<IConfigCache> cacheMock = new Mock<IConfigCache>(MockBehavior.Strict);
-        Mock<ILoggerFactory> logFactoryMock = new Mock<ILoggerFactory>(MockBehavior.Strict);
+        Mock<ILogger> loggerMock = new Mock<ILogger>(MockBehavior.Loose);
 
         ProjectConfig cachedPc = new ProjectConfig("CACHED", DateTime.UtcNow.Add(-defaultExpire), "67890");
         ProjectConfig fetchedPc = new ProjectConfig("FETCHED", DateTime.UtcNow, "12345");
@@ -24,11 +24,6 @@ namespace ConfigCat.Client.Tests
         {
             fetcherMock.Reset();
             cacheMock.Reset();
-            logFactoryMock.Reset();
-
-            logFactoryMock
-                .Setup(m => m.GetLogger(It.IsAny<string>()))
-                .Returns(new NullLogger());
         }
 
         [TestMethod]
@@ -52,7 +47,7 @@ namespace ConfigCat.Client.Tests
             var service = new LazyLoadConfigService(
                 fetcherMock.Object,
                 cacheMock.Object,
-                logFactoryMock.Object,
+                loggerMock.Object,
                 defaultExpire);
 
             // Act
@@ -81,7 +76,7 @@ namespace ConfigCat.Client.Tests
             var service = new LazyLoadConfigService(
                 fetcherMock.Object,
                 cacheMock.Object,
-                logFactoryMock.Object,
+                loggerMock.Object,
                 defaultExpire);
 
             // Act
@@ -123,7 +118,7 @@ namespace ConfigCat.Client.Tests
             var service = new LazyLoadConfigService(
                 fetcherMock.Object,
                 cacheMock.Object,
-                logFactoryMock.Object,
+                loggerMock.Object,
                 defaultExpire);
 
             // Act
@@ -160,7 +155,7 @@ namespace ConfigCat.Client.Tests
                 cacheMock.Object,
                 TimeSpan.FromMinutes(1),
                 TimeSpan.FromMinutes(1),
-                logFactoryMock.Object,
+                loggerMock.Object,
                 false);
 
             // Act            
@@ -198,7 +193,7 @@ namespace ConfigCat.Client.Tests
                 cacheMock.Object,
                 TimeSpan.FromMinutes(1),
                 TimeSpan.Zero,
-                logFactoryMock.Object,
+                loggerMock.Object,
                 true);
 
             // Act            
@@ -235,7 +230,7 @@ namespace ConfigCat.Client.Tests
                 cacheMock.Object,
                 TimeSpan.FromMinutes(1),
                 TimeSpan.Zero,
-                logFactoryMock.Object,
+                loggerMock.Object,
                 false);
 
             // Act
@@ -272,7 +267,7 @@ namespace ConfigCat.Client.Tests
                 cacheMock.Object,
                 TimeSpan.FromMinutes(1),
                 TimeSpan.Zero,
-                logFactoryMock.Object,
+                loggerMock.Object,
                 false);
 
             service.OnConfigurationChanged += (o, s) => { eventChanged++; };
@@ -299,7 +294,7 @@ namespace ConfigCat.Client.Tests
             var service = new ManualPollConfigService(
                 fetcherMock.Object,
                 cacheMock.Object,
-                logFactoryMock.Object);
+                loggerMock.Object);
 
             // Act
 
@@ -338,7 +333,7 @@ namespace ConfigCat.Client.Tests
             var service = new ManualPollConfigService(
                 fetcherMock.Object,
                 cacheMock.Object,
-                logFactoryMock.Object);
+                loggerMock.Object);
 
             // Act
 
@@ -369,7 +364,7 @@ namespace ConfigCat.Client.Tests
                 MockBehavior.Loose,
                 configFetcherMock.Object,
                 new InMemoryConfigCache(),
-                new NullLogger())
+                loggerMock.Object)
             {
                 CallBase = true
             };
@@ -400,7 +395,7 @@ namespace ConfigCat.Client.Tests
                 MockBehavior.Loose,
                 configFetcherMock.Object,
                 new InMemoryConfigCache(),
-                new NullLogger())
+                new MyCounterLogger())
             {
                 CallBase = true
             };

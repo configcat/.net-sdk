@@ -12,7 +12,8 @@
         {
             this.configuration = new T
             {
-                ApiKey = clientBuilder.ApiKey
+                ApiKey = clientBuilder.ApiKey,
+                Logger = clientBuilder.Logger                
             };
         }
     }

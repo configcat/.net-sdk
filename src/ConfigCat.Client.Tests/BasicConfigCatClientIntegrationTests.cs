@@ -8,59 +8,26 @@ namespace ConfigCat.Client.Tests
 {
     [TestCategory("Integration")]
     [TestClass]
-    public class ConfigCatClientIntegrationTests
+    public class BasicConfigCatClientIntegrationTests 
     {
         private const string APIKEY = "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A";
 
-        private static IConfigCatClient client = new ConfigCatClient(APIKEY);
+        private static readonly IConfigCatClient client = new ConfigCatClient(APIKEY);
 
-        [TestMethod]
-        public async Task GetValue_MatrixTests()
-        {
-            await ConfigEvaluatorTests.MatrixTest(AssertValue);
-        }
+        private static readonly ILogger consoleLogger = new ConsoleLogger(LogLevel.Debug);
 
         [ClassCleanup()]
         public static void ClassCleanup()
         {
             client?.Dispose();
-        }
-
-        private void AssertValue(string keyName, string expected, User user)
-        {
-            var k = keyName.ToLowerInvariant();
-
-            if (k.StartsWith("bool"))
-            {
-                var actual = client.GetValue(keyName, false, user);
-
-                Assert.AreEqual(bool.Parse(expected), actual, $"keyName: {keyName} | userId: {user?.Identifier}");
-            }
-            else if (k.StartsWith("double"))
-            {
-                var actual = client.GetValue(keyName, double.NaN, user);
-
-                Assert.AreEqual(double.Parse(expected, CultureInfo.InvariantCulture), actual, $"keyName: {keyName} | userId: {user?.Identifier}");
-            }
-            else if (k.StartsWith("integer"))
-            {
-                var actual = client.GetValue(keyName, int.MaxValue, user);
-
-                Assert.AreEqual(int.Parse(expected), actual, $"keyName: {keyName} | userId: {user?.Identifier}");
-            }
-            else
-            {
-                var actual = client.GetValue(keyName, string.Empty, user);
-
-                Assert.AreEqual(expected, actual, $"keyName: {keyName} | userId: {user?.Identifier}");
-            }
-        }
+        }        
 
         [TestMethod]
         public void ManualPollGetValue()
         {
             IConfigCatClient manualPollClient = ConfigCatClientBuilder
-                .Initialize(APIKEY)
+                .Initialize(APIKEY)                
+                .WithLogger(consoleLogger)
                 .WithManualPoll()
                 .Create();
 
@@ -74,6 +41,7 @@ namespace ConfigCat.Client.Tests
         {
             IConfigCatClient client = ConfigCatClientBuilder
                 .Initialize(APIKEY)
+                .WithLogger(consoleLogger)
                 .WithAutoPoll()
                 .WithMaxInitWaitTimeSeconds(30)
                 .WithPollIntervalSeconds(600)
@@ -87,6 +55,7 @@ namespace ConfigCat.Client.Tests
         {
             IConfigCatClient client = ConfigCatClientBuilder
                 .Initialize(APIKEY)
+                .WithLogger(consoleLogger)
                 .WithLazyLoad()
                 .WithCacheTimeToLiveSeconds(30)
                 .Create();
@@ -99,6 +68,7 @@ namespace ConfigCat.Client.Tests
         {
             IConfigCatClient client = ConfigCatClientBuilder
                 .Initialize(APIKEY)
+                .WithLogger(consoleLogger)
                 .WithManualPoll()
                 .Create();
 
@@ -112,6 +82,7 @@ namespace ConfigCat.Client.Tests
         {
             IConfigCatClient client = ConfigCatClientBuilder
                 .Initialize(APIKEY)
+                .WithLogger(consoleLogger)
                 .WithAutoPoll()
                 .WithMaxInitWaitTimeSeconds(30)
                 .WithPollIntervalSeconds(600)
@@ -125,6 +96,7 @@ namespace ConfigCat.Client.Tests
         {
             IConfigCatClient client = ConfigCatClientBuilder
                 .Initialize(APIKEY)
+                .WithLogger(consoleLogger)
                 .WithLazyLoad()
                 .WithCacheTimeToLiveSeconds(30)
                 .Create();
@@ -137,6 +109,7 @@ namespace ConfigCat.Client.Tests
         {
             IConfigCatClient manualPollClient = ConfigCatClientBuilder
                 .Initialize(APIKEY)
+                .WithLogger(consoleLogger)
                 .WithManualPoll()
                 .Create();
 

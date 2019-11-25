@@ -4,8 +4,8 @@ namespace ConfigCat.Client.ConfigService
 {
     internal sealed class ManualPollConfigService : ConfigServiceBase, IConfigService
     {
-        internal ManualPollConfigService(IConfigFetcher configFetcher, IConfigCache configCache, ILoggerFactory loggerFactory)
-            : base(configFetcher, configCache, loggerFactory.GetLogger(nameof(ManualPollConfigService))) { }
+        internal ManualPollConfigService(IConfigFetcher configFetcher, IConfigCache configCache, ILogger logger)
+            : base(configFetcher, configCache, logger) { }
 
         public Task<ProjectConfig> GetConfigAsync()
         {

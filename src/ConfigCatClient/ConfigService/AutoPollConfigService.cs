@@ -17,7 +17,7 @@ namespace ConfigCat.Client.ConfigService
             IConfigCache configCache,
             TimeSpan pollingInterval,
             TimeSpan maxInitWaitTime,
-            ILoggerFactory loggerFactory) : this(configFetcher, configCache, pollingInterval, maxInitWaitTime, loggerFactory, true)
+            ILogger logger) : this(configFetcher, configCache, pollingInterval, maxInitWaitTime, logger, true)
         {
         }
 
@@ -28,15 +28,15 @@ namespace ConfigCat.Client.ConfigService
         /// <param name="configCache"></param>
         /// <param name="pollingInterval"></param>
         /// <param name="maxInitWaitTime"></param>
-        /// <param name="loggerFactory"></param>
+        /// <param name="logger"></param>
         /// <param name="startTimer"></param>
         internal AutoPollConfigService(
             IConfigFetcher configFetcher,
             IConfigCache configCache,
             TimeSpan pollingInterval,
             TimeSpan maxInitWaitTime,
-            ILoggerFactory loggerFactory,
-            bool startTimer) : base(configFetcher, configCache, loggerFactory.GetLogger(nameof(AutoPollConfigService)))
+            ILogger logger,
+            bool startTimer) : base(configFetcher, configCache, logger)
         {
             if (startTimer)
             {

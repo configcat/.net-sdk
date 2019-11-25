@@ -18,7 +18,7 @@ namespace ConfigCat.Client.Tests
 
             var myHandler = new MyFakeHttpClientHandler();
 
-            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new NullLoggerFactory(), myHandler);
+            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new MyCounterLogger(), myHandler);
 
             // Act
 
@@ -36,7 +36,7 @@ namespace ConfigCat.Client.Tests
 
             var myHandler = new MyFakeHttpClientHandler();
 
-            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new NullLoggerFactory(), myHandler);
+            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new MyCounterLogger(), myHandler);
 
             // Act
 

@@ -124,12 +124,12 @@ namespace ConfigCat.Client.Tests
 
         [ExpectedException(typeof(ArgumentNullException))]
         [TestMethod]
-        public void CreateAnInstance_WhenLoggerFactoryIsNull_ShouldThrowArgumentNullException()
+        public void CreateAnInstance_WhenLoggerIsNull_ShouldThrowArgumentNullException()
         {
             var clientConfiguration = new AutoPollConfiguration
             {
                 ApiKey = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf",
-                LoggerFactory = null
+                Logger = null
             };
 
             new ConfigCatClient(clientConfiguration);

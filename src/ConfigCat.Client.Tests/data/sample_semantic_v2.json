@@ -1,0 +1,217 @@
+{
+  "isOneOf": {
+    "Value": "Default",
+    "SettingType": 1,
+    "RolloutPercentageItems": [],
+    "RolloutRules": [
+      {
+        "Order": 0,
+        "ComparisonAttribute": "Custom1",
+        "Comparator": 4,
+        "ComparisonValue": "1.0.0, 2",
+        "Value": "Is one of (1.0.0, 2)"
+      },
+      {
+        "Order": 1,
+        "ComparisonAttribute": "Custom1",
+        "Comparator": 4,
+        "ComparisonValue": "1.0.0",
+        "Value": "Is one of (1.0.0)"
+      },
+      {
+        "Order": 2,
+        "ComparisonAttribute": "Custom1",
+        "Comparator": 4,
+        "ComparisonValue": "   , 2.0.1, 2.0.2,    ",
+        "Value": "Is one of (   , 2.0.1, 2.0.2,    )"
+      },
+      {
+        "Order": 3,
+        "ComparisonAttribute": "Custom1",
+        "Comparator": 4,
+        "ComparisonValue": "3......",
+        "Value": "Is one of (3......)"
+      },
+      {
+        "Order": 4,
+        "ComparisonAttribute": "Custom1",
+        "Comparator": 4,
+        "ComparisonValue": "3....",
+        "Value": "Is one of (3...)"
+      },
+      {
+        "Order": 5,
+        "ComparisonAttribute": "Custom1",
+        "Comparator": 4,
+        "ComparisonValue": "3..0",
+        "Value": "Is one of (3..0)"
+      },
+      {
+        "Order": 6,
+        "ComparisonAttribute": "Custom1",
+        "Comparator": 4,
+        "ComparisonValue": "3.0",
+        "Value": "Is one of (3.0)"
+      },
+      {
+        "Order": 7,
+        "ComparisonAttribute": "Custom1",
+        "Comparator": 4,
+        "ComparisonValue": "3.0.",
+        "Value": "Is one of (3.0.)"
+      },
+      {
+        "Order": 8,
+        "ComparisonAttribute": "Custom1",
+        "Comparator": 4,
+        "ComparisonValue": "3.0.0",
+        "Value": "Is one of (3.0.0)"
+      }
+    ]
+  },
+  "isOneOfWithPercentage": {
+    "Value": "Default",
+    "SettingType": 1,
+    "RolloutPercentageItems": [
+      {
+        "Order": 0,
+        "Value": "20%",
+        "Percentage": 20
+      },
+      {
+        "Order": 1,
+        "Value": "80%",
+        "Percentage": 80
+      }
+    ],
+    "RolloutRules": [
+      {
+        "Order": 0,
+        "ComparisonAttribute": "Custom1",
+        "Comparator": 4,
+        "ComparisonValue": "1.0.0",
+        "Value": "is one of (1.0.0)"
+      }
+    ]
+  },
+  "isNotOneOf": {
+    "Value": "Default",
+    "SettingType": 1,
+    "RolloutPercentageItems": [],
+    "RolloutRules": [
+      {
+        "Order": 0,
+        "ComparisonAttribute": "Custom1",
+        "Comparator": 5,
+        "ComparisonValue": "1.0.0, 1.0.1, 2.0.0   , 2.0.1, 2.0.2,    ",
+        "Value": "Is not one of (1.0.0, 1.0.1, 2.0.0   , 2.0.1, 2.0.2,    )"
+      },
+      {
+        "Order": 1,
+        "ComparisonAttribute": "Custom1",
+        "Comparator": 5,
+        "ComparisonValue": "1.0.0, 3.0.1",
+        "Value": "Is not one of (1.0.0, 3.0.1)"
+      }
+    ]
+  },
+  "isNotOneOfWithPercentage": {
+    "Value": "Default",
+    "SettingType": 1,
+    "RolloutPercentageItems": [
+      {
+        "Order": 0,
+        "Value": "20%",
+        "Percentage": 20
+      },
+      {
+        "Order": 1,
+        "Value": "80%",
+        "Percentage": 80
+      }
+    ],
+    "RolloutRules": [
+      {
+        "Order": 0,
+        "ComparisonAttribute": "Custom1",
+        "Comparator": 5,
+        "ComparisonValue": "1.0.0, 1.0.1, 2.0.0   , 2.0.1, 2.0.2,    ",
+        "Value": "Is not one of (1.0.0, 1.0.1, 2.0.0   , 2.0.1, 2.0.2,    )"
+      },
+      {
+        "Order": 1,
+        "ComparisonAttribute": "Custom1",
+        "Comparator": 5,
+        "ComparisonValue": "1.0.0, 3.0.1",
+        "Value": "Is not one of (1.0.0, 3.0.1)"
+      }
+    ]
+  },
+  "lessThanWithPercentage": {
+    "Value": "Default",
+    "SettingType": 1,
+    "RolloutPercentageItems": [
+      {
+        "Order": 0,
+        "Value": "20%",
+        "Percentage": 20
+      },
+      {
+        "Order": 1,
+        "Value": "80%",
+        "Percentage": 80
+      }
+    ],
+    "RolloutRules": [
+      {
+        "Order": 0,
+        "ComparisonAttribute": "Custom1",
+        "Comparator": 6,
+        "ComparisonValue": " 1.0.0 ",
+        "Value": "< 1.0.0"
+      }
+    ]
+  },
+  "relations": {
+    "Value": "Default",
+    "SettingType": 1,
+    "RolloutPercentageItems": [],
+    "RolloutRules": [
+      {
+        "Order": 0,
+        "ComparisonAttribute": "Custom1",
+        "Comparator": 6,
+        "ComparisonValue": "1.0.0,",
+        "Value": "<1.0.0,"
+      },
+      {
+        "Order": 1,
+        "ComparisonAttribute": "Custom1",
+        "Comparator": 6,
+        "ComparisonValue": "1.0.0",
+        "Value": "< 1.0.0"
+      },
+      {
+        "Order": 2,
+        "ComparisonAttribute": "Custom1",
+        "Comparator": 7,
+        "ComparisonValue": "1.0.0",
+        "Value": "<=1.0.0"
+      },
+      {
+        "Order": 3,
+        "ComparisonAttribute": "Custom1",
+        "Comparator": 8,
+        "ComparisonValue": "2.0.0",
+        "Value": ">2.0.0"
+      },
+      {
+        "Order": 4,
+        "ComparisonAttribute": "Custom1",
+        "Comparator": 9,
+        "ComparisonValue": "2.0.0",
+        "Value": ">=2.0.0"
+      }
+    ]
+  }
+}

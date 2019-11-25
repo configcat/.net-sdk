@@ -63,7 +63,7 @@ client.Dispose();
 ## Getting user specific setting values with Targeting
 Using this feature, you will be able to get different setting values for different users in your application by passing a `User Object` to the `GetValue()` function.
 
-Read more about [Targeting here](https://docs.configcat.com/docs/advanced/targeting/).
+Read more about [Targeting here](https://configcat.com/docs/advanced/targeting).
 ```c#
 User currentUser = new User("435170f4-8a8b-4b67-a723-505ac7cdea92");
 
@@ -87,5 +87,5 @@ If you need help how to use this SDK feel free to to contact the ConfigCat Staff
 Contributions are welcome.
 
 ## About ConfigCat
-- [Documentation](https://docs.configcat.com)
-- [Blog](https://blog.configcat.com)
+- [Documentation](https://configcat.com/docs)
+- [Blog](https://configcat.com/blog)

@@ -8,10 +8,22 @@ namespace ConfigCat.Client
     /// </summary>
     public abstract class ConfigurationBase
     {
+        private ILogger _logger;
+
         /// <summary>
-        /// Factory method of <c>ILogger</c>
+        /// Logger instance
         /// </summary>
-        public ILoggerFactory LoggerFactory { get; set; } = new NullLoggerFactory();
+        public ILogger Logger
+        {
+            get
+            {
+                return this._logger ?? new LoggerWrapper(new ConsoleLogger());
+            }
+            set
+            {
+                this._logger = new LoggerWrapper(value ?? throw new ArgumentNullException(nameof(Logger)));
+            }
+        }
 
         /// <summary>
         /// Api key to get your configuration
@@ -26,7 +38,7 @@ namespace ConfigCat.Client
         /// <summary>
         /// HttpClientHandler to provide network credentials and proxy settings
         /// </summary>
-        public HttpClientHandler HttpClientHandler { get; set; } 
+        public HttpClientHandler HttpClientHandler { get; set; }
 
         /// <summary>
         /// You can set a BaseUrl if you want to use a proxy server between your application and ConfigCat
@@ -40,15 +52,15 @@ namespace ConfigCat.Client
                 throw new ArgumentException("Invalid api key value.", nameof(this.ApiKey));
             }
 
-            if (this.LoggerFactory == null)
+            if (this.Logger == null)
             {
-                throw new ArgumentNullException(nameof(this.LoggerFactory));
+                throw new ArgumentNullException(nameof(this.Logger));
             }
         }
 
         internal Uri CreateUrl()
         {
-            return new Uri(BaseUrl, "configuration-files/" + this.ApiKey + "/config_v2.json");
+            return new Uri(BaseUrl, "configuration-files/" + this.ApiKey + "/config_v3.json");
         }
     }
 }

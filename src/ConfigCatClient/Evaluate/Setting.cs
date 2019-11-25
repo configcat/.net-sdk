@@ -5,36 +5,46 @@ namespace ConfigCat.Client.Evaluate
 {
     internal class Setting
     {
+        [JsonProperty(PropertyName = "v")]
         public string Value { get; set; }
 
+        [JsonProperty(PropertyName = "t")]
         public SettingTypeEnum SettingType { get; set; }
 
+        [JsonProperty(PropertyName = "p")]
         public List<RolloutPercentageItem> RolloutPercentageItems { get; set; }
 
+        [JsonProperty(PropertyName = "r")]
         public List<RolloutRule> RolloutRules { get; set; }
     }
 
     internal class RolloutPercentageItem
     {
+        [JsonProperty(PropertyName = "o")]
         public short Order { get; set; }
 
-        [JsonProperty(PropertyName = "Value")]
+        [JsonProperty(PropertyName = "v")]
         public string RawValue { get; private set; }
 
+        [JsonProperty(PropertyName = "p")]
         public int Percentage { get; set; }        
     }
 
     internal class RolloutRule
     {
+        [JsonProperty(PropertyName = "o")]
         public short Order { get; set; }
 
+        [JsonProperty(PropertyName = "a")]
         public string ComparisonAttribute { get; set; }
 
+        [JsonProperty(PropertyName = "t")]
         public ComparatorEnum Comparator { get; set; }
 
+        [JsonProperty(PropertyName = "c")]
         public string ComparisonValue { get; set; }
 
-        [JsonProperty(PropertyName = "Value")]
+        [JsonProperty(PropertyName = "v")]
         public string RawValue { get; private set; }
     }
 
@@ -57,6 +67,30 @@ namespace ConfigCat.Client.Evaluate
 
         Contains = 2,
 
-        NotContains = 3
+        NotContains = 3,
+        
+        SemVerIn = 4,
+
+        SemVerNotIn = 5,
+
+        SemVerLessThan = 6,
+
+        SemVerLessThanEqual = 7,
+
+        SemVerGreaterThan = 8,
+
+        SemVerGreaterThanEqual = 9,
+
+        NumberEqual = 10,
+
+        NumberNotEqual = 11,
+
+        NumberLessThan = 12,
+
+        NumberLessThanEqual = 13,
+
+        NumberGreaterThan = 14,
+
+        NumberGreaterThanEqual = 15,
     }
 }

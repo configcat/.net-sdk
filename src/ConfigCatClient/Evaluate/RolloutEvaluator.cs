@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json.Linq;
+using Semver;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -30,33 +31,65 @@ namespace ConfigCat.Client.Evaluate
 
             if (!settings.TryGetValue(key, out var setting))
             {
-                this.log.Warning($"Unknown key: '{key}'");
+                var keys = string.Join(",", settings.Keys.Select(s => $"'{s}'").ToArray());
+
+                this.log.Error($"Evaluating '{key}' failed. Returning default value: '{defaultValue}'. Here are the available keys: {keys}.");
 
                 return defaultValue;
             }
 
-            if (user != null)
+            var evaluateLog = new EvaluateLogger<T>
             {
-                // evaluate rules
+                ReturnValue = defaultValue,
+                User = user,
+                KeyName = key
+            };
 
+            try
+            {
                 T result;
 
-                if (TryEvaluateRules(setting.RolloutRules, user, out result))
+                if (user != null)
                 {
-                    return result;
+                    // evaluate rules
+
+                    if (TryEvaluateRules(setting.RolloutRules, user, evaluateLog, out result))
+                    {
+                        evaluateLog.ReturnValue = result;
+                        return result;
+                    }
+
+                    // evaluate variations
+
+                    if (TryEvaluateVariations(setting.RolloutPercentageItems, key, user, out result))
+                    {
+                        evaluateLog.Log("evaluate % option => user targeted");
+                        evaluateLog.ReturnValue = result;
+
+                        return result;
+                    }
+                    else
+                    {
+                        evaluateLog.Log("evaluate % option => user not targeted");
+                    }
+                }
+                else if (user == null && (setting.RolloutRules.Any() || setting.RolloutPercentageItems.Any()))
+                {
+                    this.log.Warning($"Evaluating '{key}'. UserObject missing! You should pass a UserObject to GetValue() or GetValueAsync(), in order to make targeting work properly. Read more: https://configcat.com/docs/advanced/user-object");
                 }
 
-                // evaluate variations
+                // regular evaluate
 
-                if (TryEvaluateVariations(setting.RolloutPercentageItems, key, user, out result))
-                {
-                    return result;
-                }
+                result = new JValue(setting.Value).Value<T>();
+
+                evaluateLog.ReturnValue = result;
+
+                return result;
             }
-
-            // regular evaluate
-
-            return new JValue(setting.Value).Value<T>();
+            finally
+            {
+                this.log.Information(evaluateLog.ToString());
+            }
         }
 
         private bool TryEvaluateVariations<T>(ICollection<RolloutPercentageItem> rolloutPercentageItems, string key, User user, out T result)
@@ -79,7 +112,7 @@ namespace ConfigCat.Client.Evaluate
 
                     if (hashScale < bucket)
                     {
-                        result = new JValue(variation.RawValue).Value<T>();
+                        result = new JValue(variation.RawValue).Value<T>();                        
 
                         return true;
                     }
@@ -89,7 +122,7 @@ namespace ConfigCat.Client.Evaluate
             return false;
         }
 
-        private static bool TryEvaluateRules<T>(ICollection<RolloutRule> rules, User user, out T result)
+        private static bool TryEvaluateRules<T>(ICollection<RolloutRule> rules, User user, EvaluateLogger<T> logger, out T result)
         {
             result = default(T);
 
@@ -110,6 +143,8 @@ namespace ConfigCat.Client.Evaluate
                         continue;
                     }
 
+                    string l = $"evaluate rule: '{comparisonAttributeValue}' {EvaluateLogger<T>.FormatComparator(rule.Comparator)} '{rule.ComparisonValue}' => ";
+
                     switch (rule.Comparator)
                     {
                         case ComparatorEnum.In:
@@ -119,8 +154,12 @@ namespace ConfigCat.Client.Evaluate
                                 .Select(t => t.Trim())
                                 .Contains(comparisonAttributeValue))
                             {
+                                logger.Log(l + "match");
+
                                 return true;
                             }
+
+                            logger.Log(l + "no match");
 
                             break;
 
@@ -131,29 +170,198 @@ namespace ConfigCat.Client.Evaluate
                                .Select(t => t.Trim())
                                .Contains(comparisonAttributeValue))
                             {
+                                logger.Log(l + "match");
+
                                 return true;
                             }
+
+                            logger.Log(l + "no match");
 
                             break;
                         case ComparatorEnum.Contains:
 
                             if (comparisonAttributeValue.Contains(rule.ComparisonValue))
                             {
+                                logger.Log(l + "match");
+
                                 return true;
                             }
+
+                            logger.Log(l + "no match");
 
                             break;
                         case ComparatorEnum.NotContains:
 
                             if (!comparisonAttributeValue.Contains(rule.ComparisonValue))
                             {
+                                logger.Log(l + "match");
+
                                 return true;
                             }
 
+                            logger.Log(l + "no match");
+
                             break;
+                        case ComparatorEnum.SemVerIn:
+                        case ComparatorEnum.SemVerNotIn:
+                        case ComparatorEnum.SemVerLessThan:
+                        case ComparatorEnum.SemVerLessThanEqual:
+                        case ComparatorEnum.SemVerGreaterThan:
+                        case ComparatorEnum.SemVerGreaterThanEqual:
+
+                            if (EvaluateSemVer(comparisonAttributeValue, rule.ComparisonValue, rule.Comparator))
+                            {
+                                logger.Log(l + "match");
+
+                                return true;
+                            }
+
+                            logger.Log(l + "no match");
+
+                            break;
+
+                        case ComparatorEnum.NumberEqual:
+                        case ComparatorEnum.NumberNotEqual:
+                        case ComparatorEnum.NumberLessThan:
+                        case ComparatorEnum.NumberLessThanEqual:
+                        case ComparatorEnum.NumberGreaterThan:
+                        case ComparatorEnum.NumberGreaterThanEqual:
+
+                            if (EvaluateNumber(comparisonAttributeValue, rule.ComparisonValue, rule.Comparator))
+                            {
+                                logger.Log(l + "match");
+
+                                return true;
+                            }
+
+                            logger.Log(l + "no match");
+
+                            break;
+
                         default:
                             break;
                     }
+                }
+            }
+
+            return false;
+        }
+
+        private static bool EvaluateNumber(string s1, string s2, ComparatorEnum comparator)
+        {
+            if (!double.TryParse(s1.Replace(',', '.'), NumberStyles.Any, CultureInfo.InvariantCulture, out double d1)
+                || !double.TryParse(s2.Replace(',', '.'), NumberStyles.Any, CultureInfo.InvariantCulture, out double d2))
+            {
+                return false;
+            }
+
+            switch (comparator)
+            {
+                case ComparatorEnum.NumberEqual:
+
+                    return d1 == d2;
+
+                case ComparatorEnum.NumberNotEqual:
+
+                    return d1 != d2;
+
+                case ComparatorEnum.NumberLessThan:
+
+                    return d1 < d2;
+
+                case ComparatorEnum.NumberLessThanEqual:
+
+                    return d1 <= d2;
+
+                case ComparatorEnum.NumberGreaterThan:
+
+                    return d1 > d2;
+
+                case ComparatorEnum.NumberGreaterThanEqual:
+
+                    return d1 >= d2;
+
+                default:
+                    break;
+            }
+
+            return false;
+        }
+
+        private static bool EvaluateSemVer(string s1, string s2, ComparatorEnum comparator)
+        {
+            if (SemVersion.TryParse(s1?.Trim(), out SemVersion v1, true))
+            {
+                s2 = s2?.Trim();
+
+                switch (comparator)
+                {
+                    case ComparatorEnum.SemVerIn:
+
+                        var rsvi = s2
+                            .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                            .Select(s =>
+                            {
+                                if (SemVersion.TryParse(s.Trim(), out SemVersion ns, true))
+                                {
+                                    return ns;
+                                }
+
+                                return null;
+                            });
+
+                        return !rsvi.Contains(null) && rsvi.Contains(v1);
+
+                    case ComparatorEnum.SemVerNotIn:
+
+                        var rsvni = s2
+                           .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                           .Select(s =>
+                           {
+                               if (SemVersion.TryParse(s?.Trim(), out SemVersion ns, true))
+                               {
+                                   return ns;
+                               }
+
+                               return null;
+                           });
+
+                        return !rsvni.Contains(null) && !rsvni.Contains(v1);
+
+                    case ComparatorEnum.SemVerLessThan:
+
+                        if (SemVersion.TryParse(s2, out SemVersion v20, true))
+                        {
+                            return v1 < v20;
+                        }
+
+                        break;
+                    case ComparatorEnum.SemVerLessThanEqual:
+
+                        if (SemVersion.TryParse(s2, out SemVersion v21, true))
+                        {
+                            return v1 <= v21;
+                        }
+
+                        break;
+                    case ComparatorEnum.SemVerGreaterThan:
+
+                        if (SemVersion.TryParse(s2, out SemVersion v22, true))
+                        {
+                            return v1 > v22;
+                        }
+
+                        break;
+                    case ComparatorEnum.SemVerGreaterThanEqual:
+
+                        if (SemVersion.TryParse(s2, out SemVersion v23, true))
+                        {
+                            return v1 >= v23;
+                        }
+
+                        break;
+                    default:
+                        break;
                 }
             }
 

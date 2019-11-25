@@ -6,6 +6,11 @@
     public interface ILogger
     {
         /// <summary>
+        /// Specifies message's filtering
+        /// </summary>
+        LogLevel LogLevel { get; set; }
+
+        /// <summary>
         /// Write debug level message into log
         /// </summary>
         /// <param name="message"></param>
@@ -27,6 +32,6 @@
         /// Write error level message into log
         /// </summary>
         /// <param name="message"></param>
-        void Error(string message);
+        void Error(string message);        
     }
 }

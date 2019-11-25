@@ -1,0 +1,116 @@
+﻿using ConfigCat.Client.Evaluate;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace ConfigCat.Client.Tests
+{
+    public abstract class ConfigEvaluatorTestsBase
+    {
+        private readonly ILogger logger = new LoggerWrapper(new ConsoleLogger(LogLevel.Debug));
+
+        protected readonly ProjectConfig config;
+
+        internal readonly IRolloutEvaluator configEvaluator;
+
+        protected abstract string SampleJsonFileName { get; }
+
+        protected abstract string MatrixResultFileName { get; }
+
+        public ConfigEvaluatorTestsBase()
+        {
+            this.configEvaluator = new RolloutEvaluator(logger, new ConfigDeserializer(logger));
+
+            this.config = new ProjectConfig(this.GetSampleJson(), DateTime.UtcNow, null);
+        }
+
+        protected virtual void AssertValue(string keyName, string expected, User user)
+        {
+            var k = keyName.ToLowerInvariant();
+
+            if (k.StartsWith("bool"))
+            {
+                var actual = configEvaluator.Evaluate(config, keyName, false, user);
+
+                Assert.AreEqual(bool.Parse(expected), actual, $"keyName: {keyName} | userId: {user?.Identifier}");
+            }
+            else if (k.StartsWith("double"))
+            {
+                var actual = configEvaluator.Evaluate(config, keyName, double.NaN, user);
+
+                Assert.AreEqual(double.Parse(expected, CultureInfo.InvariantCulture), actual, $"keyName: {keyName} | userId: {user?.Identifier}");
+            }
+            else if (k.StartsWith("integer"))
+            {
+                var actual = configEvaluator.Evaluate(config, keyName, int.MinValue, user);
+
+                Assert.AreEqual(int.Parse(expected), actual, $"keyName: {keyName} | userId: {user?.Identifier}");
+            }
+            else
+            {
+                var actual = configEvaluator.Evaluate(config, keyName, string.Empty, user);
+
+                Assert.AreEqual(expected, actual, $"keyName: {keyName} | userId: {user?.Identifier}");
+            }
+        }
+
+        protected string GetSampleJson()
+        {
+            using (Stream stream = File.OpenRead("data" + Path.DirectorySeparatorChar + this.SampleJsonFileName))
+            using (StreamReader reader = new StreamReader(stream))
+            {
+                return reader.ReadToEnd();
+            }
+        }
+
+        public async Task MatrixTest(Action<string, string, User> assertation)
+        {
+            using (Stream stream = File.OpenRead("data"+ Path.DirectorySeparatorChar + this.MatrixResultFileName))
+            using (StreamReader reader = new StreamReader(stream))
+            {
+                var header = await reader.ReadLineAsync();
+
+                var columns = header.Split(new[] { ';' }).ToList();
+
+                while (!reader.EndOfStream)
+                {
+                    var rawline = await reader.ReadLineAsync();
+
+                    if (string.IsNullOrEmpty(rawline))
+                    {
+                        continue;
+                    }
+
+                    var row = rawline.Split(new[] { ';' });
+
+                    User u = null;
+
+                    if (row[0] != "##null##")
+                    {
+                        u = new User(row[0])
+                        {
+                            Email = row[1] == "##null##" ? null : row[1],
+                            Country = row[2] == "##null##" ? null : row[2],
+                            Custom = row[3] == "##null##" ? null : new Dictionary<string, string> { { columns[3], row[3] } }
+                        };
+                    }
+
+                    for (int i = 4; i < columns.Count; i++)
+                    {
+                        assertation(columns[i], row[i], u);
+                    }
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task GetValue_MatrixTests()
+        {
+            await MatrixTest(AssertValue);
+        }       
+    }
+}

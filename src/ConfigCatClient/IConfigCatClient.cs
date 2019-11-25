@@ -10,6 +10,11 @@ namespace ConfigCat.Client
     public interface IConfigCatClient : IDisposable
     {
         /// <summary>
+        /// Set or get logging level
+        /// </summary>
+        LogLevel LogLevel { get; set; }
+
+        /// <summary>
         /// Return a value of the key (Key for programs)
         /// </summary>
         /// <typeparam name="T">Setting type</typeparam>

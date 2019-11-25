@@ -7,15 +7,17 @@
     <SignAssembly>true</SignAssembly>
     <DelaySign>false</DelaySign>
     <AssemblyOriginatorKeyFile>strongname.snk</AssemblyOriginatorKeyFile>    
-    <Version>2.5.0</Version>    
-    <Copyright>Copyright © ConfigCat 2018</Copyright>    
+    <Version>3.0.0</Version>    
+    <Copyright>Copyright © ConfigCat 2019</Copyright>    
     <Company>ConfigCat</Company>    
     <Authors>ConfigCat</Authors>    
     <PackageLicenseUrl>https://raw.githubusercontent.com/ConfigCat/.net-sdk/master/LICENSE</PackageLicenseUrl>    
     <PackageProjectUrl>https://github.com/ConfigCat/.net-sdk</PackageProjectUrl>    
     <RepositoryUrl>https://github.com/ConfigCat/.net-sdk</RepositoryUrl>    
     <RepositoryType>git</RepositoryType>    
-    <PackageReleaseNotes>Version 2.5.0
+    <PackageReleaseNotes>Version 3.0.0
+     * Support new types (number, semver), detailed log entries, compressed http communication
+Version 2.5.0
      * Support custom HttpClientHandler
 Version 2.4.0
      * Add GetAllKeys() function

@@ -39,11 +39,14 @@ namespace ConsoleApp
             if (myNewFeatureEnabled)
             {
                 Console.WriteLine(" Here is my new feature...");
-                Console.WriteLine(client.GetValue(" keyString", "", user));
+                Console.WriteLine(client.GetValue("keyString", "", user));
             }
 
             // 'myKeyNotExits' setting doesn't exist in the project configuration and the client returns default value ('N/A');
-            var mySettingNotExists = client.GetValue("myKeyNotExits", "N/A", user);
+
+            Console.WriteLine();
+            Console.WriteLine();
+            var mySettingNotExists = client.GetValue("mySettingNotExists", "N/A", user);
 
             Console.WriteLine();
             Console.WriteLine("'mySettingNotExists' value from ConfigCat: {0}", mySettingNotExists);

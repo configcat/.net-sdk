@@ -33,14 +33,18 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="ConfigCat.Client, Version=2.1.4.0, Culture=neutral, PublicKeyToken=d28b16a067d7bbe2, processorArchitecture=MSIL">
-      <HintPath>packages\ConfigCat.Client.2.1.4\lib\net45\ConfigCat.Client.dll</HintPath>
+    <Reference Include="ConfigCat.Client, Version=3.0.19.0, Culture=neutral, PublicKeyToken=d28b16a067d7bbe2, processorArchitecture=MSIL">
+      <HintPath>packages\ConfigCat.Client.3.0.19\lib\net45\ConfigCat.Client.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>packages\Newtonsoft.Json.11.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="Semver, Version=2.0.4.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>packages\Semver.2.0.4\lib\netstandard1.1\Semver.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Net.Http" />
   </ItemGroup>
   <ItemGroup>

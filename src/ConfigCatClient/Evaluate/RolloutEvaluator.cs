@@ -308,9 +308,10 @@ namespace ConfigCat.Client.Evaluate
                                 }
 
                                 return null;
-                            });
+                            })
+                            .ToList();
 
-                        return !rsvi.Contains(null) && rsvi.Contains(v1);
+                        return !rsvi.Contains(null) && rsvi.Any(v => v.PrecedenceMatches(v1));
 
                     case ComparatorEnum.SemVerNotIn:
 
@@ -324,15 +325,16 @@ namespace ConfigCat.Client.Evaluate
                                }
 
                                return null;
-                           });
+                           })
+                           .ToList();
 
-                        return !rsvni.Contains(null) && !rsvni.Contains(v1);
+                        return !rsvni.Contains(null) && !rsvni.Any(v => v.PrecedenceMatches(v1));
 
                     case ComparatorEnum.SemVerLessThan:
 
                         if (SemVersion.TryParse(s2, out SemVersion v20, true))
                         {
-                            return v1 < v20;
+                            return v1.CompareByPrecedence(v20) < 0;
                         }
 
                         break;
@@ -340,7 +342,7 @@ namespace ConfigCat.Client.Evaluate
 
                         if (SemVersion.TryParse(s2, out SemVersion v21, true))
                         {
-                            return v1 <= v21;
+                            return v1.CompareByPrecedence(v21) <= 0;
                         }
 
                         break;
@@ -348,7 +350,7 @@ namespace ConfigCat.Client.Evaluate
 
                         if (SemVersion.TryParse(s2, out SemVersion v22, true))
                         {
-                            return v1 > v22;
+                            return v1.CompareByPrecedence(v22) > 0;
                         }
 
                         break;
@@ -356,7 +358,7 @@ namespace ConfigCat.Client.Evaluate
 
                         if (SemVersion.TryParse(s2, out SemVersion v23, true))
                         {
-                            return v1 >= v23;
+                            return v1.CompareByPrecedence(v23) >= 0;
                         }
 
                         break;

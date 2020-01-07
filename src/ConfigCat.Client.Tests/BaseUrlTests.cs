@@ -1,14 +1,14 @@
-﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 
 namespace ConfigCat.Client.Tests
 {
     [TestClass]
     public class BaseUrlTests
     {
-        private const string APIKEY = "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A";
+        private const string APIKEY = "configV4-test-apikey";
 
-        private readonly Uri workingBaseUrl = new Uri("https://cdn01.configcat.com");
+        private readonly Uri workingBaseUrl = new Uri("https://testcdn.configcat.com");
         private readonly Uri notWorkingBaseUrl = new Uri("https://thiswillnotwork.configcat.com");
 
         [TestMethod]
@@ -16,7 +16,7 @@ namespace ConfigCat.Client.Tests
         {
             var client = ConfigCatClientBuilder.Initialize(APIKEY)
                 .WithAutoPoll()
-                .WithBaseUrl(workingBaseUrl)
+                .WithBaseUrl(this.workingBaseUrl)
                 .Create();
 
             var actual = client.GetValue("stringDefaultCat", "N/A");
@@ -24,7 +24,7 @@ namespace ConfigCat.Client.Tests
 
             client = ConfigCatClientBuilder.Initialize(APIKEY)
                 .WithAutoPoll()
-                .WithBaseUrl(notWorkingBaseUrl)
+                .WithBaseUrl(this.notWorkingBaseUrl)
                 .Create();
 
             actual = client.GetValue("stringDefaultCat", "N/A");
@@ -36,7 +36,7 @@ namespace ConfigCat.Client.Tests
         {
             var client = ConfigCatClientBuilder.Initialize(APIKEY)
                 .WithManualPoll()
-                .WithBaseUrl(workingBaseUrl)
+                .WithBaseUrl(this.workingBaseUrl)
                 .Create();
             client.ForceRefresh();
             var actual = client.GetValue("stringDefaultCat", "N/A");
@@ -44,7 +44,7 @@ namespace ConfigCat.Client.Tests
 
             client = ConfigCatClientBuilder.Initialize(APIKEY)
                 .WithManualPoll()
-                .WithBaseUrl(notWorkingBaseUrl)
+                .WithBaseUrl(this.notWorkingBaseUrl)
                 .Create();
             client.ForceRefresh();
             actual = client.GetValue("stringDefaultCat", "N/A");
@@ -56,15 +56,15 @@ namespace ConfigCat.Client.Tests
         {
             var client = ConfigCatClientBuilder.Initialize(APIKEY)
                 .WithLazyLoad()
-                .WithBaseUrl(workingBaseUrl)
+                .WithBaseUrl(this.workingBaseUrl)
                 .Create();
-            
+
             var actual = client.GetValue("stringDefaultCat", "N/A");
             Assert.AreEqual("Cat", actual);
 
             client = ConfigCatClientBuilder.Initialize(APIKEY)
                 .WithLazyLoad()
-                .WithBaseUrl(notWorkingBaseUrl)
+                .WithBaseUrl(this.notWorkingBaseUrl)
                 .Create();
 
             actual = client.GetValue("stringDefaultCat", "N/A");

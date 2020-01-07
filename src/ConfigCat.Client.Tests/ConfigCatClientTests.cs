@@ -3,9 +3,8 @@ using ConfigCat.Client.Evaluate;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using System;
-using System.Threading.Tasks;
 using System.Linq;
-using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace ConfigCat.Client.Tests
 {
@@ -291,7 +290,7 @@ namespace ConfigCat.Client.Tests
             var configDeserializerMock = new Mock<IConfigDeserializer>();
 
             configServiceMock.Setup(m => m.GetConfigAsync()).ReturnsAsync(ProjectConfig.Empty);
-            IDictionary<string, Setting> o = new Dictionary<string, Setting>();
+            ConfigJson o = new ConfigJson();
             configDeserializerMock
                 .Setup(m => m.TryDeserialize(It.IsAny<ProjectConfig>(), out o))
                 .Throws<Exception>();
@@ -324,7 +323,7 @@ namespace ConfigCat.Client.Tests
             var configDeserializerMock = new Mock<IConfigDeserializer>();
 
             configServiceMock.Setup(m => m.GetConfigAsync()).ReturnsAsync(ProjectConfig.Empty);
-            IDictionary<string, Setting> o = new Dictionary<string, Setting>();
+            ConfigJson o = new ConfigJson();
             configDeserializerMock
                 .Setup(m => m.TryDeserialize(It.IsAny<ProjectConfig>(), out o))
                 .Returns(false);

@@ -1,6 +1,5 @@
 ﻿using ConfigCat.Client.Evaluate;
 using Newtonsoft.Json;
-using System.Collections.Generic;
 
 namespace ConfigCat.Client
 {
@@ -13,7 +12,7 @@ namespace ConfigCat.Client
             this.logger = logger;
         }
 
-        public bool TryDeserialize(ProjectConfig projectConfig, out IDictionary<string, Setting> settings)
+        public bool TryDeserialize(ProjectConfig projectConfig, out ConfigJson settings)
         {
             if (projectConfig.JsonString == null)
             {
@@ -22,7 +21,7 @@ namespace ConfigCat.Client
                 return false;
             }
 
-            settings = JsonConvert.DeserializeObject<Dictionary<string, Setting>>(projectConfig.JsonString);
+            settings = JsonConvert.DeserializeObject<ConfigJson>(projectConfig.JsonString);
             return true;
         }
     }

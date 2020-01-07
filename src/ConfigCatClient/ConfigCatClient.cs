@@ -2,7 +2,6 @@
 using ConfigCat.Client.Evaluate;
 using System;
 using System.Collections.Generic;
-using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -26,14 +25,8 @@ namespace ConfigCat.Client
         /// <inheritdoc />
         public LogLevel LogLevel
         {
-            get
-            {
-                return log.LogLevel;
-            }
-            set
-            {
-                log.LogLevel = value;
-            }
+            get => this.log.LogLevel;
+            set => this.log.LogLevel = value;
         }
 
         /// <summary>
@@ -55,11 +48,17 @@ namespace ConfigCat.Client
             : this((ConfigurationBase)configuration)
         {
             var configService = new AutoPollConfigService(
-                   new HttpConfigFetcher(configuration.CreateUrl(), "a-" + version, configuration.Logger, configuration.HttpClientHandler),
-                   configuration.ConfigCache ?? new InMemoryConfigCache(),
-                   TimeSpan.FromSeconds(configuration.PollIntervalSeconds),
-                   TimeSpan.FromSeconds(configuration.MaxInitWaitTimeSeconds),
-                   configuration.Logger);
+                    new HttpConfigFetcher(
+                        configuration.BaseUrl,
+                        configuration.CreateConfigRelativeUrl(),
+                        this.configDeserializer,
+                        "a-" + version,
+                        configuration.Logger,
+                        configuration.HttpClientHandler),
+                    configuration.ConfigCache ?? new InMemoryConfigCache(),
+                    TimeSpan.FromSeconds(configuration.PollIntervalSeconds),
+                    TimeSpan.FromSeconds(configuration.MaxInitWaitTimeSeconds),
+                    configuration.Logger);
 
             configService.OnConfigurationChanged += configuration.RaiseOnConfigurationChanged;
 
@@ -76,10 +75,16 @@ namespace ConfigCat.Client
             : this((ConfigurationBase)configuration)
         {
             var configService = new LazyLoadConfigService(
-               new HttpConfigFetcher(configuration.CreateUrl(), "l-" + version, configuration.Logger, configuration.HttpClientHandler),
-               configuration.ConfigCache ?? new InMemoryConfigCache(),
-               configuration.Logger,
-               TimeSpan.FromSeconds(configuration.CacheTimeToLiveSeconds));
+                    new HttpConfigFetcher(
+                        configuration.BaseUrl,
+                        configuration.CreateConfigRelativeUrl(),
+                        this.configDeserializer,
+                        "l-" + version,
+                        configuration.Logger,
+                        configuration.HttpClientHandler),
+                    configuration.ConfigCache ?? new InMemoryConfigCache(),
+                    configuration.Logger,
+                    TimeSpan.FromSeconds(configuration.CacheTimeToLiveSeconds));
 
             this.configService = configService;
         }
@@ -94,9 +99,15 @@ namespace ConfigCat.Client
             : this((ConfigurationBase)configuration)
         {
             var configService = new ManualPollConfigService(
-                new HttpConfigFetcher(configuration.CreateUrl(), "m-" + version, configuration.Logger, configuration.HttpClientHandler),
-                configuration.ConfigCache ?? new InMemoryConfigCache(),
-                configuration.Logger);
+                    new HttpConfigFetcher(
+                        configuration.BaseUrl,
+                        configuration.CreateConfigRelativeUrl(),
+                        this.configDeserializer,
+                        "m-" + version,
+                        configuration.Logger,
+                        configuration.HttpClientHandler),
+                    configuration.ConfigCache ?? new InMemoryConfigCache(),
+                    configuration.Logger);
 
             this.configService = configService;
         }
@@ -180,7 +191,10 @@ namespace ConfigCat.Client
             try
             {
                 var c = await this.configService.GetConfigAsync().ConfigureAwait(false);
-                if (this.configDeserializer.TryDeserialize(c, out var settings)) return settings.Keys;
+                if (this.configDeserializer.TryDeserialize(c, out var settings))
+                {
+                    return settings.UserSpaceSettings.Keys;
+                }
 
                 this.log.Warning("Config deserialization failed.");
                 return new string[0];

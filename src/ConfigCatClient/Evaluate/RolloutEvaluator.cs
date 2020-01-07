@@ -29,9 +29,9 @@ namespace ConfigCat.Client.Evaluate
                 return defaultValue;
             }
 
-            if (!settings.TryGetValue(key, out var setting))
+            if (!settings.UserSpaceSettings.TryGetValue(key, out var setting))
             {
-                var keys = string.Join(",", settings.Keys.Select(s => $"'{s}'").ToArray());
+                var keys = string.Join(",", settings.UserSpaceSettings.Keys.Select(s => $"'{s}'").ToArray());
 
                 this.log.Error($"Evaluating '{key}' failed. Returning default value: '{defaultValue}'. Here are the available keys: {keys}.");
 
@@ -112,7 +112,7 @@ namespace ConfigCat.Client.Evaluate
 
                     if (hashScale < bucket)
                     {
-                        result = new JValue(variation.RawValue).Value<T>();                        
+                        result = new JValue(variation.RawValue).Value<T>();
 
                         return true;
                     }
@@ -137,7 +137,7 @@ namespace ConfigCat.Client.Evaluate
                         continue;
                     }
 
-                    var comparisonAttributeValue = user.AllAttributes[rule.ComparisonAttribute.ToLowerInvariant()];
+                    var comparisonAttributeValue = user.AllAttributes[ rule.ComparisonAttribute.ToLowerInvariant() ];
                     if (string.IsNullOrEmpty(comparisonAttributeValue))
                     {
                         continue;

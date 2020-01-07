@@ -8,6 +8,8 @@ namespace ConfigCat.Client
     /// </summary>
     public abstract class ConfigurationBase
     {
+        private const string DefaultCdnBaseUrl = "https://cdn.configcat.com";
+
         private ILogger _logger;
 
         /// <summary>
@@ -43,7 +45,7 @@ namespace ConfigCat.Client
         /// <summary>
         /// You can set a BaseUrl if you want to use a proxy server between your application and ConfigCat
         /// </summary>
-        public Uri BaseUrl { get; set; } = new Uri("https://cdn.configcat.com");
+        public Uri BaseUrl { get; set; } = new Uri(DefaultCdnBaseUrl);
 
         internal virtual void Validate()
         {
@@ -58,9 +60,9 @@ namespace ConfigCat.Client
             }
         }
 
-        internal Uri CreateUrl()
+        internal string CreateConfigRelativeUrl()
         {
-            return new Uri(BaseUrl, "configuration-files/" + this.ApiKey + "/config_v3.json");
+            return "configuration-files/" + this.ApiKey + "/config_v4.json";
         }
     }
 }

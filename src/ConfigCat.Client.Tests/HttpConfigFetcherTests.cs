@@ -1,8 +1,4 @@
-﻿using ConfigCat.Client.ConfigService;
-using ConfigCat.Client.Evaluate;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Moq;
-using Newtonsoft.Json;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Threading.Tasks;
 
@@ -18,7 +14,11 @@ namespace ConfigCat.Client.Tests
 
             var myHandler = new MyFakeHttpClientHandler();
 
-            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new MyCounterLogger(), myHandler);
+            var myLogger = new MyCounterLogger();
+
+            var configDeserializer = new ConfigDeserializer( myLogger );
+
+            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "config.json", configDeserializer, "1.0", new MyCounterLogger(), myHandler);
 
             // Act
 
@@ -36,7 +36,11 @@ namespace ConfigCat.Client.Tests
 
             var myHandler = new MyFakeHttpClientHandler();
 
-            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new MyCounterLogger(), myHandler);
+            var myLogger = new MyCounterLogger();
+
+            var configDeserializer = new ConfigDeserializer( myLogger );
+
+            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "config.json", configDeserializer, "1.0", new MyCounterLogger(), myHandler);
 
             // Act
 

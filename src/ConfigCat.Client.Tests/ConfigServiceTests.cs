@@ -1,9 +1,9 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-using ConfigCat.Client.ConfigService;
+﻿using ConfigCat.Client.ConfigService;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ConfigCat.Client.Tests
 {

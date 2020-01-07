@@ -7,7 +7,15 @@ namespace ConfigCat.Client
 {
     internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
     {
+        private Uri requestBaseUriEffective;
+
         private readonly object lck = new object();
+
+        private readonly Uri requestBaseUriFallback;
+
+        private readonly string configFileRelativeUrl;
+
+        private readonly IConfigDeserializer configDeserializer;
 
         private readonly string productVersion;
 
@@ -17,11 +25,14 @@ namespace ConfigCat.Client
 
         private HttpClient httpClient;
 
-        private readonly Uri requestUri;
-               
-        public HttpConfigFetcher(Uri requestUri, string productVersion, ILogger logger, HttpClientHandler httpClientHandler)
+
+        public HttpConfigFetcher(Uri requestBaseUri, string configFileRelativeUrl, IConfigDeserializer configDeserializer, string productVersion, ILogger logger, HttpClientHandler httpClientHandler)
         {
-            this.requestUri = requestUri;
+            this.requestBaseUriFallback = requestBaseUri;
+
+            this.configFileRelativeUrl = configFileRelativeUrl;
+
+            this.configDeserializer = configDeserializer;
 
             this.productVersion = productVersion;
 
@@ -30,6 +41,7 @@ namespace ConfigCat.Client
             this.httpClientHandler = httpClientHandler;
 
             ReInitializeHttpClient();
+            SetRequestBaseUrlFromProjectConfig(ProjectConfig.Empty);
         }
 
         public async Task<ProjectConfig> Fetch(ProjectConfig lastConfig)
@@ -39,7 +51,7 @@ namespace ConfigCat.Client
             var request = new HttpRequestMessage
             {
                 Method = HttpMethod.Get,
-                RequestUri = this.requestUri
+                RequestUri = new Uri(this.requestBaseUriEffective, this.configFileRelativeUrl),
             };
 
             if (lastConfig.HttpETag != null)
@@ -71,6 +83,8 @@ namespace ConfigCat.Client
                 {
                     this.ReInitializeHttpClient();
                 }
+
+                this.SetRequestBaseUrlFromProjectConfig(newConfig);
             }
             catch (Exception ex)
             {
@@ -97,20 +111,67 @@ namespace ConfigCat.Client
                 }
                 else
                 {
-                    this.httpClient = new HttpClient(this.httpClientHandler, false);                   
+                    this.httpClient = new HttpClient(this.httpClientHandler, false);
                 }
 
                 this.httpClient.Timeout = TimeSpan.FromSeconds(30);
 
-                this.httpClient.DefaultRequestHeaders.Add("X-ConfigCat-UserAgent", new ProductInfoHeaderValue("ConfigCat-Dotnet", productVersion).ToString());
+                this.httpClient.DefaultRequestHeaders.Add("X-ConfigCat-UserAgent", new ProductInfoHeaderValue("ConfigCat-Dotnet", this.productVersion).ToString());
             }
+        }
+
+        private void SetRequestBaseUrlFromProjectConfig(ProjectConfig projectConfig)
+        {
+            if (projectConfig.Equals(ProjectConfig.Empty))
+            {
+                this.requestBaseUriEffective = this.requestBaseUriFallback;
+                return;
+            }
+
+            if (projectConfig.JsonString == null)
+            {
+                this.requestBaseUriEffective = this.requestBaseUriFallback;
+                return;
+            }
+
+            if (!this.configDeserializer.TryDeserialize(projectConfig, out var settings))
+            {
+                this.requestBaseUriEffective = this.requestBaseUriFallback;
+                return;
+            }
+
+            if (settings.ServiceSpaceSettings == null)
+            {
+                this.requestBaseUriEffective = this.requestBaseUriFallback;
+                return;
+            }
+
+            if (string.IsNullOrEmpty(settings.ServiceSpaceSettings.CdnBaseUrl))
+            {
+                this.requestBaseUriEffective = this.requestBaseUriFallback;
+                return;
+            }
+
+            if (!settings.ServiceSpaceSettings.CdnBaseUrl.StartsWith("https://"))
+            {
+                this.requestBaseUriEffective = this.requestBaseUriFallback;
+                return;
+            }
+
+            if (!settings.ServiceSpaceSettings.CdnBaseUrl.EndsWith("configcat.com"))
+            {
+                this.requestBaseUriEffective = this.requestBaseUriFallback;
+                return;
+            }
+
+            this.requestBaseUriEffective = new Uri(settings.ServiceSpaceSettings.CdnBaseUrl);
         }
 
         public void Dispose()
         {
-            if (httpClient != null)
+            if (this.httpClient != null)
             {
-                httpClient.Dispose();
+                this.httpClient.Dispose();
             }
         }
     }

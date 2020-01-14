@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using ConfigCat.Client;
 
 namespace ConsoleApp
@@ -8,51 +7,28 @@ namespace ConsoleApp
     {
         static void Main(string[] args)
         {
-            const string apiKey = "PKDVCLf-Hq-h-kCzMp-L7Q/PaDVCFk9EpmD6sLpGLltTA";
+            // Creating the ConfigCat client instance using the API key
+            var client = new ConfigCatClient("PKDVCLf-Hq-h-kCzMp-L7Q/HhOWfwVtZ0mb30i9wi17G");
 
-            // create Client instance with ConfigCatClientBuilder
-            var client = ConfigCatClientBuilder
-                .Initialize(apiKey)
-                .WithAutoPoll()
-                .WithMaxInitWaitTimeSeconds(10)
-                .Create();
+            // Setting log level to Info to show detailed feature flag evaluation
+            client.LogLevel = LogLevel.Info;
 
-            // create a user object to identify the caller
-            User user = new User("2605ED59-D7D0-4D84-9CDF-5E37B971DD03")
+            // Creating a user object to identify the user (optional)
+            User user = new User("<SOME USERID>")
             {
                 Country = "US",
-                Email = "myUser@example.com",
+                Email = "configcat@example.com",
                 Custom =
                 {
                     { "SubscriptionType", "Pro"},
-                    { "Role", "Admin"}
+                    { "Role", "Admin"},
+                    { "version", "1.0.0" }
                 }
             };
 
-            // get setting value - 'keyBool'           
-            var myNewFeatureEnabled = client.GetValue("keyBool", false, user);
-
-            Console.WriteLine("'keyBool': {0}", myNewFeatureEnabled);
-            Console.WriteLine();
-
-            // is my new feature enabled?
-            if (myNewFeatureEnabled)
-            {
-                Console.WriteLine(" Here is my new feature...");
-                Console.WriteLine(client.GetValue("keyString", "", user));
-            }
-
-            // 'myKeyNotExits' setting doesn't exist in the project configuration and the client returns default value ('N/A');
-
-            Console.WriteLine();
-            Console.WriteLine();
-            var mySettingNotExists = client.GetValue("mySettingNotExists", "N/A", user);
-
-            Console.WriteLine();
-            Console.WriteLine("'mySettingNotExists' value from ConfigCat: {0}", mySettingNotExists);
-            
-            Console.WriteLine("\n\n\nPress any key(s) to exit...");
-            Console.ReadKey();            
-        }      
+            // Accessing feature flag or setting value
+            var value = client.GetValue("isPOCFeatureEnabled", false, user);
+            Console.WriteLine($"isPOCFeatureEnabled: {value}");
+        }
     }
 }

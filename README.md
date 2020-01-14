@@ -24,6 +24,10 @@ ConfigCat is a <a href="https://configcat.com" target="_blank">hosted feature fl
 ```PowerShell
 Install-Package ConfigCat.Client
 ```
+or
+```bash
+dotnet add package ConfigCat.Client
+```
 
 ### 2. Import *ConfigCat.Client* to your application
 ```c#

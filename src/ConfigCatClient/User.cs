@@ -30,6 +30,7 @@ namespace ConfigCat.Client
         /// <summary>
         /// Serve all user attributes
         /// </summary>
+        [Newtonsoft.Json.JsonIgnore]
         public IReadOnlyDictionary<string, string> AllAttributes
         {
             get

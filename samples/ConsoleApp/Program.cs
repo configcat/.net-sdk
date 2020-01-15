@@ -8,7 +8,7 @@ namespace ConsoleApp
         static void Main(string[] args)
         {
             // Creating the ConfigCat client instance using the API key
-            var client = new ConfigCatClient("PKDVCLf-Hq-h-kCzMp-L7Q/HhOWfwVtZ0mb30i9wi17G");
+            var client = new ConfigCatClient("PKDVCLf-Hq-h-kCzMp-L7Q/HhOWfwVtZ0mb30i9wi17GQ");
 
             // Setting log level to Info to show detailed feature flag evaluation
             client.LogLevel = LogLevel.Info;

@@ -21,12 +21,14 @@ namespace WebApplication
         {
             services.AddMvc();
 
-            services.AddSingleton<IConfigCatClient>(new ConfigCatClient(new LazyLoadConfiguration
+            var configCatClient = new ConfigCatClient(new LazyLoadConfiguration
             {
                 ApiKey = Configuration["ConfigCatApiKey"],
-
                 CacheTimeToLiveSeconds = 120
-            }));
+            });
+            configCatClient.LogLevel = LogLevel.Info;
+
+            services.AddSingleton<IConfigCatClient>(configCatClient);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

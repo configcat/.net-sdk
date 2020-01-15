@@ -20,6 +20,7 @@ namespace WebApplication.Controllers
         }
 
         // GET: api/backdoor/configcatchanged
+        // This endpoint can be called by Configcat Webhooks https://configcat.com/docs/advanced/notifications-webhooks
         [HttpGet]
         [Route("configcatchanged")]
         public IActionResult ConfigCatChanged()

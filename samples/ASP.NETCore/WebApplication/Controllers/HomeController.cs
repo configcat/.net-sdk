@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using WebApplication.Models;
 
 using ConfigCat.Client;
+using System.Collections.Generic;
 
 namespace WebApplication.Controllers
 {
@@ -17,21 +18,19 @@ namespace WebApplication.Controllers
 
         public IActionResult Index()
         {
-            ViewData["Title"] = this.configCatClient.GetValue("keySampleText", "Default Home Page Title");
+            ViewData["Message1"] = this.configCatClient.GetValue("isAwesomeFeatureEnabled", "Acquiring value failed, returning default value.");
 
-            return View();
-        }
+            var userObject = new User("<Some UserID>")
+            {
+                Email = "configcat@example.com",
+                Country = "Canada",
+                Custom = new Dictionary<string, string> {
+                    {"SubscriptionType", "Pro"},
+                    {"Version", "1.0.0"}
+                }
+            };
 
-        public IActionResult About()
-        {
-            ViewData["Message"] = this.configCatClient.GetValue("keySampleText", "Your application description page.");            
-
-            return View();
-        }
-
-        public IActionResult Contact()
-        {
-            ViewData["Message"] = "Your contact page.";
+            ViewData["Message2"] = this.configCatClient.GetValue("isPOCFeatureEnabled", "Acquiring value failed, returning default value.", userObject);
 
             return View();
         }

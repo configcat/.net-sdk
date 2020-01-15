@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\ConfigCatClient\ConfigCatClient.csproj" />
+    <PackageReference Include="ConfigCat.Client" Version="3.1.23" />
   </ItemGroup>
 
 </Project>

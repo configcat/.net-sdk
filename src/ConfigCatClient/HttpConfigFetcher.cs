@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
@@ -7,11 +8,11 @@ namespace ConfigCat.Client
 {
     internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
     {
-        private Uri requestBaseUriEffective;
-
         private readonly object lck = new object();
 
-        private readonly Uri requestBaseUriFallback;
+        private readonly Uri[] fallbackUris;
+
+        private Uri[] potentialUris;
 
         private readonly string configFileRelativeUrl;
 
@@ -25,23 +26,59 @@ namespace ConfigCat.Client
 
         private HttpClient httpClient;
 
+        private readonly bool isCdnAllowedToOverrideUri;
 
-        public HttpConfigFetcher(Uri requestBaseUri, string configFileRelativeUrl, IConfigDeserializer configDeserializer, string productVersion, ILogger logger, HttpClientHandler httpClientHandler)
+        private readonly Random rnd = new Random();
+
+        public HttpConfigFetcher(
+                    Uri userDefinedBaseUri,
+                    string configFileRelativeUrl,
+                    string productVersion,
+                    IConfigDeserializer configDeserializer,
+                    ILogger logger,
+                    HttpClientHandler httpClientHandler)
         {
-            this.requestBaseUriFallback = requestBaseUri;
+            if(userDefinedBaseUri != null)
+            {
+                // userDefinedBaseUri is set => the user's goal is to have explicit control over the CDN server's uri
+                this.isCdnAllowedToOverrideUri = false;
+                this.fallbackUris = new Uri[] { userDefinedBaseUri };
+            }
+            else
+            {
+                this.isCdnAllowedToOverrideUri = true;
+                this.fallbackUris = new Uri[] { new Uri("https://cdn.configcat.com") };
+            }
+
+            this.potentialUris = this.fallbackUris;
 
             this.configFileRelativeUrl = configFileRelativeUrl;
 
-            this.configDeserializer = configDeserializer;
-
             this.productVersion = productVersion;
+
+            this.configDeserializer = configDeserializer;
 
             this.log = logger;
 
             this.httpClientHandler = httpClientHandler;
 
             ReInitializeHttpClient();
-            SetRequestBaseUrlFromProjectConfig(ProjectConfig.Empty);
+            SetPotentialUris(ProjectConfig.Empty);
+        }
+
+        /// <summary>
+        /// Returns an optimal request Uri from the list of potential Uris.
+        /// </summary>
+        /// <returns></returns>
+        private Uri GetActualRequestBaseUri()
+        {
+            // TODO : add cache
+            if (this.potentialUris.Length == 1)
+                return this.potentialUris[0];
+
+            var idx = this.rnd.Next(0, this.potentialUris.Length);
+
+            return this.potentialUris[idx];
         }
 
         public async Task<ProjectConfig> Fetch(ProjectConfig lastConfig)
@@ -51,7 +88,7 @@ namespace ConfigCat.Client
             var request = new HttpRequestMessage
             {
                 Method = HttpMethod.Get,
-                RequestUri = new Uri(this.requestBaseUriEffective, this.configFileRelativeUrl),
+                RequestUri = new Uri(this.GetActualRequestBaseUri(), this.configFileRelativeUrl),
             };
 
             if (lastConfig.HttpETag != null)
@@ -84,7 +121,10 @@ namespace ConfigCat.Client
                     this.ReInitializeHttpClient();
                 }
 
-                this.SetRequestBaseUrlFromProjectConfig(newConfig);
+                if (this.isCdnAllowedToOverrideUri)
+                {
+                    this.SetPotentialUris(newConfig);
+                }
             }
             catch (Exception ex)
             {
@@ -120,51 +160,45 @@ namespace ConfigCat.Client
             }
         }
 
-        private void SetRequestBaseUrlFromProjectConfig(ProjectConfig projectConfig)
+        private void SetPotentialUris(ProjectConfig projectConfig)
         {
-            if (projectConfig.Equals(ProjectConfig.Empty))
+            if(!isCdnAllowedToOverrideUri)
             {
-                this.requestBaseUriEffective = this.requestBaseUriFallback;
+                this.potentialUris = this.fallbackUris;
                 return;
             }
 
-            if (projectConfig.JsonString == null)
+            if (projectConfig.Equals(ProjectConfig.Empty) || projectConfig.JsonString == null)
             {
-                this.requestBaseUriEffective = this.requestBaseUriFallback;
+                this.potentialUris = this.fallbackUris;
                 return;
             }
 
             if (!this.configDeserializer.TryDeserialize(projectConfig, out var settings))
             {
-                this.requestBaseUriEffective = this.requestBaseUriFallback;
+                this.potentialUris = this.fallbackUris;
                 return;
             }
 
-            if (settings.ServiceSpaceSettings == null)
+            if (settings.ServiceSpaceSettings == null || string.IsNullOrEmpty(settings.ServiceSpaceSettings.CdnServerNamesCsv))
             {
-                this.requestBaseUriEffective = this.requestBaseUriFallback;
+                this.potentialUris = this.fallbackUris;
                 return;
             }
 
-            if (string.IsNullOrEmpty(settings.ServiceSpaceSettings.CdnBaseUrl))
+            try
             {
-                this.requestBaseUriEffective = this.requestBaseUriFallback;
-                return;
+                this.potentialUris = settings.ServiceSpaceSettings.CdnServerNamesCsv
+                                        .Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                        .Select(name => name.Trim())
+                                        .Select(name => new Uri($"https://cdn-{name}.configcat.com"))
+                                        .ToArray();
             }
-
-            if (!settings.ServiceSpaceSettings.CdnBaseUrl.StartsWith("https://"))
+            catch(Exception ex)
             {
-                this.requestBaseUriEffective = this.requestBaseUriFallback;
-                return;
+                this.potentialUris = this.fallbackUris;
+                this.log.Error($"Could not override cdn server urls to: {settings.ServiceSpaceSettings.CdnServerNamesCsv}. Exception: {ex}");
             }
-
-            if (!settings.ServiceSpaceSettings.CdnBaseUrl.EndsWith("configcat.com"))
-            {
-                this.requestBaseUriEffective = this.requestBaseUriFallback;
-                return;
-            }
-
-            this.requestBaseUriEffective = new Uri(settings.ServiceSpaceSettings.CdnBaseUrl);
         }
 
         public void Dispose()

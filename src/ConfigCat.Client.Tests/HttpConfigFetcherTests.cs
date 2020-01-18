@@ -18,7 +18,7 @@ namespace ConfigCat.Client.Tests
 
             var configDeserializer = new ConfigDeserializer( myLogger );
 
-            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "config.json", configDeserializer, "1.0", new MyCounterLogger(), myHandler);
+            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "config.json", "1.0", configDeserializer, new MyCounterLogger(), myHandler);
 
             // Act
 
@@ -40,7 +40,7 @@ namespace ConfigCat.Client.Tests
 
             var configDeserializer = new ConfigDeserializer( myLogger );
 
-            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "config.json", configDeserializer, "1.0", new MyCounterLogger(), myHandler);
+            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "config.json", "1.0", configDeserializer, new MyCounterLogger(), myHandler);
 
             // Act
 

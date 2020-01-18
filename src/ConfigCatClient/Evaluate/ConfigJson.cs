@@ -23,8 +23,8 @@ namespace ConfigCat.Client.Evaluate
 
         internal class ServiceSettings
         {
-            [JsonProperty( "cdnBaseUrl" )]
-            internal string CdnBaseUrl;
+            [JsonProperty( "cdnServerNames" )]
+            internal string CdnServerNamesCsv;
         }
     }
 }

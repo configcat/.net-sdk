@@ -51,8 +51,8 @@ namespace ConfigCat.Client
                     new HttpConfigFetcher(
                         configuration.BaseUrl,
                         configuration.CreateConfigRelativeUrl(),
-                        this.configDeserializer,
                         "a-" + version,
+                        this.configDeserializer,
                         configuration.Logger,
                         configuration.HttpClientHandler),
                     configuration.ConfigCache ?? new InMemoryConfigCache(),
@@ -78,8 +78,8 @@ namespace ConfigCat.Client
                     new HttpConfigFetcher(
                         configuration.BaseUrl,
                         configuration.CreateConfigRelativeUrl(),
-                        this.configDeserializer,
                         "l-" + version,
+                        this.configDeserializer,
                         configuration.Logger,
                         configuration.HttpClientHandler),
                     configuration.ConfigCache ?? new InMemoryConfigCache(),
@@ -102,8 +102,8 @@ namespace ConfigCat.Client
                     new HttpConfigFetcher(
                         configuration.BaseUrl,
                         configuration.CreateConfigRelativeUrl(),
-                        this.configDeserializer,
                         "m-" + version,
+                        this.configDeserializer,
                         configuration.Logger,
                         configuration.HttpClientHandler),
                     configuration.ConfigCache ?? new InMemoryConfigCache(),

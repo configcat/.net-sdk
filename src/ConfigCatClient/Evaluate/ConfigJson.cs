@@ -11,14 +11,14 @@ namespace ConfigCat.Client.Evaluate
         /// <summary>
         /// Contains the Settings which are defined by the User, normally through the Dashboard App.
         /// </summary>
-        [JsonProperty("userSpaceSettings")]
+        [JsonProperty("user")]
         internal Dictionary<string, Setting> UserSpaceSettings;
 
         /// <summary>
         /// Contains the Settings which are defined by the ConfigCat service.
         /// These Settings are used by the SDK to determine how it should work.
         /// </summary>
-        [JsonProperty( "serviceSpaceSettings" )]
+        [JsonProperty( "cc" )]
         internal ServiceSettings ServiceSpaceSettings;
 
         internal class ServiceSettings

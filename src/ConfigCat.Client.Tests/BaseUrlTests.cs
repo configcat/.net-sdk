@@ -11,6 +11,26 @@ namespace ConfigCat.Client.Tests
         private readonly Uri workingBaseUrl = new Uri("https://testcdn.configcat.com");
         private readonly Uri notWorkingBaseUrl = new Uri("https://thiswillnotwork.configcat.com");
 
+
+        [TestMethod]
+        public void WIP()
+        {
+            var client = ConfigCatClientBuilder.Initialize(apiKey: "cc")
+                .WithLogger(new ConsoleLogger(LogLevel.Debug))
+                .WithManualPoll()
+                .Create();
+
+            client.ForceRefresh();
+
+            var actual = client.GetValue("isAwesomeFeatureEnabled", false);
+            Assert.AreEqual(true, actual);
+
+            client.ForceRefresh();
+
+            var actual2 = client.GetValue("isAwesomeFeatureEnabled", false);
+            Assert.AreEqual(false, actual2);
+        }
+
         [TestMethod]
         public void BaseUrl_Override_AutoPoll_Works()
         {

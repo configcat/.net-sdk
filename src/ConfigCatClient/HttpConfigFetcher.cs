@@ -8,6 +8,8 @@ namespace ConfigCat.Client
 {
     internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
     {
+        private const string FallbackBaseUrl = "https://cdn.configcat.com";
+
         private readonly object lck = new object();
 
         private readonly Uri[] fallbackUris;
@@ -47,7 +49,7 @@ namespace ConfigCat.Client
             else
             {
                 this.isCdnAllowedToOverrideUri = true;
-                this.fallbackUris = new Uri[] { new Uri("https://cdn.configcat.com") };
+                this.fallbackUris = new Uri[] { new Uri(FallbackBaseUrl) };
             }
 
             this.potentialUris = this.fallbackUris;
@@ -63,16 +65,14 @@ namespace ConfigCat.Client
             this.httpClientHandler = httpClientHandler;
 
             ReInitializeHttpClient();
-            SetPotentialUris(ProjectConfig.Empty);
+            GetPotentialUris(ProjectConfig.Empty);
         }
 
         /// <summary>
         /// Returns an optimal request Uri from the list of potential Uris.
         /// </summary>
-        /// <returns></returns>
         private Uri GetActualRequestBaseUri()
         {
-            // TODO : add cache
             if (this.potentialUris.Length == 1)
                 return this.potentialUris[0];
 
@@ -83,6 +83,8 @@ namespace ConfigCat.Client
 
         public async Task<ProjectConfig> Fetch(ProjectConfig lastConfig)
         {
+            this.log.Debug($"Fetching configuration starts");
+
             ProjectConfig newConfig = ProjectConfig.Empty;
 
             var request = new HttpRequestMessage
@@ -90,15 +92,19 @@ namespace ConfigCat.Client
                 Method = HttpMethod.Get,
                 RequestUri = new Uri(this.GetActualRequestBaseUri(), this.configFileRelativeUrl),
             };
+            this.log.Debug($"Request url is '{request.RequestUri}");
 
             if (lastConfig.HttpETag != null)
             {
                 request.Headers.IfNoneMatch.Add(new EntityTagHeaderValue(lastConfig.HttpETag));
+                this.log.Debug($"Request etag is '{lastConfig.HttpETag}");
             }
 
             try
             {
+                this.log.Debug($"Http request sent");
                 var response = await this.httpClient.SendAsync(request).ConfigureAwait(false);
+                this.log.Debug($"Http response received, status code: {response.StatusCode}, etag: {response.Headers.ETag.Tag}");
 
                 if (response.StatusCode == System.Net.HttpStatusCode.NotModified)
                 {
@@ -123,13 +129,13 @@ namespace ConfigCat.Client
 
                 if (this.isCdnAllowedToOverrideUri)
                 {
-                    this.SetPotentialUris(newConfig);
+                    this.potentialUris = this.GetPotentialUris(newConfig);
+                    this.log.Debug($"The new potential CDN url list is: {string.Join<Uri>(", ", this.potentialUris )}");
                 }
             }
             catch (Exception ex)
             {
-                this.log.Error($"Error occured in 'Fetch' method.\n{ex}");
-
+                this.log.Error($"Error in 'HttpConfigFetcher.Fetch()' method. Exception: '{ex}'");
                 this.ReInitializeHttpClient();
             }
 
@@ -160,44 +166,42 @@ namespace ConfigCat.Client
             }
         }
 
-        private void SetPotentialUris(ProjectConfig projectConfig)
+        private Uri[] GetPotentialUris(ProjectConfig projectConfig)
         {
-            if(!isCdnAllowedToOverrideUri)
-            {
-                this.potentialUris = this.fallbackUris;
-                return;
-            }
+            this.log.Debug($"Reading CDN server names from '{this.configFileRelativeUrl}'");
 
             if (projectConfig.Equals(ProjectConfig.Empty) || projectConfig.JsonString == null)
             {
-                this.potentialUris = this.fallbackUris;
-                return;
+                this.log.Debug($"Cannot read CDN server names #1");
+                return this.fallbackUris;
             }
 
             if (!this.configDeserializer.TryDeserialize(projectConfig, out var settings))
             {
-                this.potentialUris = this.fallbackUris;
-                return;
+                this.log.Debug($"Cannot read CDN server names #2");
+                return this.fallbackUris;
             }
 
             if (settings.ServiceSpaceSettings == null || string.IsNullOrEmpty(settings.ServiceSpaceSettings.CdnServerNamesCsv))
             {
-                this.potentialUris = this.fallbackUris;
-                return;
+                this.log.Debug($"Cannot read CDN server names #3");
+                return this.fallbackUris;
             }
 
             try
             {
-                this.potentialUris = settings.ServiceSpaceSettings.CdnServerNamesCsv
+                this.log.Debug($"CDN server names found': '{settings.ServiceSpaceSettings.CdnServerNamesCsv}'");
+                var urisInConfig = settings.ServiceSpaceSettings.CdnServerNamesCsv
                                         .Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                                         .Select(name => name.Trim())
                                         .Select(name => new Uri($"https://cdn-{name}.configcat.com"))
                                         .ToArray();
+                return urisInConfig;
             }
             catch(Exception ex)
             {
-                this.potentialUris = this.fallbackUris;
-                this.log.Error($"Could not override cdn server urls to: {settings.ServiceSpaceSettings.CdnServerNamesCsv}. Exception: {ex}");
+                this.log.Error($"Cannot re: {settings.ServiceSpaceSettings.CdnServerNamesCsv}. Exception: {ex}");
+                return this.fallbackUris;
             }
         }
 

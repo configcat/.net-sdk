@@ -32,6 +32,9 @@
     <None Update="data\sample_number_v3.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="data\sample_sensitive_v3.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="data\sample_semantic_2_v3.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

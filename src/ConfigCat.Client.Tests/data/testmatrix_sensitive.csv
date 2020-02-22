@@ -1,0 +1,8 @@
+Identifier;Email;Country;Custom1;isOneOfSensitive;isNotOneOfSensitive
+##null##;;;;ToAll;ToAll
+id1;macska@example.com;;;Macska;Kigyo
+Kutya;;;;Allat;ToAll
+Sas;;;;ToAll;Kigyo
+Kutya;macska@example.com;;;Macska;ToAll
+id1;;Scotland;;Britt;Kigyo
+Macska;;USA;;ToAll;Ireland

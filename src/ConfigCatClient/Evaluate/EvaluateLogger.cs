@@ -66,6 +66,10 @@ namespace ConfigCat.Client.Evaluate
                     return "=";
                 case ComparatorEnum.NumberNotEqual:
                     return "!=";
+                case ComparatorEnum.SensitiveOneOf:
+                    return "IS ONE OF (Sensitive)";
+                case ComparatorEnum.SensitiveNotOneOf:
+                    return "IS NOT ONE OF (Sensitive)";
                 default:
                     return comparator.ToString();
             }

@@ -237,7 +237,34 @@ namespace ConfigCat.Client.Evaluate
                             logger.Log(l + "no match");
 
                             break;
+                        case ComparatorEnum.SensitiveOneOf:
+                            if (HashString(rule.ComparisonValue)
+                                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                .Select(t => t.Trim())
+                                .Contains(comparisonAttributeValue))
+                            {
+                                logger.Log(l + "match");
 
+                                return true;
+                            }
+
+                            logger.Log(l + "no match");
+
+                            break;
+                        case ComparatorEnum.SensitiveNotOneOf:
+                            if (!HashString(rule.ComparisonValue)
+                               .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                               .Select(t => t.Trim())
+                               .Contains(comparisonAttributeValue))
+                            {
+                                logger.Log(l + "match");
+
+                                return true;
+                            }
+
+                            logger.Log(l + "no match");
+
+                            break;
                         default:
                             break;
                     }

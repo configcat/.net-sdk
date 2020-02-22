@@ -92,5 +92,9 @@ namespace ConfigCat.Client.Evaluate
         NumberGreaterThan = 14,
 
         NumberGreaterThanEqual = 15,
+
+        SensitiveOneOf = 16,
+
+        SensitiveNotOneOf = 17
     }
 }

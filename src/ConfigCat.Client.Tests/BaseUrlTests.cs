@@ -8,7 +8,7 @@ namespace ConfigCat.Client.Tests
     {
         private const string APIKEY = "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A";
 
-        private readonly Uri workingBaseUrl = new Uri("https://cdn01.configcat.com");
+        private readonly Uri workingBaseUrl = new Uri("https://cdn.configcat.com");
         private readonly Uri notWorkingBaseUrl = new Uri("https://thiswillnotwork.configcat.com");
 
         [TestMethod]

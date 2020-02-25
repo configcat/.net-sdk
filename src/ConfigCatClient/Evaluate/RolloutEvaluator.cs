@@ -238,10 +238,10 @@ namespace ConfigCat.Client.Evaluate
 
                             break;
                         case ComparatorEnum.SensitiveOneOf:
-                            if (HashString(rule.ComparisonValue)
+                            if (rule.ComparisonValue
                                 .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                                 .Select(t => t.Trim())
-                                .Contains(comparisonAttributeValue))
+                                .Contains(HashString(comparisonAttributeValue)))
                             {
                                 logger.Log(l + "match");
 
@@ -252,10 +252,10 @@ namespace ConfigCat.Client.Evaluate
 
                             break;
                         case ComparatorEnum.SensitiveNotOneOf:
-                            if (!HashString(rule.ComparisonValue)
+                            if (!rule.ComparisonValue
                                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                                .Select(t => t.Trim())
-                               .Contains(comparisonAttributeValue))
+                               .Contains(HashString(comparisonAttributeValue)))
                             {
                                 logger.Log(l + "match");
 

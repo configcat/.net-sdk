@@ -60,7 +60,7 @@ namespace ConfigCat.Client
 
         internal Uri CreateUrl()
         {
-            return new Uri(BaseUrl, "configuration-files/" + this.ApiKey + "/config_v3.json");
+            return new Uri(BaseUrl, "configuration-files/" + this.ApiKey + "/config_v4.json");
         }
     }
 }

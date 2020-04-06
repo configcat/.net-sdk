@@ -54,7 +54,7 @@ namespace SampleApplication
 
             var clientConfiguration = new AutoPollConfiguration
             {
-                ApiKey = "YOUR-API-KEY",
+                SdkKey = "YOUR-SDK-KEY",
                 Logger = new MyFileLogger(filePath, logLevel),
                 PollIntervalSeconds = 5
             };

@@ -65,7 +65,7 @@ namespace ConfigCat.Client
                 {
                     newConfig = lastConfig;
 
-                    this.log.Error("Double-check your API KEY at https://app.configcat.com/apikey");
+                    this.log.Error("Double-check your SDK Key at https://app.configcat.com/sdkkey");
                 }
                 else
                 {

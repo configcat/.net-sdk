@@ -5,18 +5,18 @@
     /// </summary>
     public class ConfigCatClientBuilder
     {
-        internal string ApiKey { get; private set; }
+        internal string SdkKey { get; private set; }
         internal ILogger Logger { get; private set; } = new ConsoleLogger();
 
         /// <summary>
-        /// Create a <see cref="ConfigCatClientBuilder"/> instance with <paramref name="apiKey"/>
+        /// Create a <see cref="ConfigCatClientBuilder"/> instance with <paramref name="sdkKey"/>
         /// </summary>
         /// <returns></returns>
-        public static ConfigCatClientBuilder Initialize(string apiKey)
+        public static ConfigCatClientBuilder Initialize(string sdkKey)
         {
             return new ConfigCatClientBuilder
             {
-                ApiKey = apiKey
+                SdkKey = sdkKey
             };
         }
 

@@ -23,7 +23,7 @@ namespace WebApplication
 
             var configCatClient = new ConfigCatClient(new LazyLoadConfiguration
             {
-                ApiKey = Configuration["ConfigCatApiKey"],
+                SdkKey = Configuration["ConfigCatSdkKey"],
                 CacheTimeToLiveSeconds = 120
             });
             configCatClient.LogLevel = LogLevel.Info;

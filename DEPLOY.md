@@ -7,6 +7,7 @@
 
     Create a new deployment on  https://ci.appveyor.com/project/configcat/net-sdk/deployments
 6. Make sure new package is available via Nuget.org: https://www.nuget.org/packages/ConfigCat.Client
+7. Update and test sample apps with the new SDK version.
 
     *Usually it takes a few minutes to propagate.*
-7. Add release notes: https://github.com/configcat/.net-sdk/releases
+8. Add release notes: https://github.com/configcat/.net-sdk/releases

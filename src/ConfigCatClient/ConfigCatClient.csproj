@@ -15,7 +15,9 @@
           <PackageProjectUrl>https://github.com/ConfigCat/.net-sdk</PackageProjectUrl>
           <RepositoryUrl>https://github.com/ConfigCat/.net-sdk</RepositoryUrl>
           <RepositoryType>git</RepositoryType>
-          <PackageReleaseNotes>Version 4.0.0
+          <PackageReleaseNotes>Version 5.0.0
+     * Breaking change: Renamed `API Key` to `SDK Key`.
+Version 4.0.0
      * Supporting sensitive text comparators.
 Version 3.2.0
      * Minor fix in info level logging

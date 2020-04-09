@@ -12,7 +12,7 @@
         {
             this.configuration = new T
             {
-                ApiKey = clientBuilder.ApiKey,
+                SdkKey = clientBuilder.SdkKey,
                 Logger = clientBuilder.Logger                
             };
         }

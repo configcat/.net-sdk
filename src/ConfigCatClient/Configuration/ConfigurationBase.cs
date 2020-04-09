@@ -26,9 +26,9 @@ namespace ConfigCat.Client
         }
 
         /// <summary>
-        /// Api key to get your configuration
+        /// SDK Key to get your configuration
         /// </summary>
-        public string ApiKey { set; get; }
+        public string SdkKey { set; get; }
 
         /// <summary>
         /// If you want to use custom caching instead of the client's default InMemoryConfigCache, You can provide an implementation of IConfigCache.
@@ -47,9 +47,9 @@ namespace ConfigCat.Client
 
         internal virtual void Validate()
         {
-            if (string.IsNullOrEmpty(this.ApiKey))
+            if (string.IsNullOrEmpty(this.SdkKey))
             {
-                throw new ArgumentException("Invalid api key value.", nameof(this.ApiKey));
+                throw new ArgumentException("Invalid SDK Key.", nameof(this.SdkKey));
             }
 
             if (this.Logger == null)
@@ -60,7 +60,7 @@ namespace ConfigCat.Client
 
         internal Uri CreateUrl()
         {
-            return new Uri(BaseUrl, "configuration-files/" + this.ApiKey + "/config_v4.json");
+            return new Uri(BaseUrl, "configuration-files/" + this.SdkKey + "/config_v4.json");
         }
     }
 }

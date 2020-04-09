@@ -6,7 +6,7 @@ namespace ConfigCat.Client.Tests
     [TestClass]
     public class BaseUrlTests
     {
-        private const string APIKEY = "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A";
+        private const string SDKKEY = "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A";
 
         private readonly Uri workingBaseUrl = new Uri("https://cdn.configcat.com");
         private readonly Uri notWorkingBaseUrl = new Uri("https://thiswillnotwork.configcat.com");
@@ -14,7 +14,7 @@ namespace ConfigCat.Client.Tests
         [TestMethod]
         public void BaseUrl_Override_AutoPoll_Works()
         {
-            var client = ConfigCatClientBuilder.Initialize(APIKEY)
+            var client = ConfigCatClientBuilder.Initialize(SDKKEY)
                 .WithAutoPoll()
                 .WithBaseUrl(workingBaseUrl)
                 .Create();
@@ -22,7 +22,7 @@ namespace ConfigCat.Client.Tests
             var actual = client.GetValue("stringDefaultCat", "N/A");
             Assert.AreEqual("Cat", actual);
 
-            client = ConfigCatClientBuilder.Initialize(APIKEY)
+            client = ConfigCatClientBuilder.Initialize(SDKKEY)
                 .WithAutoPoll()
                 .WithBaseUrl(notWorkingBaseUrl)
                 .Create();
@@ -34,7 +34,7 @@ namespace ConfigCat.Client.Tests
         [TestMethod]
         public void BaseUrl_Override_ManualPoll_Works()
         {
-            var client = ConfigCatClientBuilder.Initialize(APIKEY)
+            var client = ConfigCatClientBuilder.Initialize(SDKKEY)
                 .WithManualPoll()
                 .WithBaseUrl(workingBaseUrl)
                 .Create();
@@ -42,7 +42,7 @@ namespace ConfigCat.Client.Tests
             var actual = client.GetValue("stringDefaultCat", "N/A");
             Assert.AreEqual("Cat", actual);
 
-            client = ConfigCatClientBuilder.Initialize(APIKEY)
+            client = ConfigCatClientBuilder.Initialize(SDKKEY)
                 .WithManualPoll()
                 .WithBaseUrl(notWorkingBaseUrl)
                 .Create();
@@ -54,7 +54,7 @@ namespace ConfigCat.Client.Tests
         [TestMethod]
         public void BaseUrl_Override_LazyLoad_Works()
         {
-            var client = ConfigCatClientBuilder.Initialize(APIKEY)
+            var client = ConfigCatClientBuilder.Initialize(SDKKEY)
                 .WithLazyLoad()
                 .WithBaseUrl(workingBaseUrl)
                 .Create();
@@ -62,7 +62,7 @@ namespace ConfigCat.Client.Tests
             var actual = client.GetValue("stringDefaultCat", "N/A");
             Assert.AreEqual("Cat", actual);
 
-            client = ConfigCatClientBuilder.Initialize(APIKEY)
+            client = ConfigCatClientBuilder.Initialize(SDKKEY)
                 .WithLazyLoad()
                 .WithBaseUrl(notWorkingBaseUrl)
                 .Create();

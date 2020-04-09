@@ -10,9 +10,9 @@ namespace ConfigCat.Client.Tests
     [TestClass]
     public class BasicConfigCatClientIntegrationTests 
     {
-        private const string APIKEY = "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A";
+        private const string SDKKEY = "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A";
 
-        private static readonly IConfigCatClient client = new ConfigCatClient(APIKEY);
+        private static readonly IConfigCatClient client = new ConfigCatClient(SDKKEY);
 
         private static readonly ILogger consoleLogger = new ConsoleLogger(LogLevel.Debug);
 
@@ -26,7 +26,7 @@ namespace ConfigCat.Client.Tests
         public void ManualPollGetValue()
         {
             IConfigCatClient manualPollClient = ConfigCatClientBuilder
-                .Initialize(APIKEY)                
+                .Initialize(SDKKEY)                
                 .WithLogger(consoleLogger)
                 .WithManualPoll()
                 .Create();
@@ -40,7 +40,7 @@ namespace ConfigCat.Client.Tests
         public void AutoPollGetValue()
         {
             IConfigCatClient client = ConfigCatClientBuilder
-                .Initialize(APIKEY)
+                .Initialize(SDKKEY)
                 .WithLogger(consoleLogger)
                 .WithAutoPoll()
                 .WithMaxInitWaitTimeSeconds(30)
@@ -54,7 +54,7 @@ namespace ConfigCat.Client.Tests
         public void LazyLoadGetValue()
         {
             IConfigCatClient client = ConfigCatClientBuilder
-                .Initialize(APIKEY)
+                .Initialize(SDKKEY)
                 .WithLogger(consoleLogger)
                 .WithLazyLoad()
                 .WithCacheTimeToLiveSeconds(30)
@@ -67,7 +67,7 @@ namespace ConfigCat.Client.Tests
         public async Task ManualPollGetValueAsync()
         {
             IConfigCatClient client = ConfigCatClientBuilder
-                .Initialize(APIKEY)
+                .Initialize(SDKKEY)
                 .WithLogger(consoleLogger)
                 .WithManualPoll()
                 .Create();
@@ -81,7 +81,7 @@ namespace ConfigCat.Client.Tests
         public async Task AutoPollGetValueAsync()
         {
             IConfigCatClient client = ConfigCatClientBuilder
-                .Initialize(APIKEY)
+                .Initialize(SDKKEY)
                 .WithLogger(consoleLogger)
                 .WithAutoPoll()
                 .WithMaxInitWaitTimeSeconds(30)
@@ -95,7 +95,7 @@ namespace ConfigCat.Client.Tests
         public async Task LazyLoadGetValueAsync()
         {
             IConfigCatClient client = ConfigCatClientBuilder
-                .Initialize(APIKEY)
+                .Initialize(SDKKEY)
                 .WithLogger(consoleLogger)
                 .WithLazyLoad()
                 .WithCacheTimeToLiveSeconds(30)
@@ -108,7 +108,7 @@ namespace ConfigCat.Client.Tests
         public void GetAllKeys()
         {
             IConfigCatClient manualPollClient = ConfigCatClientBuilder
-                .Initialize(APIKEY)
+                .Initialize(SDKKEY)
                 .WithLogger(consoleLogger)
                 .WithManualPoll()
                 .Create();

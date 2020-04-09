@@ -39,9 +39,9 @@ namespace ConfigCat.Client
         /// <summary>
         /// Create an instance of ConfigCatClient and setup AutoPoll mode
         /// </summary>
-        /// <param name="apiKey">Api key to access configuration</param>
-        /// <exception cref="ArgumentException">When the <paramref name="apiKey"/> is null or empty</exception>                
-        public ConfigCatClient(string apiKey) : this(new AutoPollConfiguration { ApiKey = apiKey })
+        /// <param name="sdkKey">SDK Key to access configuration</param>
+        /// <exception cref="ArgumentException">When the <paramref name="sdkKey"/> is null or empty</exception>                
+        public ConfigCatClient(string sdkKey) : this(new AutoPollConfiguration { SdkKey = sdkKey })
         {
         }
 
@@ -216,11 +216,11 @@ namespace ConfigCat.Client
         /// <summary>
         /// Create a <see cref="ConfigCatClientBuilder"/> instance to setup the client
         /// </summary>
-        /// <param name="apiKey"></param>
+        /// <param name="sdkKey"></param>
         /// <returns></returns>
-        public static ConfigCatClientBuilder Create(string apiKey)
+        public static ConfigCatClientBuilder Create(string sdkKey)
         {
-            return ConfigCatClientBuilder.Initialize(apiKey);
+            return ConfigCatClientBuilder.Initialize(sdkKey);
         }
     }
 }

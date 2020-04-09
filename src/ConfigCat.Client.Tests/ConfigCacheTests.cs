@@ -6,7 +6,7 @@ namespace ConfigCat.Client.Tests
     [TestClass]
     public class ConfigCacheTests
     {
-        private const string APIKEY = "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A";
+        private const string SDKKEY = "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A";
 
         [TestMethod]
         public void ConfigCache_Override_AutoPoll_Works()
@@ -20,7 +20,7 @@ namespace ConfigCat.Client.Tests
 
             configCacheMock.Setup(c => c.Get()).Returns(() => cachedConfig);
 
-            var client = ConfigCatClientBuilder.Initialize(APIKEY).WithAutoPoll().WithConfigCache(configCacheMock.Object).Create();
+            var client = ConfigCatClientBuilder.Initialize(SDKKEY).WithAutoPoll().WithConfigCache(configCacheMock.Object).Create();
 
             var actual = client.GetValue("stringDefaultCat", "N/A");
             Assert.AreEqual("Cat", actual);
@@ -41,7 +41,7 @@ namespace ConfigCat.Client.Tests
 
             configCacheMock.Setup(c => c.Get()).Returns(() => cachedConfig);
 
-            var client = ConfigCatClientBuilder.Initialize(APIKEY).WithManualPoll().WithConfigCache(configCacheMock.Object).Create();
+            var client = ConfigCatClientBuilder.Initialize(SDKKEY).WithManualPoll().WithConfigCache(configCacheMock.Object).Create();
 
             configCacheMock.Verify(c => c.Set(It.IsAny<ProjectConfig>()), Times.Never);
             configCacheMock.Verify(c => c.Get(), Times.Never);
@@ -71,7 +71,7 @@ namespace ConfigCat.Client.Tests
 
             configCacheMock.Setup(c => c.Get()).Returns(() => cachedConfig);
 
-            var client = ConfigCatClientBuilder.Initialize(APIKEY).WithLazyLoad().WithConfigCache(configCacheMock.Object).Create();
+            var client = ConfigCatClientBuilder.Initialize(SDKKEY).WithLazyLoad().WithConfigCache(configCacheMock.Object).Create();
 
             var actual = client.GetValue("stringDefaultCat", "N/A");
             Assert.AreEqual("Cat", actual);

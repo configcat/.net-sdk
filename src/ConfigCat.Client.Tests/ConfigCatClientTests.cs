@@ -29,29 +29,29 @@ namespace ConfigCat.Client.Tests
 
         [ExpectedException(typeof(ArgumentException))]
         [TestMethod]
-        public void CreateAnInstance_WhenApiKeyIsEmpty_ShouldThrowArgumentNullException()
+        public void CreateAnInstance_WhenSdkKeyIsEmpty_ShouldThrowArgumentNullException()
         {
-            string apiKey = string.Empty;
+            string sdkKey = string.Empty;
 
-            new ConfigCatClient(apiKey);
+            new ConfigCatClient(sdkKey);
         }
 
         [ExpectedException(typeof(ArgumentException))]
         [TestMethod]
-        public void CreateAnInstance_WhenApiKeyIsNull_ShouldThrowArgumentNullException()
+        public void CreateAnInstance_WhenSdkKeyIsNull_ShouldThrowArgumentNullException()
         {
-            string apiKey = null;
+            string sdkKey = null;
 
-            new ConfigCatClient(apiKey);
+            new ConfigCatClient(sdkKey);
         }
 
         [ExpectedException(typeof(ArgumentException))]
         [TestMethod]
-        public void CreateAnInstance_WhenAutoPollConfigurationApiKeyIsNull_ShouldThrowArgumentNullException()
+        public void CreateAnInstance_WhenAutoPollConfigurationSdkKeyIsNull_ShouldThrowArgumentNullException()
         {
             var clientConfiguration = new AutoPollConfiguration
             {
-                ApiKey = null
+                SdkKey = null
             };
 
             new ConfigCatClient(clientConfiguration);
@@ -63,7 +63,7 @@ namespace ConfigCat.Client.Tests
         {
             var clientConfiguration = new AutoPollConfiguration
             {
-                ApiKey = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf",
+                SdkKey = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf",
                 PollIntervalSeconds = 0
             };
 
@@ -72,11 +72,11 @@ namespace ConfigCat.Client.Tests
 
         [ExpectedException(typeof(ArgumentException))]
         [TestMethod]
-        public void CreateAnInstance_WhenConfigurationApiKeyIsEmpty_ShouldThrowArgumentNullException()
+        public void CreateAnInstance_WhenConfigurationSdkKeyIsEmpty_ShouldThrowArgumentNullException()
         {
             var clientConfiguration = new AutoPollConfiguration
             {
-                ApiKey = string.Empty
+                SdkKey = string.Empty
             };
 
             new ConfigCatClient(clientConfiguration);
@@ -88,7 +88,7 @@ namespace ConfigCat.Client.Tests
         {
             var clientConfiguration = new LazyLoadConfiguration
             {
-                ApiKey = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf",
+                SdkKey = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf",
                 CacheTimeToLiveSeconds = 0
             };
 
@@ -128,7 +128,7 @@ namespace ConfigCat.Client.Tests
         {
             var clientConfiguration = new AutoPollConfiguration
             {
-                ApiKey = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf",
+                SdkKey = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf",
                 Logger = null
             };
 
@@ -141,24 +141,24 @@ namespace ConfigCat.Client.Tests
         {
             var config = new AutoPollConfiguration
             {
-                ApiKey = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf"
+                SdkKey = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf"
             };
 
             new ConfigCatClient(config);
         }
 
         [TestMethod]
-        public void CreateAnInstance_WithApiKey_ShouldCreateAnInstance()
+        public void CreateAnInstance_WithSdkKey_ShouldCreateAnInstance()
         {
-            string apiKey = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf";
+            string sdkKey = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf";
 
-            new ConfigCatClient(apiKey);
+            new ConfigCatClient(sdkKey);
         }
 
         [TestMethod]
         public void CreateConfigurationBuilderInstance_ShouldCreateAnInstance()
         {
-            var builder = ConfigCatClient.Create("APIKEY");
+            var builder = ConfigCatClient.Create("SDKKEY");
 
             Assert.IsNotNull(builder);
         }

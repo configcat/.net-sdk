@@ -7,7 +7,7 @@ namespace ConfigCat.Client.Tests
     [TestClass]
     public class CustomHttpClientHandlerTests
     {
-        private const string APIKEY = "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A";
+        private const string SDKKEY = "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A";
         private readonly MyHttpClientHandler httpClientHandler = new MyHttpClientHandler();
 
         [TestInitialize]
@@ -21,7 +21,7 @@ namespace ConfigCat.Client.Tests
         {
             // Arrange
 
-            var client = ConfigCatClientBuilder.Initialize(APIKEY)
+            var client = ConfigCatClientBuilder.Initialize(SDKKEY)
                 .WithAutoPoll()
                 .WithHttpClientHandler(httpClientHandler)
                 .Create();
@@ -41,7 +41,7 @@ namespace ConfigCat.Client.Tests
         {
             // Arrange
 
-            var client = ConfigCatClientBuilder.Initialize(APIKEY)
+            var client = ConfigCatClientBuilder.Initialize(SDKKEY)
                 .WithManualPoll()
                 .WithHttpClientHandler(httpClientHandler)
                 .Create();
@@ -62,7 +62,7 @@ namespace ConfigCat.Client.Tests
         {
             // Arrange
 
-            var client = ConfigCatClientBuilder.Initialize(APIKEY)
+            var client = ConfigCatClientBuilder.Initialize(SDKKEY)
                 .WithLazyLoad()
                 .WithHttpClientHandler(httpClientHandler)
                 .Create();

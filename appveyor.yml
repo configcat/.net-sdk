@@ -27,12 +27,10 @@ after_test:
  - codecov -f "coverage.xml"
 artifacts:
 - path: artifacts\ConfigCat.Client.*.nupkg
-  name: NuGet
-  on:
-    branch: master   
+  name: NuGet 
 notifications:
 - provider: Email
   to:
   - developer@configcat.com
   on_build_success: false
-  on_build_failure: false
+  on_build_failure: true

@@ -1,4 +1,4 @@
-version: 5.0.{build}
+version: 5.1.{build}
 image: Visual Studio 2019
 configuration: Release
 platform: Any CPU
@@ -22,7 +22,7 @@ before_test:
  - ps: choco install codecov --no-progress
 test_script:
  - ps: . .\set-debug-type.ps1 src\ConfigCatClient\ConfigCatClient.csproj
- - OpenCover.Console.exe -register:user -target:dotnet.exe -targetargs:"test src\ConfigCat.Client.Tests\ConfigCat.Client.Tests.csproj -c Release" -output:.\coverage.xml -filter:"+[*]ConfigCat.Client.* -[ConfigCatClientTests]*" -oldstyle -returntargetcode
+ - cmd: coverage.cmd
 after_test:
  - codecov -f "coverage.xml"
 artifacts:

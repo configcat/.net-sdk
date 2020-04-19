@@ -12,6 +12,11 @@ furnished to do so, subject to the following conditions:
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
 
+This repository includes two files originally copied from https://github.com/maxhauser/semver
+repository: https://github.com/maxhauser/semver/blob/master/Semver/IntExtensions.cs and
+https://github.com/maxhauser/semver/blob/master/Semver/SemVersion.cs. The
+original versions of the files are MIT licensed. See the file headers for details.
+
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE

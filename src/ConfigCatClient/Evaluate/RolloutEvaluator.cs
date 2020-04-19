@@ -1,5 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
-using Semver;
+﻿using ConfigCat.Client.Versioning;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Globalization;

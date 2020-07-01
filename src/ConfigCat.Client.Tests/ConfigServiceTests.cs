@@ -210,7 +210,7 @@ namespace ConfigCat.Client.Tests
         }
 
         [TestMethod]
-        public async Task AutoPollConfigService_RefreshConfigAsync_ShouldNotInvokeCacheGetAndFetchAndCacheSet()
+        public async Task AutoPollConfigService_RefreshConfigAsync_ShouldOnceInvokeCacheGetAndFetchAndCacheSet()
         {
             // Arrange
 
@@ -279,7 +279,6 @@ namespace ConfigCat.Client.Tests
             // Assert
 
             Assert.AreEqual(1, eventChanged);
-
         }
 
         [TestMethod]
@@ -405,7 +404,7 @@ namespace ConfigCat.Client.Tests
             // Act
 
             configService.Dispose();
-        }       
+        }
     }
 }
 

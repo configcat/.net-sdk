@@ -18,7 +18,7 @@ namespace ConfigCat.Client
         private HttpClient httpClient;
 
         private readonly Uri requestUri;
-               
+
         public HttpConfigFetcher(Uri requestUri, string productVersion, ILogger logger, HttpClientHandler httpClientHandler)
         {
             this.requestUri = requestUri;
@@ -42,20 +42,18 @@ namespace ConfigCat.Client
                 RequestUri = this.requestUri
             };
 
-            if (lastConfig.HttpETag != null)
-            {
-                request.Headers.IfNoneMatch.Add(new EntityTagHeaderValue(lastConfig.HttpETag));
-            }
-
             try
             {
+                if (lastConfig.HttpETag != null)
+                {
+                    request.Headers.IfNoneMatch.Add(new EntityTagHeaderValue(lastConfig.HttpETag));
+                }
+
+                newConfig = lastConfig;
+
                 var response = await this.httpClient.SendAsync(request).ConfigureAwait(false);
 
-                if (response.StatusCode == System.Net.HttpStatusCode.NotModified)
-                {
-                    newConfig = lastConfig;
-                }
-                else if (response.IsSuccessStatusCode)
+                if (response.IsSuccessStatusCode)
                 {
                     newConfig.HttpETag = response.Headers.ETag.Tag;
 
@@ -63,8 +61,6 @@ namespace ConfigCat.Client
                 }
                 else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
-                    newConfig = lastConfig;
-
                     this.log.Error("Double-check your SDK Key at https://app.configcat.com/sdkkey");
                 }
                 else
@@ -97,7 +93,7 @@ namespace ConfigCat.Client
                 }
                 else
                 {
-                    this.httpClient = new HttpClient(this.httpClientHandler, false);                   
+                    this.httpClient = new HttpClient(this.httpClientHandler, false);
                 }
 
                 this.httpClient.Timeout = TimeSpan.FromSeconds(30);
@@ -114,6 +110,4 @@ namespace ConfigCat.Client
             }
         }
     }
-
-    internal sealed class WrapClientHandler : DelegatingHandler { }
 }

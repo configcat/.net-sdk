@@ -15,7 +15,9 @@
           <PackageProjectUrl>https://github.com/ConfigCat/.net-sdk</PackageProjectUrl>
           <RepositoryUrl>https://github.com/ConfigCat/.net-sdk</RepositoryUrl>
           <RepositoryType>git</RepositoryType>
-          <PackageReleaseNotes>Version 5.1.0
+          <PackageReleaseNotes>Version 5.2.0
+     * Bugfix (config fetch, caching)
+Version 5.1.0
      * Remove semver nuget packages
 Version 5.0.0
      * Breaking change: Renamed `API Key` to `SDK Key`.

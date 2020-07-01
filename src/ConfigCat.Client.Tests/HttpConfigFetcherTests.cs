@@ -1,9 +1,6 @@
-﻿using ConfigCat.Client.ConfigService;
-using ConfigCat.Client.Evaluate;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Moq;
-using Newtonsoft.Json;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace ConfigCat.Client.Tests
@@ -45,6 +42,26 @@ namespace ConfigCat.Client.Tests
             // Assert
 
             Assert.IsFalse(myHandler.Disposed);
+        }
+
+        [TestMethod]
+        public async Task HttpConfigFetcher_ThrowAnException_ShouldReturPassedConfig()
+        {
+            // Arrange
+
+            var myHandler = new ExceptionThrowerHttpClientHandler(new WebException());
+
+            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new MyCounterLogger(), myHandler);
+
+            var lastConfig = new ProjectConfig("{ }", DateTime.UtcNow, "\"ETAG\"");
+
+            // Act
+
+            var actual = await instance.Fetch(lastConfig);
+
+            // Assert
+
+            Assert.AreEqual(lastConfig, actual);
         }
     }
 }

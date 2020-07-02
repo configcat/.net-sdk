@@ -78,7 +78,7 @@ namespace ConfigCat.Client.ConfigService
 
             var newConfig = await this.configFetcher.Fetch(latestConfig);
 
-            if (!latestConfig.Equals(newConfig))
+            if (!latestConfig.Equals(newConfig) && !newConfig.Equals(ProjectConfig.Empty))
             {
                 this.log.Debug("config changed");
 

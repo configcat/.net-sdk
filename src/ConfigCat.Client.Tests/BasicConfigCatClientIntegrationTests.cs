@@ -12,15 +12,7 @@ namespace ConfigCat.Client.Tests
     {
         private const string SDKKEY = "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A";
 
-        private static readonly IConfigCatClient client = new ConfigCatClient(SDKKEY);
-
         private static readonly ILogger consoleLogger = new ConsoleLogger(LogLevel.Debug);
-
-        [ClassCleanup()]
-        public static void ClassCleanup()
-        {
-            client?.Dispose();
-        }        
 
         [TestMethod]
         public void ManualPollGetValue()

@@ -55,5 +55,37 @@ namespace ConfigCat.Client
         /// Refresh the configuration
         /// </summary>
         Task ForceRefreshAsync();
+
+        /// <summary>
+        /// Returns the Variation ID (analytics) of a feature flag or setting by the given key.
+        /// </summary>
+        /// <param name="key">Key for programs</param>
+        /// <param name="defaultVariationId">In case of failure return this value</param>
+        /// <param name="user">The user object for variation evaluation</param>
+        /// <returns>Variation ID</returns>
+        string GetVariationId(string key, string defaultVariationId, User user = null);
+
+        /// <summary>
+        /// Returns the Variation ID (analytics) of a feature flag or setting by the given key.
+        /// </summary>
+        /// <param name="key">Key for programs</param>
+        /// <param name="defaultVariationId">In case of failure return this value</param>
+        /// <param name="user">The user object for variation evaluation</param>
+        /// <returns>Variation ID</returns>
+        Task<string> GetVariationIdAsync(string key, string defaultVariationId, User user = null);
+
+        /// <summary>
+        /// Returns Variation IDs (analytics) of all feature flags or settings.
+        /// </summary>
+        /// <param name="user">The user object for variation evaluation</param>
+        /// <returns>Collection of all Variation IDs</returns>
+        IEnumerable<string> GetAllVariationId(User user = null);
+
+        /// <summary>
+        /// Returns Variation IDs (analytics) of all feature flags or settings.
+        /// </summary>
+        /// <param name="user">The user object for variation evaluation</param>
+        /// <returns>Collection of all Variation IDs</returns>
+        Task<IEnumerable<string>> GetAllVariationIdAsync(User user = null);
     }
 }

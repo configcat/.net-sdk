@@ -13,6 +13,8 @@ namespace ConfigCat.Client.Evaluate
 
         public ICollection<string> Operations { get; private set; } = new List<string>();
 
+        public string VariationId { get; set; }
+
         public void Log(string message)
         {
             this.Operations.Add(message);
@@ -23,6 +25,8 @@ namespace ConfigCat.Client.Evaluate
             var result = new StringBuilder();
 
             result.AppendLine($" Evaluate '{KeyName}'");
+
+            result.AppendLine($" VariationId: {this.VariationId ?? "null"}");
 
             result.AppendLine($" User object: {Newtonsoft.Json.JsonConvert.SerializeObject(this.User)}");
 

@@ -6,7 +6,7 @@ namespace ConfigCat.Client.Evaluate
     internal class Setting
     {
         [JsonProperty(PropertyName = "v")]
-        public string Value { get; set; }
+        public string RawValue { get; set; }
 
         [JsonProperty(PropertyName = "t")]
         public SettingTypeEnum SettingType { get; set; }
@@ -16,6 +16,9 @@ namespace ConfigCat.Client.Evaluate
 
         [JsonProperty(PropertyName = "r")]
         public List<RolloutRule> RolloutRules { get; set; }
+
+        [JsonProperty(PropertyName = "i")]
+        public string VariationId { get; set; }
     }
 
     internal class RolloutPercentageItem
@@ -27,7 +30,10 @@ namespace ConfigCat.Client.Evaluate
         public string RawValue { get; private set; }
 
         [JsonProperty(PropertyName = "p")]
-        public int Percentage { get; set; }        
+        public int Percentage { get; set; }
+
+        [JsonProperty(PropertyName = "i")]
+        public string VariationId { get; set; }
     }
 
     internal class RolloutRule
@@ -46,6 +52,9 @@ namespace ConfigCat.Client.Evaluate
 
         [JsonProperty(PropertyName = "v")]
         public string RawValue { get; private set; }
+
+        [JsonProperty(PropertyName = "i")]
+        public string VariationId { get; set; }
     }
 
     internal enum SettingTypeEnum : byte

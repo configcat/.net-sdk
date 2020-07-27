@@ -7,6 +7,8 @@ namespace ConfigCat.Client
     /// </summary>
     public class User
     {
+        internal const string DefaultIdentifierValue = "";
+
         /// <summary>
         /// Unique identifier for the User or Session. e.g. Email address, Primary key, Session Id
         /// </summary>
@@ -37,23 +39,23 @@ namespace ConfigCat.Client
             {
                 var result = new Dictionary<string, string>
                 {
-                    { "identifier", this.Identifier},
-                    { "email", this.Email},
-                    { "country",  this.Country},
+                    { nameof(Identifier), this.Identifier},
+                    { nameof(Email), this.Email},
+                    { nameof(Country),  this.Country},
                 };
 
                 if (Custom != null && Custom.Count > 0)
                 {
                     foreach (var item in this.Custom)
                     {
-                        if (item.Key.ToLowerInvariant() == nameof(Identifier).ToLowerInvariant() ||
-                            item.Key.ToLowerInvariant() == nameof(Email).ToLowerInvariant() ||
-                            item.Key.ToLowerInvariant() == nameof(Country).ToLowerInvariant())
+                        if (item.Key == nameof(Identifier) ||
+                            item.Key == nameof(Email) ||
+                            item.Key == nameof(Country))
                         {
                             continue;
                         }
 
-                        result.Add(item.Key.ToLowerInvariant(), item.Value);
+                        result.Add(item.Key, item.Value);
                     }
                 }
 
@@ -67,7 +69,7 @@ namespace ConfigCat.Client
         /// <param name="identifier">Unique identifier for the User</param>
         public User(string identifier)
         {
-            this.Identifier = identifier;
+            this.Identifier = string.IsNullOrEmpty(identifier) ? DefaultIdentifierValue : identifier;
             this.Custom = new Dictionary<string, string>(0);
         }
     }

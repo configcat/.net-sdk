@@ -8,7 +8,7 @@
           <DelaySign>false</DelaySign>
           <AssemblyOriginatorKeyFile>strongname.snk</AssemblyOriginatorKeyFile>
           <Version>3.1.0</Version>
-          <Copyright>Copyright © ConfigCat 2019</Copyright>
+          <Copyright>Copyright © ConfigCat 2020</Copyright>
           <Company>ConfigCat</Company>
           <Authors>ConfigCat</Authors>
           <PackageLicenseUrl>https://raw.githubusercontent.com/ConfigCat/.net-sdk/master/LICENSE</PackageLicenseUrl>

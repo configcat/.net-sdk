@@ -107,8 +107,9 @@ namespace ConfigCat.Client.Tests
             }
         }
 
+        [TestCategory("MatrixTests")]
         [TestMethod]
-        public async Task GetValue_MatrixTests()
+        public async Task Run_MatrixTests()
         {
             await MatrixTest(AssertValue);
         }       

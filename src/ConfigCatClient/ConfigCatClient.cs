@@ -221,7 +221,7 @@ namespace ConfigCat.Client
             {
                 var c = this.configService.GetConfigAsync().Result;
 
-                return this.configEvaluator.Evaluate(c, key, defaultVariationId, user);
+                return this.configEvaluator.EvaluateVariationId(c, key, defaultVariationId, user);
             }
             catch (Exception ex)
             {
@@ -238,7 +238,7 @@ namespace ConfigCat.Client
             {
                 var c = await this.configService.GetConfigAsync().ConfigureAwait(false);
 
-                return this.configEvaluator.Evaluate(c, key, defaultVariationId, user);
+                return this.configEvaluator.EvaluateVariationId(c, key, defaultVariationId, user);
             }
             catch (Exception ex)
             {

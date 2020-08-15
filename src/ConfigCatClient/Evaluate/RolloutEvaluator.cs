@@ -32,13 +32,13 @@ namespace ConfigCat.Client.Evaluate
             return new JValue(result.RawValue).Value<T>();
         }
 
-        public string EvaluateVariationId(ProjectConfig projectConfig, string key, string defaultValue, User user = null)
+        public string EvaluateVariationId(ProjectConfig projectConfig, string key, string defaultVariationId, User user = null)
         {
-            var result = EvaluateLogic(projectConfig, key, null, defaultValue, user);
+            var result = EvaluateLogic(projectConfig, key, null, defaultVariationId, user);
 
             if (result == null)
             {
-                return defaultValue;
+                return defaultVariationId;
             }
 
             return result.VariationId;

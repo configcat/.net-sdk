@@ -127,5 +127,88 @@ namespace ConfigCat.Client.Tests
             Assert.AreEqual(expectedValue, actual);
             Assert.AreNotEqual(defaultValue, actual);
         }
+
+        [TestMethod]
+        public void GetVariationId()
+        {
+            IConfigCatClient manualPollClient = ConfigCatClientBuilder
+                .Initialize(SDKKEY)
+                .WithLogger(consoleLogger)
+                .WithManualPoll()
+                .Create();
+
+            manualPollClient.ForceRefresh();
+            var actual = manualPollClient.GetVariationId("stringDefaultCat", "default");
+
+            Assert.AreEqual("7a0be518", actual);            
+        }
+
+        [TestMethod]
+        public async Task GetVariationIdAsync()
+        {
+            IConfigCatClient manualPollClient = ConfigCatClientBuilder
+                .Initialize(SDKKEY)
+                .WithLogger(consoleLogger)
+                .WithManualPoll()
+                .Create();
+
+            await manualPollClient.ForceRefreshAsync();
+
+            var actual = await manualPollClient.GetVariationIdAsync("stringDefaultCat", "default");
+
+            Assert.AreEqual("7a0be518", actual);
+        }
+
+        [TestMethod]
+        public void GetAllVariationId()
+        {
+            // Arrange
+
+            const string expectedJsonString = "[\"7a0be518\",\"83372510\",\"2459598d\",\"ce564c3a\",\"44ab483a\",\"d227b334\",\"93f5a1c0\",\"bb66b1f3\",\"09513143\",\"489a16d2\",\"607147d5\",\"11634414\",\"faadbf54\",\"5af8acc7\",\"183ee713\",\"baff2362\"]";
+
+            var expectedValue = Newtonsoft.Json.JsonConvert.DeserializeObject<string[]>(expectedJsonString);
+
+            IConfigCatClient manualPollClient = ConfigCatClientBuilder
+                .Initialize(SDKKEY)
+                .WithLogger(consoleLogger)
+                .WithManualPoll()
+                .Create();
+
+            manualPollClient.ForceRefresh();
+
+            // Act
+
+            var actual = manualPollClient.GetAllVariationId(new User("a@configcat.com"));
+
+            // Assert            
+            Assert.AreEqual(16, expectedValue.Length);
+            CollectionAssert.AreEquivalent(expectedValue, actual.ToArray());
+        }
+
+        [TestMethod]
+        public async Task GetAllVariationIdAsync()
+        {
+            // Arrange
+
+            const string expectedJsonString = "[\"7a0be518\",\"83372510\",\"2459598d\",\"ce564c3a\",\"44ab483a\",\"d227b334\",\"93f5a1c0\",\"bb66b1f3\",\"09513143\",\"489a16d2\",\"607147d5\",\"11634414\",\"faadbf54\",\"5af8acc7\",\"183ee713\",\"baff2362\"]";
+
+            var expectedValue = Newtonsoft.Json.JsonConvert.DeserializeObject<string[]>(expectedJsonString);
+
+            IConfigCatClient manualPollClient = ConfigCatClientBuilder
+                .Initialize(SDKKEY)
+                .WithLogger(consoleLogger)
+                .WithManualPoll()
+                .Create();
+
+            await manualPollClient.ForceRefreshAsync();
+
+            // Act
+
+            var actual = await manualPollClient.GetAllVariationIdAsync(new User("a@configcat.com"));
+
+            // Assert            
+            Assert.AreEqual(16, expectedValue.Length);
+            CollectionAssert.AreEquivalent(expectedValue, actual.ToArray());
+        }
     }
 }

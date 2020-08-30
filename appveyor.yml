@@ -16,7 +16,7 @@ build:
   project: src/ConfigCatClient.sln
   verbosity: normal
 after_build:
-- msbuild /t:Pack /p:IncludeSymbols=true /p:Configuration=%configuration% /p:PackageOutputPath=..\..\artifacts src\ConfigCatClient\ConfigCatClient.csproj
+- msbuild /t:Pack /p:IncludeSymbols=true /p:Configuration=%configuration% /p:PackageOutputPath=..\..\artifacts /p:SymbolPackageFormat=snupkg src\ConfigCatClient\ConfigCatClient.csproj
 before_test:
  - ps: choco install opencover.portable --no-progress
  - ps: choco install codecov --no-progress
@@ -26,7 +26,7 @@ test_script:
 after_test:
  - codecov -f "coverage.xml"
 artifacts:
-- path: artifacts\ConfigCat.Client.*.nupkg
+- path: artifacts\ConfigCat.Client.*.*nupkg
   name: NuGet 
 notifications:
 - provider: Email

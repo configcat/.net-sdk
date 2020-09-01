@@ -345,5 +345,155 @@ namespace ConfigCat.Client.Tests
             Assert.AreEqual(0, actualKeys.Count());
             loggerMock.Verify(m => m.Warning(It.IsAny<string>()), Times.Once);
         }
+
+        [TestMethod]
+        public void GetVariationId_EvaluateServiceThrowException_ShouldReturnDefaultValue()
+        {
+            // Arrange
+
+            const string defaultValue = "Victory for the Firstborn!";
+
+            evaluateMock
+                .Setup(m => m.EvaluateVariationId(It.IsAny<ProjectConfig>(), It.IsAny<string>(), defaultValue, null))
+                .Throws<Exception>();
+
+            var client = new ConfigCatClient(configService.Object, loggerMock.Object, evaluateMock.Object, deserializerMock.Object);
+
+            // Act
+
+            var actual = client.GetVariationId(null, defaultValue);
+
+            // Assert
+
+            Assert.AreEqual(defaultValue, actual);
+        }
+
+        [TestMethod]
+        public async Task GetVariationIdAsync_EvaluateServiceThrowException_ShouldReturnDefaultValue()
+        {
+            // Arrange
+
+            const string defaultValue = "Victory for the Firstborn!";
+
+            evaluateMock
+                .Setup(m => m.EvaluateVariationId(It.IsAny<ProjectConfig>(), It.IsAny<string>(), defaultValue, null))
+                .Throws<Exception>();
+
+            var client = new ConfigCatClient(configService.Object, loggerMock.Object, evaluateMock.Object, deserializerMock.Object);
+
+            // Act
+
+            var actual = await client.GetVariationIdAsync(null, defaultValue);
+
+            // Assert
+
+            Assert.AreEqual(defaultValue, actual);
+        }
+
+        [TestMethod]
+        public void GetVariationId_DeserializeFailed_ShouldReturnsWithEmptyArray()
+        {
+            // Arrange
+
+            var configServiceMock = new Mock<IConfigService>();
+            var loggerMock = new Mock<ILogger>();
+            var evaluatorMock = new Mock<IRolloutEvaluator>();
+            var configDeserializerMock = new Mock<IConfigDeserializer>();
+
+            configServiceMock.Setup(m => m.GetConfigAsync()).ReturnsAsync(ProjectConfig.Empty);
+            IDictionary<string, Setting> o = new Dictionary<string, Setting>();
+            configDeserializerMock
+                .Setup(m => m.TryDeserialize(It.IsAny<ProjectConfig>(), out o))
+                .Returns(false);
+
+            IConfigCatClient instance = new ConfigCatClient(
+                configServiceMock.Object,
+                loggerMock.Object,
+                evaluatorMock.Object,
+                configDeserializerMock.Object);
+
+            // Act
+
+            var actual = instance.GetAllVariationId();
+
+            // Assert
+
+            Assert.IsNotNull(actual);
+            Assert.AreEqual(0, actual.Count());
+            loggerMock.Verify(m => m.Warning(It.IsAny<string>()), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task GetVariationIdAsync_DeserializeFailed_ShouldReturnsWithEmptyArray()
+        {
+            // Arrange
+
+            var configServiceMock = new Mock<IConfigService>();
+            var loggerMock = new Mock<ILogger>();
+            var evaluatorMock = new Mock<IRolloutEvaluator>();
+            var configDeserializerMock = new Mock<IConfigDeserializer>();
+
+            configServiceMock.Setup(m => m.GetConfigAsync()).ReturnsAsync(ProjectConfig.Empty);
+            IDictionary<string, Setting> o = new Dictionary<string, Setting>();
+            configDeserializerMock
+                .Setup(m => m.TryDeserialize(It.IsAny<ProjectConfig>(), out o))
+                .Returns(false);
+
+            IConfigCatClient instance = new ConfigCatClient(
+                configServiceMock.Object,
+                loggerMock.Object,
+                evaluatorMock.Object,
+                configDeserializerMock.Object);
+
+            // Act
+
+            var actual = await instance.GetAllVariationIdAsync();
+
+            // Assert
+
+            Assert.IsNotNull(actual);
+            Assert.AreEqual(0, actual.Count());
+            loggerMock.Verify(m => m.Warning(It.IsAny<string>()), Times.Once);
+        }
+
+        [TestMethod]
+        public void GetAllVariationId_ConfigServiceThrowException_ShouldReturnEmptyEnumerable()
+        {
+            // Arrange
+
+            configService
+                .Setup(m => m.GetConfigAsync())
+                .Throws<Exception>();
+
+            var client = new ConfigCatClient(configService.Object, loggerMock.Object, evaluateMock.Object, deserializerMock.Object);
+
+            // Act
+
+            var actual = client.GetAllVariationId(null);
+
+            // Assert
+
+            Assert.AreEqual(Enumerable.Empty<string>(), actual);
+        }
+
+        [TestMethod]
+        public async Task GetAllVariationIdAsync_ConfigServiceThrowException_ShouldReturnEmptyEnumerable()
+        {
+            // Arrange
+
+            configService
+                .Setup(m => m.GetConfigAsync())
+                .Throws<Exception>();
+
+            var client = new ConfigCatClient(configService.Object, loggerMock.Object, evaluateMock.Object, deserializerMock.Object);
+
+            // Act
+
+            var actual = await client.GetAllVariationIdAsync(null);
+
+            // Assert
+
+            Assert.AreEqual(Enumerable.Empty<string>(), actual);
+        }
     }
 }

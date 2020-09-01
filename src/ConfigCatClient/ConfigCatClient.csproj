@@ -15,7 +15,9 @@
           <PackageProjectUrl>https://github.com/ConfigCat/.net-sdk</PackageProjectUrl>
           <RepositoryUrl>https://github.com/ConfigCat/.net-sdk</RepositoryUrl>
           <RepositoryType>git</RepositoryType>
-          <PackageReleaseNotes>Version 5.2.0
+          <PackageReleaseNotes>Version 5.3.0
+     * VariationID, bugfix (#11)
+Version 5.2.0
      * Bugfix (config fetch, caching)
 Version 5.1.0
      * Remove semver nuget packages

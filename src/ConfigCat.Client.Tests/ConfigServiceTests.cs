@@ -245,7 +245,7 @@ namespace ConfigCat.Client.Tests
         }
 
         [TestMethod]
-        public async Task AutoPollConfigService_RefreshConfigAsync_ConfigCahged_ShouldRaiseEvent()
+        public async Task AutoPollConfigService_RefreshConfigAsync_ConfigChanged_ShouldRaiseEvent()
         {
             // Arrange
 
@@ -279,6 +279,78 @@ namespace ConfigCat.Client.Tests
             // Assert
 
             Assert.AreEqual(1, eventChanged);
+        }
+
+        [TestMethod]
+        public void AutoPollConfigService_Dispose_ShouldStopTimer()
+        {
+            // Arrange           
+
+            long counter = 0;
+            long e1, e2;
+
+            this.cacheMock
+                .Setup(m => m.Get())
+                .Returns(cachedPc);
+
+            this.fetcherMock
+                .Setup(m => m.Fetch(cachedPc))
+                .Callback(() => Interlocked.Increment(ref counter))
+                .Returns(Task.FromResult(cachedPc));
+
+            var service = new AutoPollConfigService(
+                fetcherMock.Object,
+                cacheMock.Object,
+                TimeSpan.FromSeconds(0.2d),
+                TimeSpan.Zero,
+                loggerMock.Object,
+                true);
+
+            // Act
+            Thread.Sleep(TimeSpan.FromSeconds(1));
+            e1 = Interlocked.Read(ref counter);
+            service.Dispose();
+
+            // Assert
+
+            Thread.Sleep(TimeSpan.FromSeconds(2));
+            e2 = Interlocked.Read(ref counter);
+            Console.WriteLine(e2 - e1);
+            Assert.IsTrue(e2 - e1 <= 1);
+        }
+
+        [TestMethod]
+        public void AutoPollConfigService_WithoutTimer_InvokeDispose_ShouldDisposeService()
+        {
+            // Arrange           
+
+            long counter = -1;
+            long e1;
+
+            this.cacheMock
+                .Setup(m => m.Get())
+                .Returns(cachedPc);
+
+            this.fetcherMock
+                .Setup(m => m.Fetch(cachedPc))
+                .Callback(() => Interlocked.Increment(ref counter))
+                .Returns(Task.FromResult(cachedPc));
+
+            var service = new AutoPollConfigService(
+                fetcherMock.Object,
+                cacheMock.Object,
+                TimeSpan.FromSeconds(0.2d),
+                TimeSpan.Zero,
+                loggerMock.Object,
+                false);
+
+            // Act
+            Thread.Sleep(TimeSpan.FromSeconds(1));
+            e1 = Interlocked.Read(ref counter);
+            service.Dispose();
+
+            // Assert            
+            Assert.AreEqual(-1, e1);
         }
 
         [TestMethod]

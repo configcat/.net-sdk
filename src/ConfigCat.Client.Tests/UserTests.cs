@@ -7,40 +7,7 @@ namespace ConfigCat.Client.Tests
     public class UserTests
     {
         [TestMethod]
-        public void CreateUser()
-        {
-            var u0 = new User(null);
-
-            var u1 = new User("12345")
-            {
-                Email = "email",
-                Country = "US",
-                Custom =
-                {
-                    { "key", "value"}
-                }
-            };
-
-            var u2 = new User("sw")
-            {
-                Email = null,
-                Country = "US",
-                Custom =
-                {
-                    { "key0", "value"},
-                    { "key1", "value"},
-                    { "key2", "value"},
-                }
-            };
-
-            var u3 = new User("sw");
-            
-            u3.Custom.Add("customKey0", "customValue");
-            u3.Custom["customKey1"] = "customValue";
-        }
-
-        [TestMethod]
-        public void UseCustomProperties()
+        public void CreateUser_WithIdAndEmailAndCountry_AllAttributesShouldContainsPassedValues()
         {
             // Arrange            
 
@@ -58,18 +25,16 @@ namespace ConfigCat.Client.Tests
             // Assert
 
             string s;
-            Assert.IsTrue(actualAttributes.TryGetValue("email", out s));
+            Assert.IsTrue(actualAttributes.TryGetValue(nameof(User.Email), out s));
             Assert.AreEqual("id@example.com", s);
 
             s = null;
-            Assert.IsTrue(actualAttributes.TryGetValue("country", out s));
+            Assert.IsTrue(actualAttributes.TryGetValue(nameof(User.Country), out s));
             Assert.AreEqual("US", s);
 
             s = null;
-            Assert.IsTrue(actualAttributes.TryGetValue("identifier", out s));
+            Assert.IsTrue(actualAttributes.TryGetValue(nameof(User.Identifier), out s));
             Assert.AreEqual("id", s);
-
-            Assert.AreEqual(3, actualAttributes.Count);
         }
 
         [TestMethod]
@@ -85,10 +50,55 @@ namespace ConfigCat.Client.Tests
 
                 Custom = new Dictionary<string, string>
                 {
-                    { "myCustomAttribute", ""},
-                    { "identifier", "myIdentifier"},
-                    { "country", "United States"},
-                    { "email", "otherEmail@example.com"}
+                    { "myCustomAttribute", "myCustomAttributeValue"},
+                    { nameof(User.Identifier), "myIdentifier"},
+                    { nameof(User.Country), "United States"},
+                    { nameof(User.Email), "otherEmail@example.com"}
+                }
+            };
+
+            // Act
+
+            var actualAttributes = user.AllAttributes;
+
+            // Assert
+
+            Assert.IsTrue(actualAttributes.TryGetValue(nameof(User.Identifier), out string s));
+            Assert.AreEqual("id", s);
+            Assert.AreNotEqual("myIdentifier", s);
+
+            Assert.IsTrue(actualAttributes.TryGetValue(nameof(User.Country), out s));
+            Assert.AreEqual("US", s);
+            Assert.AreNotEqual("United States", s);
+            
+            Assert.IsTrue(actualAttributes.TryGetValue(nameof(User.Email), out s));
+            Assert.AreEqual("id@example.com", s);
+            Assert.AreNotEqual("otherEmail@example.com", s);
+
+            Assert.AreEqual(4, actualAttributes.Count);
+        }
+
+        [DataTestMethod]
+        [DataRow("identifier", "myId")]
+        [DataRow("IDENTIFIER", "myId")]
+        [DataRow("email", "theBoss@example.com")]
+        [DataRow("EMAIL", "theBoss@example.com")]
+        [DataRow("eMail", "theBoss@example.com")]
+        [DataRow("country", "myHome")]
+        [DataRow("COUNTRY", "myHome")]        
+        public void UseWellKnownAttributesAsCustomPropertiesWithDifferentNames_ShouldAppendAllAttributes(string attributeName, string attributeValue)
+        {
+            // Arrange
+
+            var user = new User("id")
+            {
+                Email = "id@example.com",
+
+                Country = "US",
+
+                Custom = new Dictionary<string, string>
+                {
+                    { attributeName, attributeValue}                   
                 }
             };
 
@@ -100,19 +110,22 @@ namespace ConfigCat.Client.Tests
 
             Assert.AreEqual(4, actualAttributes.Count);
 
-            string s;
-            Assert.IsTrue(actualAttributes.TryGetValue("identifier", out s));
-            Assert.AreEqual("id", s);
+            Assert.IsTrue(actualAttributes.TryGetValue(attributeName, out string s));
+            Assert.AreEqual(attributeValue, s);
+        }
 
-            s = null;
-            Assert.IsTrue(actualAttributes.TryGetValue("country", out s));
-            Assert.AreEqual("US", s);
-            Assert.AreNotEqual("United States", s);
+        [DataTestMethod()]
+        [DataRow(null, User.DefaultIdentifierValue)]
+        [DataRow("", User.DefaultIdentifierValue)]
+        [DataRow("id", "id")]
+        [DataRow("\t", "\t")]
+        [DataRow("\u1F600", "\u1F600")]
+        public void CreateUser_ShouldSetIdentifier(string identifier, string expectedValue)
+        {
+            var user = new User(identifier);
 
-            s = null;
-            Assert.IsTrue(actualAttributes.TryGetValue("email", out s));
-            Assert.AreEqual("id@example.com", s);
-            Assert.AreNotEqual("otherEmail@example.com", s);
+            Assert.AreEqual(expectedValue, user.Identifier);
+            Assert.AreEqual(expectedValue, user.AllAttributes[nameof(User.Identifier)]);
         }
     }
 }

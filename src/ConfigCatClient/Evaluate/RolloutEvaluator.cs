@@ -22,32 +22,57 @@ namespace ConfigCat.Client.Evaluate
 
         public T Evaluate<T>(ProjectConfig projectConfig, string key, T defaultValue, User user = null)
         {
+            var result = EvaluateLogic(projectConfig, key, defaultValue?.ToString(), null, user);
+
+            if (result == null)
+            {
+                return defaultValue;
+            }
+
+            return new JValue(result.RawValue).Value<T>();
+        }
+
+        public string EvaluateVariationId(ProjectConfig projectConfig, string key, string defaultVariationId, User user = null)
+        {
+            var result = EvaluateLogic(projectConfig, key, null, defaultVariationId, user);
+
+            if (result == null)
+            {
+                return defaultVariationId;
+            }
+
+            return result.VariationId;
+        }
+
+        private EvaluateResult EvaluateLogic(ProjectConfig projectConfig, string key, string logDefaultValue, string logDefaultVariationId, User user = null)
+        {
             if (!this.configDeserializer.TryDeserialize(projectConfig, out var settings))
             {
                 this.log.Warning("Config deserialization failed, returning defaultValue");
 
-                return defaultValue;
+                return null;
             }
 
             if (!settings.TryGetValue(key, out var setting))
             {
                 var keys = string.Join(",", settings.Keys.Select(s => $"'{s}'").ToArray());
 
-                this.log.Error($"Evaluating '{key}' failed. Returning default value: '{defaultValue}'. Here are the available keys: {keys}.");
+                this.log.Error($"Evaluating '{key}' failed. Returning default value: '{logDefaultValue}'. Here are the available keys: {keys}.");
 
-                return defaultValue;
+                return null;
             }
 
-            var evaluateLog = new EvaluateLogger<T>
+            var evaluateLog = new EvaluateLogger<string>
             {
-                ReturnValue = defaultValue,
+                ReturnValue = logDefaultValue,
                 User = user,
-                KeyName = key
+                KeyName = key,
+                VariationId = logDefaultVariationId
             };
 
             try
             {
-                T result;
+                EvaluateResult result = null;
 
                 if (user != null)
                 {
@@ -55,7 +80,9 @@ namespace ConfigCat.Client.Evaluate
 
                     if (TryEvaluateRules(setting.RolloutRules, user, evaluateLog, out result))
                     {
-                        evaluateLog.ReturnValue = result;
+                        evaluateLog.ReturnValue = result.RawValue;
+                        evaluateLog.VariationId = result.VariationId;
+
                         return result;
                     }
 
@@ -64,7 +91,8 @@ namespace ConfigCat.Client.Evaluate
                     if (TryEvaluateVariations(setting.RolloutPercentageItems, key, user, out result))
                     {
                         evaluateLog.Log("evaluate % option => user targeted");
-                        evaluateLog.ReturnValue = result;
+                        evaluateLog.ReturnValue = result.RawValue;
+                        evaluateLog.VariationId = result.VariationId;
 
                         return result;
                     }
@@ -80,9 +108,10 @@ namespace ConfigCat.Client.Evaluate
 
                 // regular evaluate
 
-                result = new JValue(setting.Value).Value<T>();
+                result = new EvaluateResult(setting.RawValue, setting.VariationId);
 
-                evaluateLog.ReturnValue = result;
+                evaluateLog.ReturnValue = result.RawValue;
+                evaluateLog.VariationId = result.VariationId;
 
                 return result;
             }
@@ -92,9 +121,9 @@ namespace ConfigCat.Client.Evaluate
             }
         }
 
-        private bool TryEvaluateVariations<T>(ICollection<RolloutPercentageItem> rolloutPercentageItems, string key, User user, out T result)
+        private bool TryEvaluateVariations(ICollection<RolloutPercentageItem> rolloutPercentageItems, string key, User user, out EvaluateResult result)
         {
-            result = default(T);
+            result = new EvaluateResult();
 
             if (rolloutPercentageItems != null && rolloutPercentageItems.Count > 0)
             {
@@ -112,7 +141,8 @@ namespace ConfigCat.Client.Evaluate
 
                     if (hashScale < bucket)
                     {
-                        result = new JValue(variation.RawValue).Value<T>();                        
+                        result.RawValue = variation.RawValue;
+                        result.VariationId = variation.VariationId;
 
                         return true;
                     }
@@ -122,22 +152,23 @@ namespace ConfigCat.Client.Evaluate
             return false;
         }
 
-        private static bool TryEvaluateRules<T>(ICollection<RolloutRule> rules, User user, EvaluateLogger<T> logger, out T result)
+        private static bool TryEvaluateRules<T>(ICollection<RolloutRule> rules, User user, EvaluateLogger<T> logger, out EvaluateResult result)
         {
-            result = default(T);
+            result = new EvaluateResult();
 
             if (rules != null && rules.Count > 0)
             {
                 foreach (var rule in rules.OrderBy(o => o.Order))
                 {
-                    result = new JValue(rule.RawValue).Value<T>();
+                    result.RawValue = rule.RawValue;
+                    result.VariationId = rule.VariationId;
 
-                    if (!user.AllAttributes.ContainsKey(rule.ComparisonAttribute.ToLowerInvariant()))
+                    if (!user.AllAttributes.ContainsKey(rule.ComparisonAttribute))
                     {
                         continue;
                     }
 
-                    var comparisonAttributeValue = user.AllAttributes[rule.ComparisonAttribute.ToLowerInvariant()];
+                    var comparisonAttributeValue = user.AllAttributes[rule.ComparisonAttribute];
                     if (string.IsNullOrEmpty(comparisonAttributeValue))
                     {
                         continue;

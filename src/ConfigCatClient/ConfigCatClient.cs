@@ -2,6 +2,7 @@
 using ConfigCat.Client.Evaluate;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -213,6 +214,98 @@ namespace ConfigCat.Client
             }
         }
 
+        /// <inheritdoc />
+        public string GetVariationId(string key, string defaultVariationId, User user = null)
+        {
+            try
+            {
+                var c = this.configService.GetConfigAsync().Result;
+
+                return this.configEvaluator.EvaluateVariationId(c, key, defaultVariationId, user);
+            }
+            catch (Exception ex)
+            {
+                this.log.Error($"Error occured in 'GetVariationId' method.\n{ex}");
+
+                return defaultVariationId;
+            }
+        }
+
+        /// <inheritdoc />
+        public async Task<string> GetVariationIdAsync(string key, string defaultVariationId, User user = null)
+        {
+            try
+            {
+                var c = await this.configService.GetConfigAsync().ConfigureAwait(false);
+
+                return this.configEvaluator.EvaluateVariationId(c, key, defaultVariationId, user);
+            }
+            catch (Exception ex)
+            {
+                this.log.Error($"Error occured in 'GetVariationIdAsync' method.\n{ex}");
+
+                return defaultVariationId;
+            }
+        }
+
+        /// <inheritdoc />
+        public IEnumerable<string> GetAllVariationId(User user = null)
+        {
+            try
+            {
+                var c = this.configService.GetConfigAsync().Result;
+
+                return GetAllVariationIdLogic(c, user);
+            }
+            catch (Exception ex)
+            {
+                this.log.Error($"Error occured in 'GetAllVariationId' method.\n{ex}");
+            }
+
+            return Enumerable.Empty<string>();
+        }
+
+        /// <inheritdoc />
+        public async Task<IEnumerable<string>> GetAllVariationIdAsync(User user = null)
+        {
+            try
+            {
+                var c = await this.configService.GetConfigAsync().ConfigureAwait(false);
+
+                return GetAllVariationIdLogic(c, user);
+            }
+            catch (Exception ex)
+            {
+                this.log.Error($"Error occured in 'GetAllVariationIdAsync' method.\n{ex}");
+            }
+
+            return Enumerable.Empty<string>();
+        }
+
+        private IEnumerable<string> GetAllVariationIdLogic(ProjectConfig config, User user)
+        {
+            if (this.configDeserializer.TryDeserialize(config, out var settings))
+            {
+                var result = new List<string>(settings.Keys.Count);
+
+                foreach (var key in settings.Keys)
+                {
+                    var r = this.configEvaluator.EvaluateVariationId(config, key, null, user);
+
+                    if (r != null)
+                    {
+                        result.Add(r);
+                    }
+                }
+
+                return result;
+            }
+
+            this.log.Warning("Config deserialization failed.");
+
+            return Enumerable.Empty<string>();
+        }
+
         /// <summary>
         /// Create a <see cref="ConfigCatClientBuilder"/> instance to setup the client
         /// </summary>
@@ -222,5 +315,6 @@ namespace ConfigCat.Client
         {
             return ConfigCatClientBuilder.Initialize(sdkKey);
         }
+
     }
 }

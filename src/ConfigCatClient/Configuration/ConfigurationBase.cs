@@ -60,7 +60,9 @@ namespace ConfigCat.Client
 
         internal Uri CreateUrl()
         {
-            return new Uri(BaseUrl, "configuration-files/" + this.SdkKey + "/config_v4.json");
+            return new Uri(BaseUrl, "configuration-files/" + this.SdkKey + "/" + ConfigFileName);
         }
+
+        internal const string ConfigFileName = "config_v4.json";
     }
 }

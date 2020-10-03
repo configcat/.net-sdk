@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
@@ -59,7 +60,8 @@ namespace ConfigCat.Client
 
                     newConfig.JsonString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                 }
-                else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                else if (response.StatusCode == HttpStatusCode.NotModified) { }
+                else if (response.StatusCode == HttpStatusCode.NotFound)
                 {
                     this.log.Error("Double-check your SDK Key at https://app.configcat.com/sdkkey");
                 }
@@ -88,7 +90,7 @@ namespace ConfigCat.Client
                 {
                     this.httpClient = new HttpClient(new HttpClientHandler
                     {
-                        AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate
+                        AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
                     });
                 }
                 else

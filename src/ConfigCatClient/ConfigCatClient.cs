@@ -6,6 +6,8 @@ using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
+using ConfigCat.Client.Cache;
+using ConfigCat.Client.Security;
 
 namespace ConfigCat.Client
 {
@@ -22,8 +24,10 @@ namespace ConfigCat.Client
 
         private readonly IConfigDeserializer configDeserializer;
 
-        private static readonly string version = typeof(ConfigCatClient).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
+        private readonly CacheParameters cacheParameters;
 
+        private static readonly string version = typeof(ConfigCatClient).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
+        
         /// <inheritdoc />
         public LogLevel LogLevel
         {
@@ -55,16 +59,17 @@ namespace ConfigCat.Client
         public ConfigCatClient(AutoPollConfiguration configuration)
             : this((ConfigurationBase)configuration)
         {
-            var configService = new AutoPollConfigService(
+            var autoPollService = new AutoPollConfigService(
                    new HttpConfigFetcher(configuration.CreateUrl(), "a-" + version, configuration.Logger, configuration.HttpClientHandler),
-                   configuration.ConfigCache ?? new InMemoryConfigCache(),
+                   this.cacheParameters,
                    TimeSpan.FromSeconds(configuration.PollIntervalSeconds),
                    TimeSpan.FromSeconds(configuration.MaxInitWaitTimeSeconds),
-                   configuration.Logger);
+                   configuration.Logger
+                   );
 
-            configService.OnConfigurationChanged += configuration.RaiseOnConfigurationChanged;
+            autoPollService.OnConfigurationChanged += configuration.RaiseOnConfigurationChanged;
 
-            this.configService = configService;
+            this.configService = autoPollService;
         }
 
         /// <summary>
@@ -76,13 +81,13 @@ namespace ConfigCat.Client
         public ConfigCatClient(LazyLoadConfiguration configuration)
             : this((ConfigurationBase)configuration)
         {
-            var configService = new LazyLoadConfigService(
+            var lazyLoadService = new LazyLoadConfigService(
                new HttpConfigFetcher(configuration.CreateUrl(), "l-" + version, configuration.Logger, configuration.HttpClientHandler),
-               configuration.ConfigCache ?? new InMemoryConfigCache(),
+               this.cacheParameters,
                configuration.Logger,
                TimeSpan.FromSeconds(configuration.CacheTimeToLiveSeconds));
 
-            this.configService = configService;
+            this.configService = lazyLoadService;
         }
 
         /// <summary>
@@ -96,7 +101,7 @@ namespace ConfigCat.Client
         {
             var configService = new ManualPollConfigService(
                 new HttpConfigFetcher(configuration.CreateUrl(), "m-" + version, configuration.Logger, configuration.HttpClientHandler),
-                configuration.ConfigCache ?? new InMemoryConfigCache(),
+                this.cacheParameters,
                 configuration.Logger);
 
             this.configService = configService;
@@ -114,6 +119,11 @@ namespace ConfigCat.Client
             this.log = configuration.Logger;
             this.configDeserializer = new ConfigDeserializer(this.log);
             this.configEvaluator = new RolloutEvaluator(this.log, this.configDeserializer);
+            this.cacheParameters = new CacheParameters
+            {
+                ConfigCache = configuration.ConfigCache ?? new InMemoryConfigCache(),
+                CacheKey = GetCacheKey(configuration)
+            };
         }
 
         /// <summary>
@@ -305,7 +315,7 @@ namespace ConfigCat.Client
 
             return Enumerable.Empty<string>();
         }
-
+        
         /// <summary>
         /// Create a <see cref="ConfigCatClientBuilder"/> instance to setup the client
         /// </summary>
@@ -316,5 +326,11 @@ namespace ConfigCat.Client
             return ConfigCatClientBuilder.Initialize(sdkKey);
         }
 
+        private static string GetCacheKey(ConfigurationBase configuration)
+        {
+            var key = $"dotnet_{ConfigurationBase.ConfigFileName}_{configuration.SdkKey}";
+
+            return HashUtils.HashString(key);
+        }
     }
 }

@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using ConfigCat.Client.Security;
 
 namespace ConfigCat.Client.Evaluate
 {
@@ -129,7 +130,7 @@ namespace ConfigCat.Client.Evaluate
             {
                 var hashCandidate = key + user.Identifier;
 
-                var hashValue = HashString(hashCandidate).Substring(0, 7);
+                var hashValue = HashUtils.HashString(hashCandidate).Substring(0, 7);
 
                 var hashScale = int.Parse(hashValue, NumberStyles.HexNumber) % 100;
 
@@ -272,7 +273,7 @@ namespace ConfigCat.Client.Evaluate
                             if (rule.ComparisonValue
                                 .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                                 .Select(t => t.Trim())
-                                .Contains(HashString(comparisonAttributeValue)))
+                                .Contains(HashUtils.HashString(comparisonAttributeValue)))
                             {
                                 logger.Log(l + "match");
 
@@ -286,7 +287,7 @@ namespace ConfigCat.Client.Evaluate
                             if (!rule.ComparisonValue
                                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                                .Select(t => t.Trim())
-                               .Contains(HashString(comparisonAttributeValue)))
+                               .Contains(HashUtils.HashString(comparisonAttributeValue)))
                             {
                                 logger.Log(l + "match");
 
@@ -426,23 +427,6 @@ namespace ConfigCat.Client.Evaluate
             }
 
             return false;
-        }
-
-        private static string HashString(string s)
-        {
-            using (var hash = SHA1.Create())
-            {
-                var hashedBytes = hash.ComputeHash(Encoding.UTF8.GetBytes(s));
-
-                var result = new StringBuilder();
-
-                foreach (byte t in hashedBytes)
-                {
-                    result.Append(t.ToString("x2"));
-                }
-
-                return result.ToString();
-            }
         }
     }
 }

@@ -22,9 +22,14 @@ namespace ConfigCat.Client.Tests
             });
 
             configCacheMock.Setup(c => c.GetAsync(It.IsAny<string>(), CancellationToken.None)).ReturnsAsync(() => cachedConfig);
-
-            var client = ConfigCatClientBuilder.Initialize(SDKKEY).WithAutoPoll().WithConfigCache(configCacheMock.Object).Create();
-
+            
+            var client = ConfigCatClientBuilder
+                .Initialize(SDKKEY)
+                .WithLogger(new ConsoleLogger(LogLevel.Debug))
+                .WithAutoPoll()
+                .WithConfigCache(configCacheMock.Object)
+                .Create();
+            
             var actual = client.GetValue("stringDefaultCat", "N/A");
 
             Assert.AreEqual("Cat", actual);

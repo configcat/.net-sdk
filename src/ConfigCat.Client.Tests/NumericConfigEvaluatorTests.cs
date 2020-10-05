@@ -5,7 +5,7 @@ namespace ConfigCat.Client.Tests
     [TestClass]
     public class NumericConfigEvaluatorTests : ConfigEvaluatorTestsBase
     {
-        protected override string SampleJsonFileName => "sample_number_v4.json";
+        protected override string SampleJsonFileName => "sample_number_v5.json";
 
         protected override string MatrixResultFileName => "testmatrix_number.csv";
     }

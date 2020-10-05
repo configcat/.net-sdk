@@ -138,7 +138,7 @@ namespace ConfigCat.Client.Tests
         }
 
         [TestMethod]
-        public async Task AutoPollConfigService_GetConfigAsync_WithoutTimer_ShouldInvokeFetchAndCacheSetAndCacheGet2x()
+        public async Task AutoPollConfigService_GetConfigAsync_WithoutTimerWithCachedConfig_ShouldInvokeCacheGet1xAndSetNeverFetchNever()
         {
             // Arrange            
 
@@ -171,9 +171,9 @@ namespace ConfigCat.Client.Tests
 
             // Assert
 
-            this.cacheMock.Verify(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None), Times.Exactly(2));
-            this.cacheMock.Verify(m => m.SetAsync(It.IsAny<string>(), fetchedPc), Times.Once);
-            this.fetcherMock.Verify(m => m.Fetch(cachedPc), Times.Once);
+            this.cacheMock.Verify(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None), Times.Once);
+            this.cacheMock.Verify(m => m.SetAsync(It.IsAny<string>(), fetchedPc), Times.Never);
+            this.fetcherMock.Verify(m => m.Fetch(cachedPc), Times.Never);
         }
 
         [TestMethod]

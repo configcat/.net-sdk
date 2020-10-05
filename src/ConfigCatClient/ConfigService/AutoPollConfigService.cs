@@ -11,6 +11,8 @@ namespace ConfigCat.Client.ConfigService
 
         private readonly Timer timer;
 
+        private ManualResetEventSlim initializedEventSlim = new ManualResetEventSlim(false);
+
         public event OnConfigurationChangedEventHandler OnConfigurationChanged;
 
         internal AutoPollConfigService(
@@ -57,14 +59,21 @@ namespace ConfigCat.Client.ConfigService
 
         public async Task<ProjectConfig> GetConfigAsync()
         {
-            var d = this.maxInitWaitExpire - DateTime.UtcNow;
+            var delay = this.maxInitWaitExpire - DateTime.UtcNow;
 
-            if (d > TimeSpan.Zero)
+            var cacheConfig = await this.configCache.GetAsync(base.cacheKey).ConfigureAwait(false);
+
+            if (delay > TimeSpan.Zero && cacheConfig.Equals(ProjectConfig.Empty))
             {
-                Task.Run(() => RefreshLogic("init")).Wait(d);
+                if (!initializedEventSlim.Wait(delay))
+                {
+                    await RefreshLogicAsync("init");
+                }
+
+                cacheConfig = await this.configCache.GetAsync(base.cacheKey).ConfigureAwait(false);
             }
 
-            return await this.configCache.GetAsync(base.cacheKey).ConfigureAwait(false);
+            return cacheConfig;
         }
 
         public async Task RefreshConfigAsync()
@@ -78,15 +87,17 @@ namespace ConfigCat.Client.ConfigService
 
             var latestConfig = await this.configCache.GetAsync(base.cacheKey).ConfigureAwait(false);
 
-            var newConfig = await this.configFetcher.Fetch(latestConfig);
+            var newConfig = await this.configFetcher.Fetch(latestConfig).ConfigureAwait(false);
 
             if (!latestConfig.Equals(newConfig) && !newConfig.Equals(ProjectConfig.Empty))
             {
                 this.log.Debug("config changed");
 
-                await this.configCache.SetAsync(base.cacheKey, newConfig);
+                await this.configCache.SetAsync(base.cacheKey, newConfig).ConfigureAwait(false);
 
                 OnConfigurationChanged?.Invoke(this, OnConfigurationChangedEventArgs.Empty);
+
+                initializedEventSlim.Set();
             }
         }
 

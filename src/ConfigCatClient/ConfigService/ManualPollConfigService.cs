@@ -15,7 +15,7 @@ namespace ConfigCat.Client.ConfigService
 
         public async Task RefreshConfigAsync()
         {
-            var config = await this.configCache.GetAsync(base.cacheKey);
+            var config = await this.configCache.GetAsync(base.cacheKey).ConfigureAwait(false);
 
             config = await this.configFetcher.Fetch(config).ConfigureAwait(false);
 

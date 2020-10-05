@@ -27,7 +27,7 @@ namespace ConfigCat.Client
         private readonly CacheParameters cacheParameters;
 
         private static readonly string version = typeof(ConfigCatClient).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
-        
+
         /// <inheritdoc />
         public LogLevel LogLevel
         {
@@ -60,7 +60,7 @@ namespace ConfigCat.Client
             : this((ConfigurationBase)configuration)
         {
             var autoPollService = new AutoPollConfigService(
-                   new HttpConfigFetcher(configuration.CreateUrl(), "a-" + version, configuration.Logger, configuration.HttpClientHandler),
+                   new HttpConfigFetcher(configuration.CreateUri(), "a-" + version, configuration.Logger, configuration.HttpClientHandler, configuration.IsCustomBaseUrl),
                    this.cacheParameters,
                    TimeSpan.FromSeconds(configuration.PollIntervalSeconds),
                    TimeSpan.FromSeconds(configuration.MaxInitWaitTimeSeconds),
@@ -82,7 +82,7 @@ namespace ConfigCat.Client
             : this((ConfigurationBase)configuration)
         {
             var lazyLoadService = new LazyLoadConfigService(
-               new HttpConfigFetcher(configuration.CreateUrl(), "l-" + version, configuration.Logger, configuration.HttpClientHandler),
+               new HttpConfigFetcher(configuration.CreateUri(), "l-" + version, configuration.Logger, configuration.HttpClientHandler, configuration.IsCustomBaseUrl),
                this.cacheParameters,
                configuration.Logger,
                TimeSpan.FromSeconds(configuration.CacheTimeToLiveSeconds));
@@ -100,7 +100,7 @@ namespace ConfigCat.Client
             : this((ConfigurationBase)configuration)
         {
             var configService = new ManualPollConfigService(
-                new HttpConfigFetcher(configuration.CreateUrl(), "m-" + version, configuration.Logger, configuration.HttpClientHandler),
+                new HttpConfigFetcher(configuration.CreateUri(), "m-" + version, configuration.Logger, configuration.HttpClientHandler, configuration.IsCustomBaseUrl),
                 this.cacheParameters,
                 configuration.Logger);
 
@@ -315,7 +315,7 @@ namespace ConfigCat.Client
 
             return Enumerable.Empty<string>();
         }
-        
+
         /// <summary>
         /// Create a <see cref="ConfigCatClientBuilder"/> instance to setup the client
         /// </summary>

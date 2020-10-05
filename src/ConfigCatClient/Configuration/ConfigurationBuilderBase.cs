@@ -13,7 +13,8 @@
             this.configuration = new T
             {
                 SdkKey = clientBuilder.SdkKey,
-                Logger = clientBuilder.Logger                
+                Logger = clientBuilder.Logger,
+                DataGovernance = clientBuilder.DataGovernance
             };
         }
     }

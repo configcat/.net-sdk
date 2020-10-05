@@ -17,7 +17,7 @@ namespace ConfigCat.Client
             try
             {
                 this.projectConfig = config;
-                return Task.FromResult(true);
+                return Task.FromResult(0);
             }
             finally
             {

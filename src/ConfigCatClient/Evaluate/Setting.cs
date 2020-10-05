@@ -3,6 +3,24 @@ using Newtonsoft.Json;
 
 namespace ConfigCat.Client.Evaluate
 {
+    internal class SettingsWithPreferences
+    {
+        [JsonProperty(PropertyName = "f")]
+        public Dictionary<string, Setting> Settings { get; set; }
+
+        [JsonProperty(PropertyName = "p")]
+        public Preferences Preferences { get; set; }
+    }
+
+    internal class Preferences
+    {
+        [JsonProperty(PropertyName = "u")]
+        public string Url { get; set; }
+
+        [JsonProperty(PropertyName = "r")]
+        public byte RedirectMode { get; set; }
+    }
+
     internal class Setting
     {
         [JsonProperty(PropertyName = "v")]

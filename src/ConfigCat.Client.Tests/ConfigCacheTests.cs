@@ -5,6 +5,7 @@ using Moq;
 
 namespace ConfigCat.Client.Tests
 {
+    [TestCategory(TestCategories.Integration)]
     [TestClass]
     public class ConfigCacheTests
     {

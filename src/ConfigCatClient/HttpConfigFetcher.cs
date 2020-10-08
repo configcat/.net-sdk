@@ -2,26 +2,15 @@
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Evaluate;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace ConfigCat.Client
 {
     internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
     {
-        private enum RedirectMode : byte
-        {
-            NoRedirect = 0,
-            ShouldRedirect = 1,
-            ForceRedirect = 2
-        }
-
         private readonly object lck = new object();
-        private readonly object flck = new object();
 
         private readonly string productVersion;
 
@@ -52,25 +41,17 @@ namespace ConfigCat.Client
 
         public async Task<ProjectConfig> Fetch(ProjectConfig lastConfig)
         {
-            var newConfig = ProjectConfig.Empty;
+            var newConfig = lastConfig;
 
             try
             {
-                newConfig = lastConfig;
-
-                var request = new HttpRequestMessage
-                {
-                    Method = HttpMethod.Get,
-                    RequestUri = new Uri(this.requestUri.ToString())
-                };
-
-                var fetchResult = await FetchRequest(lastConfig, request);
+                var fetchResult = await FetchRequest(lastConfig, this.requestUri);
 
                 var response = fetchResult.Item1;
 
                 if (response.IsSuccessStatusCode)
                 {
-                    newConfig.HttpETag = response.Headers.ETag.Tag;
+                    newConfig.HttpETag = response.Headers.ETag?.Tag;
 
                     newConfig.JsonString = fetchResult.Item2;
                 }
@@ -98,8 +79,14 @@ namespace ConfigCat.Client
             return newConfig;
         }
 
-        private async Task<Tuple<HttpResponseMessage, string>> FetchRequest(ProjectConfig lastConfig, HttpRequestMessage request, byte maxExecutionCount = 2)
+        private async Task<Tuple<HttpResponseMessage, string>> FetchRequest(ProjectConfig lastConfig, Uri requestUri, sbyte maxExecutionCount = 3)
         {
+            var request = new HttpRequestMessage
+            {
+                Method = HttpMethod.Get,
+                RequestUri = requestUri
+            };
+
             if (lastConfig.HttpETag != null)
             {
                 request.Headers.IfNoneMatch.Add(new EntityTagHeaderValue(lastConfig.HttpETag));
@@ -122,21 +109,21 @@ namespace ConfigCat.Client
                         return Tuple.Create(response, responseBody);
                     }
 
-                    byte redirect = body.Preferences.RedirectMode;
+                    Evaluate.RedirectMode redirect = body.Preferences.RedirectMode;
 
-                    if (isCustomUri && redirect != (byte)RedirectMode.ForceRedirect)
+                    if (isCustomUri && redirect != RedirectMode.Force)
                     {
                         return Tuple.Create(response, responseBody);
                     }
 
                     UpdateRequestUri(new Uri(newBaseUrl));
 
-                    if (redirect == (byte)RedirectMode.NoRedirect)
+                    if (redirect == RedirectMode.No)
                     {
                         return Tuple.Create(response, responseBody);
                     }
 
-                    if (redirect == (byte)RedirectMode.ShouldRedirect)
+                    if (redirect == RedirectMode.Should)
                     {
                         this.log.Warning("Your dataGovernance parameter at ConfigCatClient initialization is not in sync " +
                                          "with your preferences on the ConfigCat Dashboard: " +
@@ -144,7 +131,7 @@ namespace ConfigCat.Client
                                          "Only Organization Admins can access this preference.");
                     }
 
-                    if (maxExecutionCount <= 0)
+                    if (maxExecutionCount <= 1)
                     {
                         log.Error("Redirect loop during config.json fetch. Please contact support@configcat.com.");
                         return Tuple.Create(response, responseBody);
@@ -152,12 +139,12 @@ namespace ConfigCat.Client
 
                     return await this.FetchRequest(
                         lastConfig,
-                        new HttpRequestMessage
-                        {
-                            RequestUri = ReplaceUri(request.RequestUri, new Uri(newBaseUrl)),
-                            Method = HttpMethod.Get
-                        },
+                        ReplaceUri(request.RequestUri, new Uri(newBaseUrl)),
                         --maxExecutionCount);
+                }
+                else
+                {
+                    return Tuple.Create(response, responseBody);
                 }
             }
 

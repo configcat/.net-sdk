@@ -81,7 +81,15 @@ namespace ConfigCat.Client
 
             if (!IsCustomBaseUrl)
             {
-                baseUri = DataGovernance == DataGovernance.Global ? new Uri(BaseUrlGlobal) : new Uri(BaseUrlEu);
+                switch (DataGovernance)
+                {
+                    case DataGovernance.EuOnly:
+                        baseUri = new Uri(BaseUrlEu);
+                        break;
+                    default:
+                        baseUri = new Uri(BaseUrlGlobal);
+                        break;
+                }
             }
 
             return new Uri(baseUri, "configuration-files/" + this.SdkKey + "/" + ConfigFileName);

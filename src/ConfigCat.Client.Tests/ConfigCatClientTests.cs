@@ -6,6 +6,7 @@ using System;
 using System.Threading.Tasks;
 using System.Linq;
 using System.Collections.Generic;
+using ConfigCat.Client.Cache;
 
 namespace ConfigCat.Client.Tests
 {
@@ -13,18 +14,18 @@ namespace ConfigCat.Client.Tests
     [TestClass]
     public class ConfigCatClientTests
     {
-        Mock<IConfigService> configService = new Mock<IConfigService>();
+        Mock<IConfigService> configServiceMock = new Mock<IConfigService>();
         Mock<ILogger> loggerMock = new Mock<ILogger>();
-        Mock<IRolloutEvaluator> evaluateMock = new Mock<IRolloutEvaluator>();
-        Mock<IConfigDeserializer> deserializerMock = new Mock<IConfigDeserializer>();
+        Mock<IRolloutEvaluator> evaluatorMock = new Mock<IRolloutEvaluator>();
+        Mock<IConfigDeserializer> configDeserializerMock = new Mock<IConfigDeserializer>();
 
         [TestInitialize]
         public void TestInitialize()
         {
-            configService.Reset();
+            configServiceMock.Reset();
             loggerMock.Reset();
-            evaluateMock.Reset();
-            deserializerMock.Reset();
+            evaluatorMock.Reset();
+            configDeserializerMock.Reset();
         }
 
         [ExpectedException(typeof(ArgumentException))]
@@ -170,11 +171,11 @@ namespace ConfigCat.Client.Tests
 
             const string defaultValue = "Victory for the Firstborn!";
 
-            configService
+            configServiceMock
                 .Setup(m => m.GetConfigAsync())
                 .Throws<Exception>();
 
-            var client = new ConfigCatClient(configService.Object, loggerMock.Object, evaluateMock.Object, deserializerMock.Object);
+            var client = new ConfigCatClient(configServiceMock.Object, loggerMock.Object, evaluatorMock.Object, configDeserializerMock.Object);
 
             // Act
 
@@ -192,11 +193,11 @@ namespace ConfigCat.Client.Tests
 
             const string defaultValue = "Victory for the Firstborn!";
 
-            configService
+            configServiceMock
                 .Setup(m => m.GetConfigAsync())
                 .Throws<Exception>();
 
-            var client = new ConfigCatClient(configService.Object, loggerMock.Object, evaluateMock.Object, deserializerMock.Object);
+            var client = new ConfigCatClient(configServiceMock.Object, loggerMock.Object, evaluatorMock.Object, configDeserializerMock.Object);
 
             // Act
 
@@ -214,11 +215,11 @@ namespace ConfigCat.Client.Tests
 
             const string defaultValue = "Victory for the Firstborn!";
 
-            evaluateMock
+            evaluatorMock
                 .Setup(m => m.Evaluate(It.IsAny<ProjectConfig>(), It.IsAny<string>(), defaultValue, null))
                 .Throws<Exception>();
 
-            var client = new ConfigCatClient(configService.Object, loggerMock.Object, evaluateMock.Object, deserializerMock.Object);
+            var client = new ConfigCatClient(configServiceMock.Object, loggerMock.Object, evaluatorMock.Object, configDeserializerMock.Object);
 
             // Act
 
@@ -236,11 +237,11 @@ namespace ConfigCat.Client.Tests
 
             const string defaultValue = "Victory for the Firstborn!";
 
-            evaluateMock
+            evaluatorMock
                 .Setup(m => m.Evaluate(It.IsAny<ProjectConfig>(), It.IsAny<string>(), defaultValue, null))
                 .Throws<Exception>();
 
-            var client = new ConfigCatClient(configService.Object, loggerMock.Object, evaluateMock.Object, deserializerMock.Object);
+            var client = new ConfigCatClient(configServiceMock.Object, loggerMock.Object, evaluatorMock.Object, configDeserializerMock.Object);
 
             // Act
 
@@ -255,11 +256,6 @@ namespace ConfigCat.Client.Tests
         public void GetAllKeys_ConfigServiceThrowException_ShouldReturnsWithEmptyArray()
         {
             // Arrange
-
-            var configServiceMock = new Mock<IConfigService>();
-            var loggerMock = new Mock<ILogger>();
-            var evaluatorMock = new Mock<IRolloutEvaluator>();
-            var configDeserializerMock = new Mock<IConfigDeserializer>();
 
             configServiceMock.Setup(m => m.GetConfigAsync()).Throws<Exception>();
 
@@ -284,11 +280,6 @@ namespace ConfigCat.Client.Tests
         public void GetAllKeys_DeserializerThrowException_ShouldReturnsWithEmptyArray()
         {
             // Arrange
-
-            var configServiceMock = new Mock<IConfigService>();
-            var loggerMock = new Mock<ILogger>();
-            var evaluatorMock = new Mock<IRolloutEvaluator>();
-            var configDeserializerMock = new Mock<IConfigDeserializer>();
 
             configServiceMock.Setup(m => m.GetConfigAsync()).ReturnsAsync(ProjectConfig.Empty);
             IDictionary<string, Setting> o = new Dictionary<string, Setting>();
@@ -317,11 +308,6 @@ namespace ConfigCat.Client.Tests
         public void GetAllKeys_DeserializeFailed_ShouldReturnsWithEmptyArray()
         {
             // Arrange
-
-            var configServiceMock = new Mock<IConfigService>();
-            var loggerMock = new Mock<ILogger>();
-            var evaluatorMock = new Mock<IRolloutEvaluator>();
-            var configDeserializerMock = new Mock<IConfigDeserializer>();
 
             configServiceMock.Setup(m => m.GetConfigAsync()).ReturnsAsync(ProjectConfig.Empty);
             IDictionary<string, Setting> o = new Dictionary<string, Setting>();
@@ -353,11 +339,11 @@ namespace ConfigCat.Client.Tests
 
             const string defaultValue = "Victory for the Firstborn!";
 
-            evaluateMock
+            evaluatorMock
                 .Setup(m => m.EvaluateVariationId(It.IsAny<ProjectConfig>(), It.IsAny<string>(), defaultValue, null))
                 .Throws<Exception>();
 
-            var client = new ConfigCatClient(configService.Object, loggerMock.Object, evaluateMock.Object, deserializerMock.Object);
+            var client = new ConfigCatClient(configServiceMock.Object, loggerMock.Object, evaluatorMock.Object, configDeserializerMock.Object);
 
             // Act
 
@@ -375,11 +361,11 @@ namespace ConfigCat.Client.Tests
 
             const string defaultValue = "Victory for the Firstborn!";
 
-            evaluateMock
+            evaluatorMock
                 .Setup(m => m.EvaluateVariationId(It.IsAny<ProjectConfig>(), It.IsAny<string>(), defaultValue, null))
                 .Throws<Exception>();
 
-            var client = new ConfigCatClient(configService.Object, loggerMock.Object, evaluateMock.Object, deserializerMock.Object);
+            var client = new ConfigCatClient(configServiceMock.Object, loggerMock.Object, evaluatorMock.Object, configDeserializerMock.Object);
 
             // Act
 
@@ -394,11 +380,6 @@ namespace ConfigCat.Client.Tests
         public void GetVariationId_DeserializeFailed_ShouldReturnsWithEmptyArray()
         {
             // Arrange
-
-            var configServiceMock = new Mock<IConfigService>();
-            var loggerMock = new Mock<ILogger>();
-            var evaluatorMock = new Mock<IRolloutEvaluator>();
-            var configDeserializerMock = new Mock<IConfigDeserializer>();
 
             configServiceMock.Setup(m => m.GetConfigAsync()).ReturnsAsync(ProjectConfig.Empty);
             IDictionary<string, Setting> o = new Dictionary<string, Setting>();
@@ -428,11 +409,6 @@ namespace ConfigCat.Client.Tests
         {
             // Arrange
 
-            var configServiceMock = new Mock<IConfigService>();
-            var loggerMock = new Mock<ILogger>();
-            var evaluatorMock = new Mock<IRolloutEvaluator>();
-            var configDeserializerMock = new Mock<IConfigDeserializer>();
-
             configServiceMock.Setup(m => m.GetConfigAsync()).ReturnsAsync(ProjectConfig.Empty);
             IDictionary<string, Setting> o = new Dictionary<string, Setting>();
             configDeserializerMock
@@ -461,11 +437,11 @@ namespace ConfigCat.Client.Tests
         {
             // Arrange
 
-            configService
+            configServiceMock
                 .Setup(m => m.GetConfigAsync())
                 .Throws<Exception>();
 
-            var client = new ConfigCatClient(configService.Object, loggerMock.Object, evaluateMock.Object, deserializerMock.Object);
+            var client = new ConfigCatClient(configServiceMock.Object, loggerMock.Object, evaluatorMock.Object, configDeserializerMock.Object);
 
             // Act
 
@@ -481,11 +457,11 @@ namespace ConfigCat.Client.Tests
         {
             // Arrange
 
-            configService
+            configServiceMock
                 .Setup(m => m.GetConfigAsync())
                 .Throws<Exception>();
 
-            var client = new ConfigCatClient(configService.Object, loggerMock.Object, evaluateMock.Object, deserializerMock.Object);
+            var client = new ConfigCatClient(configServiceMock.Object, loggerMock.Object, evaluatorMock.Object, configDeserializerMock.Object);
 
             // Act
 
@@ -494,6 +470,53 @@ namespace ConfigCat.Client.Tests
             // Assert
 
             Assert.AreEqual(Enumerable.Empty<string>(), actual);
+        }
+
+        [TestMethod]
+        public void Dispose_ConfigServiceIsDisposable_ShouldInvokeDispose()
+        {
+            // Arrange
+            
+            var myMock = new FakeConfigService(Mock.Of<IConfigFetcher>(), new CacheParameters(), Mock.Of<ILogger>());
+
+            IConfigCatClient instance = new ConfigCatClient(
+                myMock,
+                loggerMock.Object,
+                evaluatorMock.Object,
+                configDeserializerMock.Object);
+
+            // Act
+
+            instance.Dispose();
+
+            // Assert
+
+            Assert.AreEqual(1, myMock.DisposeCount);
+        }
+
+        internal class FakeConfigService : ConfigServiceBase, IConfigService
+        {
+            public byte DisposeCount { get; private set; }
+
+            public FakeConfigService(IConfigFetcher configFetcher, CacheParameters cacheParameters, ILogger log) : base(configFetcher, cacheParameters, log)
+            {
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                DisposeCount++;
+                base.Dispose(disposing);
+            }
+
+            public Task<ProjectConfig> GetConfigAsync()
+            {
+                return Task.FromResult(ProjectConfig.Empty);
+            }
+
+            public Task RefreshConfigAsync()
+            {
+                return Task.CompletedTask;
+            }
         }
     }
 }

@@ -20,7 +20,7 @@ namespace ConfigCat.Client.Tests
 
         ProjectConfig cachedPc = new ProjectConfig("CACHED", DateTime.UtcNow.Add(-defaultExpire), "67890");
         ProjectConfig fetchedPc = new ProjectConfig("FETCHED", DateTime.UtcNow, "12345");
-        
+
         [TestInitialize]
         public void TestInitialize()
         {
@@ -290,7 +290,7 @@ namespace ConfigCat.Client.Tests
 
             Assert.AreEqual(1, eventChanged);
         }
-        
+
         [TestMethod]
         public void AutoPollConfigService_Dispose_ShouldStopTimer()
         {
@@ -310,7 +310,7 @@ namespace ConfigCat.Client.Tests
 
             var service = new AutoPollConfigService(
                 fetcherMock.Object,
-                new CacheParameters { ConfigCache = cacheMock.Object, CacheKey = ""},
+                new CacheParameters { ConfigCache = cacheMock.Object, CacheKey = "" },
                 TimeSpan.FromSeconds(0.2d),
                 TimeSpan.Zero,
                 loggerMock.Object,
@@ -490,5 +490,3 @@ namespace ConfigCat.Client.Tests
         }
     }
 }
-
-

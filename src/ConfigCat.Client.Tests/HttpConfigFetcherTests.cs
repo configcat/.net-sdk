@@ -45,6 +45,26 @@ namespace ConfigCat.Client.Tests
         }
 
         [TestMethod]
+        public async Task HttpConfigFetcher_ResponseHttpCodeIsUnexpected_ShouldReturnsPassedConfig()
+        {
+            // Arrange
+
+            var myHandler = new MyFakeHttpClientHandler(HttpStatusCode.Forbidden);
+
+            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new MyCounterLogger(), myHandler, false);
+
+            var lastConfig = new ProjectConfig("{ }", DateTime.UtcNow, "\"ETAG\"");
+
+            // Act
+
+            var actual = await instance.Fetch(lastConfig);
+
+            // Assert
+
+            Assert.AreEqual(lastConfig, actual);
+        }
+
+        [TestMethod]
         public async Task HttpConfigFetcher_ThrowAnException_ShouldReturnPassedConfig()
         {
             // Arrange
@@ -63,7 +83,5 @@ namespace ConfigCat.Client.Tests
 
             Assert.AreEqual(lastConfig, actual);
         }
-
-        // TODO race condition tests for Fetch()!!!
     }
 }

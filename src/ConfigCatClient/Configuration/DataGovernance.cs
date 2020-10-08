@@ -8,10 +8,10 @@
         /// <summary>
         /// Select this if your feature flags are published to all global CDN nodes.
         /// </summary>
-        Global = 1,
+        Global = 0,
         /// <summary>
         /// Select this if your feature flags are published to CDN nodes only in the EU.
         /// </summary>
-        EuOnly = 2
+        EuOnly = 1
     }
 }

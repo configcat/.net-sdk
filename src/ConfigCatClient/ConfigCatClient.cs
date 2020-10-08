@@ -45,8 +45,9 @@ namespace ConfigCat.Client
         /// Create an instance of ConfigCatClient and setup AutoPoll mode
         /// </summary>
         /// <param name="sdkKey">SDK Key to access configuration</param>
+        /// <param name="dataGovernance">Default: Global. Set this parameter to be in sync with the Data Governance preference on the Dashboard: https://app.configcat.com/organization/data-governance (Only Organization Admins have access)</param>
         /// <exception cref="ArgumentException">When the <paramref name="sdkKey"/> is null or empty</exception>                
-        public ConfigCatClient(string sdkKey) : this(new AutoPollConfiguration { SdkKey = sdkKey })
+        public ConfigCatClient(string sdkKey, DataGovernance dataGovernance = DataGovernance.Global) : this(new AutoPollConfiguration { SdkKey = sdkKey, DataGovernance = dataGovernance })
         {
         }
 

@@ -4,6 +4,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ConfigCat.Client.Tests
 {
+    [TestCategory(TestCategories.Integration)]
     [TestClass]
     public class CustomHttpClientHandlerTests
     {

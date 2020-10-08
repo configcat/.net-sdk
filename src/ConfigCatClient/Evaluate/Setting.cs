@@ -18,7 +18,7 @@ namespace ConfigCat.Client.Evaluate
         public string Url { get; set; }
 
         [JsonProperty(PropertyName = "r")]
-        public byte RedirectMode { get; set; }
+        public RedirectMode RedirectMode { get; set; }
     }
 
     internal class Setting
@@ -123,5 +123,12 @@ namespace ConfigCat.Client.Evaluate
         SensitiveOneOf = 16,
 
         SensitiveNotOneOf = 17
+    }
+
+    internal enum RedirectMode : byte
+    {
+        No = 0,
+        Should = 1,
+        Force = 2
     }
 }

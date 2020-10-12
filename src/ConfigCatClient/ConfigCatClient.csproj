@@ -15,7 +15,12 @@
           <PackageProjectUrl>https://github.com/ConfigCat/.net-sdk</PackageProjectUrl>
           <RepositoryUrl>https://github.com/ConfigCat/.net-sdk</RepositoryUrl>
           <RepositoryType>git</RepositoryType>
-          <PackageReleaseNotes>Version 5.3.0
+          <PackageReleaseNotes>Version 6.0.0
+     * Addressing global data handling and processing trends via Data Governance feature. Customers can control the geographic location where their config JSONs get published to. [See the docs.](https://configcat.com/docs/advanced/data-governance/)
+       We are introducing a new DataGovernance initialization parameter. Set this parameter to be in sync with the Data Governance preference on the [Dashboard](https://app.configcat.com/organization/data-governance).
+       Breaking change:
+       - Custom cache implementations should implement the new cache interface using key parameter in the get/set methods.
+Version 5.3.0
      * VariationID, bugfix (#11)
 Version 5.2.0
      * Bugfix (config fetch, caching)

@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
+using ConfigCat.Client.Evaluate;
+using Newtonsoft.Json;
 
 namespace ConfigCat.Client
 {
@@ -15,11 +18,13 @@ namespace ConfigCat.Client
 
         private readonly HttpClientHandler httpClientHandler;
 
+        private readonly bool isCustomUri;
+
         private HttpClient httpClient;
 
-        private readonly Uri requestUri;
+        private Uri requestUri;
 
-        public HttpConfigFetcher(Uri requestUri, string productVersion, ILogger logger, HttpClientHandler httpClientHandler)
+        public HttpConfigFetcher(Uri requestUri, string productVersion, ILogger logger, HttpClientHandler httpClientHandler, bool isCustomUri)
         {
             this.requestUri = requestUri;
 
@@ -29,37 +34,31 @@ namespace ConfigCat.Client
 
             this.httpClientHandler = httpClientHandler;
 
+            this.isCustomUri = isCustomUri;
+
             ReInitializeHttpClient();
         }
 
         public async Task<ProjectConfig> Fetch(ProjectConfig lastConfig)
         {
-            ProjectConfig newConfig = ProjectConfig.Empty;
-
-            var request = new HttpRequestMessage
-            {
-                Method = HttpMethod.Get,
-                RequestUri = this.requestUri
-            };
+            var newConfig = lastConfig;
 
             try
             {
-                if (lastConfig.HttpETag != null)
-                {
-                    request.Headers.IfNoneMatch.Add(new EntityTagHeaderValue(lastConfig.HttpETag));
-                }
+                var fetchResult = await FetchRequest(lastConfig, this.requestUri);
 
-                newConfig = lastConfig;
-
-                var response = await this.httpClient.SendAsync(request).ConfigureAwait(false);
+                var response = fetchResult.Item1;
 
                 if (response.IsSuccessStatusCode)
                 {
-                    newConfig.HttpETag = response.Headers.ETag.Tag;
+                    newConfig.HttpETag = response.Headers.ETag?.Tag;
 
-                    newConfig.JsonString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    newConfig.JsonString = fetchResult.Item2;
                 }
-                else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                else if (response.StatusCode == HttpStatusCode.NotModified)
+                {
+                }
+                else if (response.StatusCode == HttpStatusCode.NotFound)
                 {
                     this.log.Error("Double-check your SDK Key at https://app.configcat.com/sdkkey");
                 }
@@ -80,26 +79,116 @@ namespace ConfigCat.Client
             return newConfig;
         }
 
+        private async Task<Tuple<HttpResponseMessage, string>> FetchRequest(ProjectConfig lastConfig, Uri requestUri, sbyte maxExecutionCount = 3)
+        {
+            var request = new HttpRequestMessage
+            {
+                Method = HttpMethod.Get,
+                RequestUri = requestUri
+            };
+
+            if (lastConfig.HttpETag != null)
+            {
+                request.Headers.IfNoneMatch.Add(new EntityTagHeaderValue(lastConfig.HttpETag));
+            }
+
+            var response = await this.httpClient.SendAsync(request).ConfigureAwait(false);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                var body = JsonConvert.DeserializeObject<SettingsWithPreferences>(responseBody);
+
+                if (body?.Preferences != null)
+                {
+                    var newBaseUrl = body.Preferences.Url;
+
+                    if (newBaseUrl == null || requestUri.Host == new Uri(newBaseUrl).Host)
+                    {
+                        return Tuple.Create(response, responseBody);
+                    }
+
+                    Evaluate.RedirectMode redirect = body.Preferences.RedirectMode;
+
+                    if (isCustomUri && redirect != RedirectMode.Force)
+                    {
+                        return Tuple.Create(response, responseBody);
+                    }
+
+                    UpdateRequestUri(new Uri(newBaseUrl));
+
+                    if (redirect == RedirectMode.No)
+                    {
+                        return Tuple.Create(response, responseBody);
+                    }
+
+                    if (redirect == RedirectMode.Should)
+                    {
+                        this.log.Warning("Your dataGovernance parameter at ConfigCatClient initialization is not in sync " +
+                                         "with your preferences on the ConfigCat Dashboard: " +
+                                         "https://app.configcat.com/organization/data-governance. " +
+                                         "Only Organization Admins can access this preference.");
+                    }
+
+                    if (maxExecutionCount <= 1)
+                    {
+                        log.Error("Redirect loop during config.json fetch. Please contact support@configcat.com.");
+                        return Tuple.Create(response, responseBody);
+                    }
+
+                    return await this.FetchRequest(
+                        lastConfig,
+                        ReplaceUri(request.RequestUri, new Uri(newBaseUrl)),
+                        --maxExecutionCount);
+                }
+                else
+                {
+                    return Tuple.Create(response, responseBody);
+                }
+            }
+
+            return Tuple.Create<HttpResponseMessage, string>(response, null);
+        }
+
+        private void UpdateRequestUri(Uri newUri)
+        {
+            lock (this.lck)
+            {
+                this.requestUri = ReplaceUri(this.requestUri, newUri);
+            }
+        }
+
+        private static Uri ReplaceUri(Uri oldUri, Uri newUri)
+        {
+            return new Uri(newUri, oldUri.AbsolutePath);
+        }
+
         private void ReInitializeHttpClient()
         {
             lock (this.lck)
             {
-                if (this.httpClientHandler == null)
-                {
-                    this.httpClient = new HttpClient(new HttpClientHandler
-                    {
-                        AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate
-                    });
-                }
-                else
-                {
-                    this.httpClient = new HttpClient(this.httpClientHandler, false);
-                }
-
-                this.httpClient.Timeout = TimeSpan.FromSeconds(30);
-
-                this.httpClient.DefaultRequestHeaders.Add("X-ConfigCat-UserAgent", new ProductInfoHeaderValue("ConfigCat-Dotnet", productVersion).ToString());
+                ReInitializeHttpClientLogic();
             }
+        }
+
+        private void ReInitializeHttpClientLogic()
+        {
+            if (this.httpClientHandler == null)
+            {
+                this.httpClient = new HttpClient(new HttpClientHandler
+                {
+                    AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
+                });
+            }
+            else
+            {
+                this.httpClient = new HttpClient(this.httpClientHandler, false);
+            }
+
+            this.httpClient.Timeout = TimeSpan.FromSeconds(30);
+
+            this.httpClient.DefaultRequestHeaders.Add("X-ConfigCat-UserAgent", new ProductInfoHeaderValue("ConfigCat-Dotnet", productVersion).ToString());
         }
 
         public void Dispose()

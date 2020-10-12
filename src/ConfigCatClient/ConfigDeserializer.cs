@@ -18,11 +18,16 @@ namespace ConfigCat.Client
             if (projectConfig.JsonString == null)
             {
                 this.logger.Warning("ConfigJson is not present.");
+                
                 settings = null;
+
                 return false;
             }
 
-            settings = JsonConvert.DeserializeObject<Dictionary<string, Setting>>(projectConfig.JsonString);
+            var settingsWithPreferences = JsonConvert.DeserializeObject<SettingsWithPreferences>(projectConfig.JsonString);
+
+            settings = settingsWithPreferences.Settings;
+
             return true;
         }
     }

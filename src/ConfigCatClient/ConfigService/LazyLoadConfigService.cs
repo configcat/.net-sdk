@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using ConfigCat.Client.Cache;
 
 namespace ConfigCat.Client.ConfigService
 {
@@ -7,15 +8,15 @@ namespace ConfigCat.Client.ConfigService
     {
         private readonly TimeSpan cacheTimeToLive;        
 
-        internal LazyLoadConfigService(IConfigFetcher configFetcher, IConfigCache configCache, ILogger logger, TimeSpan cacheTimeToLive)
-            : base(configFetcher, configCache, logger)
+        internal LazyLoadConfigService(IConfigFetcher configFetcher, CacheParameters cacheParameters, ILogger logger, TimeSpan cacheTimeToLive)
+            : base(configFetcher, cacheParameters, logger)
         {   
             this.cacheTimeToLive = cacheTimeToLive;
         }
 
         public async Task<ProjectConfig> GetConfigAsync()
         {
-            var config = this.configCache.Get();
+            var config = await this.configCache.GetAsync(base.cacheKey).ConfigureAwait(false);
 
             if (config.TimeStamp < DateTime.UtcNow.Add(-this.cacheTimeToLive))
             {
@@ -29,7 +30,7 @@ namespace ConfigCat.Client.ConfigService
 
         public async Task RefreshConfigAsync()
         {
-            var config = this.configCache.Get();
+            var config = await this.configCache.GetAsync(base.cacheKey).ConfigureAwait(false);
 
             await RefreshConfigLogic(config).ConfigureAwait(false);
         }
@@ -38,7 +39,7 @@ namespace ConfigCat.Client.ConfigService
         {
             config = await this.configFetcher.Fetch(config).ConfigureAwait(false);
 
-            this.configCache.Set(config);
+            await this.configCache.SetAsync(base.cacheKey, config).ConfigureAwait(false);
 
             return config;
         }

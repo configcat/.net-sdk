@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net.Http;
+using System.Runtime.CompilerServices;
 
 namespace ConfigCat.Client
 {
@@ -8,7 +9,9 @@ namespace ConfigCat.Client
     /// </summary>
     public abstract class ConfigurationBase
     {
-        private ILogger _logger;
+        private ILogger logger;
+        
+        private Uri baseUrl = new Uri(BaseUrlGlobal);
 
         /// <summary>
         /// Logger instance
@@ -17,11 +20,11 @@ namespace ConfigCat.Client
         {
             get
             {
-                return this._logger ?? new LoggerWrapper(new ConsoleLogger());
+                return this.logger ?? new LoggerWrapper(new ConsoleLogger());
             }
             set
             {
-                this._logger = new LoggerWrapper(value ?? throw new ArgumentNullException(nameof(Logger)));
+                this.logger = new LoggerWrapper(value ?? throw new ArgumentNullException(nameof(Logger)));
             }
         }
 
@@ -43,7 +46,21 @@ namespace ConfigCat.Client
         /// <summary>
         /// You can set a BaseUrl if you want to use a proxy server between your application and ConfigCat
         /// </summary>
-        public Uri BaseUrl { get; set; } = new Uri("https://cdn.configcat.com");
+        public Uri BaseUrl
+        {
+            get => baseUrl;
+            set
+            {
+                this.IsCustomBaseUrl = true;
+                baseUrl = value;
+            }
+        }
+
+        /// <summary>
+        /// Default: Global. Set this parameter to be in sync with the Data Governance preference on the Dashboard:
+        /// https://app.configcat.com/organization/data-governance (Only Organization Admins have access)
+        /// </summary>
+        public DataGovernance DataGovernance { get; set; } = DataGovernance.Global;
 
         internal virtual void Validate()
         {
@@ -58,9 +75,32 @@ namespace ConfigCat.Client
             }
         }
 
-        internal Uri CreateUrl()
+        internal Uri CreateUri()
         {
-            return new Uri(BaseUrl, "configuration-files/" + this.SdkKey + "/config_v4.json");
+            var baseUri = BaseUrl;
+
+            if (!IsCustomBaseUrl)
+            {
+                switch (DataGovernance)
+                {
+                    case DataGovernance.EuOnly:
+                        baseUri = new Uri(BaseUrlEu);
+                        break;
+                    default:
+                        baseUri = new Uri(BaseUrlGlobal);
+                        break;
+                }
+            }
+
+            return new Uri(baseUri, "configuration-files/" + this.SdkKey + "/" + ConfigFileName);
         }
+
+        internal const string ConfigFileName = "config_v5.json";
+
+        internal const string BaseUrlGlobal = "https://cdn-global.configcat.com";
+
+        internal const string BaseUrlEu = "https://cdn-eu.configcat.com";
+
+        internal bool IsCustomBaseUrl { get; private set; }
     }
 }

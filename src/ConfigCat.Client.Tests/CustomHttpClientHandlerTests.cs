@@ -4,6 +4,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ConfigCat.Client.Tests
 {
+    [TestCategory(TestCategories.Integration)]
     [TestClass]
     public class CustomHttpClientHandlerTests
     {
@@ -22,6 +23,7 @@ namespace ConfigCat.Client.Tests
             // Arrange
 
             var client = ConfigCatClientBuilder.Initialize(SDKKEY)
+                .WithDataGovernance(DataGovernance.EuOnly)
                 .WithAutoPoll()
                 .WithHttpClientHandler(httpClientHandler)
                 .Create();
@@ -42,6 +44,7 @@ namespace ConfigCat.Client.Tests
             // Arrange
 
             var client = ConfigCatClientBuilder.Initialize(SDKKEY)
+                .WithDataGovernance(DataGovernance.EuOnly)
                 .WithManualPoll()
                 .WithHttpClientHandler(httpClientHandler)
                 .Create();
@@ -63,6 +66,7 @@ namespace ConfigCat.Client.Tests
             // Arrange
 
             var client = ConfigCatClientBuilder.Initialize(SDKKEY)
+                .WithDataGovernance(DataGovernance.EuOnly)
                 .WithLazyLoad()
                 .WithHttpClientHandler(httpClientHandler)
                 .Create();

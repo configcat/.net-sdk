@@ -1,26 +1,25 @@
 ﻿using System.Threading.Tasks;
+using ConfigCat.Client.Cache;
 
 namespace ConfigCat.Client.ConfigService
 {
     internal sealed class ManualPollConfigService : ConfigServiceBase, IConfigService
     {
-        internal ManualPollConfigService(IConfigFetcher configFetcher, IConfigCache configCache, ILogger logger)
-            : base(configFetcher, configCache, logger) { }
+        internal ManualPollConfigService(IConfigFetcher configFetcher, CacheParameters cacheParameters, ILogger logger)
+            : base(configFetcher, cacheParameters, logger) { }
 
-        public Task<ProjectConfig> GetConfigAsync()
+        public async Task<ProjectConfig> GetConfigAsync()
         {
-            var config = this.configCache.Get();
-
-            return Task.FromResult(config);
+            return await this.configCache.GetAsync(base.cacheKey).ConfigureAwait(false);
         }
 
         public async Task RefreshConfigAsync()
         {
-            var config = this.configCache.Get();
+            var config = await this.configCache.GetAsync(base.cacheKey).ConfigureAwait(false);
 
             config = await this.configFetcher.Fetch(config).ConfigureAwait(false);
 
-            this.configCache.Set(config);
+            await this.configCache.SetAsync(base.cacheKey, config).ConfigureAwait(false);
         }
     }
 }

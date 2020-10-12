@@ -1,4 +1,5 @@
 ﻿using System;
+using ConfigCat.Client.Cache;
 
 namespace ConfigCat.Client.ConfigService
 {
@@ -12,11 +13,15 @@ namespace ConfigCat.Client.ConfigService
 
         protected readonly ILogger log;
 
-        protected ConfigServiceBase(IConfigFetcher configFetcher, IConfigCache configCache, ILogger log)
+        protected readonly string cacheKey;
+
+        protected ConfigServiceBase(IConfigFetcher configFetcher, CacheParameters cacheParameters, ILogger log)
         {
             this.configFetcher = configFetcher;
 
-            this.configCache = configCache;
+            this.configCache = cacheParameters.ConfigCache;
+
+            this.cacheKey = cacheParameters.CacheKey;
 
             this.log = log;
         }       

@@ -15,7 +15,7 @@ namespace ConfigCat.Client.Tests
 
             var myHandler = new MyFakeHttpClientHandler();
 
-            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new MyCounterLogger(), myHandler);
+            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new MyCounterLogger(), myHandler, false);
 
             // Act
 
@@ -33,7 +33,7 @@ namespace ConfigCat.Client.Tests
 
             var myHandler = new MyFakeHttpClientHandler();
 
-            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new MyCounterLogger(), myHandler);
+            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new MyCounterLogger(), myHandler, false);
 
             // Act
 
@@ -45,13 +45,33 @@ namespace ConfigCat.Client.Tests
         }
 
         [TestMethod]
-        public async Task HttpConfigFetcher_ThrowAnException_ShouldReturPassedConfig()
+        public async Task HttpConfigFetcher_ResponseHttpCodeIsUnexpected_ShouldReturnsPassedConfig()
+        {
+            // Arrange
+
+            var myHandler = new MyFakeHttpClientHandler(HttpStatusCode.Forbidden);
+
+            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new MyCounterLogger(), myHandler, false);
+
+            var lastConfig = new ProjectConfig("{ }", DateTime.UtcNow, "\"ETAG\"");
+
+            // Act
+
+            var actual = await instance.Fetch(lastConfig);
+
+            // Assert
+
+            Assert.AreEqual(lastConfig, actual);
+        }
+
+        [TestMethod]
+        public async Task HttpConfigFetcher_ThrowAnException_ShouldReturnPassedConfig()
         {
             // Arrange
 
             var myHandler = new ExceptionThrowerHttpClientHandler(new WebException());
 
-            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new MyCounterLogger(), myHandler);
+            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new MyCounterLogger(), myHandler, false);
 
             var lastConfig = new ProjectConfig("{ }", DateTime.UtcNow, "\"ETAG\"");
 

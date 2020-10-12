@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using ConfigCat.Client.Cache;
 using ConfigCat.Client.ConfigService;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 
 namespace ConfigCat.Client.Tests
 {
+    [DoNotParallelize]
     [TestClass]
     public class ConfigServiceTests
     {
@@ -26,17 +28,19 @@ namespace ConfigCat.Client.Tests
             cacheMock.Reset();
         }
 
+        [DoNotParallelize]
         [TestMethod]
         public async Task LazyLoadConfigService_GetConfigAsync_ReturnsExpiredContent_ShouldInvokeFetchAndCacheSet()
         {
             // Arrange
 
             this.cacheMock
-                .Setup(m => m.Get())
-                .Returns(cachedPc);
+                .Setup(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None))
+                .ReturnsAsync(cachedPc);
 
             this.cacheMock
-                .Setup(m => m.Set(fetchedPc))
+                .Setup(m => m.SetAsync(It.IsAny<string>(), fetchedPc))
+                .Returns(Task.CompletedTask)
                 .Verifiable();
 
             this.fetcherMock
@@ -46,7 +50,7 @@ namespace ConfigCat.Client.Tests
 
             var service = new LazyLoadConfigService(
                 fetcherMock.Object,
-                cacheMock.Object,
+                new CacheParameters { ConfigCache = cacheMock.Object },
                 loggerMock.Object,
                 defaultExpire);
 
@@ -62,6 +66,7 @@ namespace ConfigCat.Client.Tests
             this.cacheMock.VerifyAll();
         }
 
+
         [TestMethod]
         public async Task LazyLoadConfigService_GetConfigAsync_ReturnsNotExpiredContent_ShouldNotInvokeFetchAndCacheSet()
         {
@@ -70,12 +75,12 @@ namespace ConfigCat.Client.Tests
             var cachedPc = new ProjectConfig(null, DateTime.UtcNow, null);
 
             this.cacheMock
-                .Setup(m => m.Get())
-                .Returns(cachedPc);
+                .Setup(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None))
+                .ReturnsAsync(cachedPc);
 
             var service = new LazyLoadConfigService(
                 fetcherMock.Object,
-                cacheMock.Object,
+                new CacheParameters { ConfigCache = cacheMock.Object },
                 loggerMock.Object,
                 defaultExpire);
 
@@ -88,7 +93,7 @@ namespace ConfigCat.Client.Tests
             Assert.AreEqual(cachedPc, projectConfig);
 
             this.fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Never);
-            this.cacheMock.Verify(m => m.Set(It.IsAny<ProjectConfig>()), Times.Never);
+            this.cacheMock.Verify(m => m.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>()), Times.Never);
         }
 
         [TestMethod]
@@ -99,8 +104,8 @@ namespace ConfigCat.Client.Tests
             byte callOrder = 1;
 
             this.cacheMock
-                .Setup(m => m.Get())
-                .Returns(cachedPc)
+                .Setup(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None))
+                .ReturnsAsync(cachedPc)
                 .Callback(() => Assert.AreEqual(1, callOrder++))
                 .Verifiable();
 
@@ -111,13 +116,14 @@ namespace ConfigCat.Client.Tests
                 .Verifiable();
 
             this.cacheMock
-                .Setup(m => m.Set(fetchedPc))
+                .Setup(m => m.SetAsync(It.IsAny<string>(), fetchedPc))
+                .Returns(Task.CompletedTask)
                 .Callback(() => Assert.AreEqual(3, callOrder))
                 .Verifiable();
 
             var service = new LazyLoadConfigService(
                 fetcherMock.Object,
-                cacheMock.Object,
+                new CacheParameters { ConfigCache = cacheMock.Object },
                 loggerMock.Object,
                 defaultExpire);
 
@@ -132,27 +138,28 @@ namespace ConfigCat.Client.Tests
         }
 
         [TestMethod]
-        public async Task AutoPollConfigService_GetConfigAsync_WithoutTimer_ShouldInvokeFetchAndCacheSetAndCacheGet2x()
+        public async Task AutoPollConfigService_GetConfigAsync_WithoutTimerWithCachedConfig_ShouldInvokeCacheGet1xAndSetNeverFetchNever()
         {
             // Arrange            
 
             var localPc = cachedPc;
 
             this.cacheMock
-                .Setup(m => m.Get())
-                .Returns(localPc);
+                .Setup(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None))
+                .ReturnsAsync(localPc);
 
             this.fetcherMock
                 .Setup(m => m.Fetch(localPc))
                 .Returns(Task.FromResult(fetchedPc));
 
             this.cacheMock
-                .Setup(m => m.Set(fetchedPc))
-                .Callback(() => localPc = fetchedPc);
+                .Setup(m => m.SetAsync(It.IsAny<string>(), fetchedPc))
+                .Callback(() => localPc = fetchedPc)
+                .Returns(Task.CompletedTask);
 
             var service = new AutoPollConfigService(
                 fetcherMock.Object,
-                cacheMock.Object,
+                new CacheParameters { ConfigCache = cacheMock.Object },
                 TimeSpan.FromMinutes(1),
                 TimeSpan.FromMinutes(1),
                 loggerMock.Object,
@@ -164,9 +171,9 @@ namespace ConfigCat.Client.Tests
 
             // Assert
 
-            this.cacheMock.Verify(m => m.Get(), Times.Exactly(2));
-            this.cacheMock.Verify(m => m.Set(fetchedPc), Times.Once);
-            this.fetcherMock.Verify(m => m.Fetch(cachedPc), Times.Once);
+            this.cacheMock.Verify(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None), Times.Once);
+            this.cacheMock.Verify(m => m.SetAsync(It.IsAny<string>(), fetchedPc), Times.Never);
+            this.fetcherMock.Verify(m => m.Fetch(cachedPc), Times.Never);
         }
 
         [TestMethod]
@@ -177,20 +184,21 @@ namespace ConfigCat.Client.Tests
             var wd = new ManualResetEventSlim(false);
 
             this.cacheMock
-                .Setup(m => m.Get())
-                .Returns(cachedPc);
+                .Setup(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None))
+                .ReturnsAsync(cachedPc);
 
             this.fetcherMock
                 .Setup(m => m.Fetch(cachedPc))
                 .Returns(Task.FromResult(fetchedPc));
 
             this.cacheMock
-                .Setup(m => m.Set(fetchedPc))
-                .Callback(() => wd.Set());
+                .Setup(m => m.SetAsync(It.IsAny<string>(), fetchedPc))
+                .Callback(() => wd.Set())
+                .Returns(Task.FromResult(0));
 
             var service = new AutoPollConfigService(
                 fetcherMock.Object,
-                cacheMock.Object,
+                new CacheParameters { ConfigCache = cacheMock.Object },
                 TimeSpan.FromMinutes(1),
                 TimeSpan.Zero,
                 loggerMock.Object,
@@ -201,11 +209,11 @@ namespace ConfigCat.Client.Tests
             wd.Wait(TimeSpan.FromMinutes(1));
 
             await service.GetConfigAsync();
-
+            service.Dispose();
             // Assert
 
-            this.cacheMock.Verify(m => m.Get(), Times.Exactly(2));
-            this.cacheMock.Verify(m => m.Set(fetchedPc), Times.Once);
+            this.cacheMock.Verify(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None), Times.Exactly(2));
+            this.cacheMock.Verify(m => m.SetAsync(It.IsAny<string>(), fetchedPc), Times.Once);
             this.fetcherMock.Verify(m => m.Fetch(cachedPc), Times.Once);
         }
 
@@ -215,19 +223,20 @@ namespace ConfigCat.Client.Tests
             // Arrange
 
             this.cacheMock
-                .Setup(m => m.Get())
-                .Returns(cachedPc);
+                .Setup(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None))
+                .ReturnsAsync(cachedPc);
 
             this.fetcherMock
                 .Setup(m => m.Fetch(cachedPc))
                 .Returns(Task.FromResult(fetchedPc));
 
             this.cacheMock
-                .Setup(m => m.Set(fetchedPc));
+                .Setup(m => m.SetAsync(It.IsAny<string>(), fetchedPc))
+                .Returns(Task.CompletedTask);
 
             var service = new AutoPollConfigService(
                 fetcherMock.Object,
-                cacheMock.Object,
+                new CacheParameters { ConfigCache = cacheMock.Object },
                 TimeSpan.FromMinutes(1),
                 TimeSpan.Zero,
                 loggerMock.Object,
@@ -239,8 +248,8 @@ namespace ConfigCat.Client.Tests
 
             // Assert
 
-            this.cacheMock.Verify(m => m.Get(), Times.Once);
-            this.cacheMock.Verify(m => m.Set(fetchedPc), Times.Once);
+            this.cacheMock.Verify(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None), Times.Once);
+            this.cacheMock.Verify(m => m.SetAsync(It.IsAny<string>(), fetchedPc), Times.Once);
             this.fetcherMock.Verify(m => m.Fetch(cachedPc), Times.Once);
         }
 
@@ -252,19 +261,20 @@ namespace ConfigCat.Client.Tests
             byte eventChanged = 0;
 
             this.cacheMock
-                .Setup(m => m.Get())
-                .Returns(cachedPc);
+                .Setup(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None))
+                .ReturnsAsync(cachedPc);
 
             this.fetcherMock
                 .Setup(m => m.Fetch(cachedPc))
                 .Returns(Task.FromResult(fetchedPc));
 
             this.cacheMock
-                .Setup(m => m.Set(fetchedPc));
+                .Setup(m => m.SetAsync(It.IsAny<string>(), fetchedPc))
+                .Returns(Task.CompletedTask);
 
             var service = new AutoPollConfigService(
                 fetcherMock.Object,
-                cacheMock.Object,
+                new CacheParameters { ConfigCache = cacheMock.Object },
                 TimeSpan.FromMinutes(1),
                 TimeSpan.Zero,
                 loggerMock.Object,
@@ -290,8 +300,8 @@ namespace ConfigCat.Client.Tests
             long e1, e2;
 
             this.cacheMock
-                .Setup(m => m.Get())
-                .Returns(cachedPc);
+                .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(cachedPc));
 
             this.fetcherMock
                 .Setup(m => m.Fetch(cachedPc))
@@ -300,11 +310,11 @@ namespace ConfigCat.Client.Tests
 
             var service = new AutoPollConfigService(
                 fetcherMock.Object,
-                cacheMock.Object,
+                new CacheParameters { ConfigCache = cacheMock.Object, CacheKey = "" },
                 TimeSpan.FromSeconds(0.2d),
                 TimeSpan.Zero,
                 loggerMock.Object,
-                true);
+                false);
 
             // Act
             Thread.Sleep(TimeSpan.FromSeconds(1));
@@ -328,8 +338,8 @@ namespace ConfigCat.Client.Tests
             long e1;
 
             this.cacheMock
-                .Setup(m => m.Get())
-                .Returns(cachedPc);
+                .Setup(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None))
+                .ReturnsAsync(cachedPc);
 
             this.fetcherMock
                 .Setup(m => m.Fetch(cachedPc))
@@ -338,7 +348,7 @@ namespace ConfigCat.Client.Tests
 
             var service = new AutoPollConfigService(
                 fetcherMock.Object,
-                cacheMock.Object,
+                new CacheParameters { ConfigCache = cacheMock.Object },
                 TimeSpan.FromSeconds(0.2d),
                 TimeSpan.Zero,
                 loggerMock.Object,
@@ -359,12 +369,12 @@ namespace ConfigCat.Client.Tests
             // Arrange
 
             this.cacheMock
-                .Setup(m => m.Get())
-                .Returns(cachedPc);
+                .Setup(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None))
+                .ReturnsAsync(cachedPc);
 
             var service = new ManualPollConfigService(
                 fetcherMock.Object,
-                cacheMock.Object,
+                new CacheParameters { ConfigCache = cacheMock.Object },
                 loggerMock.Object);
 
             // Act
@@ -375,9 +385,9 @@ namespace ConfigCat.Client.Tests
 
             Assert.AreEqual(cachedPc, projectConfig);
 
-            this.cacheMock.Verify(m => m.Get(), Times.Once);
+            this.cacheMock.Verify(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None), Times.Once);
             this.fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Never);
-            this.cacheMock.Verify(m => m.Set(It.IsAny<ProjectConfig>()), Times.Never);
+            this.cacheMock.Verify(m => m.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>()), Times.Never);
         }
 
         [TestMethod]
@@ -388,8 +398,8 @@ namespace ConfigCat.Client.Tests
             byte callOrder = 1;
 
             this.cacheMock
-                .Setup(m => m.Get())
-                .Returns(cachedPc)
+                .Setup(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None))
+                .ReturnsAsync(cachedPc)
                 .Callback(() => Assert.AreEqual(1, callOrder++));
 
             this.fetcherMock
@@ -398,12 +408,13 @@ namespace ConfigCat.Client.Tests
                 .Callback(() => Assert.AreEqual(2, callOrder++));
 
             this.cacheMock
-                .Setup(m => m.Set(fetchedPc))
-                .Callback(() => Assert.AreEqual(3, callOrder++));
+                .Setup(m => m.SetAsync(It.IsAny<string>(), fetchedPc))
+                .Callback(() => Assert.AreEqual(3, callOrder++))
+                .Returns(Task.CompletedTask);
 
             var service = new ManualPollConfigService(
                 fetcherMock.Object,
-                cacheMock.Object,
+                new CacheParameters { ConfigCache = cacheMock.Object },
                 loggerMock.Object);
 
             // Act
@@ -412,9 +423,9 @@ namespace ConfigCat.Client.Tests
 
             // Assert
 
-            this.cacheMock.Verify(m => m.Get(), Times.Once);
+            this.cacheMock.Verify(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None), Times.Once);
             this.fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Once);
-            this.cacheMock.Verify(m => m.Set(It.IsAny<ProjectConfig>()), Times.Once);
+            this.cacheMock.Verify(m => m.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>()), Times.Once);
         }
 
         [TestMethod]
@@ -434,7 +445,7 @@ namespace ConfigCat.Client.Tests
             var configServiceMock = new Mock<ConfigServiceBase>(
                 MockBehavior.Loose,
                 configFetcherMock.Object,
-                new InMemoryConfigCache(),
+                new CacheParameters { ConfigCache = new InMemoryConfigCache() },
                 loggerMock.Object)
             {
                 CallBase = true
@@ -465,7 +476,7 @@ namespace ConfigCat.Client.Tests
             var configServiceMock = new Mock<ConfigServiceBase>(
                 MockBehavior.Loose,
                 configFetcherMock.Object,
-                new InMemoryConfigCache(),
+                new CacheParameters { ConfigCache = new InMemoryConfigCache() },
                 new MyCounterLogger())
             {
                 CallBase = true
@@ -479,5 +490,3 @@ namespace ConfigCat.Client.Tests
         }
     }
 }
-
-

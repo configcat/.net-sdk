@@ -9,7 +9,7 @@ namespace ConfigCat.Client.Tests
     [TestClass]
     public class VariationIdEvaluatorTests : ConfigEvaluatorTestsBase
     {
-        protected override string SampleJsonFileName => "sample_variationid_v4.json";
+        protected override string SampleJsonFileName => "sample_variationid_v5.json";
 
         protected override string MatrixResultFileName => "testmatrix_variationid.csv";
 

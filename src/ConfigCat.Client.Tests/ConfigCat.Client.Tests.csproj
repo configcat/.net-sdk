@@ -14,7 +14,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.8.0" />
-    <PackageReference Include="Moq" Version="4.10.0" />
+    <PackageReference Include="Moq" Version="4.14.6" />
     <PackageReference Include="MSTest.TestAdapter" Version="1.3.2" />
     <PackageReference Include="MSTest.TestFramework" Version="1.3.2" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
@@ -26,22 +26,22 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="data\sample_number_v4.json">
+    <None Update="data\sample_number_v5.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="data\sample_sensitive_v4.json">
+    <None Update="data\sample_sensitive_v5.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="data\sample_semantic_2_v4.json">
+    <None Update="data\sample_semantic_2_v5.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="data\sample_semantic_v4.json">
+    <None Update="data\sample_semantic_v5.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="data\sample_v4.json">
+    <None Update="data\sample_v5.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="data\sample_variationid_v4.json">
+    <None Update="data\sample_variationid_v5.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="data\testmatrix.csv">

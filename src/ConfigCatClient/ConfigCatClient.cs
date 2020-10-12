@@ -6,6 +6,8 @@ using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
+using ConfigCat.Client.Cache;
+using ConfigCat.Client.Security;
 
 namespace ConfigCat.Client
 {
@@ -21,6 +23,8 @@ namespace ConfigCat.Client
         private readonly IConfigService configService;
 
         private readonly IConfigDeserializer configDeserializer;
+
+        private readonly CacheParameters cacheParameters;
 
         private static readonly string version = typeof(ConfigCatClient).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
 
@@ -41,8 +45,9 @@ namespace ConfigCat.Client
         /// Create an instance of ConfigCatClient and setup AutoPoll mode
         /// </summary>
         /// <param name="sdkKey">SDK Key to access configuration</param>
+        /// <param name="dataGovernance">Default: Global. Set this parameter to be in sync with the Data Governance preference on the Dashboard: https://app.configcat.com/organization/data-governance (Only Organization Admins have access)</param>
         /// <exception cref="ArgumentException">When the <paramref name="sdkKey"/> is null or empty</exception>                
-        public ConfigCatClient(string sdkKey) : this(new AutoPollConfiguration { SdkKey = sdkKey })
+        public ConfigCatClient(string sdkKey, DataGovernance dataGovernance = DataGovernance.Global) : this(new AutoPollConfiguration { SdkKey = sdkKey, DataGovernance = dataGovernance })
         {
         }
 
@@ -55,16 +60,17 @@ namespace ConfigCat.Client
         public ConfigCatClient(AutoPollConfiguration configuration)
             : this((ConfigurationBase)configuration)
         {
-            var configService = new AutoPollConfigService(
-                   new HttpConfigFetcher(configuration.CreateUrl(), "a-" + version, configuration.Logger, configuration.HttpClientHandler),
-                   configuration.ConfigCache ?? new InMemoryConfigCache(),
+            var autoPollService = new AutoPollConfigService(
+                   new HttpConfigFetcher(configuration.CreateUri(), "a-" + version, configuration.Logger, configuration.HttpClientHandler, configuration.IsCustomBaseUrl),
+                   this.cacheParameters,
                    TimeSpan.FromSeconds(configuration.PollIntervalSeconds),
                    TimeSpan.FromSeconds(configuration.MaxInitWaitTimeSeconds),
-                   configuration.Logger);
+                   configuration.Logger
+                   );
 
-            configService.OnConfigurationChanged += configuration.RaiseOnConfigurationChanged;
+            autoPollService.OnConfigurationChanged += configuration.RaiseOnConfigurationChanged;
 
-            this.configService = configService;
+            this.configService = autoPollService;
         }
 
         /// <summary>
@@ -76,13 +82,13 @@ namespace ConfigCat.Client
         public ConfigCatClient(LazyLoadConfiguration configuration)
             : this((ConfigurationBase)configuration)
         {
-            var configService = new LazyLoadConfigService(
-               new HttpConfigFetcher(configuration.CreateUrl(), "l-" + version, configuration.Logger, configuration.HttpClientHandler),
-               configuration.ConfigCache ?? new InMemoryConfigCache(),
+            var lazyLoadService = new LazyLoadConfigService(
+               new HttpConfigFetcher(configuration.CreateUri(), "l-" + version, configuration.Logger, configuration.HttpClientHandler, configuration.IsCustomBaseUrl),
+               this.cacheParameters,
                configuration.Logger,
                TimeSpan.FromSeconds(configuration.CacheTimeToLiveSeconds));
 
-            this.configService = configService;
+            this.configService = lazyLoadService;
         }
 
         /// <summary>
@@ -95,8 +101,8 @@ namespace ConfigCat.Client
             : this((ConfigurationBase)configuration)
         {
             var configService = new ManualPollConfigService(
-                new HttpConfigFetcher(configuration.CreateUrl(), "m-" + version, configuration.Logger, configuration.HttpClientHandler),
-                configuration.ConfigCache ?? new InMemoryConfigCache(),
+                new HttpConfigFetcher(configuration.CreateUri(), "m-" + version, configuration.Logger, configuration.HttpClientHandler, configuration.IsCustomBaseUrl),
+                this.cacheParameters,
                 configuration.Logger);
 
             this.configService = configService;
@@ -114,6 +120,11 @@ namespace ConfigCat.Client
             this.log = configuration.Logger;
             this.configDeserializer = new ConfigDeserializer(this.log);
             this.configEvaluator = new RolloutEvaluator(this.log, this.configDeserializer);
+            this.cacheParameters = new CacheParameters
+            {
+                ConfigCache = configuration.ConfigCache ?? new InMemoryConfigCache(),
+                CacheKey = GetCacheKey(configuration)
+            };
         }
 
         /// <summary>
@@ -316,5 +327,11 @@ namespace ConfigCat.Client
             return ConfigCatClientBuilder.Initialize(sdkKey);
         }
 
+        private static string GetCacheKey(ConfigurationBase configuration)
+        {
+            var key = $"dotnet_{ConfigurationBase.ConfigFileName}_{configuration.SdkKey}";
+
+            return HashUtils.HashString(key);
+        }
     }
 }

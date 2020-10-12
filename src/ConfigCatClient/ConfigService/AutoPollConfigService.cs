@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using ConfigCat.Client.Cache;
 
 namespace ConfigCat.Client.ConfigService
 {
@@ -10,14 +11,16 @@ namespace ConfigCat.Client.ConfigService
 
         private readonly Timer timer;
 
+        private ManualResetEventSlim initializedEventSlim = new ManualResetEventSlim(false);
+
         public event OnConfigurationChangedEventHandler OnConfigurationChanged;
 
         internal AutoPollConfigService(
             IConfigFetcher configFetcher,
-            IConfigCache configCache,
+            CacheParameters cacheParameters,
             TimeSpan pollingInterval,
             TimeSpan maxInitWaitTime,
-            ILogger logger) : this(configFetcher, configCache, pollingInterval, maxInitWaitTime, logger, true)
+            ILogger logger) : this(configFetcher, cacheParameters, pollingInterval, maxInitWaitTime, logger, true)
         {
         }
 
@@ -25,18 +28,19 @@ namespace ConfigCat.Client.ConfigService
         /// For test purpose only
         /// </summary>
         /// <param name="configFetcher"></param>
-        /// <param name="configCache"></param>
+        /// <param name="cacheParameters"></param>
         /// <param name="pollingInterval"></param>
         /// <param name="maxInitWaitTime"></param>
         /// <param name="logger"></param>
         /// <param name="startTimer"></param>
         internal AutoPollConfigService(
             IConfigFetcher configFetcher,
-            IConfigCache configCache,
+            CacheParameters cacheParameters,
             TimeSpan pollingInterval,
             TimeSpan maxInitWaitTime,
             ILogger logger,
-            bool startTimer) : base(configFetcher, configCache, logger)
+            bool startTimer
+            ) : base(configFetcher, cacheParameters, logger)
         {
             if (startTimer)
             {
@@ -45,24 +49,31 @@ namespace ConfigCat.Client.ConfigService
 
             this.maxInitWaitExpire = DateTime.UtcNow.Add(maxInitWaitTime);
         }
-                
+
         protected override void Dispose(bool disposing)
         {
             this.timer?.Dispose();
 
-            base.Dispose(disposing);            
+            base.Dispose(disposing);
         }
 
-        public Task<ProjectConfig> GetConfigAsync()
+        public async Task<ProjectConfig> GetConfigAsync()
         {
-            var d = this.maxInitWaitExpire - DateTime.UtcNow;
+            var delay = this.maxInitWaitExpire - DateTime.UtcNow;
 
-            if (d > TimeSpan.Zero)
+            var cacheConfig = await this.configCache.GetAsync(base.cacheKey).ConfigureAwait(false);
+
+            if (delay > TimeSpan.Zero && cacheConfig.Equals(ProjectConfig.Empty))
             {
-                Task.Run(() => RefreshLogic("init")).Wait(d);
+                if (!initializedEventSlim.Wait(delay))
+                {
+                    await RefreshLogicAsync("init");
+                }
+
+                cacheConfig = await this.configCache.GetAsync(base.cacheKey).ConfigureAwait(false);
             }
 
-            return Task.FromResult(this.configCache.Get());
+            return cacheConfig;
         }
 
         public async Task RefreshConfigAsync()
@@ -74,17 +85,19 @@ namespace ConfigCat.Client.ConfigService
         {
             this.log.Debug($"RefreshLogic start [{sender}]");
 
-            var latestConfig = this.configCache.Get();
+            var latestConfig = await this.configCache.GetAsync(base.cacheKey).ConfigureAwait(false);
 
-            var newConfig = await this.configFetcher.Fetch(latestConfig);
+            var newConfig = await this.configFetcher.Fetch(latestConfig).ConfigureAwait(false);
 
             if (!latestConfig.Equals(newConfig) && !newConfig.Equals(ProjectConfig.Empty))
             {
                 this.log.Debug("config changed");
 
-                this.configCache.Set(newConfig);
+                await this.configCache.SetAsync(base.cacheKey, newConfig).ConfigureAwait(false);
 
                 OnConfigurationChanged?.Invoke(this, OnConfigurationChangedEventArgs.Empty);
+
+                initializedEventSlim.Set();
             }
         }
 

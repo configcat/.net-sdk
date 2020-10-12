@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ConfigCat.Client" Version="5.0.39" />
+    <PackageReference Include="ConfigCat.Client" Version="6.0.0" />
   </ItemGroup>
 
 </Project>

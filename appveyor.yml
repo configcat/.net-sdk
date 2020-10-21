@@ -28,11 +28,12 @@ test_script:
  - cmd: runtests.ci.cmd
  - ps: . .\set-debug-type.ps1 src\ConfigCatClient\ConfigCatClient.csproj
  - cmd: coverage.cmd
+ - codecov -f "coverage.xml"
 after_test:
  - cmd: echo __ANALYSIS__
- - codecov -f "coverage.xml"
  - ps: choco install "sonarscanner-msbuild-net46" -y --no-progress
- - ps: SonarScanner.MSBuild.exe begin /k:"net-sdk" /d:sonar.host.url="https://sonarcloud.io" /o:"configcat" /d:sonar.login="$env:SONARQUBE_TOKEN" /d:sonar.cs.opencover.reportsPaths="coverage.xml" /d:sonar.cs.vstest.reportsPaths="testresult.xml" /v:$env:APPVEYOR_BUILD_VERSION /d:sonar.branch.name="$env:APPVEYOR_REPO_BRANCH" /d:sonar.exclusions="ConfigCatClient/Versioning/*" /d:sonar.coverage.exclusions="ConfigCatClient/Versioning/*"
+ - ps: if ($env:APPVEYOR_PULL_REQUEST_NUMBER) { SonarScanner.MSBuild.exe begin /k:"net-sdk" /d:sonar.host.url="https://sonarcloud.io" /o:"configcat" /d:sonar.login="$env:SONARQUBE_TOKEN" /d:sonar.cs.opencover.reportsPaths="coverage.xml" /d:sonar.cs.vstest.reportsPaths="testresult.xml" /v:$env:APPVEYOR_BUILD_VERSION /d:sonar.branch.name="$env:APPVEYOR_REPO_BRANCH" /d:sonar.exclusions="ConfigCatClient/Versioning/*" /d:sonar.coverage.exclusions="ConfigCatClient/Versioning/*" /d:"sonar.analysis.mode=preview" /d:"sonar.github.pullRequest=$env:APPVEYOR_PULL_REQUEST_NUMBER" /d:"sonar.github.repository=configcat/.net-sdk" }
+ - ps: if (-Not $env:APPVEYOR_PULL_REQUEST_NUMBER) { SonarScanner.MSBuild.exe begin /k:"net-sdk" /d:sonar.host.url="https://sonarcloud.io" /o:"configcat" /d:sonar.login="$env:SONARQUBE_TOKEN" /d:sonar.cs.opencover.reportsPaths="coverage.xml" /d:sonar.cs.vstest.reportsPaths="testresult.xml" /v:$env:APPVEYOR_BUILD_VERSION /d:sonar.branch.name="$env:APPVEYOR_REPO_BRANCH" /d:sonar.exclusions="ConfigCatClient/Versioning/*" /d:sonar.coverage.exclusions="ConfigCatClient/Versioning/*" }
  - msbuild /p:Configuration=%configuration% /t:Build src/ConfigCatClient.sln
  - ps: SonarScanner.MSBuild.exe end /d:sonar.login="$env:SONARQUBE_TOKEN"
 artifacts:

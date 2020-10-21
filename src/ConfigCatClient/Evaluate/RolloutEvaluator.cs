@@ -351,7 +351,7 @@ namespace ConfigCat.Client.Evaluate
         {
             if (SemVersion.TryParse(s1?.Trim(), out SemVersion v1, true))
             {
-                s2 = s2?.Trim();
+                s2 = string.IsNullOrWhiteSpace(s2) ? string.Empty : s2.Trim();
 
                 switch (comparator)
                 {

@@ -60,12 +60,15 @@ namespace ConfigCat.Client
         /// <inheritdoc />
         public override int GetHashCode()
         {
-            var hashCode = 1098790081;
-            hashCode = hashCode * -1521134295 + base.GetHashCode();
-            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(JsonString);
-            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(HttpETag);
+            unchecked
+            {
+                var hashCode = 1098790081;
+                hashCode = hashCode * -1521134295 + base.GetHashCode();
+                hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(JsonString);
+                hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(HttpETag);
 
-            return hashCode;
+                return hashCode; 
+            }
         }
     }
 }

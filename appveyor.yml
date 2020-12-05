@@ -2,6 +2,9 @@ version: 6.0.{build}
 image: Visual Studio 2019
 configuration: Release
 platform: Any CPU
+environment:
+  SONARQUBE_TOKEN:
+    secure: Gcyk5/iAGeDpK2ckvhfw0zWpiiEt/jSg6GcxaGIriN4BkfV7h7kEnt1dkT6YMuOE
 dotnet_csproj:
   patch: true
   file: '**\*.csproj'
@@ -10,21 +13,27 @@ dotnet_csproj:
   assembly_version: '{version}'
   file_version: '{version}'
   informational_version: '{version}'
-before_build:
- - cmd: nuget.exe restore src/ConfigCatClient.sln
-build:
-  project: src/ConfigCatClient.sln
-  verbosity: normal
+build_script: 
+ - cmd: echo __BUILD__
+ - msbuild /verbosity:normal /t:Restore src/ConfigCatClient.sln
+ - msbuild /verbosity:normal /t:Build src/ConfigCatClient.sln 
 after_build:
-- msbuild /t:Pack /p:IncludeSymbols=true /p:Configuration=%configuration% /p:PackageOutputPath=..\..\artifacts /p:SymbolPackageFormat=snupkg src\ConfigCatClient\ConfigCatClient.csproj
+ - cmd: echo __PACK__
+ - msbuild /t:Pack /p:IncludeSymbols=true /p:Configuration=%configuration% /p:PackageOutputPath=..\..\artifacts /p:SymbolPackageFormat=snupkg src\ConfigCatClient\ConfigCatClient.csproj
 before_test:
  - ps: choco install opencover.portable --no-progress
  - ps: choco install codecov --no-progress
 test_script:
+ - cmd: echo __TEST_AND_COVERAGE__
  - ps: . .\set-debug-type.ps1 src\ConfigCatClient\ConfigCatClient.csproj
- - cmd: coverage.cmd
-after_test:
+ - cmd: runtests.ci.cmd 
  - codecov -f "coverage.xml"
+after_test:
+ - cmd: echo __ANALYSIS__
+ - ps: 'if (-Not $env:APPVEYOR_PULL_REQUEST_NUMBER) { choco install "sonarscanner-msbuild-net46" -y --no-progress }'
+ - ps: 'if (-Not $env:APPVEYOR_PULL_REQUEST_NUMBER) { SonarScanner.MSBuild.exe begin /k:"net-sdk" /d:sonar.host.url="https://sonarcloud.io" /o:"configcat" /d:sonar.login="$env:SONARQUBE_TOKEN" /d:sonar.cs.opencover.reportsPaths="coverage.xml" /d:sonar.cs.vstest.reportsPaths="testresult.xml" /v:$env:APPVEYOR_BUILD_VERSION /d:sonar.branch.name="$env:APPVEYOR_REPO_BRANCH" /d:sonar.exclusions="ConfigCatClient/Versioning/*" /d:sonar.coverage.exclusions="ConfigCatClient/Versioning/*" }'
+ - msbuild /p:Configuration=%configuration% /t:Build src/ConfigCatClient.sln
+ - ps: 'if (-Not $env:APPVEYOR_PULL_REQUEST_NUMBER) { SonarScanner.MSBuild.exe end /d:sonar.login="$env:SONARQUBE_TOKEN" }'
 artifacts:
 - path: artifacts\ConfigCat.Client.*.*nupkg
   name: NuGet 
@@ -34,3 +43,4 @@ notifications:
   - developer@configcat.com
   on_build_success: false
   on_build_failure: true
+  on_build_status_changed: false

@@ -143,9 +143,9 @@ namespace ConfigCat.Client
         {
             try
             {
-                var c = this.configService.GetConfigAsync().Result;
+                var config = this.configService.GetConfigAsync().GetAwaiter().GetResult();
 
-                return this.configEvaluator.Evaluate<T>(c, key, defaultValue, user);
+                return this.configEvaluator.Evaluate<T>(config, key, defaultValue, user);
             }
             catch (Exception ex)
             {
@@ -160,9 +160,9 @@ namespace ConfigCat.Client
         {
             try
             {
-                var c = await this.configService.GetConfigAsync().ConfigureAwait(false);
+                var config = await this.configService.GetConfigAsync().ConfigureAwait(false);
 
-                return this.configEvaluator.Evaluate<T>(c, key, defaultValue, user);
+                return this.configEvaluator.Evaluate<T>(config, key, defaultValue, user);
             }
             catch (Exception ex)
             {
@@ -177,7 +177,13 @@ namespace ConfigCat.Client
         {
             try
             {
-                return this.GetAllKeysAsync().Result;
+                var config = this.configService.GetConfigAsync().GetAwaiter().GetResult();
+
+                if (this.configDeserializer.TryDeserialize(config, out var settings)) return settings.Keys;
+
+                this.log.Warning("Config deserialization failed.");
+
+                return new string[0];
             }
             catch (Exception ex)
             {
@@ -191,10 +197,12 @@ namespace ConfigCat.Client
         {
             try
             {
-                var c = await this.configService.GetConfigAsync().ConfigureAwait(false);
-                if (this.configDeserializer.TryDeserialize(c, out var settings)) return settings.Keys;
+                var config = await this.configService.GetConfigAsync().ConfigureAwait(false);
+
+                if (this.configDeserializer.TryDeserialize(config, out var settings)) return settings.Keys;
 
                 this.log.Warning("Config deserialization failed.");
+
                 return new string[0];
             }
             catch (Exception ex)
@@ -207,13 +215,27 @@ namespace ConfigCat.Client
         /// <inheritdoc />
         public void ForceRefresh()
         {
-            this.configService.RefreshConfigAsync().Wait();
+            try
+            {
+                this.configService.RefreshConfigAsync().GetAwaiter().GetResult();                
+            }
+            catch (Exception ex)
+            {
+                this.log.Error($"Error occured in 'ForceRefresh' method.\n{ex}");
+            }
         }
 
         /// <inheritdoc />
         public async Task ForceRefreshAsync()
         {
-            await this.configService.RefreshConfigAsync();
+            try
+            {
+                await this.configService.RefreshConfigAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                this.log.Error($"Error occured in 'ForceRefreshAsync' method.\n{ex}");
+            }
         }
 
         /// <inheritdoc />
@@ -230,9 +252,9 @@ namespace ConfigCat.Client
         {
             try
             {
-                var c = this.configService.GetConfigAsync().Result;
+                var config = this.configService.GetConfigAsync().GetAwaiter().GetResult();
 
-                return this.configEvaluator.EvaluateVariationId(c, key, defaultVariationId, user);
+                return this.configEvaluator.EvaluateVariationId(config, key, defaultVariationId, user);
             }
             catch (Exception ex)
             {
@@ -264,9 +286,9 @@ namespace ConfigCat.Client
         {
             try
             {
-                var c = this.configService.GetConfigAsync().Result;
+                var config = this.configService.GetConfigAsync().GetAwaiter().GetResult();
 
-                return GetAllVariationIdLogic(c, user);
+                return GetAllVariationIdLogic(config, user);
             }
             catch (Exception ex)
             {
@@ -281,9 +303,9 @@ namespace ConfigCat.Client
         {
             try
             {
-                var c = await this.configService.GetConfigAsync().ConfigureAwait(false);
+                var config = await this.configService.GetConfigAsync().ConfigureAwait(false);
 
-                return GetAllVariationIdLogic(c, user);
+                return GetAllVariationIdLogic(config, user);
             }
             catch (Exception ex)
             {

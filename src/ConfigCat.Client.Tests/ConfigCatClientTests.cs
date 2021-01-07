@@ -494,6 +494,95 @@ namespace ConfigCat.Client.Tests
             Assert.AreEqual(1, myMock.DisposeCount);
         }
 
+        [TestMethod]
+        public void ForceRefresh_ShouldInvokeConfigServiceRefreshConfigAsync()
+        {
+            // Arrange
+
+            configServiceMock.Setup(m => m.RefreshConfigAsync()).Returns(Task.CompletedTask);
+
+            IConfigCatClient instance = new ConfigCatClient(
+                configServiceMock.Object,
+                loggerMock.Object,
+                evaluatorMock.Object,
+                configDeserializerMock.Object);
+
+            // Act
+
+            instance.ForceRefresh();
+
+            // Assert
+
+            configServiceMock.Verify(m => m.RefreshConfigAsync(), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task ForceRefreshAsync_ShouldInvokeConfigServiceRefreshConfigAsync()
+        {
+            // Arrange
+
+            configServiceMock.Setup(m => m.RefreshConfigAsync()).Returns(Task.CompletedTask);
+
+            IConfigCatClient instance = new ConfigCatClient(
+                configServiceMock.Object,
+                loggerMock.Object,
+                evaluatorMock.Object,
+                configDeserializerMock.Object);
+
+            // Act
+
+            await instance.ForceRefreshAsync();
+
+            // Assert
+
+            configServiceMock.Verify(m => m.RefreshConfigAsync(), Times.Once);
+        }
+
+
+        [TestMethod]
+        public void ForceRefresh_ConfigServiceThrowException_ShouldNotReThrowTheExceptionAndLogsError()
+        {
+            // Arrange
+
+            configServiceMock.Setup(m => m.RefreshConfigAsync()).Throws<Exception>();
+
+            IConfigCatClient instance = new ConfigCatClient(
+                configServiceMock.Object,
+                loggerMock.Object,
+                evaluatorMock.Object,
+                configDeserializerMock.Object);
+
+            // Act
+
+            instance.ForceRefresh();
+
+            // Assert
+
+            loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task ForceRefreshAsync_ConfigServiceThrowException_ShouldNotReThrowTheExceptionAndLogsError()
+        {
+            // Arrange
+
+            configServiceMock.Setup(m => m.RefreshConfigAsync()).Throws<Exception>();
+
+            IConfigCatClient instance = new ConfigCatClient(
+                configServiceMock.Object,
+                loggerMock.Object,
+                evaluatorMock.Object,
+                configDeserializerMock.Object);
+
+            // Act
+
+            await instance.ForceRefreshAsync();            
+
+            // Assert
+
+            loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
+        }
+
         internal class FakeConfigService : ConfigServiceBase, IConfigService
         {
             public byte DisposeCount { get; private set; }

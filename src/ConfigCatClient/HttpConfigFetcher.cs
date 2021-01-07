@@ -45,7 +45,7 @@ namespace ConfigCat.Client
 
             try
             {
-                var fetchResult = await FetchRequest(lastConfig, this.requestUri);
+                var fetchResult = await FetchRequest(lastConfig, this.requestUri).ConfigureAwait(false);
 
                 var response = fetchResult.Item1;
 

@@ -67,7 +67,7 @@ namespace ConfigCat.Client.ConfigService
             {
                 if (!initializedEventSlim.Wait(delay))
                 {
-                    await RefreshLogicAsync("init");
+                    await RefreshLogicAsync("init").ConfigureAwait(false);
                 }
 
                 cacheConfig = await this.configCache.GetAsync(base.cacheKey).ConfigureAwait(false);
@@ -78,7 +78,7 @@ namespace ConfigCat.Client.ConfigService
 
         public async Task RefreshConfigAsync()
         {
-            await RefreshLogicAsync("manual");
+            await RefreshLogicAsync("manual").ConfigureAwait(false);
         }
 
         private async Task RefreshLogicAsync(object sender)

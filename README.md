@@ -90,7 +90,7 @@ The ConfigCat SDK supports 3 different polling mechanisms to acquire the setting
 https://configcat.com/support
 
 ## Contributing
-Contributions are welcome.
+Contributions are welcome. For more info please read the [Contribution Guideline](CONTRIBUTING.md).
 
 ## About ConfigCat
 - [Documentation](https://configcat.com/docs)

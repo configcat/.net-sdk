@@ -13,6 +13,9 @@ dotnet_csproj:
   assembly_version: '{version}'
   file_version: '{version}'
   informational_version: '{version}'
+install:
+- set JAVA_HOME=C:\Program Files\Java\jdk11
+- set PATH=%JAVA_HOME%\bin;%PATH%
 build_script: 
  - cmd: echo __BUILD__
  - msbuild /verbosity:normal /t:Restore src/ConfigCatClient.sln

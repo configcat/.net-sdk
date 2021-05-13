@@ -13,7 +13,7 @@ We encourage pull requests and other contributions from the community.
 - Be accompanied by a complete Pull Request template (loaded automatically when a PR is created).
 - Add unit or integration tests for fixed or changed functionality.
 
-When you submit a pull request or otherwise seek to include your change in the repository, you waive all your intellectual property rights, including your copyright and patent claims for the submission.
+When you submit a pull request or otherwise seek to include your change in the repository, you waive all your intellectual property rights, including your copyright and patent claims for the submission. For more details please read the [contribution agreement](https://github.com/configcat/legal/blob/main/contribution-agreement.md).
 
 In general, we follow the ["fork-and-pull" Git workflow](https://github.com/susam/gitpr)
 

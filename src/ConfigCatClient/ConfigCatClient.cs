@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
 using ConfigCat.Client.Security;
+using Newtonsoft.Json;
 
 namespace ConfigCat.Client
 {
@@ -16,6 +17,8 @@ namespace ConfigCat.Client
     /// </summary>
     public class ConfigCatClient : IConfigCatClient
     {
+        private readonly JsonSerializer serializer;
+
         private readonly ILogger log;
 
         private readonly IRolloutEvaluator configEvaluator;
@@ -61,7 +64,7 @@ namespace ConfigCat.Client
             : this((ConfigurationBase)configuration)
         {
             var autoPollService = new AutoPollConfigService(
-                   new HttpConfigFetcher(configuration.CreateUri(), "a-" + version, configuration.Logger, configuration.HttpClientHandler, configuration.IsCustomBaseUrl),
+                   new HttpConfigFetcher(configuration.CreateUri(), "a-" + version, configuration.Logger, configuration.HttpClientHandler, this.serializer, configuration.IsCustomBaseUrl),
                    this.cacheParameters,
                    TimeSpan.FromSeconds(configuration.PollIntervalSeconds),
                    TimeSpan.FromSeconds(configuration.MaxInitWaitTimeSeconds),
@@ -83,7 +86,7 @@ namespace ConfigCat.Client
             : this((ConfigurationBase)configuration)
         {
             var lazyLoadService = new LazyLoadConfigService(
-               new HttpConfigFetcher(configuration.CreateUri(), "l-" + version, configuration.Logger, configuration.HttpClientHandler, configuration.IsCustomBaseUrl),
+               new HttpConfigFetcher(configuration.CreateUri(), "l-" + version, configuration.Logger, configuration.HttpClientHandler, this.serializer, configuration.IsCustomBaseUrl),
                this.cacheParameters,
                configuration.Logger,
                TimeSpan.FromSeconds(configuration.CacheTimeToLiveSeconds));
@@ -101,7 +104,7 @@ namespace ConfigCat.Client
             : this((ConfigurationBase)configuration)
         {
             var configService = new ManualPollConfigService(
-                new HttpConfigFetcher(configuration.CreateUri(), "m-" + version, configuration.Logger, configuration.HttpClientHandler, configuration.IsCustomBaseUrl),
+                new HttpConfigFetcher(configuration.CreateUri(), "m-" + version, configuration.Logger, configuration.HttpClientHandler, this.serializer, configuration.IsCustomBaseUrl),
                 this.cacheParameters,
                 configuration.Logger);
 
@@ -117,8 +120,9 @@ namespace ConfigCat.Client
 
             configuration.Validate();
 
+            this.serializer = JsonSerializer.Create();
             this.log = configuration.Logger;
-            this.configDeserializer = new ConfigDeserializer(this.log);
+            this.configDeserializer = new ConfigDeserializer(this.log, this.serializer);
             this.configEvaluator = new RolloutEvaluator(this.log, this.configDeserializer);
             this.cacheParameters = new CacheParameters
             {

@@ -1,5 +1,6 @@
 ﻿using ConfigCat.Client.Evaluate;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -23,7 +24,7 @@ namespace ConfigCat.Client.Tests
 
         public ConfigEvaluatorTestsBase()
         {
-            this.configEvaluator = new RolloutEvaluator(logger, new ConfigDeserializer(logger));
+            this.configEvaluator = new RolloutEvaluator(logger, new ConfigDeserializer(logger, JsonSerializer.Create()));
 
             this.config = new ProjectConfig(this.GetSampleJson(), DateTime.UtcNow, null);
         }

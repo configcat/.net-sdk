@@ -15,7 +15,9 @@
           <PackageProjectUrl>https://github.com/ConfigCat/.net-sdk</PackageProjectUrl>
           <RepositoryUrl>https://github.com/ConfigCat/.net-sdk</RepositoryUrl>
           <RepositoryType>git</RepositoryType>
-          <PackageReleaseNotes>Version 6.1.0
+          <PackageReleaseNotes>Version 6.1.20
+     * Bugfix: The SDK's json serialization behavior is not depending on the `JsonConvert.DefaultSettings` anymore.
+Version 6.1.0
      * Bugfix (#17)
 Version 6.0.0
      * Addressing global data handling and processing trends via Data Governance feature. Customers can control the geographic location where their config JSONs get published to. [See the docs.](https://configcat.com/docs/advanced/data-governance/)

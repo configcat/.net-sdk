@@ -7,7 +7,7 @@ namespace ConfigCatClient.Benchmarks
     {
         private static void Main(string[] args)
         {
-            BenchmarkRunner.Run<GetValueBenchmarks>();
+            BenchmarkRunner.Run<JsonDeserializationBenchmark>();
 
             Console.ReadKey();
         }

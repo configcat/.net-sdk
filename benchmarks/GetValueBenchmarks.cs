@@ -6,7 +6,7 @@ using System;
 namespace ConfigCatClient.Benchmarks
 {
     [MemoryDiagnoser]
-    public class GetValueBenchmarks
+    public class JsonDeserializationBenchmark
     {
         private readonly from_project::ConfigCat.Client.IConfigCatClient newClient = from_project::ConfigCat.Client.ConfigCatClientBuilder
             .Initialize("rv3YCMKenkaM7xkOCVQfeg/-I_w49WSQUWdZypPPM4Yyg")
@@ -31,13 +31,13 @@ namespace ConfigCatClient.Benchmarks
         }
 
         [Benchmark(Baseline = true)]
-        public object OldGetValue()
+        public object Old()
         {
             return this.oldClient.GetValue("asd", false, oldUser);
         }
 
         [Benchmark]
-        public object NewGetValue()
+        public object New()
         {
             return this.newClient.GetValue("asd", false, newUser);
         }

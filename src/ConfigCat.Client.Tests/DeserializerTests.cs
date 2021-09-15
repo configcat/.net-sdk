@@ -21,7 +21,7 @@ namespace ConfigCat.Client.Tests
 
             var deserializer = new ConfigDeserializer(new LoggerWrapper(new ConsoleLogger(LogLevel.Debug)), JsonSerializer.Create());
 
-            deserializer.TryDeserialize(new ProjectConfig("{\"p\": {\"u\": \"http://example.com\", \"r\": 0}}", DateTime.Now, ""), out var configs);
+            deserializer.TryDeserialize("{\"p\": {\"u\": \"http://example.com\", \"r\": 0}}", out var configs);
         }
     }
 }

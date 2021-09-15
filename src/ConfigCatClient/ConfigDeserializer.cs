@@ -1,6 +1,5 @@
 ﻿using ConfigCat.Client.Evaluate;
 using Newtonsoft.Json;
-using System.Collections.Generic;
 using System.IO;
 
 namespace ConfigCat.Client
@@ -9,6 +8,8 @@ namespace ConfigCat.Client
     {
         private readonly ILogger logger;
         private readonly JsonSerializer serializer;
+        private int hash;
+        private SettingsWithPreferences lastSerializedSettings;
 
         public ConfigDeserializer(ILogger logger, JsonSerializer serializer)
         {
@@ -16,9 +17,9 @@ namespace ConfigCat.Client
             this.serializer = serializer;
         }
 
-        public bool TryDeserialize(ProjectConfig projectConfig, out IDictionary<string, Setting> settings)
+        public bool TryDeserialize(string config, out SettingsWithPreferences settings)
         {
-            if (projectConfig.JsonString == null)
+            if (config == null)
             {
                 this.logger.Warning("ConfigJson is not present.");
 
@@ -27,15 +28,19 @@ namespace ConfigCat.Client
                 return false;
             }
 
-            using (var stringReader = new StringReader(projectConfig.JsonString))
-            using (var reader = new JsonTextReader(stringReader))
+            var hashCode = config.GetHashCode();
+            if(this.hash == hashCode)
             {
-                var settingsWithPreferences = this.serializer.Deserialize<SettingsWithPreferences>(reader);
-
-                settings = settingsWithPreferences.Settings;
-
+                settings = this.lastSerializedSettings;
                 return true;
             }
+
+            using (var stringReader = new StringReader(config))
+            using (var reader = new JsonTextReader(stringReader))
+                this.lastSerializedSettings = settings = this.serializer.Deserialize<SettingsWithPreferences>(reader);
+
+            this.hash = hashCode;
+            return true;
         }
     }
 }

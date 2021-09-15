@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 using Newtonsoft.Json;
 using System;
 using System.Net;
@@ -16,7 +17,7 @@ namespace ConfigCat.Client.Tests
 
             var myHandler = new MyFakeHttpClientHandler();
 
-            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new MyCounterLogger(), myHandler, JsonSerializer.Create(), false);
+            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new MyCounterLogger(), myHandler, Mock.Of<IConfigDeserializer>(), false);
 
             // Act
 
@@ -34,7 +35,7 @@ namespace ConfigCat.Client.Tests
 
             var myHandler = new MyFakeHttpClientHandler();
 
-            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new MyCounterLogger(), myHandler, JsonSerializer.Create(), false);
+            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new MyCounterLogger(), myHandler, Mock.Of<IConfigDeserializer>(), false);
 
             // Act
 
@@ -52,7 +53,7 @@ namespace ConfigCat.Client.Tests
 
             var myHandler = new MyFakeHttpClientHandler(HttpStatusCode.Forbidden);
 
-            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new MyCounterLogger(), myHandler, JsonSerializer.Create(), false);
+            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new MyCounterLogger(), myHandler, Mock.Of<IConfigDeserializer>(), false);
 
             var lastConfig = new ProjectConfig("{ }", DateTime.UtcNow, "\"ETAG\"");
 
@@ -72,7 +73,7 @@ namespace ConfigCat.Client.Tests
 
             var myHandler = new ExceptionThrowerHttpClientHandler(new WebException());
 
-            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new MyCounterLogger(), myHandler, JsonSerializer.Create(), false);
+            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new MyCounterLogger(), myHandler, Mock.Of<IConfigDeserializer>(), false);
 
             var lastConfig = new ProjectConfig("{ }", DateTime.UtcNow, "\"ETAG\"");
 

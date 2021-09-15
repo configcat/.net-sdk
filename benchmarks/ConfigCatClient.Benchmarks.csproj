@@ -23,7 +23,7 @@
     </Reference>
   </ItemGroup>
 
-  <Target Name="ChangeAliasOfNugetReferencedStashbox" BeforeTargets="FindReferenceAssembliesForReferences;ResolveReferences">
+  <Target Name="ChangeAliasOfReferencedNuget" BeforeTargets="FindReferenceAssembliesForReferences;ResolveReferences">
     <ItemGroup>
       <ReferencePath Condition="'%(FileName)' == 'ConfigCat.Client'">
         <Aliases>from_nuget</Aliases>

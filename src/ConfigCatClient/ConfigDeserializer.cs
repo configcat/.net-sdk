@@ -37,7 +37,9 @@ namespace ConfigCat.Client
 
             using (var stringReader = new StringReader(config))
             using (var reader = new JsonTextReader(stringReader))
+            { 
                 this.lastSerializedSettings = settings = this.serializer.Deserialize<SettingsWithPreferences>(reader);
+            }
 
             this.hash = hashCode;
             return true;

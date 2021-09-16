@@ -1,15 +1,19 @@
 ﻿using ConfigCat.Client.Evaluate;
 using Newtonsoft.Json;
+using System;
+using System.Data.HashFunction;
+using System.Data.HashFunction.MurmurHash;
 using System.IO;
 
 namespace ConfigCat.Client
 {
     internal class ConfigDeserializer : IConfigDeserializer
     {
+        private readonly IHashFunction hasher = MurmurHash3Factory.Instance.Create(new MurmurHash3Config{ HashSizeInBits = 128 });
         private readonly ILogger logger;
         private readonly JsonSerializer serializer;
-        private int hash;
         private SettingsWithPreferences lastSerializedSettings;
+        private byte[] hashToCompare;
 
         public ConfigDeserializer(ILogger logger, JsonSerializer serializer)
         {
@@ -28,8 +32,8 @@ namespace ConfigCat.Client
                 return false;
             }
 
-            var hashCode = config.GetHashCode();
-            if(this.hash == hashCode)
+            var hash = this.hasher.ComputeHash(config).Hash;
+            if(CompareByteArrays(this.hashToCompare, hash))
             {
                 settings = this.lastSerializedSettings;
                 return true;
@@ -41,8 +45,10 @@ namespace ConfigCat.Client
                 this.lastSerializedSettings = settings = this.serializer.Deserialize<SettingsWithPreferences>(reader);
             }
 
-            this.hash = hashCode;
+            this.hashToCompare = hash;
             return true;
         }
+
+        private static bool CompareByteArrays(ReadOnlySpan<byte> b1, ReadOnlySpan<byte> b2) => b1.SequenceEqual(b2);
     }
 }

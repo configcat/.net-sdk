@@ -47,13 +47,14 @@ namespace ConfigCat.Client.Evaluate
 
         private EvaluateResult EvaluateLogic(ProjectConfig projectConfig, string key, string logDefaultValue, string logDefaultVariationId, User user = null)
         {
-            if (!this.configDeserializer.TryDeserialize(projectConfig, out var settings))
+            if (!this.configDeserializer.TryDeserialize(projectConfig.JsonString, out var deserialized))
             {
                 this.log.Warning("Config deserialization failed, returning defaultValue");
 
                 return null;
             }
 
+            var settings = deserialized.Settings;
             if (!settings.TryGetValue(key, out var setting))
             {
                 var keys = string.Join(",", settings.Keys.Select(s => $"'{s}'").ToArray());

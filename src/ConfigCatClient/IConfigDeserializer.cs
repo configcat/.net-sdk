@@ -5,6 +5,6 @@ namespace ConfigCat.Client
 {
     internal interface IConfigDeserializer
     {
-        bool TryDeserialize(ProjectConfig projectConfig, out IDictionary<string, Setting> settings);
+        bool TryDeserialize(string config, out SettingsWithPreferences settings);
     }
 }

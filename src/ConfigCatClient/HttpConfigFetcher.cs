@@ -1,11 +1,9 @@
 ﻿using System;
-using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using ConfigCat.Client.Evaluate;
-using Newtonsoft.Json;
 
 namespace ConfigCat.Client
 {
@@ -18,14 +16,14 @@ namespace ConfigCat.Client
         private readonly ILogger log;
 
         private readonly HttpClientHandler httpClientHandler;
-        private readonly JsonSerializer serializer;
+        private readonly IConfigDeserializer deserializer;
         private readonly bool isCustomUri;
 
         private HttpClient httpClient;
 
         private Uri requestUri;
 
-        public HttpConfigFetcher(Uri requestUri, string productVersion, ILogger logger, HttpClientHandler httpClientHandler, JsonSerializer serializer, bool isCustomUri)
+        public HttpConfigFetcher(Uri requestUri, string productVersion, ILogger logger, HttpClientHandler httpClientHandler, IConfigDeserializer deserializer, bool isCustomUri)
         {
             this.requestUri = requestUri;
 
@@ -34,7 +32,7 @@ namespace ConfigCat.Client
             this.log = logger;
 
             this.httpClientHandler = httpClientHandler;
-            this.serializer = serializer;
+            this.deserializer = deserializer;
             this.isCustomUri = isCustomUri;
 
             ReInitializeHttpClient();
@@ -99,57 +97,54 @@ namespace ConfigCat.Client
             {
                 var responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-                using (var stringReader = new StringReader(responseBody))
-                using (var reader = new JsonTextReader(stringReader))
+                if (!this.deserializer.TryDeserialize(responseBody, out var body))
+                    return Tuple.Create<HttpResponseMessage, string>(response, null);
+
+                if (body?.Preferences != null)
                 {
-                    var body = this.serializer.Deserialize<SettingsWithPreferences>(reader);
+                    var newBaseUrl = body.Preferences.Url;
 
-                    if (body?.Preferences != null)
-                    {
-                        var newBaseUrl = body.Preferences.Url;
-
-                        if (newBaseUrl == null || requestUri.Host == new Uri(newBaseUrl).Host)
-                        {
-                            return Tuple.Create(response, responseBody);
-                        }
-
-                        Evaluate.RedirectMode redirect = body.Preferences.RedirectMode;
-
-                        if (isCustomUri && redirect != RedirectMode.Force)
-                        {
-                            return Tuple.Create(response, responseBody);
-                        }
-
-                        UpdateRequestUri(new Uri(newBaseUrl));
-
-                        if (redirect == RedirectMode.No)
-                        {
-                            return Tuple.Create(response, responseBody);
-                        }
-
-                        if (redirect == RedirectMode.Should)
-                        {
-                            this.log.Warning("Your dataGovernance parameter at ConfigCatClient initialization is not in sync " +
-                                             "with your preferences on the ConfigCat Dashboard: " +
-                                             "https://app.configcat.com/organization/data-governance. " +
-                                             "Only Organization Admins can access this preference.");
-                        }
-
-                        if (maxExecutionCount <= 1)
-                        {
-                            log.Error("Redirect loop during config.json fetch. Please contact support@configcat.com.");
-                            return Tuple.Create(response, responseBody);
-                        }
-
-                        return await this.FetchRequest(
-                            lastConfig,
-                            ReplaceUri(request.RequestUri, new Uri(newBaseUrl)),
-                            --maxExecutionCount);
-                    }
-                    else
+                    if (newBaseUrl == null || requestUri.Host == new Uri(newBaseUrl).Host)
                     {
                         return Tuple.Create(response, responseBody);
                     }
+
+                    Evaluate.RedirectMode redirect = body.Preferences.RedirectMode;
+
+                    if (isCustomUri && redirect != RedirectMode.Force)
+                    {
+                        return Tuple.Create(response, responseBody);
+                    }
+
+                    UpdateRequestUri(new Uri(newBaseUrl));
+
+                    if (redirect == RedirectMode.No)
+                    {
+                        return Tuple.Create(response, responseBody);
+                    }
+
+                    if (redirect == RedirectMode.Should)
+                    {
+                        this.log.Warning("Your dataGovernance parameter at ConfigCatClient initialization is not in sync " +
+                                         "with your preferences on the ConfigCat Dashboard: " +
+                                         "https://app.configcat.com/organization/data-governance. " +
+                                         "Only Organization Admins can access this preference.");
+                    }
+
+                    if (maxExecutionCount <= 1)
+                    {
+                        log.Error("Redirect loop during config.json fetch. Please contact support@configcat.com.");
+                        return Tuple.Create(response, responseBody);
+                    }
+
+                    return await this.FetchRequest(
+                        lastConfig,
+                        ReplaceUri(request.RequestUri, new Uri(newBaseUrl)),
+                        --maxExecutionCount);
+                }
+                else
+                {
+                    return Tuple.Create(response, responseBody);
                 }
             }
 

@@ -63,7 +63,7 @@ namespace ConfigCat.Client.Tests
                 "DEMO",
                 Mock.Of<ILogger>(),
                 handlerMock.Object,
-                JsonSerializer.Create(),
+                Mock.Of<IConfigDeserializer>(),
                 configuration.IsCustomBaseUrl);
 
             // Act
@@ -379,7 +379,7 @@ namespace ConfigCat.Client.Tests
                 "DEMO",
                 Mock.Of<ILogger>(),
                 handlerMock.Object,
-                JsonSerializer.Create(),
+                new ConfigDeserializer(Mock.Of<ILogger>(), JsonSerializer.Create()),
                 fetchConfig.IsCustomBaseUrl);
 
             // Act

@@ -1,14 +1,19 @@
 ﻿using ConfigCat.Client.Evaluate;
 using Newtonsoft.Json;
-using System.Collections.Generic;
+using System;
+using System.Data.HashFunction;
+using System.Data.HashFunction.MurmurHash;
 using System.IO;
 
 namespace ConfigCat.Client
 {
     internal class ConfigDeserializer : IConfigDeserializer
     {
+        private readonly IHashFunction hasher = MurmurHash3Factory.Instance.Create(new MurmurHash3Config{ HashSizeInBits = 128 });
         private readonly ILogger logger;
         private readonly JsonSerializer serializer;
+        private SettingsWithPreferences lastSerializedSettings;
+        private byte[] hashToCompare;
 
         public ConfigDeserializer(ILogger logger, JsonSerializer serializer)
         {
@@ -16,9 +21,9 @@ namespace ConfigCat.Client
             this.serializer = serializer;
         }
 
-        public bool TryDeserialize(ProjectConfig projectConfig, out IDictionary<string, Setting> settings)
+        public bool TryDeserialize(string config, out SettingsWithPreferences settings)
         {
-            if (projectConfig.JsonString == null)
+            if (config == null)
             {
                 this.logger.Warning("ConfigJson is not present.");
 
@@ -27,15 +32,23 @@ namespace ConfigCat.Client
                 return false;
             }
 
-            using (var stringReader = new StringReader(projectConfig.JsonString))
-            using (var reader = new JsonTextReader(stringReader))
+            var hash = this.hasher.ComputeHash(config).Hash;
+            if(CompareByteArrays(this.hashToCompare, hash))
             {
-                var settingsWithPreferences = this.serializer.Deserialize<SettingsWithPreferences>(reader);
-
-                settings = settingsWithPreferences.Settings;
-
+                settings = this.lastSerializedSettings;
                 return true;
             }
+
+            using (var stringReader = new StringReader(config))
+            using (var reader = new JsonTextReader(stringReader))
+            { 
+                this.lastSerializedSettings = settings = this.serializer.Deserialize<SettingsWithPreferences>(reader);
+            }
+
+            this.hashToCompare = hash;
+            return true;
         }
+
+        private static bool CompareByteArrays(ReadOnlySpan<byte> b1, ReadOnlySpan<byte> b2) => b1.SequenceEqual(b2);
     }
 }

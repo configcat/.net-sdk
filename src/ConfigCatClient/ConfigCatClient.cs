@@ -17,8 +17,6 @@ namespace ConfigCat.Client
     /// </summary>
     public class ConfigCatClient : IConfigCatClient
     {
-        private readonly JsonSerializer serializer;
-
         private readonly ILogger log;
 
         private readonly IRolloutEvaluator configEvaluator;
@@ -64,7 +62,7 @@ namespace ConfigCat.Client
             : this((ConfigurationBase)configuration)
         {
             var autoPollService = new AutoPollConfigService(
-                   new HttpConfigFetcher(configuration.CreateUri(), "a-" + version, configuration.Logger, configuration.HttpClientHandler, this.serializer, configuration.IsCustomBaseUrl),
+                   new HttpConfigFetcher(configuration.CreateUri(), "a-" + version, configuration.Logger, configuration.HttpClientHandler, this.configDeserializer, configuration.IsCustomBaseUrl),
                    this.cacheParameters,
                    TimeSpan.FromSeconds(configuration.PollIntervalSeconds),
                    TimeSpan.FromSeconds(configuration.MaxInitWaitTimeSeconds),
@@ -86,7 +84,7 @@ namespace ConfigCat.Client
             : this((ConfigurationBase)configuration)
         {
             var lazyLoadService = new LazyLoadConfigService(
-               new HttpConfigFetcher(configuration.CreateUri(), "l-" + version, configuration.Logger, configuration.HttpClientHandler, this.serializer, configuration.IsCustomBaseUrl),
+               new HttpConfigFetcher(configuration.CreateUri(), "l-" + version, configuration.Logger, configuration.HttpClientHandler, this.configDeserializer, configuration.IsCustomBaseUrl),
                this.cacheParameters,
                configuration.Logger,
                TimeSpan.FromSeconds(configuration.CacheTimeToLiveSeconds));
@@ -104,7 +102,7 @@ namespace ConfigCat.Client
             : this((ConfigurationBase)configuration)
         {
             var configService = new ManualPollConfigService(
-                new HttpConfigFetcher(configuration.CreateUri(), "m-" + version, configuration.Logger, configuration.HttpClientHandler, this.serializer, configuration.IsCustomBaseUrl),
+                new HttpConfigFetcher(configuration.CreateUri(), "m-" + version, configuration.Logger, configuration.HttpClientHandler, this.configDeserializer, configuration.IsCustomBaseUrl),
                 this.cacheParameters,
                 configuration.Logger);
 
@@ -120,9 +118,8 @@ namespace ConfigCat.Client
 
             configuration.Validate();
 
-            this.serializer = JsonSerializer.Create();
             this.log = configuration.Logger;
-            this.configDeserializer = new ConfigDeserializer(this.log, this.serializer);
+            this.configDeserializer = new ConfigDeserializer(this.log, JsonSerializer.Create());
             this.configEvaluator = new RolloutEvaluator(this.log, this.configDeserializer);
             this.cacheParameters = new CacheParameters
             {
@@ -183,7 +180,7 @@ namespace ConfigCat.Client
             {
                 var config = this.configService.GetConfigAsync().GetAwaiter().GetResult();
 
-                if (this.configDeserializer.TryDeserialize(config, out var settings)) return settings.Keys;
+                if (this.configDeserializer.TryDeserialize(config.JsonString, out var settings)) return settings.Settings.Keys;
 
                 this.log.Warning("Config deserialization failed.");
 
@@ -203,7 +200,7 @@ namespace ConfigCat.Client
             {
                 var config = await this.configService.GetConfigAsync().ConfigureAwait(false);
 
-                if (this.configDeserializer.TryDeserialize(config, out var settings)) return settings.Keys;
+                if (this.configDeserializer.TryDeserialize(config.JsonString, out var settings)) return settings.Settings.Keys;
 
                 this.log.Warning("Config deserialization failed.");
 
@@ -321,11 +318,11 @@ namespace ConfigCat.Client
 
         private IEnumerable<string> GetAllVariationIdLogic(ProjectConfig config, User user)
         {
-            if (this.configDeserializer.TryDeserialize(config, out var settings))
+            if (this.configDeserializer.TryDeserialize(config.JsonString, out var settings))
             {
-                var result = new List<string>(settings.Keys.Count);
+                var result = new List<string>(settings.Settings.Keys.Count);
 
-                foreach (var key in settings.Keys)
+                foreach (var key in settings.Settings.Keys)
                 {
                     var r = this.configEvaluator.EvaluateVariationId(config, key, null, user);
 

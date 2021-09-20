@@ -15,7 +15,7 @@
           <PackageProjectUrl>https://github.com/ConfigCat/.net-sdk</PackageProjectUrl>
           <RepositoryUrl>https://github.com/ConfigCat/.net-sdk</RepositoryUrl>
           <RepositoryType>git</RepositoryType>
-          <PackageReleaseNotes>Version 6.1.20
+          <PackageReleaseNotes>Version 6.2.0
      * Bugfix: The SDK's json serialization behavior is not depending on the `JsonConvert.DefaultSettings` anymore.
 Version 6.1.0
      * Bugfix (#17)

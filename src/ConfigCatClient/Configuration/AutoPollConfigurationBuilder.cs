@@ -21,7 +21,7 @@ namespace ConfigCat.Client
         }
 
         /// <summary>
-        /// Maximum waiting time between initialization and the first config acquisition in secconds. (Default value is 5.)
+        /// Maximum waiting time between initialization and the first config acquisition in seconds. (Default value is 5.)
         /// </summary>
         public AutoPollConfigurationBuilder WithMaxInitWaitTimeSeconds(uint maxInitWaitTimeSeconds)
         {

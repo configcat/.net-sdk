@@ -20,7 +20,7 @@ namespace ConfigCat.Client
         public uint PollIntervalSeconds { get; set; } = 60;
         
         /// <summary>
-        /// Maximum waiting time between initialization and the first config acquisition in secconds. (Default value is 5.)
+        /// Maximum waiting time between initialization and the first config acquisition in seconds. (Default value is 5.)
         /// </summary>
         public uint MaxInitWaitTimeSeconds { get; set; } = 5;
 

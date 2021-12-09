@@ -1,21 +1,21 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
-     <PropertyGroup>
-          <TargetFrameworks>net45;netstandard1.3;netstandard2.0;netstandard2.1</TargetFrameworks>
-          <AssemblyName>ConfigCat.Client</AssemblyName>
-          <RootNamespace>ConfigCat.Client</RootNamespace>
-          <SignAssembly>true</SignAssembly>
-          <DelaySign>false</DelaySign>
-          <AssemblyOriginatorKeyFile>strongname.snk</AssemblyOriginatorKeyFile>
-          <Version>0.1.0</Version>
-          <Copyright>Copyright © ConfigCat 2020</Copyright>
-          <Company>ConfigCat</Company>
-          <Authors>ConfigCat</Authors>
-          <PackageLicenseExpression>MIT</PackageLicenseExpression>
-          <PackageProjectUrl>https://github.com/ConfigCat/.net-sdk</PackageProjectUrl>
-          <RepositoryUrl>https://github.com/ConfigCat/.net-sdk</RepositoryUrl>
-          <RepositoryType>git</RepositoryType>
-          <PackageReleaseNotes>Version 6.2.1
+  <PropertyGroup>
+    <TargetFrameworks>net45;netstandard1.3;netstandard2.0;netstandard2.1</TargetFrameworks>
+    <AssemblyName>ConfigCat.Client</AssemblyName>
+    <RootNamespace>ConfigCat.Client</RootNamespace>
+    <SignAssembly>true</SignAssembly>
+    <DelaySign>false</DelaySign>
+    <AssemblyOriginatorKeyFile>strongname.snk</AssemblyOriginatorKeyFile>
+    <Version>0.1.0</Version>
+    <Copyright>Copyright © ConfigCat 2020</Copyright>
+    <Company>ConfigCat</Company>
+    <Authors>ConfigCat</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/ConfigCat/.net-sdk</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ConfigCat/.net-sdk</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReleaseNotes>Version 6.2.1
      * Reducing the number of json deserializations between `GetValue` calls.
 Version 6.1.20
      * Bugfix: The SDK's json serialization behavior is not depending on the `JsonConvert.DefaultSettings` anymore.
@@ -70,41 +70,33 @@ Version 1.0.5
      * Implement tracing, add clear cache ability to client
 Version 1.0.4
      * Initial release</PackageReleaseNotes>
-          <PackageTags>configcat configcatclient  "feature flag" featureflag  "feature flags" featureflags "feature toggle" featuretoggle featureswitch canaryrelease softlaunch releasestrategy segmentation configuration config "remote config"</PackageTags>
-          <Description>Feature Flags created by developers for developers with ❤️.
+    <PackageTags>configcat configcatclient  "feature flag" featureflag  "feature flags" featureflags "feature toggle" featuretoggle featureswitch canaryrelease softlaunch releasestrategy segmentation configuration config "remote config"</PackageTags>
+    <Description>Feature Flags created by developers for developers with ❤️.
 
 ConfigCat lets you manage feature flags across frontend, backend, mobile, and desktop apps without (re)deploying code. % rollouts, user targeting, segmentation. Feature toggle SDKs for all main languages. Alternative to LaunchDarkly. 
 Host yourself, or use the hosted management app at https://configcat.com.
 
 Works with .NET, .NET Core, .NET Standard</Description>
-          <PackageIcon>icon.png</PackageIcon>
-          <AssemblyVersion>0.1.0.0</AssemblyVersion>
-          <FileVersion>0.1.0.0</FileVersion>
-          <NeutralLanguage></NeutralLanguage>
-          <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\ConfigCatClient.xml</DocumentationFile>
-          <DebugType>portable</DebugType>
-          <Configurations>Debug;Release;Benchmark</Configurations>
-     </PropertyGroup>
+    <PackageIcon>icon.png</PackageIcon>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <FileVersion>0.1.0.0</FileVersion>
+    <NeutralLanguage></NeutralLanguage>
+    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\ConfigCatClient.xml</DocumentationFile>
+    <DebugType>portable</DebugType>
+    <Configurations>Debug;Release;Benchmark</Configurations>
+  </PropertyGroup>
 
-     <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
-          <Reference Include="System" />
-          <Reference Include="Microsoft.CSharp" />
-     </ItemGroup>
-
-    <PropertyGroup Condition="'$(Configuration)' == 'Benchmark'">
-        <AssemblyName>ConfigCat.Client.Benchmark</AssemblyName>
-        <AssemblyTitle>ConfigCat.Client.Benchmark</AssemblyTitle>
-        <RootNamespace>ConfigCat.Client.Benchmark</RootNamespace>
-        <Optimize>true</Optimize>
-    </PropertyGroup>
-
-     <ItemGroup>
-          <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-          <PackageReference Include="System.Data.HashFunction.MurmurHash" Version="2.0.0" />
-          <PackageReference Include="System.Memory" Version="4.5.4" />
-          <PackageReference Include="System.Net.Http" Version="4.3.4" />
-          <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
-          <None Include="icon.png" Pack="true" Visible="false" PackagePath="" />
-     </ItemGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
+    <Reference Include="System" />
+    <Reference Include="Microsoft.CSharp" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="System.Data.HashFunction.MurmurHash" Version="2.0.0" />
+    <PackageReference Include="System.Memory" Version="4.5.4" />
+    <PackageReference Include="System.Net.Http" Version="4.3.4" />
+    <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
+    <None Include="icon.png" Pack="true" Visible="false" PackagePath="" />
+  </ItemGroup>
 
 </Project>

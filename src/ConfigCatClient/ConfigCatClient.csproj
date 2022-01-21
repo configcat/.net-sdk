@@ -70,7 +70,7 @@ Version 1.0.5
      * Implement tracing, add clear cache ability to client
 Version 1.0.4
      * Initial release</PackageReleaseNotes>
-    <PackageTags>configcat configcatclient  "feature flag" featureflag  "feature flags" featureflags "feature toggle" featuretoggle featureswitch canaryrelease softlaunch releasestrategy segmentation configuration config "remote config"</PackageTags>
+    <PackageTags>feature flag toggle feature-flag feature-flags featureflag featureflags feature-toggle  feature-toggles featuretoggle featuretoggles canary release remote config remoteconfig remote-config configcat configcatclient</PackageTags>
     <Description>Feature Flags created by developers for developers with ❤️.
 
 ConfigCat lets you manage feature flags across frontend, backend, mobile, and desktop apps without (re)deploying code. % rollouts, user targeting, segmentation. Feature toggle SDKs for all main languages. Alternative to LaunchDarkly. 

@@ -27,7 +27,7 @@ jobs:
             5.0.x
             6.0.x
       - name: Restore
-        run: dotnet restore
+        run: dotnet restore src
       - name: Test
         run: |
           dotnet test src/ConfigCat.Client.Tests/ConfigCat.Client.Tests.csproj -c Release -f netcoreapp3.1 --no-restore

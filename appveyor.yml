@@ -2,6 +2,10 @@ version: 6.3.{build}
 image: Visual Studio 2022
 configuration: Release
 platform: Any CPU
+skip_commits:
+  files:
+    - .github/
+    - '**/*.md'
 dotnet_csproj:
   patch: true
   file: '**\*.csproj'
@@ -18,10 +22,10 @@ after_build:
  - cmd: echo __PACK__
  - msbuild /t:Pack /p:IncludeSymbols=true /p:Configuration=%configuration% /p:PackageOutputPath=..\..\artifacts /p:SymbolPackageFormat=snupkg src\ConfigCatClient\ConfigCatClient.csproj
 test_script:
-- dotnet test test\stashbox.tests.csproj -f net45 -c %configuration% --no-build
-- dotnet test test\stashbox.tests.csproj -f netcoreapp3.1 -c %configuration% --no-build
-- dotnet test test\stashbox.tests.csproj -f net5.0 -c %configuration% --no-build
-- dotnet test test\stashbox.tests.csproj -f net6.0 -c %configuration% --no-build
+- dotnet test src\ConfigCat.Client.Tests\ConfigCat.Client.Tests.csproj -f net45 -c %configuration% --no-build
+- dotnet test src\ConfigCat.Client.Tests\ConfigCat.Client.Tests.csproj -f netcoreapp3.1 -c %configuration% --no-build
+- dotnet test src\ConfigCat.Client.Tests\ConfigCat.Client.Tests.csproj -f net5.0 -c %configuration% --no-build
+- dotnet test src\ConfigCat.Client.Tests\ConfigCat.Client.Tests.csproj -f net6.0 -c %configuration% --no-build
 artifacts:
 - path: artifacts\ConfigCat.Client.*.*nupkg
   name: NuGet 

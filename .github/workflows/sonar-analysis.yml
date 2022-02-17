@@ -1,7 +1,6 @@
 name: SonarCloud Analysis
 on:
   push:
-    branches: [ master ]
     paths-ignore:
       - '**.md'
       - 'appveyor*'

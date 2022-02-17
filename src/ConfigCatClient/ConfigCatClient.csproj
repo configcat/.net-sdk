@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFrameworks>net45;net461;netstandard2.0;netstandard2.1;net5.0;net6.0</TargetFrameworks>
     <AssemblyName>ConfigCat.Client</AssemblyName>
@@ -15,7 +14,7 @@
     <PackageProjectUrl>https://github.com/ConfigCat/.net-sdk</PackageProjectUrl>
     <RepositoryUrl>https://github.com/ConfigCat/.net-sdk</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-	<LangVersion>latest</LangVersion>
+    <LangVersion>latest</LangVersion>
     <PackageReleaseNotes>Version 6.2.1
      * Reducing the number of json deserializations between `GetValue` calls.
 Version 6.1.20
@@ -83,7 +82,6 @@ Works with .NET, .NET Core, .NET Standard</Description>
     <FileVersion>0.1.0.0</FileVersion>
     <NeutralLanguage></NeutralLanguage>
     <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\ConfigCatClient.xml</DocumentationFile>
-    <DebugType>portable</DebugType>
     <Configurations>Debug;Release;Benchmark</Configurations>
   </PropertyGroup>
 
@@ -91,10 +89,10 @@ Works with .NET, .NET Core, .NET Standard</Description>
 	<DefineConstants>USE_NEWTONSOFT_JSON</DefineConstants>	
   </PropertyGroup>
 
-	<ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
     <Reference Include="System" />
     <Reference Include="Microsoft.CSharp" />
-	<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
   </ItemGroup>
 	

@@ -49,5 +49,5 @@ jobs:
         shell: powershell
         run: |
           .\.sonar\scanner\dotnet-sonarscanner begin /k:"net-sdk" /d:sonar.host.url="https://sonarcloud.io" /o:"configcat" /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.cs.opencover.reportsPaths="**/TestResults/**/coverage.opencover.xml" -d:sonar.cs.vstest.reportsPaths="**/TestResults/*.trx" /v:"${{ github.run_number }}" /d:sonar.exclusions="ConfigCatClient/Versioning/*" /d:sonar.coverage.exclusions="ConfigCatClient/Versioning/*"
-          dotnet test src\ConfigCat.Client.Tests\ConfigCat.Client.Tests.csproj -f net6.0 -c Release --logger trx --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+          dotnet test src\ConfigCat.Client.Tests\ConfigCat.Client.Tests.csproj -f net5.0 -c Release --logger trx --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
           .\.sonar\scanner\dotnet-sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"

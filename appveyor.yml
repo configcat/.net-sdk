@@ -17,7 +17,7 @@ dotnet_csproj:
 build_script: 
  - cmd: echo __BUILD__
  - msbuild /verbosity:normal /t:Restore src/ConfigCatClient.sln
- - msbuild /verbosity:normal /t:Build src/ConfigCatClient.sln 
+ - msbuild /verbosity:normal /p:Configuration=%configuration% /t:Build src/ConfigCatClient.sln 
 after_build:
  - cmd: echo __PACK__
  - msbuild /t:Pack /p:IncludeSymbols=true /p:Configuration=%configuration% /p:PackageOutputPath=..\..\artifacts /p:SymbolPackageFormat=snupkg src\ConfigCatClient\ConfigCatClient.csproj

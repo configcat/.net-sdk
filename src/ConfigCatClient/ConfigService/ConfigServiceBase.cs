@@ -5,41 +5,38 @@ namespace ConfigCat.Client.ConfigService
 {
     internal abstract class ConfigServiceBase : IDisposable
     {
-        private bool disposedValue = false;
+        private bool disposedValue;
 
-        protected readonly IConfigFetcher configFetcher;
+        protected readonly IConfigFetcher ConfigFetcher;
 
-        protected readonly IConfigCache configCache;
+#pragma warning disable CS0618 // Type or member is obsolete
+        protected readonly IConfigCache ConfigCache; // Backward compatibility, it'll be changed to IConfigCatCache later.
+#pragma warning restore CS0618 // Type or member is obsolete
 
-        protected readonly ILogger log;
+        protected readonly ILogger Log;
 
-        protected readonly string cacheKey;
+        protected readonly string CacheKey;
 
         protected ConfigServiceBase(IConfigFetcher configFetcher, CacheParameters cacheParameters, ILogger log)
         {
-            this.configFetcher = configFetcher;
-
-            this.configCache = cacheParameters.ConfigCache;
-
-            this.cacheKey = cacheParameters.CacheKey;
-
-            this.log = log;
+            this.ConfigFetcher = configFetcher;
+            this.ConfigCache = cacheParameters.ConfigCache;
+            this.CacheKey = cacheParameters.CacheKey;
+            this.Log = log;
         }       
 
         protected virtual void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            if (disposedValue) return;
+            if (disposing)
             {
-                if (disposing)
+                if (ConfigFetcher is IDisposable disposable)
                 {
-                    if (configFetcher != null && configFetcher is IDisposable)
-                    {
-                        ((IDisposable)configFetcher).Dispose();
-                    }
+                    disposable.Dispose();
                 }
-
-                disposedValue = true;
             }
+
+            disposedValue = true;
         }
                 
         public void Dispose()

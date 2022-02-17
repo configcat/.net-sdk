@@ -1,6 +1,7 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+#pragma warning disable CS0618 // Type or member is obsolete
 namespace ConfigCat.Client.Tests
 {
     [TestCategory(TestCategories.Integration)]
@@ -12,10 +13,19 @@ namespace ConfigCat.Client.Tests
         private readonly Uri workingBaseUrl = new Uri("https://cdn.configcat.com");
         private readonly Uri notWorkingBaseUrl = new Uri("https://thiswillnotwork.configcat.com");
 
-        [TestMethod]
-        public void BaseUrl_Override_AutoPoll_Works()
+        [DataRow(true)]
+        [DataRow(false)]
+        [DataTestMethod]
+        public void BaseUrl_Override_AutoPoll_Works(bool useNewCreateApi)
         {
-            var client = ConfigCatClientBuilder.Initialize(SDKKEY)
+            var client = useNewCreateApi
+                ? new ConfigCatClient(options =>
+                {
+                    options.SdkKey = SDKKEY;
+                    options.PollingMode = PollingModes.AutoPoll();
+                    options.BaseUrl = workingBaseUrl;
+                })
+                : ConfigCatClientBuilder.Initialize(SDKKEY)
                 .WithAutoPoll()
                 .WithBaseUrl(workingBaseUrl)
                 .Create();
@@ -23,7 +33,14 @@ namespace ConfigCat.Client.Tests
             var actual = client.GetValue("stringDefaultCat", "N/A");
             Assert.AreEqual("Cat", actual);
 
-            client = ConfigCatClientBuilder.Initialize(SDKKEY)
+            client = useNewCreateApi
+                ? new ConfigCatClient(options =>
+                {
+                    options.SdkKey = SDKKEY;
+                    options.PollingMode = PollingModes.AutoPoll();
+                    options.BaseUrl = notWorkingBaseUrl;
+                })
+                : ConfigCatClientBuilder.Initialize(SDKKEY)
                 .WithAutoPoll()
                 .WithBaseUrl(notWorkingBaseUrl)
                 .Create();
@@ -32,10 +49,19 @@ namespace ConfigCat.Client.Tests
             Assert.AreEqual("N/A", actual);
         }
 
-        [TestMethod]
-        public void BaseUrl_Override_ManualPoll_Works()
+        [DataRow(true)]
+        [DataRow(false)]
+        [DataTestMethod]
+        public void BaseUrl_Override_ManualPoll_Works(bool useNewCreateApi)
         {
-            var client = ConfigCatClientBuilder.Initialize(SDKKEY)
+            var client = useNewCreateApi
+                ? new ConfigCatClient(options =>
+                {
+                    options.SdkKey = SDKKEY;
+                    options.PollingMode = PollingModes.ManualPoll;
+                    options.BaseUrl = workingBaseUrl;
+                })
+                : ConfigCatClientBuilder.Initialize(SDKKEY)
                 .WithManualPoll()
                 .WithBaseUrl(workingBaseUrl)
                 .Create();
@@ -43,7 +69,14 @@ namespace ConfigCat.Client.Tests
             var actual = client.GetValue("stringDefaultCat", "N/A");
             Assert.AreEqual("Cat", actual);
 
-            client = ConfigCatClientBuilder.Initialize(SDKKEY)
+            client = useNewCreateApi
+                ? new ConfigCatClient(options =>
+                {
+                    options.SdkKey = SDKKEY;
+                    options.PollingMode = PollingModes.ManualPoll;
+                    options.BaseUrl = notWorkingBaseUrl;
+                })
+                : ConfigCatClientBuilder.Initialize(SDKKEY)
                 .WithManualPoll()
                 .WithBaseUrl(notWorkingBaseUrl)
                 .Create();
@@ -52,10 +85,19 @@ namespace ConfigCat.Client.Tests
             Assert.AreEqual("N/A", actual);
         }
 
-        [TestMethod]
-        public void BaseUrl_Override_LazyLoad_Works()
+        [DataRow(true)]
+        [DataRow(false)]
+        [DataTestMethod]
+        public void BaseUrl_Override_LazyLoad_Works(bool useNewCreateApi)
         {
-            var client = ConfigCatClientBuilder.Initialize(SDKKEY)
+            var client = useNewCreateApi
+                ? new ConfigCatClient(options =>
+                {
+                    options.SdkKey = SDKKEY;
+                    options.PollingMode = PollingModes.LazyLoad();
+                    options.BaseUrl = workingBaseUrl;
+                })
+                : ConfigCatClientBuilder.Initialize(SDKKEY)
                 .WithLazyLoad()
                 .WithBaseUrl(workingBaseUrl)
                 .Create();
@@ -63,7 +105,14 @@ namespace ConfigCat.Client.Tests
             var actual = client.GetValue("stringDefaultCat", "N/A");
             Assert.AreEqual("Cat", actual);
 
-            client = ConfigCatClientBuilder.Initialize(SDKKEY)
+            client = useNewCreateApi
+                ? new ConfigCatClient(options =>
+                {
+                    options.SdkKey = SDKKEY;
+                    options.PollingMode = PollingModes.LazyLoad();
+                    options.BaseUrl = notWorkingBaseUrl;
+                })
+                : ConfigCatClientBuilder.Initialize(SDKKEY)
                 .WithLazyLoad()
                 .WithBaseUrl(notWorkingBaseUrl)
                 .Create();

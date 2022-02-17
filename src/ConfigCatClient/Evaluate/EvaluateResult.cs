@@ -1,17 +1,21 @@
-﻿namespace ConfigCat.Client.Evaluate
+﻿#if USE_NEWTONSOFT_JSON
+using Newtonsoft.Json.Linq;
+#else
+using System.Text.Json;
+#endif
+
+namespace ConfigCat.Client.Evaluate
 {
     internal class EvaluateResult
     {
-        public string RawValue { get; set; }
+#if USE_NEWTONSOFT_JSON
+        public JValue Value { get; set; }
+#else
+        public JsonElement Value { get; set; }
+#endif
 
         public string VariationId { get; set; }
 
-        public EvaluateResult() : this(null, null) { }
-
-        public EvaluateResult(string rawValue, string variationId)
-        {
-            this.RawValue = rawValue;
-            this.VariationId = variationId;
-        }
+        public SettingTypeEnum SettingType { get; set; }
     }
 }

@@ -38,12 +38,7 @@ namespace ConfigCat.Client
         }
 
         /// <inheritdoc />
-        public override bool Equals(object obj)
-        {
-            if (obj == null) return false;
-
-            return this.Equals((ProjectConfig)obj);
-        }
+        public override bool Equals(object obj) => obj != null && this.Equals((ProjectConfig)obj);
 
         /// <summary>
         /// Determines whether this instance and another specified ProjectConfig struct have the same value.

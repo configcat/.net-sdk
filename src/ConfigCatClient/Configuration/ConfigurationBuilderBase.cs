@@ -5,7 +5,7 @@
     /// </summary>    
     public abstract class ConfigurationBuilderBase<T> where T : ConfigurationBase, new()
     {
-#pragma warning disable CS1591
+#pragma warning disable CS1591,CS0618
         protected readonly T configuration;
 
         internal ConfigurationBuilderBase(ConfigCatClientBuilder clientBuilder)

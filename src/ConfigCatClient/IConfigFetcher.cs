@@ -8,10 +8,17 @@ namespace ConfigCat.Client
     internal interface IConfigFetcher
     {
         /// <summary>
-        /// Fetch the configuration
+        /// Fetches the configuration asynchronously.
         /// </summary>
-        /// <param name="lastConfig">Last of fetched configuration if it is present</param>
-        /// <returns></returns>
-        Task<ProjectConfig> Fetch(ProjectConfig lastConfig);
+        /// <param name="lastConfig">Last fetched configuration if it is present</param>
+        /// <returns>The task that does the fetch.</returns>
+        Task<ProjectConfig> FetchAsync(ProjectConfig lastConfig);
+
+        /// <summary>
+        /// Fetches the configuration synchronously.
+        /// </summary>
+        /// <param name="lastConfig">Last fetched configuration if it is present</param>
+        /// <returns>The fetched config.</returns>
+        ProjectConfig Fetch(ProjectConfig lastConfig);
     }
 }

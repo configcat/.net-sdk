@@ -56,7 +56,7 @@ namespace ConfigCat.Client.Tests
             var pc2 = new ProjectConfig("pc1", DateTime.UtcNow, "etag1");
             var pc3 = new ProjectConfig("pc1", DateTime.UtcNow, "etag1");
 
-            HashSet<ProjectConfig> set = new HashSet<ProjectConfig>(3);
+            HashSet<ProjectConfig> set = new HashSet<ProjectConfig>();
 
             Assert.IsTrue(set.Add(pc1));
             Assert.IsFalse(set.Add(pc1));

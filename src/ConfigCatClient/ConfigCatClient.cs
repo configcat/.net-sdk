@@ -3,43 +3,35 @@ using ConfigCat.Client.Evaluate;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
-using ConfigCat.Client.Security;
-using Newtonsoft.Json;
+using ConfigCat.Client.Configuration;
+using ConfigCat.Client.Utils;
+using ConfigCat.Client.Override;
 
 namespace ConfigCat.Client
 {
     /// <summary>
     /// Client for ConfigCat platform
     /// </summary>
-    public class ConfigCatClient : IConfigCatClient
+    public sealed class ConfigCatClient : IConfigCatClient
     {
         private readonly ILogger log;
-
         private readonly IRolloutEvaluator configEvaluator;
-
         private readonly IConfigService configService;
-
         private readonly IConfigDeserializer configDeserializer;
-
         private readonly CacheParameters cacheParameters;
+        private readonly IOverrideDataSource overrideDataSource;
+        private readonly OverrideBehaviour? overrideBehaviour;
 
-        private static readonly string version = typeof(ConfigCatClient).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
+        private static readonly string Version = typeof(ConfigCatClient).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
 
         /// <inheritdoc />
         public LogLevel LogLevel
         {
-            get
-            {
-                return log.LogLevel;
-            }
-            set
-            {
-                log.LogLevel = value;
-            }
+            get => log.LogLevel;
+            set => log.LogLevel = value;
         }
 
         /// <summary>
@@ -48,9 +40,8 @@ namespace ConfigCat.Client
         /// <param name="sdkKey">SDK Key to access configuration</param>
         /// <param name="dataGovernance">Default: Global. Set this parameter to be in sync with the Data Governance preference on the Dashboard: https://app.configcat.com/organization/data-governance (Only Organization Admins have access)</param>
         /// <exception cref="ArgumentException">When the <paramref name="sdkKey"/> is null or empty</exception>                
-        public ConfigCatClient(string sdkKey, DataGovernance dataGovernance = DataGovernance.Global) : this(new AutoPollConfiguration { SdkKey = sdkKey, DataGovernance = dataGovernance })
-        {
-        }
+        public ConfigCatClient(string sdkKey, DataGovernance dataGovernance = DataGovernance.Global) : this(options => { options.SdkKey = sdkKey; options.DataGovernance = dataGovernance; })
+        { }
 
         /// <summary>
         /// Create an instance of ConfigCatClient and setup AutoPoll mode
@@ -58,21 +49,21 @@ namespace ConfigCat.Client
         /// <param name="configuration">Configuration for AutoPolling mode</param>
         /// <exception cref="ArgumentException">When the configuration contains any invalid property</exception>
         /// <exception cref="ArgumentNullException">When the configuration is null</exception>
+        [Obsolete(@"This constructor is obsolete. Please use the ConfigCatClient(options => { /* configuration options */ }) format.")]
         public ConfigCatClient(AutoPollConfiguration configuration)
-            : this((ConfigurationBase)configuration)
-        {
-            var autoPollService = new AutoPollConfigService(
-                   new HttpConfigFetcher(configuration.CreateUri(), "a-" + version, configuration.Logger, configuration.HttpClientHandler, this.configDeserializer, configuration.IsCustomBaseUrl),
-                   this.cacheParameters,
-                   TimeSpan.FromSeconds(configuration.PollIntervalSeconds),
-                   TimeSpan.FromSeconds(configuration.MaxInitWaitTimeSeconds),
-                   configuration.Logger
-                   );
+            : this(options =>
+            {
+                if (configuration == null)
+                {
+                    throw new ArgumentNullException(nameof(configuration));
+                }
 
-            autoPollService.OnConfigurationChanged += configuration.RaiseOnConfigurationChanged;
-
-            this.configService = autoPollService;
-        }
+                configuration.ToOptions(options);
+                var autoPoll = PollingModes.AutoPoll(TimeSpan.FromSeconds(configuration.PollIntervalSeconds), TimeSpan.FromSeconds(configuration.MaxInitWaitTimeSeconds));
+                autoPoll.OnConfigurationChanged += configuration.RaiseOnConfigurationChanged;
+                options.PollingMode = autoPoll;
+            })
+        { }
 
         /// <summary>
         /// Create an instance of ConfigCatClient and setup LazyLoad mode
@@ -80,17 +71,19 @@ namespace ConfigCat.Client
         /// <param name="configuration">Configuration for LazyLoading mode</param>
         /// <exception cref="ArgumentException">When the configuration contains any invalid property</exception>
         /// <exception cref="ArgumentNullException">When the configuration is null</exception>
+        [Obsolete(@"This constructor is obsolete. Please use the ConfigCatClient(options => { /* configuration options */ }) format.")]
         public ConfigCatClient(LazyLoadConfiguration configuration)
-            : this((ConfigurationBase)configuration)
-        {
-            var lazyLoadService = new LazyLoadConfigService(
-               new HttpConfigFetcher(configuration.CreateUri(), "l-" + version, configuration.Logger, configuration.HttpClientHandler, this.configDeserializer, configuration.IsCustomBaseUrl),
-               this.cacheParameters,
-               configuration.Logger,
-               TimeSpan.FromSeconds(configuration.CacheTimeToLiveSeconds));
+            : this(options =>
+            {
+                if (configuration == null)
+                {
+                    throw new ArgumentNullException(nameof(configuration));
+                }
 
-            this.configService = lazyLoadService;
-        }
+                configuration.ToOptions(options);
+                options.PollingMode = PollingModes.LazyLoad(TimeSpan.FromSeconds(configuration.CacheTimeToLiveSeconds));
+            })
+        { }
 
         /// <summary>
         /// Create an instance of ConfigCatClient and setup ManualPoll mode
@@ -98,34 +91,63 @@ namespace ConfigCat.Client
         /// <param name="configuration">Configuration for LazyLoading mode</param>
         /// <exception cref="ArgumentException">When the configuration contains any invalid property</exception>
         /// <exception cref="ArgumentNullException">When the configuration is null</exception>
+        [Obsolete(@"This constructor is obsolete. Please use the ConfigCatClient(options => { /* configuration options */ }) format.")]
         public ConfigCatClient(ManualPollConfiguration configuration)
-            : this((ConfigurationBase)configuration)
-        {
-            var configService = new ManualPollConfigService(
-                new HttpConfigFetcher(configuration.CreateUri(), "m-" + version, configuration.Logger, configuration.HttpClientHandler, this.configDeserializer, configuration.IsCustomBaseUrl),
-                this.cacheParameters,
-                configuration.Logger);
-
-            this.configService = configService;
-        }
-
-        private ConfigCatClient(ConfigurationBase configuration)
-        {
-            if (configuration == null)
+            : this(options =>
             {
-                throw new ArgumentNullException(nameof(configuration));
+                if (configuration == null)
+                {
+                    throw new ArgumentNullException(nameof(configuration));
+                }
+
+                configuration.ToOptions(options);
+                options.PollingMode = PollingModes.ManualPoll;
+            })
+        { }
+
+        /// <summary>
+        /// Creates a new <see cref="ConfigCatClient"/>.
+        /// </summary>
+        /// <param name="configurationAction">The configuration action.</param>
+        /// <exception cref="ArgumentNullException">When the <paramref name="configurationAction"/> is null.</exception>
+        public ConfigCatClient(Action<ConfigCatClientOptions> configurationAction)
+        {
+            if (configurationAction == null)
+            {
+                throw new ArgumentNullException(nameof(configurationAction));
             }
+
+            var configuration = new ConfigCatClientOptions();
+            configurationAction(configuration);
 
             configuration.Validate();
 
             this.log = configuration.Logger;
-            this.configDeserializer = new ConfigDeserializer(this.log, JsonSerializer.Create());
-            this.configEvaluator = new RolloutEvaluator(this.log, this.configDeserializer);
+            this.configDeserializer = new ConfigDeserializer();
+            this.configEvaluator = new RolloutEvaluator(this.log);
             this.cacheParameters = new CacheParameters
             {
                 ConfigCache = configuration.ConfigCache ?? new InMemoryConfigCache(),
                 CacheKey = GetCacheKey(configuration)
             };
+
+
+            if (configuration.FlagOverrides != null)
+            {
+                this.overrideDataSource = configuration.FlagOverrides.BuildDataSource(this.log);
+                this.overrideBehaviour = configuration.FlagOverrides.OverrideBehaviour;
+            }
+
+            this.configService = this.overrideBehaviour == null || this.overrideBehaviour != OverrideBehaviour.LocalOnly
+                ? DetermineConfigService(configuration,
+                    new HttpConfigFetcher(configuration.CreateUri(),
+                        $"{configuration.PollingMode.Identifier}-{Version}",
+                        configuration.Logger,
+                        configuration.HttpClientHandler,
+                        this.configDeserializer,
+                        configuration.IsCustomBaseUrl),
+                    this.cacheParameters)
+                : new NullConfigService();
         }
 
         /// <summary>
@@ -144,14 +166,12 @@ namespace ConfigCat.Client
         {
             try
             {
-                var config = this.configService.GetConfigAsync().GetAwaiter().GetResult();
-
-                return this.configEvaluator.Evaluate<T>(config, key, defaultValue, user);
+                var settings = this.GetSettings();
+                return this.configEvaluator.Evaluate(settings, key, defaultValue, user);
             }
             catch (Exception ex)
             {
                 this.log.Error($"Error occured in 'GetValue' method.\n{ex}");
-
                 return defaultValue;
             }
         }
@@ -161,14 +181,12 @@ namespace ConfigCat.Client
         {
             try
             {
-                var config = await this.configService.GetConfigAsync().ConfigureAwait(false);
-
-                return this.configEvaluator.Evaluate<T>(config, key, defaultValue, user);
+                var settings = await this.GetSettingsAsync().ConfigureAwait(false);
+                return this.configEvaluator.Evaluate(settings, key, defaultValue, user);
             }
             catch (Exception ex)
             {
                 this.log.Error($"Error occured in 'GetValueAsync' method.\n{ex}");
-
                 return defaultValue;
             }
         }
@@ -178,18 +196,19 @@ namespace ConfigCat.Client
         {
             try
             {
-                var config = this.configService.GetConfigAsync().GetAwaiter().GetResult();
+                var settings = this.GetSettings();
+                if (settings.Count == 0)
+                {
+                    this.log.Warning("Config deserialization failed.");
+                    return ArrayUtils.EmptyArray<string>();
+                }
 
-                if (this.configDeserializer.TryDeserialize(config.JsonString, out var settings)) return settings.Settings.Keys;
-
-                this.log.Warning("Config deserialization failed.");
-
-                return new string[0];
+                return settings.Keys;
             }
             catch (Exception ex)
             {
                 this.log.Error($"Error occured in 'GetAllKeys' method.\n{ex}");
-                return new string[0];
+                return ArrayUtils.EmptyArray<string>();
             }
         }
 
@@ -198,27 +217,59 @@ namespace ConfigCat.Client
         {
             try
             {
-                var config = await this.configService.GetConfigAsync().ConfigureAwait(false);
+                var settings = await this.GetSettingsAsync().ConfigureAwait(false);
+                if (settings.Count == 0)
+                {
+                    this.log.Warning("Config deserialization failed.");
+                    return ArrayUtils.EmptyArray<string>();
+                }
 
-                if (this.configDeserializer.TryDeserialize(config.JsonString, out var settings)) return settings.Settings.Keys;
-
-                this.log.Warning("Config deserialization failed.");
-
-                return new string[0];
+                return settings.Keys;
             }
             catch (Exception ex)
             {
                 this.log.Error($"Error occured in 'GetAllKeysAsync' method.\n{ex}");
-                return new string[0];
+                return ArrayUtils.EmptyArray<string>();
             }
         }
+
+        /// <inheritdoc />
+        public IDictionary<string, object> GetAllValues(User user = null)
+        {
+            try
+            {
+                var settings = this.GetSettings();
+                return GenerateSettingKeyValueMap(user, settings);
+            }
+            catch (Exception ex)
+            {
+                this.log.Error($"Error occured in 'GetAllValues' method.\n{ex}");
+                return new Dictionary<string, object>();
+            }
+        }
+
+        /// <inheritdoc />
+        public async Task<IDictionary<string, object>> GetAllValuesAsync(User user = null)
+        {
+            try
+            {
+                var settings = await this.GetSettingsAsync().ConfigureAwait(false);
+                return GenerateSettingKeyValueMap(user, settings);
+            }
+            catch (Exception ex)
+            {
+                this.log.Error($"Error occured in 'GetAllValuesAsync' method.\n{ex}");
+                return new Dictionary<string, object>();
+            }
+        }
+
 
         /// <inheritdoc />
         public void ForceRefresh()
         {
             try
             {
-                this.configService.RefreshConfigAsync().GetAwaiter().GetResult();                
+                this.configService.RefreshConfig();
             }
             catch (Exception ex)
             {
@@ -242,10 +293,12 @@ namespace ConfigCat.Client
         /// <inheritdoc />
         public void Dispose()
         {
-            if (this.configService != null && this.configService is IDisposable)
+            if (this.configService is IDisposable disposable)
             {
-                ((IDisposable)this.configService).Dispose();
+                disposable.Dispose();
             }
+
+            this.overrideDataSource?.Dispose();
         }
 
         /// <inheritdoc />
@@ -253,14 +306,12 @@ namespace ConfigCat.Client
         {
             try
             {
-                var config = this.configService.GetConfigAsync().GetAwaiter().GetResult();
-
-                return this.configEvaluator.EvaluateVariationId(config, key, defaultVariationId, user);
+                var settings = this.GetSettings();
+                return this.configEvaluator.EvaluateVariationId(settings, key, defaultVariationId, user);
             }
             catch (Exception ex)
             {
                 this.log.Error($"Error occured in 'GetVariationId' method.\n{ex}");
-
                 return defaultVariationId;
             }
         }
@@ -270,14 +321,12 @@ namespace ConfigCat.Client
         {
             try
             {
-                var c = await this.configService.GetConfigAsync().ConfigureAwait(false);
-
-                return this.configEvaluator.EvaluateVariationId(c, key, defaultVariationId, user);
+                var settings = await this.GetSettingsAsync().ConfigureAwait(false);
+                return this.configEvaluator.EvaluateVariationId(settings, key, defaultVariationId, user);
             }
             catch (Exception ex)
             {
                 this.log.Error($"Error occured in 'GetVariationIdAsync' method.\n{ex}");
-
                 return defaultVariationId;
             }
         }
@@ -287,16 +336,14 @@ namespace ConfigCat.Client
         {
             try
             {
-                var config = this.configService.GetConfigAsync().GetAwaiter().GetResult();
-
-                return GetAllVariationIdLogic(config, user);
+                var settings = this.GetSettings();
+                return GetAllVariationIdLogic(settings, user);
             }
             catch (Exception ex)
             {
                 this.log.Error($"Error occured in 'GetAllVariationId' method.\n{ex}");
+                return Enumerable.Empty<string>();
             }
-
-            return Enumerable.Empty<string>();
         }
 
         /// <inheritdoc />
@@ -304,40 +351,40 @@ namespace ConfigCat.Client
         {
             try
             {
-                var config = await this.configService.GetConfigAsync().ConfigureAwait(false);
-
-                return GetAllVariationIdLogic(config, user);
+                var settings = await this.GetSettingsAsync().ConfigureAwait(false);
+                return GetAllVariationIdLogic(settings, user);
             }
             catch (Exception ex)
             {
                 this.log.Error($"Error occured in 'GetAllVariationIdAsync' method.\n{ex}");
+                return Enumerable.Empty<string>();
             }
-
-            return Enumerable.Empty<string>();
         }
 
-        private IEnumerable<string> GetAllVariationIdLogic(ProjectConfig config, User user)
+        private IEnumerable<string> GetAllVariationIdLogic(IDictionary<string, Setting> settings, User user)
         {
-            if (this.configDeserializer.TryDeserialize(config.JsonString, out var settings))
+            if (settings.Count == 0)
             {
-                var result = new List<string>(settings.Settings.Keys.Count);
-
-                foreach (var key in settings.Settings.Keys)
-                {
-                    var r = this.configEvaluator.EvaluateVariationId(config, key, null, user);
-
-                    if (r != null)
-                    {
-                        result.Add(r);
-                    }
-                }
-
-                return result;
+                this.log.Warning("Config deserialization failed.");
+                return Enumerable.Empty<string>();
             }
 
-            this.log.Warning("Config deserialization failed.");
+            var result = new List<string>(settings.Keys.Count);
+            result.AddRange(settings.Keys.Select(key => this.configEvaluator.EvaluateVariationId(settings, key, null, user))
+                .Where(r => r != null));
 
-            return Enumerable.Empty<string>();
+            return result;
+        }
+
+        private IDictionary<string, object> GenerateSettingKeyValueMap(User user, IDictionary<string, Setting> settings)
+        {
+            if (settings.Count == 0)
+            {
+                this.log.Warning("Config deserialization failed.");
+                return new Dictionary<string, object>();
+            }
+
+            return settings.ToDictionary(kv => kv.Key, kv => this.configEvaluator.Evaluate(settings, kv.Key, null, user));
         }
 
         /// <summary>
@@ -345,16 +392,101 @@ namespace ConfigCat.Client
         /// </summary>
         /// <param name="sdkKey"></param>
         /// <returns></returns>
+        [Obsolete("Please use the 'new ConfigCatClient(options => { /* configuration options */ })' format to instantiate a new ConfigCatClient.")]
         public static ConfigCatClientBuilder Create(string sdkKey)
         {
             return ConfigCatClientBuilder.Initialize(sdkKey);
         }
 
+        private IDictionary<string, Setting> GetSettings()
+        {
+            if (this.overrideBehaviour != null)
+            {
+                IDictionary<string, Setting> local;
+                IDictionary<string, Setting> remote;
+                switch (this.overrideBehaviour)
+                {
+                    case OverrideBehaviour.LocalOnly:
+                        return this.overrideDataSource.GetOverrides();
+                    case OverrideBehaviour.LocalOverRemote:
+                        local = this.overrideDataSource.GetOverrides();
+                        remote = GetRemoteConfig();
+                        return remote.MergeOverwriteWith(local);
+                    case OverrideBehaviour.RemoteOverLocal:
+                        local = this.overrideDataSource.GetOverrides();
+                        remote = GetRemoteConfig();
+                        return local.MergeOverwriteWith(remote);
+                }
+            }
+
+            return GetRemoteConfig();
+
+            IDictionary<string, Setting> GetRemoteConfig()
+            {
+                var config = this.configService.GetConfig();
+                if (!this.configDeserializer.TryDeserialize(config.JsonString, out var deserialized))
+                    return new Dictionary<string, Setting>();
+
+                return deserialized.Settings;
+            }
+        }
+
+        private async Task<IDictionary<string, Setting>> GetSettingsAsync()
+        {
+            if (this.overrideBehaviour != null)
+            {
+                IDictionary<string, Setting> local;
+                IDictionary<string, Setting> remote;
+                switch (this.overrideBehaviour)
+                {
+                    case OverrideBehaviour.LocalOnly:
+                        return await this.overrideDataSource.GetOverridesAsync().ConfigureAwait(false);
+                    case OverrideBehaviour.LocalOverRemote:
+                        local = await this.overrideDataSource.GetOverridesAsync().ConfigureAwait(false);
+                        remote = await GetRemoteConfigAsync().ConfigureAwait(false);
+                        return remote.MergeOverwriteWith(local);
+                    case OverrideBehaviour.RemoteOverLocal:
+                        local = await this.overrideDataSource.GetOverridesAsync().ConfigureAwait(false);
+                        remote = await GetRemoteConfigAsync().ConfigureAwait(false);
+                        return local.MergeOverwriteWith(remote);
+                }
+            }
+
+            return await GetRemoteConfigAsync().ConfigureAwait(false);
+
+            async Task<IDictionary<string, Setting>> GetRemoteConfigAsync()
+            {
+                var config = await this.configService.GetConfigAsync().ConfigureAwait(false);
+                if (!this.configDeserializer.TryDeserialize(config.JsonString, out var deserialized))
+                    return new Dictionary<string, Setting>();
+
+                return deserialized.Settings;
+            }
+        }
+
+        private static IConfigService DetermineConfigService(ConfigCatClientOptions options, HttpConfigFetcher fetcher, CacheParameters cacheParameters)
+        {
+            return options.PollingMode switch
+            {
+                AutoPoll autoPoll => new AutoPollConfigService(autoPoll,
+                    fetcher,
+                    cacheParameters,
+                    options.Logger),
+                LazyLoad lazyLoad => new LazyLoadConfigService(fetcher,
+                    cacheParameters,
+                    options.Logger,
+                    lazyLoad.CacheTimeToLive),
+                ManualPoll => new ManualPollConfigService(fetcher,
+                    cacheParameters,
+                    options.Logger),
+                _ => throw new ArgumentException("Invalid configuration type."),
+            };
+        }
+
         private static string GetCacheKey(ConfigurationBase configuration)
         {
             var key = $"dotnet_{ConfigurationBase.ConfigFileName}_{configuration.SdkKey}";
-
-            return HashUtils.HashString(key);
+            return key.Hash();
         }
     }
 }

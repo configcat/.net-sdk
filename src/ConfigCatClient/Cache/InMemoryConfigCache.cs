@@ -3,41 +3,25 @@ using System.Threading.Tasks;
 
 namespace ConfigCat.Client
 {
-    internal class InMemoryConfigCache : IConfigCache
+    internal class InMemoryConfigCache : IConfigCatCache
     {
         private ProjectConfig projectConfig;
-
-        private readonly ReaderWriterLockSlim lockSlim = new ReaderWriterLockSlim();
 
         /// <inheritdoc />
         public Task SetAsync(string key, ProjectConfig config)
         {
-            this.lockSlim.EnterWriteLock();
-
-            try
-            {
-                this.projectConfig = config;
-                return Task.FromResult(0);
-            }
-            finally
-            {
-                this.lockSlim.ExitWriteLock();
-            }
+            this.projectConfig = config;
+            return Task.FromResult(0);
         }
 
         /// <inheritdoc />
-        public Task<ProjectConfig> GetAsync(string key, CancellationToken cancellationToken = default)
-        {
-            this.lockSlim.EnterReadLock();
+        public Task<ProjectConfig> GetAsync(string key, CancellationToken cancellationToken = default) =>
+            Task.FromResult(this.projectConfig);
 
-            try
-            {
-                return Task.FromResult(this.projectConfig);
-            }
-            finally
-            {
-                this.lockSlim.ExitReadLock();
-            }
-        }        
+        /// <inheritdoc />
+        public void Set(string key, ProjectConfig config) => this.projectConfig = config;
+
+        /// <inheritdoc />
+        public ProjectConfig Get(string key) => this.projectConfig;
     }
 }

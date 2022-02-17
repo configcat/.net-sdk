@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace ConfigCat.Client.Evaluate
@@ -11,7 +12,7 @@ namespace ConfigCat.Client.Evaluate
 
         public string KeyName { get; set; }
 
-        public ICollection<string> Operations { get; private set; } = new List<string>();
+        private ICollection<string> Operations { get; set; } = new List<string>();
 
         public string VariationId { get; set; }
 
@@ -28,7 +29,7 @@ namespace ConfigCat.Client.Evaluate
 
             result.AppendLine($" VariationId: {this.VariationId ?? "null"}");
 
-            result.AppendLine($" User object: {Newtonsoft.Json.JsonConvert.SerializeObject(this.User)}");
+            result.AppendLine($" User object: {this.User.Serialize()}");
 
             foreach (var o in this.Operations)
             {
@@ -42,41 +43,28 @@ namespace ConfigCat.Client.Evaluate
 
         public static string FormatComparator(ComparatorEnum comparator)
         {
-            switch (comparator)
+            return comparator switch
             {
-                case ComparatorEnum.In:
-                case ComparatorEnum.SemVerIn:
-                    return "IS ONE OF";
-                case ComparatorEnum.NotIn:
-                case ComparatorEnum.SemVerNotIn:
-                    return "IS NOT ONE OF";
-                case ComparatorEnum.Contains:
-                    return "CONTAINS";
-                case ComparatorEnum.NotContains:
-                    return "DOES NOT CONTAIN";
-                case ComparatorEnum.SemVerLessThan:
-                case ComparatorEnum.NumberLessThan:
-                    return "<";
-                case ComparatorEnum.SemVerLessThanEqual:
-                case ComparatorEnum.NumberLessThanEqual:
-                    return "<=";
-                case ComparatorEnum.SemVerGreaterThan:
-                case ComparatorEnum.NumberGreaterThan:
-                    return ">";
-                case ComparatorEnum.SemVerGreaterThanEqual:
-                case ComparatorEnum.NumberGreaterThanEqual:
-                    return ">=";
-                case ComparatorEnum.NumberEqual:
-                    return "=";
-                case ComparatorEnum.NumberNotEqual:
-                    return "!=";
-                case ComparatorEnum.SensitiveOneOf:
-                    return "IS ONE OF (Sensitive)";
-                case ComparatorEnum.SensitiveNotOneOf:
-                    return "IS NOT ONE OF (Sensitive)";
-                default:
-                    return comparator.ToString();
-            }
+                ComparatorEnum.In => "IS ONE OF",
+                ComparatorEnum.SemVerIn => "IS ONE OF",
+                ComparatorEnum.NotIn => "IS NOT ONE OF",
+                ComparatorEnum.SemVerNotIn => "IS NOT ONE OF",
+                ComparatorEnum.Contains => "CONTAINS",
+                ComparatorEnum.NotContains => "DOES NOT CONTAIN",
+                ComparatorEnum.SemVerLessThan => "<",
+                ComparatorEnum.NumberLessThan => "<",
+                ComparatorEnum.SemVerLessThanEqual => "<=",
+                ComparatorEnum.NumberLessThanEqual => "<=",
+                ComparatorEnum.SemVerGreaterThan => ">",
+                ComparatorEnum.NumberGreaterThan => ">",
+                ComparatorEnum.SemVerGreaterThanEqual => ">=",
+                ComparatorEnum.NumberGreaterThanEqual => ">=",
+                ComparatorEnum.NumberEqual => "=",
+                ComparatorEnum.NumberNotEqual => "!=",
+                ComparatorEnum.SensitiveOneOf => "IS ONE OF (Sensitive)",
+                ComparatorEnum.SensitiveNotOneOf => "IS NOT ONE OF (Sensitive)",
+                _ => comparator.ToString()
+            };
         }
     }
 }

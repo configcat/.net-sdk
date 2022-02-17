@@ -1,7 +1,6 @@
-﻿using System;
-using System.Net.Http;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+#pragma warning disable CS0618 // Type or member is obsolete
 namespace ConfigCat.Client.Tests
 {
     [TestCategory(TestCategories.Integration)]
@@ -9,7 +8,7 @@ namespace ConfigCat.Client.Tests
     public class CustomHttpClientHandlerTests
     {
         private const string SDKKEY = "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A";
-        private readonly MyHttpClientHandler httpClientHandler = new MyHttpClientHandler();
+        private readonly RequestCounterHttpClientHandler httpClientHandler = new RequestCounterHttpClientHandler();
 
         [TestInitialize]
         public void TestInit()
@@ -17,12 +16,22 @@ namespace ConfigCat.Client.Tests
             httpClientHandler.Reset();
         }
 
-        [TestMethod]
-        public void AutoPoll_WithHttpClientHandlerOverride_ShouldReturnCatUseCustomImplementation()
+        [DataRow(true)]
+        [DataRow(false)]
+        [DataTestMethod]
+        public void AutoPoll_WithHttpClientHandlerOverride_ShouldReturnCatUseCustomImplementation(bool useNewCreateApi)
         {
             // Arrange
 
-            var client = ConfigCatClientBuilder.Initialize(SDKKEY)
+            var client = useNewCreateApi
+                ? new ConfigCatClient(options =>
+                {
+                    options.SdkKey = SDKKEY;
+                    options.HttpClientHandler = httpClientHandler;
+                    options.PollingMode = PollingModes.AutoPoll();
+                    options.DataGovernance = DataGovernance.EuOnly;
+                })
+                : ConfigCatClientBuilder.Initialize(SDKKEY)
                 .WithDataGovernance(DataGovernance.EuOnly)
                 .WithAutoPoll()
                 .WithHttpClientHandler(httpClientHandler)
@@ -38,12 +47,22 @@ namespace ConfigCat.Client.Tests
             Assert.IsTrue(httpClientHandler.SendAsyncInvokeCount > 0);
         }
 
-        [TestMethod]
-        public void ManualPoll_WithHttpClientHandlerOverride_ShouldReturnCatUseCustomImplementation()
+        [DataRow(true)]
+        [DataRow(false)]
+        [DataTestMethod]
+        public void ManualPoll_WithHttpClientHandlerOverride_ShouldReturnCatUseCustomImplementation(bool useNewCreateApi)
         {
             // Arrange
 
-            var client = ConfigCatClientBuilder.Initialize(SDKKEY)
+            var client = useNewCreateApi
+                ? new ConfigCatClient(options =>
+                {
+                    options.SdkKey = SDKKEY;
+                    options.HttpClientHandler = httpClientHandler;
+                    options.PollingMode = PollingModes.ManualPoll;
+                    options.DataGovernance = DataGovernance.EuOnly;
+                })
+                : ConfigCatClientBuilder.Initialize(SDKKEY)
                 .WithDataGovernance(DataGovernance.EuOnly)
                 .WithManualPoll()
                 .WithHttpClientHandler(httpClientHandler)
@@ -60,12 +79,22 @@ namespace ConfigCat.Client.Tests
             Assert.AreEqual(1, httpClientHandler.SendAsyncInvokeCount);
         }
 
-        [TestMethod]
-        public void LazyLoad_WithHttpClientHandlerOverride_ShouldReturnCatUseCustomImplementation()
+        [DataRow(true)]
+        [DataRow(false)]
+        [DataTestMethod]
+        public void LazyLoad_WithHttpClientHandlerOverride_ShouldReturnCatUseCustomImplementation(bool useNewCreateApi)
         {
             // Arrange
 
-            var client = ConfigCatClientBuilder.Initialize(SDKKEY)
+            var client = useNewCreateApi
+                ? new ConfigCatClient(options =>
+                {
+                    options.SdkKey = SDKKEY;
+                    options.HttpClientHandler = httpClientHandler;
+                    options.PollingMode = PollingModes.LazyLoad();
+                    options.DataGovernance = DataGovernance.EuOnly;
+                })
+                : ConfigCatClientBuilder.Initialize(SDKKEY)
                 .WithDataGovernance(DataGovernance.EuOnly)
                 .WithLazyLoad()
                 .WithHttpClientHandler(httpClientHandler)

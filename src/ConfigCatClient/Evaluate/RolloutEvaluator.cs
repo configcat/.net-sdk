@@ -1,66 +1,75 @@
 ﻿using ConfigCat.Client.Versioning;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
-using ConfigCat.Client.Security;
+#if USE_NEWTONSOFT_JSON
+using Newtonsoft.Json.Linq;
+#else
+using System.Text.Json;
+#endif
 
 namespace ConfigCat.Client.Evaluate
 {
     internal class RolloutEvaluator : IRolloutEvaluator
     {
         private readonly ILogger log;
-        private readonly IConfigDeserializer configDeserializer;
 
-        public RolloutEvaluator(ILogger logger, IConfigDeserializer configDeserializer)
+        public RolloutEvaluator(ILogger logger)
         {
             this.log = logger;
-            this.configDeserializer = configDeserializer;
         }
 
-        public T Evaluate<T>(ProjectConfig projectConfig, string key, T defaultValue, User user = null)
+        public T Evaluate<T>(IDictionary<string, Setting> settings, string key, T defaultValue, User user = null)
         {
-            var result = EvaluateLogic(projectConfig, key, defaultValue?.ToString(), null, user);
-
-            if (result == null)
+            if (settings.Count == 0)
             {
+                this.log.Error($"Config JSON is not present. Returning defaultValue: [{defaultValue}].");
                 return defaultValue;
             }
 
-            return new JValue(result.RawValue).Value<T>();
+            var result = EvaluateLogic(settings, key, defaultValue?.ToString(), null, user);
+#if USE_NEWTONSOFT_JSON
+            return result == null ? defaultValue : result.Value.Value<T>();
+#else
+            return result == null ? defaultValue : result.Value.Deserialize<T>();
+#endif
         }
 
-        public string EvaluateVariationId(ProjectConfig projectConfig, string key, string defaultVariationId, User user = null)
+        public object Evaluate(IDictionary<string, Setting> settings, string key, object defaultValue, User user = null)
         {
-            var result = EvaluateLogic(projectConfig, key, null, defaultVariationId, user);
-
-            if (result == null)
+            if (settings.Count == 0)
             {
+                this.log.Error($"Config JSON is not present. Returning defaultValue: [{defaultValue}].");
+                return defaultValue;
+            }
+
+            var result = EvaluateLogic(settings, key, defaultValue?.ToString(), null, user);
+#if USE_NEWTONSOFT_JSON
+            return result == null ? defaultValue : result.Value.ToObject(DetermineTypeFromSettingType(result.SettingType));
+#else
+            return result == null ? defaultValue : result.Value.Deserialize(DetermineTypeFromSettingType(result.SettingType));
+#endif
+        }
+
+        public string EvaluateVariationId(IDictionary<string, Setting> settings, string key, string defaultVariationId, User user = null)
+        {
+            if (settings.Count == 0)
+            {
+                this.log.Error($"Config JSON is not present. Returning defaultVariationId: [{defaultVariationId}].");
                 return defaultVariationId;
             }
 
-            return result.VariationId;
+            var result = EvaluateLogic(settings, key, null, defaultVariationId, user);
+            return result == null ? defaultVariationId : result.VariationId;
         }
 
-        private EvaluateResult EvaluateLogic(ProjectConfig projectConfig, string key, string logDefaultValue, string logDefaultVariationId, User user = null)
+        private EvaluateResult EvaluateLogic(IDictionary<string, Setting> settings, string key, string logDefaultValue, string logDefaultVariationId, User user = null)
         {
-            if (!this.configDeserializer.TryDeserialize(projectConfig.JsonString, out var deserialized))
-            {
-                this.log.Warning("Config deserialization failed, returning defaultValue");
-
-                return null;
-            }
-
-            var settings = deserialized.Settings;
             if (!settings.TryGetValue(key, out var setting))
             {
                 var keys = string.Join(",", settings.Keys.Select(s => $"'{s}'").ToArray());
-
                 this.log.Error($"Evaluating '{key}' failed. Returning default value: '{logDefaultValue}'. Here are the available keys: {keys}.");
-
                 return null;
             }
 
@@ -74,7 +83,7 @@ namespace ConfigCat.Client.Evaluate
 
             try
             {
-                EvaluateResult result = null;
+                EvaluateResult result;
 
                 if (user != null)
                 {
@@ -82,9 +91,10 @@ namespace ConfigCat.Client.Evaluate
 
                     if (TryEvaluateRules(setting.RolloutRules, user, evaluateLog, out result))
                     {
-                        evaluateLog.ReturnValue = result.RawValue;
+                        evaluateLog.ReturnValue = result.Value.ToString();
                         evaluateLog.VariationId = result.VariationId;
 
+                        result.SettingType = setting.SettingType;
                         return result;
                     }
 
@@ -92,27 +102,33 @@ namespace ConfigCat.Client.Evaluate
 
                     if (TryEvaluateVariations(setting.RolloutPercentageItems, key, user, out result))
                     {
-                        evaluateLog.Log("evaluate % option => user targeted");
-                        evaluateLog.ReturnValue = result.RawValue;
+                        evaluateLog.Log("Evaluate % option => user targeted");
+                        evaluateLog.ReturnValue = result.Value.ToString();
                         evaluateLog.VariationId = result.VariationId;
-
+                        
+                        result.SettingType = setting.SettingType;
                         return result;
                     }
                     else
                     {
-                        evaluateLog.Log("evaluate % option => user not targeted");
+                        evaluateLog.Log("Evaluate % option => user not targeted");
                     }
                 }
-                else if (user == null && (setting.RolloutRules.Any() || setting.RolloutPercentageItems.Any()))
+                else if (setting.RolloutRules.Any() || setting.RolloutPercentageItems.Any())
                 {
                     this.log.Warning($"Evaluating '{key}'. UserObject missing! You should pass a UserObject to GetValue() or GetValueAsync(), in order to make targeting work properly. Read more: https://configcat.com/docs/advanced/user-object");
                 }
 
                 // regular evaluate
 
-                result = new EvaluateResult(setting.RawValue, setting.VariationId);
+                result = new EvaluateResult
+                {
+                    Value = setting.Value,
+                    VariationId = setting.VariationId,
+                    SettingType = setting.SettingType,
+                };
 
-                evaluateLog.ReturnValue = result.RawValue;
+                evaluateLog.ReturnValue = result.Value.ToString();
                 evaluateLog.VariationId = result.VariationId;
 
                 return result;
@@ -123,15 +139,15 @@ namespace ConfigCat.Client.Evaluate
             }
         }
 
-        private bool TryEvaluateVariations(ICollection<RolloutPercentageItem> rolloutPercentageItems, string key, User user, out EvaluateResult result)
+        private static bool TryEvaluateVariations(ICollection<RolloutPercentageItem> rolloutPercentageItems, string key, User user, out EvaluateResult result)
         {
             result = new EvaluateResult();
 
-            if (rolloutPercentageItems != null && rolloutPercentageItems.Count > 0)
+            if (rolloutPercentageItems is { Count: > 0 })
             {
                 var hashCandidate = key + user.Identifier;
 
-                var hashValue = HashUtils.HashString(hashCandidate).Substring(0, 7);
+                var hashValue = hashCandidate.Hash().Substring(0, 7);
 
                 var hashScale = int.Parse(hashValue, NumberStyles.HexNumber) % 100;
 
@@ -141,13 +157,11 @@ namespace ConfigCat.Client.Evaluate
                 {
                     bucket += variation.Percentage;
 
-                    if (hashScale < bucket)
-                    {
-                        result.RawValue = variation.RawValue;
-                        result.VariationId = variation.VariationId;
+                    if (hashScale >= bucket) continue;
+                    result.Value = variation.Value;
+                    result.VariationId = variation.VariationId;
 
-                        return true;
-                    }
+                    return true;
                 }
             }
 
@@ -158,11 +172,11 @@ namespace ConfigCat.Client.Evaluate
         {
             result = new EvaluateResult();
 
-            if (rules != null && rules.Count > 0)
+            if (rules is { Count: > 0 })
             {
                 foreach (var rule in rules.OrderBy(o => o.Order))
                 {
-                    result.RawValue = rule.RawValue;
+                    result.Value = rule.Value;
                     result.VariationId = rule.VariationId;
 
                     if (!user.AllAttributes.ContainsKey(rule.ComparisonAttribute))
@@ -176,7 +190,7 @@ namespace ConfigCat.Client.Evaluate
                         continue;
                     }
 
-                    string l = $"evaluate rule: '{comparisonAttributeValue}' {EvaluateLogger<T>.FormatComparator(rule.Comparator)} '{rule.ComparisonValue}' => ";
+                    string l = $"Evaluate rule: '{comparisonAttributeValue}' {EvaluateLogger<T>.FormatComparator(rule.Comparator)} '{rule.ComparisonValue}' => ";
 
                     switch (rule.Comparator)
                     {
@@ -274,7 +288,7 @@ namespace ConfigCat.Client.Evaluate
                             if (rule.ComparisonValue
                                 .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                                 .Select(t => t.Trim())
-                                .Contains(HashUtils.HashString(comparisonAttributeValue)))
+                                .Contains(comparisonAttributeValue.Hash()))
                             {
                                 logger.Log(l + "match");
 
@@ -288,7 +302,7 @@ namespace ConfigCat.Client.Evaluate
                             if (!rule.ComparisonValue
                                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                                .Select(t => t.Trim())
-                               .Contains(HashUtils.HashString(comparisonAttributeValue)))
+                               .Contains(comparisonAttributeValue.Hash()))
                             {
                                 logger.Log(l + "match");
 
@@ -315,119 +329,104 @@ namespace ConfigCat.Client.Evaluate
                 return false;
             }
 
+            return comparator switch
+            {
+                ComparatorEnum.NumberEqual => d1 == d2,
+                ComparatorEnum.NumberNotEqual => d1 != d2,
+                ComparatorEnum.NumberLessThan => d1 < d2,
+                ComparatorEnum.NumberLessThanEqual => d1 <= d2,
+                ComparatorEnum.NumberGreaterThan => d1 > d2,
+                ComparatorEnum.NumberGreaterThanEqual => d1 >= d2,
+                _ => false
+            };
+        }
+
+        private static bool EvaluateSemVer(string s1, string s2, ComparatorEnum comparator)
+        {
+            if (!SemVersion.TryParse(s1?.Trim(), out SemVersion v1, true)) return false;
+            s2 = string.IsNullOrWhiteSpace(s2) ? string.Empty : s2.Trim();
+
             switch (comparator)
             {
-                case ComparatorEnum.NumberEqual:
+                case ComparatorEnum.SemVerIn:
 
-                    return d1 == d2;
+                    var rsvi = s2
+                        .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                        .Select(s =>
+                        {
+                            if (SemVersion.TryParse(s.Trim(), out SemVersion ns, true))
+                            {
+                                return ns;
+                            }
 
-                case ComparatorEnum.NumberNotEqual:
+                            return null;
+                        })
+                        .ToList();
 
-                    return d1 != d2;
+                    return !rsvi.Contains(null) && rsvi.Any(v => v.PrecedenceMatches(v1));
 
-                case ComparatorEnum.NumberLessThan:
+                case ComparatorEnum.SemVerNotIn:
 
-                    return d1 < d2;
+                    var rsvni = s2
+                        .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                        .Select(s =>
+                        {
+                            if (SemVersion.TryParse(s?.Trim(), out SemVersion ns, true))
+                            {
+                                return ns;
+                            }
 
-                case ComparatorEnum.NumberLessThanEqual:
+                            return null;
+                        })
+                        .ToList();
 
-                    return d1 <= d2;
+                    return !rsvni.Contains(null) && !rsvni.Any(v => v.PrecedenceMatches(v1));
 
-                case ComparatorEnum.NumberGreaterThan:
+                case ComparatorEnum.SemVerLessThan:
 
-                    return d1 > d2;
+                    if (SemVersion.TryParse(s2, out SemVersion v20, true))
+                    {
+                        return v1.CompareByPrecedence(v20) < 0;
+                    }
 
-                case ComparatorEnum.NumberGreaterThanEqual:
+                    break;
+                case ComparatorEnum.SemVerLessThanEqual:
 
-                    return d1 >= d2;
+                    if (SemVersion.TryParse(s2, out SemVersion v21, true))
+                    {
+                        return v1.CompareByPrecedence(v21) <= 0;
+                    }
 
-                default:
+                    break;
+                case ComparatorEnum.SemVerGreaterThan:
+
+                    if (SemVersion.TryParse(s2, out SemVersion v22, true))
+                    {
+                        return v1.CompareByPrecedence(v22) > 0;
+                    }
+
+                    break;
+                case ComparatorEnum.SemVerGreaterThanEqual:
+
+                    if (SemVersion.TryParse(s2, out SemVersion v23, true))
+                    {
+                        return v1.CompareByPrecedence(v23) >= 0;
+                    }
+
                     break;
             }
 
             return false;
         }
 
-        private static bool EvaluateSemVer(string s1, string s2, ComparatorEnum comparator)
-        {
-            if (SemVersion.TryParse(s1?.Trim(), out SemVersion v1, true))
+        private static Type DetermineTypeFromSettingType(SettingTypeEnum settingType) =>
+            settingType switch
             {
-                s2 = string.IsNullOrWhiteSpace(s2) ? string.Empty : s2.Trim();
-
-                switch (comparator)
-                {
-                    case ComparatorEnum.SemVerIn:
-
-                        var rsvi = s2
-                            .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                            .Select(s =>
-                            {
-                                if (SemVersion.TryParse(s.Trim(), out SemVersion ns, true))
-                                {
-                                    return ns;
-                                }
-
-                                return null;
-                            })
-                            .ToList();
-
-                        return !rsvi.Contains(null) && rsvi.Any(v => v.PrecedenceMatches(v1));
-
-                    case ComparatorEnum.SemVerNotIn:
-
-                        var rsvni = s2
-                           .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                           .Select(s =>
-                           {
-                               if (SemVersion.TryParse(s?.Trim(), out SemVersion ns, true))
-                               {
-                                   return ns;
-                               }
-
-                               return null;
-                           })
-                           .ToList();
-
-                        return !rsvni.Contains(null) && !rsvni.Any(v => v.PrecedenceMatches(v1));
-
-                    case ComparatorEnum.SemVerLessThan:
-
-                        if (SemVersion.TryParse(s2, out SemVersion v20, true))
-                        {
-                            return v1.CompareByPrecedence(v20) < 0;
-                        }
-
-                        break;
-                    case ComparatorEnum.SemVerLessThanEqual:
-
-                        if (SemVersion.TryParse(s2, out SemVersion v21, true))
-                        {
-                            return v1.CompareByPrecedence(v21) <= 0;
-                        }
-
-                        break;
-                    case ComparatorEnum.SemVerGreaterThan:
-
-                        if (SemVersion.TryParse(s2, out SemVersion v22, true))
-                        {
-                            return v1.CompareByPrecedence(v22) > 0;
-                        }
-
-                        break;
-                    case ComparatorEnum.SemVerGreaterThanEqual:
-
-                        if (SemVersion.TryParse(s2, out SemVersion v23, true))
-                        {
-                            return v1.CompareByPrecedence(v23) >= 0;
-                        }
-
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            return false;
-        }
+                SettingTypeEnum.Boolean => typeof(bool),
+                SettingTypeEnum.String => typeof(string),
+                SettingTypeEnum.Int => typeof(int),
+                SettingTypeEnum.Double => typeof(double),
+                _ => throw new ArgumentOutOfRangeException(nameof(settingType), settingType, null)
+            };
     }
 }

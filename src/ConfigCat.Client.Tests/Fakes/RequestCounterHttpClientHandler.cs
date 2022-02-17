@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace ConfigCat.Client.Tests
 {
-    internal sealed class MyHttpClientHandler : HttpClientHandler
+    internal sealed class RequestCounterHttpClientHandler : HttpClientHandler
     {
         public byte SendAsyncInvokeCount { get; private set; } = 0;
 
@@ -14,6 +14,15 @@ namespace ConfigCat.Client.Tests
 
             return base.SendAsync(request, cancellationToken);
         }
+
+#if NET5_0_OR_GREATER
+        protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            SendAsyncInvokeCount++;
+
+            return base.Send(request, cancellationToken);
+        }
+#endif
 
         public void Reset()
         {

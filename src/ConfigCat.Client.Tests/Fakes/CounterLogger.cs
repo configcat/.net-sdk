@@ -1,14 +1,14 @@
 ﻿namespace ConfigCat.Client.Tests
 {
-    internal sealed class MyCounterLogger : ILogger
+    internal sealed class CounterLogger : ILogger
     {
         public byte LogMessageInvokeCount = 0;
 
         public LogLevel LogLevel { get; set; }
 
-        public MyCounterLogger() : this(LogLevel.Debug) { }
+        public CounterLogger() : this(LogLevel.Debug) { }
 
-        public MyCounterLogger(LogLevel logLevel)
+        public CounterLogger(LogLevel logLevel)
         {
             this.LogLevel = logLevel;
         }

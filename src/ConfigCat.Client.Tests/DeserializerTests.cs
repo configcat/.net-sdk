@@ -1,8 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using System;
-using System.IO;
 
 namespace ConfigCat.Client.Tests
 {
@@ -19,8 +17,7 @@ namespace ConfigCat.Client.Tests
                 return settings;
             };
 
-            var deserializer = new ConfigDeserializer(new LoggerWrapper(new ConsoleLogger(LogLevel.Debug)), JsonSerializer.Create());
-
+            var deserializer = new ConfigDeserializer();
             deserializer.TryDeserialize("{\"p\": {\"u\": \"http://example.com\", \"r\": 0}}", out var configs);
         }
     }

@@ -8,7 +8,7 @@ namespace ConfigCat.Client.Tests
         [TestMethod]
         public void LoggerBase_LoglevelIsDebug_ShouldInvokeErrorOrWarnOrInfoOrDebug()
         {
-            var l = new MyCounterLogger(LogLevel.Debug);
+            var l = new CounterLogger(LogLevel.Debug);
         
             var logger = new LoggerWrapper(l);
 
@@ -23,7 +23,7 @@ namespace ConfigCat.Client.Tests
         [TestMethod]
         public void LoggerBase_LoglevelIsInfo_ShouldInvokeOnlyErrorAndWarnAndInfo()
         {
-            var l = new MyCounterLogger(LogLevel.Info);
+            var l = new CounterLogger(LogLevel.Info);
 
             var logger = new LoggerWrapper(l);
 
@@ -37,7 +37,7 @@ namespace ConfigCat.Client.Tests
         [TestMethod]
         public void LoggerBase_LoglevelIsInfo_ShouldNotInvokeDebug()
         {
-            var l = new MyCounterLogger(LogLevel.Info);
+            var l = new CounterLogger(LogLevel.Info);
 
             var logger = new LoggerWrapper(l);
 
@@ -49,7 +49,7 @@ namespace ConfigCat.Client.Tests
         [TestMethod]
         public void LoggerBase_LoglevelIsWarn_ShouldInvokeOnlyErrorAndWarnAndInfo()
         {
-            var l = new MyCounterLogger(LogLevel.Warning);
+            var l = new CounterLogger(LogLevel.Warning);
 
             var logger = new LoggerWrapper(l);
 
@@ -62,7 +62,7 @@ namespace ConfigCat.Client.Tests
         [TestMethod]
         public void LoggerBase_LoglevelIsWarn_ShouldNotInvokeDebugOrInfo()
         {
-            var l = new MyCounterLogger(LogLevel.Warning);
+            var l = new CounterLogger(LogLevel.Warning);
 
             var logger = new LoggerWrapper(l);
 
@@ -75,7 +75,7 @@ namespace ConfigCat.Client.Tests
         [TestMethod]
         public void LoggerBase_LoglevelIsError_ShouldInvokeOnlyError()
         {
-            var l = new MyCounterLogger(LogLevel.Error);
+            var l = new CounterLogger(LogLevel.Error);
 
             var logger = new LoggerWrapper(l);
 
@@ -87,7 +87,7 @@ namespace ConfigCat.Client.Tests
         [TestMethod]
         public void LoggerBase_LoglevelIsError_ShouldNotInvokeDebugOrInfoOrWarn()
         {
-            var l = new MyCounterLogger(LogLevel.Error);
+            var l = new CounterLogger(LogLevel.Error);
 
             var logger = new LoggerWrapper(l);
 
@@ -101,7 +101,7 @@ namespace ConfigCat.Client.Tests
         [TestMethod]
         public void LoggerBase_LoglevelIsOff_ShouldNotInvokeAnyLogMessage()
         {
-            var l = new MyCounterLogger(LogLevel.Off);
+            var l = new CounterLogger(LogLevel.Off);
 
             var logger = new LoggerWrapper(l);
 

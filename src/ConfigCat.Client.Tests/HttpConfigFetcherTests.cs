@@ -15,13 +15,13 @@ namespace ConfigCat.Client.Tests
         {
             // Arrange
 
-            var myHandler = new MyFakeHttpClientHandler();
+            var myHandler = new FakeHttpClientHandler();
 
-            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new MyCounterLogger(), myHandler, Mock.Of<IConfigDeserializer>(), false);
+            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger(), myHandler, Mock.Of<IConfigDeserializer>(), false);
 
             // Act
 
-            await instance.Fetch(ProjectConfig.Empty);
+            await instance.FetchAsync(ProjectConfig.Empty);
 
             // Assert
 
@@ -33,9 +33,9 @@ namespace ConfigCat.Client.Tests
         {
             // Arrange
 
-            var myHandler = new MyFakeHttpClientHandler();
+            var myHandler = new FakeHttpClientHandler();
 
-            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new MyCounterLogger(), myHandler, Mock.Of<IConfigDeserializer>(), false);
+            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger(), myHandler, Mock.Of<IConfigDeserializer>(), false);
 
             // Act
 
@@ -51,15 +51,15 @@ namespace ConfigCat.Client.Tests
         {
             // Arrange
 
-            var myHandler = new MyFakeHttpClientHandler(HttpStatusCode.Forbidden);
+            var myHandler = new FakeHttpClientHandler(HttpStatusCode.Forbidden);
 
-            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new MyCounterLogger(), myHandler, Mock.Of<IConfigDeserializer>(), false);
+            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger(), myHandler, Mock.Of<IConfigDeserializer>(), false);
 
             var lastConfig = new ProjectConfig("{ }", DateTime.UtcNow, "\"ETAG\"");
 
             // Act
 
-            var actual = await instance.Fetch(lastConfig);
+            var actual = await instance.FetchAsync(lastConfig);
 
             // Assert
 
@@ -73,13 +73,13 @@ namespace ConfigCat.Client.Tests
 
             var myHandler = new ExceptionThrowerHttpClientHandler(new WebException());
 
-            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new MyCounterLogger(), myHandler, Mock.Of<IConfigDeserializer>(), false);
+            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger(), myHandler, Mock.Of<IConfigDeserializer>(), false);
 
             var lastConfig = new ProjectConfig("{ }", DateTime.UtcNow, "\"ETAG\"");
 
             // Act
 
-            var actual = await instance.Fetch(lastConfig);
+            var actual = await instance.FetchAsync(lastConfig);
 
             // Assert
 

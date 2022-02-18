@@ -16,6 +16,6 @@ namespace ConfigCat.Client.Evaluate
 
         public string VariationId { get; set; }
 
-        public SettingTypeEnum SettingType { get; set; }
+        public SettingType SettingType { get; set; }
     }
 }

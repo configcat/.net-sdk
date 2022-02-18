@@ -28,12 +28,9 @@ namespace ConfigCat.Client.ConfigService
         protected virtual void Dispose(bool disposing)
         {
             if (disposedValue) return;
-            if (disposing)
+            if (disposing && ConfigFetcher is IDisposable disposable)
             {
-                if (ConfigFetcher is IDisposable disposable)
-                {
-                    disposable.Dispose();
-                }
+                disposable.Dispose();
             }
 
             disposedValue = true;

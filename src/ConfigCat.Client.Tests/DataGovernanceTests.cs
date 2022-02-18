@@ -344,7 +344,7 @@ namespace ConfigCat.Client.Tests
         }
 
 
-        internal async Task<SortedList<byte, HttpRequestMessage>> Fetch(
+        internal static async Task<SortedList<byte, HttpRequestMessage>> Fetch(
             ConfigurationBase fetchConfig,
             Dictionary<string, SettingsWithPreferences> responsesRegistry,
             byte fetchInvokeCount = 1)

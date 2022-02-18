@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ConfigCat.Client.Override
 {
-    internal class LocalFileDataSource : IOverrideDataSource
+    internal sealed class LocalFileDataSource : IOverrideDataSource
     {
         private readonly ILogger logger;
         private readonly FileSystemWatcher fileSystemWatcher;
@@ -111,7 +111,7 @@ namespace ConfigCat.Client.Override
             this.syncInit.Dispose();
         }
 
-        private class SimplifiedConfig
+        private sealed class SimplifiedConfig
         {
 #if USE_NEWTONSOFT_JSON
             [Newtonsoft.Json.JsonProperty(PropertyName = "flags")]

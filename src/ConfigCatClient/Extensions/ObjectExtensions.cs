@@ -16,19 +16,19 @@ namespace System
                 SettingType = DetermineSettingType(value)
             };
 
-            SettingTypeEnum DetermineSettingType(object value)
+            SettingType DetermineSettingType(object value)
             {
 #if !USE_NEWTONSOFT_JSON
                 if (value is Text.Json.JsonElement element)
                 {
                     if (element.ValueKind == Text.Json.JsonValueKind.Number)
                     {
-                        if (element.TryGetInt32(out var _) || element.TryGetInt64(out var _)) return SettingTypeEnum.Int;
-                        if (element.TryGetDouble(out var _)) return SettingTypeEnum.Double;
+                        if (element.TryGetInt32(out var _) || element.TryGetInt64(out var _)) return SettingType.Int;
+                        if (element.TryGetDouble(out var _)) return SettingType.Double;
                     }
 
-                    if (element.ValueKind == Text.Json.JsonValueKind.String) return SettingTypeEnum.String;
-                    if (element.ValueKind == Text.Json.JsonValueKind.True || element.ValueKind == Text.Json.JsonValueKind.False) return SettingTypeEnum.Boolean;
+                    if (element.ValueKind == Text.Json.JsonValueKind.String) return SettingType.String;
+                    if (element.ValueKind == Text.Json.JsonValueKind.True || element.ValueKind == Text.Json.JsonValueKind.False) return SettingType.Boolean;
 
                     throw new ArgumentException($"Could not determine the setting type of {value}");
                 }
@@ -37,16 +37,16 @@ namespace System
                 var type = value.GetType();
 
                 if (type == typeof(bool))
-                    return SettingTypeEnum.Boolean;
+                    return SettingType.Boolean;
 
                 if (type == typeof(int) || type == typeof(long))
-                    return SettingTypeEnum.Int;
+                    return SettingType.Int;
 
                 if (type == typeof(double))
-                    return SettingTypeEnum.Double;
+                    return SettingType.Double;
 
                 if (type == typeof(string))
-                    return SettingTypeEnum.String;
+                    return SettingType.String;
 
                 throw new ArgumentException($"Could not determine the setting type of {value}");
             }

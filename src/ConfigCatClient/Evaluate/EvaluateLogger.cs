@@ -41,28 +41,28 @@ namespace ConfigCat.Client.Evaluate
             return result.ToString();
         }
 
-        public static string FormatComparator(ComparatorEnum comparator)
+        public static string FormatComparator(Comparator comparator)
         {
             return comparator switch
             {
-                ComparatorEnum.In => "IS ONE OF",
-                ComparatorEnum.SemVerIn => "IS ONE OF",
-                ComparatorEnum.NotIn => "IS NOT ONE OF",
-                ComparatorEnum.SemVerNotIn => "IS NOT ONE OF",
-                ComparatorEnum.Contains => "CONTAINS",
-                ComparatorEnum.NotContains => "DOES NOT CONTAIN",
-                ComparatorEnum.SemVerLessThan => "<",
-                ComparatorEnum.NumberLessThan => "<",
-                ComparatorEnum.SemVerLessThanEqual => "<=",
-                ComparatorEnum.NumberLessThanEqual => "<=",
-                ComparatorEnum.SemVerGreaterThan => ">",
-                ComparatorEnum.NumberGreaterThan => ">",
-                ComparatorEnum.SemVerGreaterThanEqual => ">=",
-                ComparatorEnum.NumberGreaterThanEqual => ">=",
-                ComparatorEnum.NumberEqual => "=",
-                ComparatorEnum.NumberNotEqual => "!=",
-                ComparatorEnum.SensitiveOneOf => "IS ONE OF (Sensitive)",
-                ComparatorEnum.SensitiveNotOneOf => "IS NOT ONE OF (Sensitive)",
+                Comparator.In => "IS ONE OF",
+                Comparator.SemVerIn => "IS ONE OF",
+                Comparator.NotIn => "IS NOT ONE OF",
+                Comparator.SemVerNotIn => "IS NOT ONE OF",
+                Comparator.Contains => "CONTAINS",
+                Comparator.NotContains => "DOES NOT CONTAIN",
+                Comparator.SemVerLessThan => "<",
+                Comparator.NumberLessThan => "<",
+                Comparator.SemVerLessThanEqual => "<=",
+                Comparator.NumberLessThanEqual => "<=",
+                Comparator.SemVerGreaterThan => ">",
+                Comparator.NumberGreaterThan => ">",
+                Comparator.SemVerGreaterThanEqual => ">=",
+                Comparator.NumberGreaterThanEqual => ">=",
+                Comparator.NumberEqual => "=",
+                Comparator.NumberNotEqual => "!=",
+                Comparator.SensitiveOneOf => "IS ONE OF (Sensitive)",
+                Comparator.SensitiveNotOneOf => "IS NOT ONE OF (Sensitive)",
                 _ => comparator.ToString()
             };
         }

@@ -47,34 +47,5 @@ namespace System
             return JsonSerializer.Serialize(objectToSerialize);
 #endif
         }
-
-#if !USE_NEWTONSOFT_JSON
-        private class ObjectDeserializer : JsonConverter<object>
-        {
-            public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-            {
-                var type = reader.TokenType;
-
-                if (type == JsonTokenType.Number)
-                {
-                    if (reader.TryGetInt32(out var intValue)) return intValue;
-                    if (reader.TryGetInt64(out var longValue)) return longValue;
-                    if (reader.TryGetDouble(out var doubleValue)) return doubleValue;
-                }
-
-                if (type == JsonTokenType.String) return reader.GetString();
-
-                if (type == JsonTokenType.True || type == JsonTokenType.False) return reader.GetBoolean();
-
-                using var document = JsonDocument.ParseValue(ref reader);
-                return document.RootElement.Clone();
-            }
-
-            public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
-            {
-                throw new NotImplementedException();
-            }
-        }
-#endif
     }
 }

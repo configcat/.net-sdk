@@ -171,7 +171,7 @@ namespace ConfigCat.Client.Tests
             manualPollClient.ForceRefresh();
             var keys = manualPollClient.GetAllKeys().ToArray();
 
-            Assert.AreEqual(16, keys.Count());
+            Assert.AreEqual(16, keys.Length);
             Assert.IsTrue(keys.Contains("stringDefaultCat"));
         }
 
@@ -196,7 +196,7 @@ namespace ConfigCat.Client.Tests
             manualPollClient.ForceRefresh();
             var dict = manualPollClient.GetAllValues();
 
-            Assert.AreEqual(16, dict.Count());
+            Assert.AreEqual(16, dict.Count);
             Assert.AreEqual("Cat", dict["stringDefaultCat"]);
         }
 
@@ -221,7 +221,7 @@ namespace ConfigCat.Client.Tests
             await manualPollClient.ForceRefreshAsync();
             var dict = await manualPollClient.GetAllValuesAsync();
 
-            Assert.AreEqual(16, dict.Count());
+            Assert.AreEqual(16, dict.Count);
             Assert.AreEqual("Cat", dict["stringDefaultCat"]);
         }
 

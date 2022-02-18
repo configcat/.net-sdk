@@ -306,19 +306,19 @@ namespace ConfigCat.Client.Tests
             File.Delete(SampleFileToCreate);
         }
 
-        private string GetJsonContent(string value)
+        private static string GetJsonContent(string value)
         {
             return $"{{ \"f\": {{ \"fakeKey\": {{ \"v\": \"{value}\", \"p\": [] ,\"r\": [] }} }} }}";
         }
 
-        private async Task CreateFileAndWriteContent(string path, string content)
+        private static async Task CreateFileAndWriteContent(string path, string content)
         {
             using var stream = File.Create(path);
             using var writer = new StreamWriter(stream);
             await writer.WriteAsync(GetJsonContent(content));
         }
 
-        private async Task WriteContent(string path, string content)
+        private static async Task WriteContent(string path, string content)
         {
             using var stream = File.OpenWrite(path);
             using var writer = new StreamWriter(stream);

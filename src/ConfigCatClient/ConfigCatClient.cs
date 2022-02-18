@@ -21,7 +21,6 @@ namespace ConfigCat.Client
         private readonly IRolloutEvaluator configEvaluator;
         private readonly IConfigService configService;
         private readonly IConfigDeserializer configDeserializer;
-        private readonly CacheParameters cacheParameters;
         private readonly IOverrideDataSource overrideDataSource;
         private readonly OverrideBehaviour? overrideBehaviour;
 
@@ -125,12 +124,12 @@ namespace ConfigCat.Client
             this.log = configuration.Logger;
             this.configDeserializer = new ConfigDeserializer();
             this.configEvaluator = new RolloutEvaluator(this.log);
-            this.cacheParameters = new CacheParameters
+
+            var cacheParameters = new CacheParameters
             {
                 ConfigCache = configuration.ConfigCache ?? new InMemoryConfigCache(),
                 CacheKey = GetCacheKey(configuration)
             };
-
 
             if (configuration.FlagOverrides != null)
             {
@@ -146,7 +145,7 @@ namespace ConfigCat.Client
                         configuration.HttpClientHandler,
                         this.configDeserializer,
                         configuration.IsCustomBaseUrl),
-                    this.cacheParameters)
+                        cacheParameters)
                 : new NullConfigService();
         }
 

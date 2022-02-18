@@ -93,7 +93,7 @@ namespace ConfigCat.Client
 
         internal bool IsCustomBaseUrl => BaseUrl != BaseUrlGlobal && BaseUrl != BaseUrlEu;
 
-        // TODO: Remove this helper when we delete the obsolate client constructors.
+        // Remove this helper when we delete the obsolate client constructors.
         internal void ToOptions(ConfigCatClientOptions options)
         {
             options.Logger = this.Logger;

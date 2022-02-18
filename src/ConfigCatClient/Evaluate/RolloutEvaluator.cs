@@ -194,7 +194,7 @@ namespace ConfigCat.Client.Evaluate
 
                     switch (rule.Comparator)
                     {
-                        case ComparatorEnum.In:
+                        case Comparator.In:
 
                             if (rule.ComparisonValue
                                 .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
@@ -210,7 +210,7 @@ namespace ConfigCat.Client.Evaluate
 
                             break;
 
-                        case ComparatorEnum.NotIn:
+                        case Comparator.NotIn:
 
                             if (!rule.ComparisonValue
                                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
@@ -225,7 +225,7 @@ namespace ConfigCat.Client.Evaluate
                             logger.Log(l + "no match");
 
                             break;
-                        case ComparatorEnum.Contains:
+                        case Comparator.Contains:
 
                             if (comparisonAttributeValue.Contains(rule.ComparisonValue))
                             {
@@ -237,7 +237,7 @@ namespace ConfigCat.Client.Evaluate
                             logger.Log(l + "no match");
 
                             break;
-                        case ComparatorEnum.NotContains:
+                        case Comparator.NotContains:
 
                             if (!comparisonAttributeValue.Contains(rule.ComparisonValue))
                             {
@@ -249,12 +249,12 @@ namespace ConfigCat.Client.Evaluate
                             logger.Log(l + "no match");
 
                             break;
-                        case ComparatorEnum.SemVerIn:
-                        case ComparatorEnum.SemVerNotIn:
-                        case ComparatorEnum.SemVerLessThan:
-                        case ComparatorEnum.SemVerLessThanEqual:
-                        case ComparatorEnum.SemVerGreaterThan:
-                        case ComparatorEnum.SemVerGreaterThanEqual:
+                        case Comparator.SemVerIn:
+                        case Comparator.SemVerNotIn:
+                        case Comparator.SemVerLessThan:
+                        case Comparator.SemVerLessThanEqual:
+                        case Comparator.SemVerGreaterThan:
+                        case Comparator.SemVerGreaterThanEqual:
 
                             if (EvaluateSemVer(comparisonAttributeValue, rule.ComparisonValue, rule.Comparator))
                             {
@@ -267,12 +267,12 @@ namespace ConfigCat.Client.Evaluate
 
                             break;
 
-                        case ComparatorEnum.NumberEqual:
-                        case ComparatorEnum.NumberNotEqual:
-                        case ComparatorEnum.NumberLessThan:
-                        case ComparatorEnum.NumberLessThanEqual:
-                        case ComparatorEnum.NumberGreaterThan:
-                        case ComparatorEnum.NumberGreaterThanEqual:
+                        case Comparator.NumberEqual:
+                        case Comparator.NumberNotEqual:
+                        case Comparator.NumberLessThan:
+                        case Comparator.NumberLessThanEqual:
+                        case Comparator.NumberGreaterThan:
+                        case Comparator.NumberGreaterThanEqual:
 
                             if (EvaluateNumber(comparisonAttributeValue, rule.ComparisonValue, rule.Comparator))
                             {
@@ -284,7 +284,7 @@ namespace ConfigCat.Client.Evaluate
                             logger.Log(l + "no match");
 
                             break;
-                        case ComparatorEnum.SensitiveOneOf:
+                        case Comparator.SensitiveOneOf:
                             if (rule.ComparisonValue
                                 .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                                 .Select(t => t.Trim())
@@ -298,7 +298,7 @@ namespace ConfigCat.Client.Evaluate
                             logger.Log(l + "no match");
 
                             break;
-                        case ComparatorEnum.SensitiveNotOneOf:
+                        case Comparator.SensitiveNotOneOf:
                             if (!rule.ComparisonValue
                                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                                .Select(t => t.Trim())
@@ -321,7 +321,7 @@ namespace ConfigCat.Client.Evaluate
             return false;
         }
 
-        private static bool EvaluateNumber(string s1, string s2, ComparatorEnum comparator)
+        private static bool EvaluateNumber(string s1, string s2, Comparator comparator)
         {
             if (!double.TryParse(s1.Replace(',', '.'), NumberStyles.Any, CultureInfo.InvariantCulture, out double d1)
                 || !double.TryParse(s2.Replace(',', '.'), NumberStyles.Any, CultureInfo.InvariantCulture, out double d2))
@@ -331,24 +331,24 @@ namespace ConfigCat.Client.Evaluate
 
             return comparator switch
             {
-                ComparatorEnum.NumberEqual => d1 == d2,
-                ComparatorEnum.NumberNotEqual => d1 != d2,
-                ComparatorEnum.NumberLessThan => d1 < d2,
-                ComparatorEnum.NumberLessThanEqual => d1 <= d2,
-                ComparatorEnum.NumberGreaterThan => d1 > d2,
-                ComparatorEnum.NumberGreaterThanEqual => d1 >= d2,
+                Comparator.NumberEqual => d1 == d2,
+                Comparator.NumberNotEqual => d1 != d2,
+                Comparator.NumberLessThan => d1 < d2,
+                Comparator.NumberLessThanEqual => d1 <= d2,
+                Comparator.NumberGreaterThan => d1 > d2,
+                Comparator.NumberGreaterThanEqual => d1 >= d2,
                 _ => false
             };
         }
 
-        private static bool EvaluateSemVer(string s1, string s2, ComparatorEnum comparator)
+        private static bool EvaluateSemVer(string s1, string s2, Comparator comparator)
         {
             if (!SemVersion.TryParse(s1?.Trim(), out SemVersion v1, true)) return false;
             s2 = string.IsNullOrWhiteSpace(s2) ? string.Empty : s2.Trim();
 
             switch (comparator)
             {
-                case ComparatorEnum.SemVerIn:
+                case Comparator.SemVerIn:
 
                     var rsvi = s2
                         .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
@@ -365,7 +365,7 @@ namespace ConfigCat.Client.Evaluate
 
                     return !rsvi.Contains(null) && rsvi.Any(v => v.PrecedenceMatches(v1));
 
-                case ComparatorEnum.SemVerNotIn:
+                case Comparator.SemVerNotIn:
 
                     var rsvni = s2
                         .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
@@ -382,7 +382,7 @@ namespace ConfigCat.Client.Evaluate
 
                     return !rsvni.Contains(null) && !rsvni.Any(v => v.PrecedenceMatches(v1));
 
-                case ComparatorEnum.SemVerLessThan:
+                case Comparator.SemVerLessThan:
 
                     if (SemVersion.TryParse(s2, out SemVersion v20, true))
                     {
@@ -390,7 +390,7 @@ namespace ConfigCat.Client.Evaluate
                     }
 
                     break;
-                case ComparatorEnum.SemVerLessThanEqual:
+                case Comparator.SemVerLessThanEqual:
 
                     if (SemVersion.TryParse(s2, out SemVersion v21, true))
                     {
@@ -398,7 +398,7 @@ namespace ConfigCat.Client.Evaluate
                     }
 
                     break;
-                case ComparatorEnum.SemVerGreaterThan:
+                case Comparator.SemVerGreaterThan:
 
                     if (SemVersion.TryParse(s2, out SemVersion v22, true))
                     {
@@ -406,7 +406,7 @@ namespace ConfigCat.Client.Evaluate
                     }
 
                     break;
-                case ComparatorEnum.SemVerGreaterThanEqual:
+                case Comparator.SemVerGreaterThanEqual:
 
                     if (SemVersion.TryParse(s2, out SemVersion v23, true))
                     {
@@ -419,13 +419,13 @@ namespace ConfigCat.Client.Evaluate
             return false;
         }
 
-        private static Type DetermineTypeFromSettingType(SettingTypeEnum settingType) =>
+        private static Type DetermineTypeFromSettingType(SettingType settingType) =>
             settingType switch
             {
-                SettingTypeEnum.Boolean => typeof(bool),
-                SettingTypeEnum.String => typeof(string),
-                SettingTypeEnum.Int => typeof(int),
-                SettingTypeEnum.Double => typeof(double),
+                SettingType.Boolean => typeof(bool),
+                SettingType.String => typeof(string),
+                SettingType.Int => typeof(int),
+                SettingType.Double => typeof(double),
                 _ => throw new ArgumentOutOfRangeException(nameof(settingType), settingType, null)
             };
     }

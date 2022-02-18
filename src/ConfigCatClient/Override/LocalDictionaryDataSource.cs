@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ConfigCat.Client.Override
 {
-    internal class LocalDictionaryDataSource : IOverrideDataSource
+    internal sealed class LocalDictionaryDataSource : IOverrideDataSource
     {
         private readonly IDictionary<string, Setting> settings;
 
@@ -19,6 +19,6 @@ namespace ConfigCat.Client.Override
 
         public Task<IDictionary<string, Setting>> GetOverridesAsync() => Task.FromResult(this.settings);
 
-        public void Dispose() { }
+        public void Dispose() { /* no need to dispose anything */ }
     }
 }

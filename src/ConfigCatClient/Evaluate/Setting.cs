@@ -58,7 +58,7 @@ namespace ConfigCat.Client.Evaluate
 #else
         [JsonPropertyName("t")]
 #endif
-        public SettingTypeEnum SettingType { get; set; }
+        public SettingType SettingType { get; set; }
 
 #if USE_NEWTONSOFT_JSON
         [JsonProperty(PropertyName = "p")]
@@ -135,7 +135,7 @@ namespace ConfigCat.Client.Evaluate
 #else
         [JsonPropertyName("t")]
 #endif
-        public ComparatorEnum Comparator { get; set; }
+        public Comparator Comparator { get; set; }
 
 #if USE_NEWTONSOFT_JSON
         [JsonProperty(PropertyName = "c")]
@@ -160,7 +160,7 @@ namespace ConfigCat.Client.Evaluate
         public string VariationId { get; set; }
     }
 
-    internal enum SettingTypeEnum : byte
+    internal enum SettingType : byte
     {
         Boolean = 0,
         String = 1,
@@ -168,7 +168,7 @@ namespace ConfigCat.Client.Evaluate
         Double = 3
     }
 
-    internal enum ComparatorEnum : byte
+    internal enum Comparator : byte
     {
         In = 0,
         NotIn = 1,

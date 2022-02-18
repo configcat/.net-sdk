@@ -8,7 +8,7 @@ namespace ConfigCat.Client.ConfigService
 
         public Task<ProjectConfig> GetConfigAsync() => Task.FromResult(ProjectConfig.Empty);
 
-        public void RefreshConfig() { }
+        public void RefreshConfig() { /* do nothing */ }
 
         public Task RefreshConfigAsync() => Task.FromResult(0);
     }

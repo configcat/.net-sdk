@@ -55,7 +55,7 @@ namespace ConfigCat.Client
             return FetchInternalAsync(lastConfig, true).AsTask();
         }
 
-        private async ValueTask<ProjectConfig> FetchInternalAsync(ProjectConfig lastConfig, bool async)
+        private async ValueTask<ProjectConfig> FetchInternalAsync(ProjectConfig lastConfig, bool isAsync)
         {
             var newConfig = lastConfig;
 
@@ -63,7 +63,7 @@ namespace ConfigCat.Client
             {
 #if NET5_0_OR_GREATER
                 Tuple<HttpResponseMessage, string> fetchResult;
-                if (async)
+                if (isAsync)
                 {
                     fetchResult = await FetchRequest(lastConfig, this.requestUri, true).ConfigureAwait(false);
                 }
@@ -113,7 +113,7 @@ namespace ConfigCat.Client
         }
 
         private async ValueTask<Tuple<HttpResponseMessage, string>> FetchRequest(ProjectConfig lastConfig,
-            Uri requestUri, bool async, sbyte maxExecutionCount = 3)
+            Uri requestUri, bool isAsync, sbyte maxExecutionCount = 3)
         {
             do
             {
@@ -125,7 +125,7 @@ namespace ConfigCat.Client
                 }
 
 #if NET5_0_OR_GREATER
-                var response = async
+                var response = isAsync
                     ? await this.httpClient.SendAsync(request).ConfigureAwait(false)
                     : this.httpClient.Send(request);
 #else
@@ -135,7 +135,7 @@ namespace ConfigCat.Client
                 if (response.IsSuccessStatusCode)
                 {
 #if NET5_0_OR_GREATER
-                    var responseBody = async
+                    var responseBody = isAsync
                         ? await response.Content.ReadAsStringAsync().ConfigureAwait(false)
                         : response.Content.ReadAsString();
 #else

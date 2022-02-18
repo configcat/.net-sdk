@@ -1,6 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -19,7 +20,7 @@ namespace ConfigCat.Client.Tests
         [DataTestMethod]
         public void ManualPollGetValue(bool useNewCreateApi)
         {
-            IConfigCatClient manualPollClient = useNewCreateApi
+            using IConfigCatClient manualPollClient = useNewCreateApi
                 ? new ConfigCatClient(options =>
                 {
                     options.SdkKey = SDKKEY;
@@ -42,7 +43,7 @@ namespace ConfigCat.Client.Tests
         [DataTestMethod]
         public void AutoPollGetValue(bool useNewCreateApi)
         {
-            IConfigCatClient client = useNewCreateApi
+            using IConfigCatClient client = useNewCreateApi
                 ? new ConfigCatClient(options =>
                 {
                     options.SdkKey = SDKKEY;
@@ -65,7 +66,7 @@ namespace ConfigCat.Client.Tests
         [DataTestMethod]
         public void LazyLoadGetValue(bool useNewCreateApi)
         {
-            IConfigCatClient client = useNewCreateApi
+            using IConfigCatClient client = useNewCreateApi
                 ? new ConfigCatClient(options =>
                 {
                     options.SdkKey = SDKKEY;
@@ -87,7 +88,7 @@ namespace ConfigCat.Client.Tests
         [DataTestMethod]
         public async Task ManualPollGetValueAsync(bool useNewCreateApi)
         {
-            IConfigCatClient client = useNewCreateApi
+            using IConfigCatClient client = useNewCreateApi
                 ? new ConfigCatClient(options =>
                 {
                     options.SdkKey = SDKKEY;
@@ -110,7 +111,7 @@ namespace ConfigCat.Client.Tests
         [DataTestMethod]
         public async Task AutoPollGetValueAsync(bool useNewCreateApi)
         {
-            IConfigCatClient client = useNewCreateApi
+            using IConfigCatClient client = useNewCreateApi
                 ? new ConfigCatClient(options =>
                 {
                     options.SdkKey = SDKKEY;
@@ -133,7 +134,7 @@ namespace ConfigCat.Client.Tests
         [DataTestMethod]
         public async Task LazyLoadGetValueAsync(bool useNewCreateApi)
         {
-            IConfigCatClient client = useNewCreateApi
+            using IConfigCatClient client = useNewCreateApi
                 ? new ConfigCatClient(options =>
                 {
                     options.SdkKey = SDKKEY;
@@ -155,7 +156,7 @@ namespace ConfigCat.Client.Tests
         [DataTestMethod]
         public void GetAllKeys(bool useNewCreateApi)
         {
-            IConfigCatClient manualPollClient = useNewCreateApi
+            using IConfigCatClient manualPollClient = useNewCreateApi
                 ? new ConfigCatClient(options =>
                 {
                     options.SdkKey = SDKKEY;
@@ -180,7 +181,7 @@ namespace ConfigCat.Client.Tests
         [DataTestMethod]
         public void GetAllValues(bool useNewCreateApi)
         {
-            IConfigCatClient manualPollClient = useNewCreateApi
+            using IConfigCatClient manualPollClient = useNewCreateApi
                 ? new ConfigCatClient(options =>
                 {
                     options.SdkKey = SDKKEY;
@@ -205,7 +206,7 @@ namespace ConfigCat.Client.Tests
         [DataTestMethod]
         public async Task GetAllValuesAsync(bool useNewCreateApi)
         {
-            IConfigCatClient manualPollClient = useNewCreateApi
+            using IConfigCatClient manualPollClient = useNewCreateApi
                 ? new ConfigCatClient(options =>
                 {
                     options.SdkKey = SDKKEY;
@@ -358,6 +359,138 @@ namespace ConfigCat.Client.Tests
             // Assert            
             Assert.AreEqual(16, expectedValue.Length);
             CollectionAssert.AreEquivalent(expectedValue, actual.ToArray());
+        }
+
+        [TestMethod]
+        public async Task Http_Timeout_Test_Async()
+        {
+            var response = $"{{ \"f\": {{ \"fakeKey\": {{ \"v\": \"fakeValue\", \"p\": [] ,\"r\": [] }} }} }}";
+            using IConfigCatClient manualPollClient = new ConfigCatClient(options =>
+            {
+                options.SdkKey = "fake";
+                options.PollingMode = PollingModes.ManualPoll;
+                options.Logger = consoleLogger;
+                options.HttpTimeout = TimeSpan.FromSeconds(0.5);
+                options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, response, TimeSpan.FromSeconds(5));
+            });
+
+            await manualPollClient.ForceRefreshAsync();
+
+            Assert.AreEqual(string.Empty, await manualPollClient.GetValueAsync("fakeKey", string.Empty));
+        }
+
+        [TestMethod]
+        public void Http_Timeout_Test_Sync()
+        {
+            var response = $"{{ \"f\": {{ \"fakeKey\": {{ \"v\": \"fakeValue\", \"p\": [] ,\"r\": [] }} }} }}";
+            using IConfigCatClient manualPollClient = new ConfigCatClient(options =>
+            {
+                options.SdkKey = "fake";
+                options.PollingMode = PollingModes.ManualPoll;
+                options.Logger = consoleLogger;
+                options.HttpTimeout = TimeSpan.FromSeconds(0.5);
+                options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, response, TimeSpan.FromSeconds(5));
+            });
+
+            manualPollClient.ForceRefresh();
+            Assert.AreEqual(string.Empty, manualPollClient.GetValue("stringDefaultCat", string.Empty));
+        }
+
+        [TestMethod]
+        public async Task Ensure_MaxInitWait_Overrides_Timeout()
+        {
+            var now = DateTimeOffset.UtcNow;
+            var response = $"{{ \"f\": {{ \"fakeKey\": {{ \"v\": \"fakeValue\", \"p\": [] ,\"r\": [] }} }} }}";
+            using IConfigCatClient manualPollClient = new ConfigCatClient(options =>
+            {
+                options.SdkKey = "fake";
+                options.PollingMode = PollingModes.AutoPoll(maxInitWaitTime: TimeSpan.FromSeconds(1));
+                options.Logger = consoleLogger;
+                options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, response, TimeSpan.FromSeconds(5));
+            });
+
+            Assert.AreEqual(string.Empty, await manualPollClient.GetValueAsync("fakeKey", string.Empty));
+            Assert.IsTrue(DateTimeOffset.UtcNow.Subtract(now) < TimeSpan.FromSeconds(1.5));
+        }
+
+        [TestMethod]
+        public void Ensure_MaxInitWait_Overrides_Timeout_Sync()
+        {
+            var now = DateTimeOffset.UtcNow;
+            var response = $"{{ \"f\": {{ \"fakeKey\": {{ \"v\": \"fakeValue\", \"p\": [] ,\"r\": [] }} }} }}";
+            using IConfigCatClient manualPollClient = new ConfigCatClient(options =>
+            {
+                options.SdkKey = "fake";
+                options.PollingMode = PollingModes.AutoPoll(maxInitWaitTime: TimeSpan.FromSeconds(1));
+                options.Logger = consoleLogger;
+                options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, response, TimeSpan.FromSeconds(5));
+            });
+
+            Assert.AreEqual(string.Empty, manualPollClient.GetValue("fakeKey", string.Empty));
+            Assert.IsTrue(DateTimeOffset.UtcNow.Subtract(now) < TimeSpan.FromSeconds(1.5));
+        }
+
+        [TestMethod]
+        public void Ensure_Client_Dispose_Kill_Hanging_Http_Call()
+        {
+            var defer = new ManualResetEvent(false);
+            var now = DateTimeOffset.UtcNow;
+            var response = $"{{ \"f\": {{ \"fakeKey\": {{ \"v\": \"fakeValue\", \"p\": [] ,\"r\": [] }} }} }}";
+            IConfigCatClient manualPollClient = new ConfigCatClient(options =>
+            {
+                options.SdkKey = "fake";
+                options.Logger = consoleLogger;
+                options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, response, TimeSpan.FromSeconds(5));
+            });
+
+            manualPollClient.ForceRefreshAsync().ContinueWith(_ => defer.Set());
+            manualPollClient.Dispose();
+            defer.WaitOne();
+
+            Assert.IsTrue(DateTimeOffset.UtcNow.Subtract(now) < TimeSpan.FromSeconds(1));
+        }
+
+        [TestMethod]
+        public void Ensure_Client_Dispose_Kill_Hanging_Http_Call_Sync()
+        {
+            var defer = new ManualResetEvent(false);
+            var now = DateTimeOffset.UtcNow;
+            var response = $"{{ \"f\": {{ \"fakeKey\": {{ \"v\": \"fakeValue\", \"p\": [] ,\"r\": [] }} }} }}";
+            IConfigCatClient manualPollClient = new ConfigCatClient(options =>
+            {
+                options.SdkKey = "fake";
+                options.Logger = consoleLogger;
+                options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, response, TimeSpan.FromSeconds(5));
+            });
+
+            Task.Run(() => 
+            {
+                manualPollClient.ForceRefresh();
+                defer.Set();
+            });
+            manualPollClient.Dispose();
+            defer.WaitOne();
+
+            Assert.IsTrue(DateTimeOffset.UtcNow.Subtract(now) < TimeSpan.FromSeconds(1));
+        }
+
+        [TestMethod]
+        public void Ensure_Multiple_Requests_Doesnt_Interfere_In_ValueTasks()
+        {
+            var response = $"{{ \"f\": {{ \"fakeKey\": {{ \"v\": \"fakeValue\", \"p\": [] ,\"r\": [] }} }} }}";
+            IConfigCatClient manualPollClient = new ConfigCatClient(options =>
+            {
+                options.SdkKey = "fake";
+                options.Logger = consoleLogger;
+                options.PollingMode = PollingModes.ManualPoll;
+                options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, response);
+            });
+
+            // an exception should be thrown when the value task's result is fetched without completion.
+            Parallel.For(0, 10, _ =>
+            {
+                manualPollClient.ForceRefresh();
+            });
         }
     }
 }

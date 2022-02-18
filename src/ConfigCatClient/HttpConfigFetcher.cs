@@ -2,6 +2,7 @@
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Evaluate;
 using ConfigCat.Client.Utils;
@@ -17,13 +18,14 @@ namespace ConfigCat.Client
         private readonly HttpClientHandler httpClientHandler;
         private readonly IConfigDeserializer deserializer;
         private readonly bool isCustomUri;
-
+        private readonly TimeSpan timeout;
+        private readonly CancellationTokenSource cancellationTokenSource = new();
         private HttpClient httpClient;
 
         private Uri requestUri;
 
         public HttpConfigFetcher(Uri requestUri, string productVersion, ILogger logger,
-            HttpClientHandler httpClientHandler, IConfigDeserializer deserializer, bool isCustomUri)
+            HttpClientHandler httpClientHandler, IConfigDeserializer deserializer, bool isCustomUri, TimeSpan timeout)
         {
             this.requestUri = requestUri;
             this.productVersion = productVersion;
@@ -31,7 +33,7 @@ namespace ConfigCat.Client
             this.httpClientHandler = httpClientHandler;
             this.deserializer = deserializer;
             this.isCustomUri = isCustomUri;
-
+            this.timeout = timeout;
             ReInitializeHttpClient();
         }
 
@@ -101,10 +103,18 @@ namespace ConfigCat.Client
                             break;
                     }
             }
+            catch (OperationCanceledException) when (this.cancellationTokenSource.IsCancellationRequested)
+            {
+                /* do nothing on dispose cancel */
+            }
+            catch (OperationCanceledException) when (!this.cancellationTokenSource.IsCancellationRequested)
+            {
+                this.log.Error($"Http timeout {this.timeout} reached.");
+                this.ReInitializeHttpClient();
+            }
             catch (Exception ex)
             {
-                this.log.Error($"Error occured in 'Fetch' method.\n{ex}");
-
+                this.log.Error($"Error occured during fetching.\n{ex}");
                 this.ReInitializeHttpClient();
             }
 
@@ -126,18 +136,18 @@ namespace ConfigCat.Client
 
 #if NET5_0_OR_GREATER
                 var response = isAsync
-                    ? await this.httpClient.SendAsync(request).ConfigureAwait(false)
-                    : this.httpClient.Send(request);
+                    ? await this.httpClient.SendAsync(request, this.cancellationTokenSource.Token).ConfigureAwait(false)
+                    : this.httpClient.Send(request, this.cancellationTokenSource.Token);
 #else
-                var response = await this.httpClient.SendAsync(request).ConfigureAwait(false);
+                var response = await this.httpClient.SendAsync(request, this.cancellationTokenSource.Token).ConfigureAwait(false);
 #endif
 
                 if (response.IsSuccessStatusCode)
                 {
 #if NET5_0_OR_GREATER
                     var responseBody = isAsync
-                        ? await response.Content.ReadAsStringAsync().ConfigureAwait(false)
-                        : response.Content.ReadAsString();
+                        ? await response.Content.ReadAsStringAsync(this.cancellationTokenSource.Token).ConfigureAwait(false)
+                        : response.Content.ReadAsString(this.cancellationTokenSource.Token);
 #else
                     var responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 #endif
@@ -231,13 +241,14 @@ namespace ConfigCat.Client
                 this.httpClient = new HttpClient(this.httpClientHandler, false);
             }
 
-            this.httpClient.Timeout = TimeSpan.FromSeconds(30);
+            this.httpClient.Timeout = this.timeout;
             this.httpClient.DefaultRequestHeaders.Add("X-ConfigCat-UserAgent",
                 new ProductInfoHeaderValue("ConfigCat-Dotnet", productVersion).ToString());
         }
 
         public void Dispose()
         {
+            this.cancellationTokenSource.Cancel();
             httpClient?.Dispose();
         }
     }

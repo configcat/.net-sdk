@@ -63,7 +63,8 @@ namespace ConfigCat.Client.Tests
                 Mock.Of<ILogger>(),
                 handlerMock.Object,
                 Mock.Of<IConfigDeserializer>(),
-                configuration.IsCustomBaseUrl);
+                configuration.IsCustomBaseUrl,
+                TimeSpan.FromSeconds(30));
 
             // Act
 
@@ -379,7 +380,8 @@ namespace ConfigCat.Client.Tests
                 Mock.Of<ILogger>(),
                 handlerMock.Object,
                 new ConfigDeserializer(),
-                fetchConfig.IsCustomBaseUrl);
+                fetchConfig.IsCustomBaseUrl,
+                TimeSpan.FromSeconds(30));
 
             // Act
 

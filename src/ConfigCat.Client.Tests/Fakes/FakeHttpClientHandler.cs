@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
@@ -10,6 +11,7 @@ namespace ConfigCat.Client.Tests
     {
         private readonly HttpStatusCode httpStatusCode;
         private readonly string responseContent;
+        private readonly TimeSpan? delay;
 
         public byte SendInvokeCount { get; private set; } = 0;
 
@@ -17,14 +19,18 @@ namespace ConfigCat.Client.Tests
 
         public SortedList<byte, HttpRequestMessage> Requests = new SortedList<byte, HttpRequestMessage>();
 
-        public FakeHttpClientHandler(HttpStatusCode httpStatusCode = HttpStatusCode.NotModified, string responseContent = null)
+        public FakeHttpClientHandler(HttpStatusCode httpStatusCode = HttpStatusCode.NotModified, string responseContent = null, TimeSpan? delay = null)
         {
             this.httpStatusCode = httpStatusCode;
             this.responseContent = responseContent;
+            this.delay = delay;
         }
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            if (delay != null)
+                await Task.Delay(delay.Value, cancellationToken);
+
             SendInvokeCount++;
 
             Requests.Add(SendInvokeCount, request);
@@ -35,12 +41,15 @@ namespace ConfigCat.Client.Tests
                 Content = responseContent != null ? new StringContent(responseContent) : null,
             };
 
-            return Task.FromResult(response);
+            return response;
         }
 
 #if NET5_0_OR_GREATER
         protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            if (delay != null)
+                Task.Delay(delay.Value, cancellationToken).Wait(cancellationToken);
+
             SendInvokeCount++;
 
             Requests.Add(SendInvokeCount, request);

@@ -11,7 +11,7 @@ namespace ConfigCat.Client
         /// <summary>
         ///  A read-only instance of the ProjectConfig structure whose value is empty.
         /// </summary>
-        public static readonly ProjectConfig Empty = new ProjectConfig(null, DateTime.MinValue, null);
+        public static readonly ProjectConfig Empty = new(null, DateTime.MinValue, null);
 
         /// <summary>
         /// ProjectConfig in json string format
@@ -31,14 +31,12 @@ namespace ConfigCat.Client
         internal ProjectConfig(string jsonString, DateTime timeStamp, string httpETag)
         {
             this.JsonString = jsonString;
-
             this.TimeStamp = timeStamp;
-
             this.HttpETag = httpETag;
         }
 
         /// <inheritdoc />
-        public override bool Equals(object obj) => obj != null && this.Equals((ProjectConfig)obj);
+        public override bool Equals(object obj) => obj != null && obj is ProjectConfig config && this.Equals(config);
 
         /// <summary>
         /// Determines whether this instance and another specified ProjectConfig struct have the same value.

@@ -11,12 +11,12 @@ namespace ConfigCat.Client
         public LogLevel LogLevel { get; set; }
 
         /// <summary>
-        /// Create a <see cref="ConfigCat.Client.ConsoleLogger"/> instance with Warning loglevel
+        /// Create a <see cref="ConsoleLogger"/> instance with Warning loglevel
         /// </summary>
         public ConsoleLogger() : this(LogLevel.Warning) { }
 
         /// <summary>
-        /// Create a <see cref="ConfigCat.Client.ConsoleLogger"/> instance
+        /// Create a <see cref="ConsoleLogger"/> instance
         /// </summary>
         /// <param name="logLevel">Log level</param>
         public ConsoleLogger(LogLevel logLevel)
@@ -50,7 +50,7 @@ namespace ConfigCat.Client
 
         private string FormatMessage(LogLevel logLevel, string message)
         {
-            return $"ConfigCat - {logLevel.ToString()} - {message}";
+            return $"ConfigCat - {logLevel} - {message}";
         }
     }
 }

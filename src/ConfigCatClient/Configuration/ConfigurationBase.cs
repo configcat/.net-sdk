@@ -52,6 +52,11 @@ namespace ConfigCat.Client
         public DataGovernance DataGovernance { get; set; } = DataGovernance.Global;
 
         /// <summary>
+        /// Timeout for underlying http calls. Defaults to 30 seconds.
+        /// </summary>
+        public TimeSpan HttpTimeout { get; set; } = TimeSpan.FromSeconds(30);
+
+        /// <summary>
         /// Feature flag and setting overrides.
         /// </summary>
         public FlagOverrides FlagOverrides { get; set; }

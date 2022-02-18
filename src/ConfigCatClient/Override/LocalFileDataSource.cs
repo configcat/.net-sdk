@@ -28,26 +28,28 @@ namespace ConfigCat.Client.Override
                 }
                 else
                 {
-                    this.fileSystemWatcher = new FileSystemWatcher(directory);
-                    this.fileSystemWatcher.Filter = Path.GetFileName(filePath);
-                    this.fileSystemWatcher.NotifyFilter = NotifyFilters.LastWrite;
-                    this.fileSystemWatcher.EnableRaisingEvents = true;
+                    this.fileSystemWatcher = new FileSystemWatcher(directory)
+                    {
+                        Filter = Path.GetFileName(filePath),
+                        NotifyFilter = NotifyFilters.LastWrite,
+                        EnableRaisingEvents = true
+                    };
                     this.fileSystemWatcher.Changed += FileSystemWatcher_Changed;
                     logger.Information($"Watching {filePath} for changes.");
                 }
             }
 
             this.logger = logger;
-            this.ReadFileAsync(filePath);
+            _ = this.ReadFileAsync(filePath);
         }
 
-        private void FileSystemWatcher_Changed(object sender, FileSystemEventArgs e)
+        private async void FileSystemWatcher_Changed(object sender, FileSystemEventArgs e)
         {
             if (e.ChangeType != WatcherChangeTypes.Changed)
                 return;
 
             this.logger.Information($"Reload file {e.FullPath}.");
-            this.ReadFileAsync(e.FullPath);
+            await this.ReadFileAsync(e.FullPath);
         }
 
         public IDictionary<string, Setting> GetOverrides()
@@ -60,38 +62,35 @@ namespace ConfigCat.Client.Override
         public async Task<IDictionary<string, Setting>> GetOverridesAsync()
         {
             if (this.overrideValues != null) return this.overrideValues;
-            await this.asyncInit.Task;
+            await this.asyncInit.Task.ConfigureAwait(false);
             return this.overrideValues ?? new Dictionary<string, Setting>();
         }
 
-        private void ReadFileAsync(string filePath)
+        private async Task ReadFileAsync(string filePath)
         {
-            Task.Run(async () =>
+            try
             {
-                try
+                using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+                using var reader = new StreamReader(stream);
+                var content = await reader.ReadToEndAsync();
+                var simplified = content.DeserializeOrDefault<SimplifiedConfig>();
+                if (simplified?.Entries != null)
                 {
-                    using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
-                    using var reader = new StreamReader(stream);
-                    var content = await reader.ReadToEndAsync();
-                    var simplified = content.DeserializeOrDefault<SimplifiedConfig>();
-                    if (simplified?.Entries != null)
-                    {
-                        this.overrideValues = simplified.Entries.ToDictionary(kv => kv.Key, kv => kv.Value.ToSetting());
-                        return;
-                    }
+                    this.overrideValues = simplified.Entries.ToDictionary(kv => kv.Key, kv => kv.Value.ToSetting());
+                    return;
+                }
 
-                    var deserialized = content.Deserialize<SettingsWithPreferences>();
-                    this.overrideValues = deserialized.Settings;
-                }
-                catch (Exception ex)
-                {
-                    this.logger.Error($"Failed to read file {filePath}. {ex}");
-                }
-                finally
-                {
-                    this.SetInitialized();
-                }
-            });
+                var deserialized = content.Deserialize<SettingsWithPreferences>();
+                this.overrideValues = deserialized.Settings;
+            }
+            catch (Exception ex)
+            {
+                this.logger.Error($"Failed to read file {filePath}. {ex}");
+            }
+            finally
+            {
+                this.SetInitialized();
+            }
         }
 
         private void SetInitialized()

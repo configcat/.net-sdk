@@ -44,6 +44,69 @@ namespace ConfigCat.Client.Tests
             Assert.AreEqual("test", await client.GetValueAsync("stringSetting", string.Empty));
         }
 
+        public void LocalFile_Parallel()
+        {
+            using var client = new ConfigCatClient(options =>
+            {
+                options.SdkKey = "localhost";
+                options.FlagOverrides = FlagOverrides.LocalFile(ComplexJsonPath, false, OverrideBehaviour.LocalOnly);
+            });
+
+            Assert.IsTrue(client.GetValue("enabledFeature", false));
+            Assert.IsFalse(client.GetValue("disabledFeature", false));
+            Assert.AreEqual(5, client.GetValue("intSetting", 0));
+            Assert.AreEqual(3.14, client.GetValue("doubleSetting", 0.0));
+            Assert.AreEqual("test", client.GetValue("stringSetting", string.Empty));
+        }
+
+        [TestMethod]
+        public void LocalFileAsync_Parallel()
+        {
+            var keys = new[]
+            {
+                "enabledFeature",
+                "disabledFeature",
+                "intSetting",
+                "doubleSetting",
+                "stringSetting",
+            };
+
+            using var client = new ConfigCatClient(options =>
+            {
+                options.SdkKey = "localhost";
+                options.FlagOverrides = FlagOverrides.LocalFile(ComplexJsonPath, false, OverrideBehaviour.LocalOnly);
+            });
+
+            Parallel.ForEach(keys, async item =>
+            {
+                Assert.IsNotNull(await client.GetValueAsync<object>(item, null));
+            });
+        }
+
+        [TestMethod]
+        public void LocalFileAsync_Parallel_Sync()
+        {
+            var keys = new []
+            {
+                "enabledFeature",
+                "disabledFeature",
+                "intSetting",
+                "doubleSetting",
+                "stringSetting",
+            };
+
+            using var client = new ConfigCatClient(options =>
+            {
+                options.SdkKey = "localhost";
+                options.FlagOverrides = FlagOverrides.LocalFile(ComplexJsonPath, false, OverrideBehaviour.LocalOnly);
+            });
+
+            Parallel.ForEach(keys, item =>
+            {
+                Assert.IsNotNull(client.GetValue<object>(item, null));
+            });
+        }
+
         [TestMethod]
         public void LocalFile_Default_WhenErrorOccures()
         {

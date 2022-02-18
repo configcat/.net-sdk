@@ -140,11 +140,12 @@ namespace ConfigCat.Client
             this.configService = this.overrideBehaviour == null || this.overrideBehaviour != OverrideBehaviour.LocalOnly
                 ? DetermineConfigService(configuration,
                     new HttpConfigFetcher(configuration.CreateUri(),
-                        $"{configuration.PollingMode.Identifier}-{Version}",
-                        configuration.Logger,
-                        configuration.HttpClientHandler,
-                        this.configDeserializer,
-                        configuration.IsCustomBaseUrl),
+                            $"{configuration.PollingMode.Identifier}-{Version}",
+                            configuration.Logger,
+                            configuration.HttpClientHandler,
+                            this.configDeserializer,
+                            configuration.IsCustomBaseUrl,
+                            configuration.HttpTimeout),
                         cacheParameters)
                 : new NullConfigService();
         }

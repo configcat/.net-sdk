@@ -1,6 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
-using Newtonsoft.Json;
 using System;
 using System.Net;
 using System.Threading.Tasks;
@@ -17,7 +16,8 @@ namespace ConfigCat.Client.Tests
 
             var myHandler = new FakeHttpClientHandler();
 
-            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger(), myHandler, Mock.Of<IConfigDeserializer>(), false);
+            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger(), myHandler, Mock.Of<IConfigDeserializer>(), false,
+                TimeSpan.FromSeconds(30));
 
             // Act
 
@@ -35,7 +35,8 @@ namespace ConfigCat.Client.Tests
 
             var myHandler = new FakeHttpClientHandler();
 
-            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger(), myHandler, Mock.Of<IConfigDeserializer>(), false);
+            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger(), myHandler, Mock.Of<IConfigDeserializer>(), false,
+                TimeSpan.FromSeconds(30));
 
             // Act
 
@@ -53,7 +54,8 @@ namespace ConfigCat.Client.Tests
 
             var myHandler = new FakeHttpClientHandler(HttpStatusCode.Forbidden);
 
-            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger(), myHandler, Mock.Of<IConfigDeserializer>(), false);
+            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger(), myHandler, Mock.Of<IConfigDeserializer>(), false,
+                TimeSpan.FromSeconds(30));
 
             var lastConfig = new ProjectConfig("{ }", DateTime.UtcNow, "\"ETAG\"");
 
@@ -73,7 +75,8 @@ namespace ConfigCat.Client.Tests
 
             var myHandler = new ExceptionThrowerHttpClientHandler(new WebException());
 
-            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger(), myHandler, Mock.Of<IConfigDeserializer>(), false);
+            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger(), myHandler, Mock.Of<IConfigDeserializer>(), false,
+                TimeSpan.FromSeconds(30));
 
             var lastConfig = new ProjectConfig("{ }", DateTime.UtcNow, "\"ETAG\"");
 

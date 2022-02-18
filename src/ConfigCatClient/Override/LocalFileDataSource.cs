@@ -52,43 +52,46 @@ namespace ConfigCat.Client.Override
 
         public IDictionary<string, Setting> GetOverrides()
         {
-            if (this.overrideValues != null) return this.overrideValues ?? new Dictionary<string, Setting>();
+            if (this.overrideValues != null) return this.overrideValues;
             this.syncInit.WaitOne();
             return this.overrideValues ?? new Dictionary<string, Setting>();
         }
 
         public async Task<IDictionary<string, Setting>> GetOverridesAsync()
         {
-            if (this.overrideValues != null) return this.overrideValues ?? new Dictionary<string, Setting>();
+            if (this.overrideValues != null) return this.overrideValues;
             await this.asyncInit.Task;
             return this.overrideValues ?? new Dictionary<string, Setting>();
         }
 
-        private async void ReadFileAsync(string filePath)
+        private void ReadFileAsync(string filePath)
         {
-            try
+            Task.Run(async () =>
             {
-                using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
-                using var reader = new StreamReader(stream);
-                var content = await reader.ReadToEndAsync();
-                var simplified = content.DeserializeOrDefault<SimplifiedConfig>();
-                if (simplified?.Entries != null)
+                try
                 {
-                    this.overrideValues = simplified.Entries.ToDictionary(kv => kv.Key, kv => kv.Value.ToSetting());
-                    return;
-                }
+                    using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+                    using var reader = new StreamReader(stream);
+                    var content = await reader.ReadToEndAsync();
+                    var simplified = content.DeserializeOrDefault<SimplifiedConfig>();
+                    if (simplified?.Entries != null)
+                    {
+                        this.overrideValues = simplified.Entries.ToDictionary(kv => kv.Key, kv => kv.Value.ToSetting());
+                        return;
+                    }
 
-                var deserialized = content.Deserialize<SettingsWithPreferences>();
-                this.overrideValues = deserialized.Settings;
-            }
-            catch (Exception ex)
-            {
-                this.logger.Error($"Failed to read file {filePath}. {ex}");
-            }
-            finally
-            {
-                this.SetInitialized();
-            }
+                    var deserialized = content.Deserialize<SettingsWithPreferences>();
+                    this.overrideValues = deserialized.Settings;
+                }
+                catch (Exception ex)
+                {
+                    this.logger.Error($"Failed to read file {filePath}. {ex}");
+                }
+                finally
+                {
+                    this.SetInitialized();
+                }
+            });
         }
 
         private void SetInitialized()

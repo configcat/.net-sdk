@@ -393,7 +393,7 @@ namespace ConfigCat.Client.Tests
             });
 
             manualPollClient.ForceRefresh();
-            Assert.AreEqual(string.Empty, manualPollClient.GetValue("stringDefaultCat", string.Empty));
+            Assert.AreEqual(string.Empty, manualPollClient.GetValue("fakeKey", string.Empty));
         }
 
         [TestMethod]

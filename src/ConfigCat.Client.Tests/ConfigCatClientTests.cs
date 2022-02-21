@@ -61,7 +61,7 @@ namespace ConfigCat.Client.Tests
 
         [ExpectedException(typeof(ArgumentException))]
         [TestMethod]
-        public void CreateAnInstance_WhenAutoPollConfigurationSdkKeyIsNull_ShouldThrowArgumentNullException_NewApi()
+        public void CreateAnInstance_WhenAutoPollConfigurationSdkKeyIsNull_ShouldThrowArgumentException_NewApi()
         {
             new ConfigCatClient(options => { options.SdkKey = null; });
         }
@@ -70,7 +70,7 @@ namespace ConfigCat.Client.Tests
 
         [ExpectedException(typeof(ArgumentException))]
         [TestMethod]
-        public void CreateAnInstance_WhenConfigurationSdkKeyIsEmpty_ShouldThrowArgumentNullException()
+        public void CreateAnInstance_WhenConfigurationSdkKeyIsEmpty_ShouldThrowArgumentException()
         {
             var clientConfiguration = new AutoPollConfiguration
             {
@@ -82,7 +82,7 @@ namespace ConfigCat.Client.Tests
 
         [ExpectedException(typeof(ArgumentException))]
         [TestMethod]
-        public void CreateAnInstance_WhenAutoPollConfigurationSdkKeyIsEmpty_ShouldThrowArgumentNullException_NewApi()
+        public void CreateAnInstance_WhenAutoPollConfigurationSdkKeyIsEmpty_ShouldThrowArgumentException_NewApi()
         {
             new ConfigCatClient(options => { options.SdkKey = string.Empty; });
         }

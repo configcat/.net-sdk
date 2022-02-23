@@ -147,7 +147,7 @@ namespace ConfigCat.Client
                             configuration.IsCustomBaseUrl,
                             configuration.HttpTimeout),
                         cacheParameters)
-                : new NullConfigService();
+                : new EmptyConfigService();
         }
 
         /// <summary>

@@ -2,7 +2,7 @@
 
 namespace ConfigCat.Client.ConfigService
 {
-    internal sealed class NullConfigService : IConfigService
+    internal sealed class EmptyConfigService : IConfigService
     {
         public ProjectConfig GetConfig() => ProjectConfig.Empty;
 

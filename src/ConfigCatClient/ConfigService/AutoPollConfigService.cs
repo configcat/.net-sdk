@@ -140,7 +140,7 @@ namespace ConfigCat.Client.ConfigService
                     }
                     catch (Exception exception)
                     {
-                        this.Log.Error($"Auto polling stopped. {exception.Message}");
+                        this.Log.Error($"Error occured during polling. {exception.Message}");
                     }
                 }
             });

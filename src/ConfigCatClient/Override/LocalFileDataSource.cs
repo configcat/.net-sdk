@@ -10,7 +10,7 @@ namespace ConfigCat.Client.Override
 {
     internal sealed class LocalFileDataSource : IOverrideDataSource
     {
-        private int isReading = 0;
+        private int isReading;
         private readonly ILogger logger;
         private readonly FileSystemWatcher fileSystemWatcher;
         private readonly TaskCompletionSource<bool> asyncInit = new();

@@ -362,7 +362,7 @@ namespace ConfigCat.Client.Tests
             Assert.AreEqual("initial", await client.GetValueAsync("fakeKey", string.Empty));
 
             await WriteContent(SampleFileToCreate, "modified");
-            await Task.Delay(500);
+            await Task.Delay(800);
 
             Assert.AreEqual("modified", await client.GetValueAsync("fakeKey", string.Empty));
 

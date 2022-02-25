@@ -10,6 +10,7 @@ namespace ConfigCat.Client.Override
 {
     internal sealed class LocalFileDataSource : IOverrideDataSource
     {
+        private int isReading = 0;
         private readonly ILogger logger;
         private readonly FileSystemWatcher fileSystemWatcher;
         private readonly TaskCompletionSource<bool> asyncInit = new();
@@ -68,6 +69,9 @@ namespace ConfigCat.Client.Override
 
         private async Task ReadFileAsync(string filePath)
         {
+            if (Interlocked.CompareExchange(ref this.isReading, 1, 0) != 0)
+                return;
+
             try
             {
                 using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
@@ -90,6 +94,7 @@ namespace ConfigCat.Client.Override
             finally
             {
                 this.SetInitialized();
+                Interlocked.Exchange(ref this.isReading, 0);
             }
         }
 

@@ -127,11 +127,21 @@ namespace ConfigCat.Client.ConfigService
                     try
                     {
                         var scheduledNextTime = DateTimeOffset.UtcNow.Add(interval);
-                        await RefreshConfigAsync();
-                        var realNextTime = scheduledNextTime.Subtract(DateTimeOffset.UtcNow);
-                        if (realNextTime > TimeSpan.Zero)
+                        try
                         {
-                            await Task.Delay(interval, this.timerCancellationTokenSource.Token);
+                            await RefreshConfigAsync();
+                        }
+                        catch (Exception exception)
+                        {
+                            this.Log.Error($"Error occured during polling. {exception.Message}");
+                        }
+                        finally
+                        {
+                            var realNextTime = scheduledNextTime.Subtract(DateTimeOffset.UtcNow);
+                            if (realNextTime > TimeSpan.Zero)
+                            {
+                                await Task.Delay(interval, this.timerCancellationTokenSource.Token);
+                            }
                         }
                     }
                     catch (OperationCanceledException)

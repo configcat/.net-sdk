@@ -16,7 +16,7 @@ namespace ConfigCat.Client.Override
         private readonly TaskCompletionSource<bool> asyncInit = new();
         private readonly ManualResetEvent syncInit = new(false);
 
-        private IDictionary<string, Setting> overrideValues;
+        private volatile IDictionary<string, Setting> overrideValues;
 
         public LocalFileDataSource(string filePath, bool autoReload, ILogger logger)
         {

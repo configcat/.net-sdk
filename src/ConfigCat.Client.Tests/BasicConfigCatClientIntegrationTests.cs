@@ -471,7 +471,7 @@ namespace ConfigCat.Client.Tests
             manualPollClient.Dispose();
             defer.WaitOne();
 
-            Assert.IsTrue(DateTimeOffset.UtcNow.Subtract(now) < TimeSpan.FromSeconds(1));
+            Assert.IsTrue(DateTimeOffset.UtcNow.Subtract(now) < TimeSpan.FromSeconds(2));
         }
 
         [TestMethod]

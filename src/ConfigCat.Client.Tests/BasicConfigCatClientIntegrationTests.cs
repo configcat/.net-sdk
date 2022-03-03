@@ -247,7 +247,7 @@ namespace ConfigCat.Client.Tests
         [DataTestMethod]
         public void GetVariationId(bool useNewCreateApi)
         {
-            IConfigCatClient manualPollClient = useNewCreateApi
+            using IConfigCatClient manualPollClient = useNewCreateApi
                 ? new ConfigCatClient(options =>
                 {
                     options.SdkKey = SDKKEY;
@@ -271,7 +271,7 @@ namespace ConfigCat.Client.Tests
         [DataTestMethod]
         public async Task GetVariationIdAsync(bool useNewCreateApi)
         {
-            IConfigCatClient manualPollClient = useNewCreateApi
+            using IConfigCatClient manualPollClient = useNewCreateApi
                 ? new ConfigCatClient(options =>
                 {
                     options.SdkKey = SDKKEY;
@@ -302,7 +302,7 @@ namespace ConfigCat.Client.Tests
 
             var expectedValue = Newtonsoft.Json.JsonConvert.DeserializeObject<string[]>(expectedJsonString);
 
-            IConfigCatClient manualPollClient = useNewCreateApi
+            using IConfigCatClient manualPollClient = useNewCreateApi
                 ? new ConfigCatClient(options =>
                 {
                     options.SdkKey = SDKKEY;
@@ -337,7 +337,7 @@ namespace ConfigCat.Client.Tests
 
             var expectedValue = Newtonsoft.Json.JsonConvert.DeserializeObject<string[]>(expectedJsonString);
 
-            IConfigCatClient manualPollClient = useNewCreateApi
+            using IConfigCatClient manualPollClient = useNewCreateApi
                 ? new ConfigCatClient(options =>
                 {
                     options.SdkKey = SDKKEY;

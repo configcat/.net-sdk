@@ -18,7 +18,7 @@ namespace ConfigCat.Client.Tests
         [DataTestMethod]
         public void BaseUrl_Override_AutoPoll_Works(bool useNewCreateApi)
         {
-            var client = useNewCreateApi
+            using var client = useNewCreateApi
                 ? new ConfigCatClient(options =>
                 {
                     options.SdkKey = SDKKEY;
@@ -33,7 +33,7 @@ namespace ConfigCat.Client.Tests
             var actual = client.GetValue("stringDefaultCat", "N/A");
             Assert.AreEqual("Cat", actual);
 
-            client = useNewCreateApi
+            using var newClient = useNewCreateApi
                 ? new ConfigCatClient(options =>
                 {
                     options.SdkKey = SDKKEY;
@@ -45,7 +45,7 @@ namespace ConfigCat.Client.Tests
                 .WithBaseUrl(notWorkingBaseUrl)
                 .Create();
 
-            actual = client.GetValue("stringDefaultCat", "N/A");
+            actual = newClient.GetValue("stringDefaultCat", "N/A");
             Assert.AreEqual("N/A", actual);
         }
 
@@ -54,7 +54,7 @@ namespace ConfigCat.Client.Tests
         [DataTestMethod]
         public void BaseUrl_Override_ManualPoll_Works(bool useNewCreateApi)
         {
-            var client = useNewCreateApi
+            using var client = useNewCreateApi
                 ? new ConfigCatClient(options =>
                 {
                     options.SdkKey = SDKKEY;
@@ -69,7 +69,7 @@ namespace ConfigCat.Client.Tests
             var actual = client.GetValue("stringDefaultCat", "N/A");
             Assert.AreEqual("Cat", actual);
 
-            client = useNewCreateApi
+            using var newClient = useNewCreateApi
                 ? new ConfigCatClient(options =>
                 {
                     options.SdkKey = SDKKEY;
@@ -81,7 +81,7 @@ namespace ConfigCat.Client.Tests
                 .WithBaseUrl(notWorkingBaseUrl)
                 .Create();
             client.ForceRefresh();
-            actual = client.GetValue("stringDefaultCat", "N/A");
+            actual = newClient.GetValue("stringDefaultCat", "N/A");
             Assert.AreEqual("N/A", actual);
         }
 
@@ -90,7 +90,7 @@ namespace ConfigCat.Client.Tests
         [DataTestMethod]
         public void BaseUrl_Override_LazyLoad_Works(bool useNewCreateApi)
         {
-            var client = useNewCreateApi
+            using var client = useNewCreateApi
                 ? new ConfigCatClient(options =>
                 {
                     options.SdkKey = SDKKEY;
@@ -105,7 +105,7 @@ namespace ConfigCat.Client.Tests
             var actual = client.GetValue("stringDefaultCat", "N/A");
             Assert.AreEqual("Cat", actual);
 
-            client = useNewCreateApi
+            using var newClient = useNewCreateApi
                 ? new ConfigCatClient(options =>
                 {
                     options.SdkKey = SDKKEY;
@@ -117,7 +117,7 @@ namespace ConfigCat.Client.Tests
                 .WithBaseUrl(notWorkingBaseUrl)
                 .Create();
 
-            actual = client.GetValue("stringDefaultCat", "N/A");
+            actual = newClient.GetValue("stringDefaultCat", "N/A");
             Assert.AreEqual("N/A", actual);
         }
     }

@@ -1,3 +1,6 @@
+### 6.4.6
+- Fix the wait time calculation in auto-polling mode.
+
 ### 6.4.3
 - Fix README links displayed on the NuGet package page.
 

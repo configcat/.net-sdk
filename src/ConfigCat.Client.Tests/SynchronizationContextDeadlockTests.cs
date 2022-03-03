@@ -5,6 +5,7 @@ using Moq;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using System.Net.Http;
 
 #pragma warning disable CS0618 // Type or member is obsolete
 namespace ConfigCat.Client.Tests
@@ -13,6 +14,7 @@ namespace ConfigCat.Client.Tests
     public class SynchronizationContextDeadlockTests
     {
         private const string SDKKEY = "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A";
+        private static readonly HttpClientHandler sharedHandler = new HttpClientHandler();
 
         private readonly Mock<SynchronizationContext> syncContextMock;
 
@@ -52,11 +54,13 @@ namespace ConfigCat.Client.Tests
                 {
                     options.SdkKey = SDKKEY;
                     options.Logger = new ConsoleLogger(LogLevel.Off);
+                    options.HttpClientHandler = sharedHandler;
                 })
                 : new ConfigCatClient(new AutoPollConfiguration
                 {
                     SdkKey = SDKKEY,
-                    Logger = new ConsoleLogger(LogLevel.Off)                
+                    Logger = new ConsoleLogger(LogLevel.Off),
+                    HttpClientHandler = sharedHandler,
                 });
 
             ClientDeadlockCheck(client);
@@ -72,11 +76,13 @@ namespace ConfigCat.Client.Tests
                 {
                     options.SdkKey = SDKKEY;
                     options.Logger = new ConsoleLogger(LogLevel.Off);
+                    options.HttpClientHandler = sharedHandler;
                 })
                 : new ConfigCatClient(new ManualPollConfiguration
                 {
                     SdkKey = SDKKEY,
-                    Logger = new ConsoleLogger(LogLevel.Off)
+                    Logger = new ConsoleLogger(LogLevel.Off),
+                    HttpClientHandler = sharedHandler,
                 });
 
             ClientDeadlockCheck(client);
@@ -92,11 +98,13 @@ namespace ConfigCat.Client.Tests
                 {
                     options.SdkKey = SDKKEY;
                     options.Logger = new ConsoleLogger(LogLevel.Off);
+                    options.HttpClientHandler = sharedHandler;
                 })
                 : new ConfigCatClient(new LazyLoadConfiguration
                 {
                     SdkKey = SDKKEY,
-                    Logger = new ConsoleLogger(LogLevel.Off)
+                    Logger = new ConsoleLogger(LogLevel.Off),
+                    HttpClientHandler = sharedHandler,
                 });
 
             ClientDeadlockCheck(client);

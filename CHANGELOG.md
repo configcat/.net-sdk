@@ -1,5 +1,5 @@
-### 6.4.2
-- Fix README links in NuGet package.
+### 6.4.3
+- Fix README links displayed on the NuGet package page.
 
 ### 6.4.0
 - **Introduced a new configuration API replacing the builder pattern**:

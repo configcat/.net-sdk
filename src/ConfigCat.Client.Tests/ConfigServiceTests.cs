@@ -18,7 +18,7 @@ namespace ConfigCat.Client.Tests
         Mock<IConfigCatCache> cacheMock = new Mock<IConfigCatCache>(MockBehavior.Strict);
         Mock<ILogger> loggerMock = new Mock<ILogger>(MockBehavior.Loose);
 
-        ProjectConfig cachedPc = new ProjectConfig("CACHED", DateTime.UtcNow.Add(-defaultExpire), "67890");
+        ProjectConfig cachedPc = new ProjectConfig("CACHED", DateTime.UtcNow.Subtract(defaultExpire.Add(TimeSpan.FromSeconds(1))), "67890");
         ProjectConfig fetchedPc = new ProjectConfig("FETCHED", DateTime.UtcNow, "12345");
 
         [TestInitialize]

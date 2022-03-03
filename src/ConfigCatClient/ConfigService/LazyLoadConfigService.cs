@@ -22,7 +22,7 @@ namespace ConfigCat.Client.ConfigService
             {
                 var config = cache.Get(base.CacheKey);
 
-                if (config.TimeStamp < DateTime.UtcNow.Add(-this.cacheTimeToLive))
+                if (config.TimeStamp < DateTime.UtcNow.Subtract(this.cacheTimeToLive))
                 {
                     this.Log.Debug("config expired");
                     config = this.ConfigFetcher.Fetch(config);
@@ -40,7 +40,7 @@ namespace ConfigCat.Client.ConfigService
         {
             var config = await this.ConfigCache.GetAsync(base.CacheKey).ConfigureAwait(false);
 
-            if (config.TimeStamp < DateTime.UtcNow.Add(-this.cacheTimeToLive))
+            if (config.TimeStamp < DateTime.UtcNow.Subtract(this.cacheTimeToLive))
             {
                 this.Log.Debug("config expired");
                 return await RefreshConfigLogic(config).ConfigureAwait(false);

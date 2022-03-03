@@ -1,6 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Linq;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,23 +15,26 @@ namespace ConfigCat.Client.Tests
         private const string SDKKEY = "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A";
 
         private static readonly ILogger consoleLogger = new ConsoleLogger(LogLevel.Debug);
+        private readonly HttpClientHandler sharedHandler = new HttpClientHandler();
 
         [DataRow(true)]
         [DataRow(false)]
         [DataTestMethod]
         public void ManualPollGetValue(bool useNewCreateApi)
         {
-            using IConfigCatClient manualPollClient = useNewCreateApi
+            IConfigCatClient manualPollClient = useNewCreateApi
                 ? new ConfigCatClient(options =>
                 {
                     options.SdkKey = SDKKEY;
                     options.PollingMode = PollingModes.ManualPoll;
                     options.Logger = consoleLogger;
+                    options.HttpClientHandler = sharedHandler;
                 })
                 : ConfigCatClientBuilder
                 .Initialize(SDKKEY)                
                 .WithLogger(consoleLogger)
                 .WithManualPoll()
+                .WithHttpClientHandler(sharedHandler)
                 .Create();
 
             manualPollClient.ForceRefresh();
@@ -43,12 +47,13 @@ namespace ConfigCat.Client.Tests
         [DataTestMethod]
         public void AutoPollGetValue(bool useNewCreateApi)
         {
-            using IConfigCatClient client = useNewCreateApi
+            IConfigCatClient client = useNewCreateApi
                 ? new ConfigCatClient(options =>
                 {
                     options.SdkKey = SDKKEY;
                     options.PollingMode = PollingModes.AutoPoll(TimeSpan.FromSeconds(600), TimeSpan.FromSeconds(30));
                     options.Logger = consoleLogger;
+                    options.HttpClientHandler = sharedHandler;
                 })
                 : ConfigCatClientBuilder
                 .Initialize(SDKKEY)
@@ -56,6 +61,7 @@ namespace ConfigCat.Client.Tests
                 .WithAutoPoll()
                 .WithMaxInitWaitTimeSeconds(30)
                 .WithPollIntervalSeconds(600)
+                .WithHttpClientHandler(sharedHandler)
                 .Create();
 
             GetValueAndAssert(client, "stringDefaultCat", "N/A", "Cat");
@@ -66,18 +72,20 @@ namespace ConfigCat.Client.Tests
         [DataTestMethod]
         public void LazyLoadGetValue(bool useNewCreateApi)
         {
-            using IConfigCatClient client = useNewCreateApi
+            IConfigCatClient client = useNewCreateApi
                 ? new ConfigCatClient(options =>
                 {
                     options.SdkKey = SDKKEY;
                     options.PollingMode = PollingModes.LazyLoad(TimeSpan.FromSeconds(30));
                     options.Logger = consoleLogger;
+                    options.HttpClientHandler = sharedHandler;
                 })
                 : ConfigCatClientBuilder
                 .Initialize(SDKKEY)
                 .WithLogger(consoleLogger)
                 .WithLazyLoad()
                 .WithCacheTimeToLiveSeconds(30)
+                .WithHttpClientHandler(sharedHandler)
                 .Create();
 
             GetValueAndAssert(client, "stringDefaultCat", "N/A", "Cat");
@@ -88,17 +96,19 @@ namespace ConfigCat.Client.Tests
         [DataTestMethod]
         public async Task ManualPollGetValueAsync(bool useNewCreateApi)
         {
-            using IConfigCatClient client = useNewCreateApi
+            IConfigCatClient client = useNewCreateApi
                 ? new ConfigCatClient(options =>
                 {
                     options.SdkKey = SDKKEY;
                     options.PollingMode = PollingModes.ManualPoll;
                     options.Logger = consoleLogger;
+                    options.HttpClientHandler = sharedHandler;
                 })
                 : ConfigCatClientBuilder
                 .Initialize(SDKKEY)
                 .WithLogger(consoleLogger)
                 .WithManualPoll()
+                .WithHttpClientHandler(sharedHandler)
                 .Create();
 
             await client.ForceRefreshAsync();
@@ -111,12 +121,13 @@ namespace ConfigCat.Client.Tests
         [DataTestMethod]
         public async Task AutoPollGetValueAsync(bool useNewCreateApi)
         {
-            using IConfigCatClient client = useNewCreateApi
+            IConfigCatClient client = useNewCreateApi
                 ? new ConfigCatClient(options =>
                 {
                     options.SdkKey = SDKKEY;
                     options.PollingMode = PollingModes.AutoPoll(TimeSpan.FromSeconds(600), TimeSpan.FromSeconds(30));
                     options.Logger = consoleLogger;
+                    options.HttpClientHandler = sharedHandler;
                 })
                 : ConfigCatClientBuilder
                 .Initialize(SDKKEY)
@@ -124,6 +135,7 @@ namespace ConfigCat.Client.Tests
                 .WithAutoPoll()
                 .WithMaxInitWaitTimeSeconds(30)
                 .WithPollIntervalSeconds(600)
+                .WithHttpClientHandler(sharedHandler)
                 .Create();
 
             await GetValueAsyncAndAssert(client, "stringDefaultCat", "N/A", "Cat");
@@ -134,18 +146,20 @@ namespace ConfigCat.Client.Tests
         [DataTestMethod]
         public async Task LazyLoadGetValueAsync(bool useNewCreateApi)
         {
-            using IConfigCatClient client = useNewCreateApi
+            IConfigCatClient client = useNewCreateApi
                 ? new ConfigCatClient(options =>
                 {
                     options.SdkKey = SDKKEY;
                     options.PollingMode = PollingModes.LazyLoad(TimeSpan.FromSeconds(30));
                     options.Logger = consoleLogger;
+                    options.HttpClientHandler = sharedHandler;
                 })
                 : ConfigCatClientBuilder
                 .Initialize(SDKKEY)
                 .WithLogger(consoleLogger)
                 .WithLazyLoad()
                 .WithCacheTimeToLiveSeconds(30)
+                .WithHttpClientHandler(sharedHandler)
                 .Create();
 
             await GetValueAsyncAndAssert(client, "stringDefaultCat", "N/A", "Cat");
@@ -156,17 +170,19 @@ namespace ConfigCat.Client.Tests
         [DataTestMethod]
         public void GetAllKeys(bool useNewCreateApi)
         {
-            using IConfigCatClient manualPollClient = useNewCreateApi
+            IConfigCatClient manualPollClient = useNewCreateApi
                 ? new ConfigCatClient(options =>
                 {
                     options.SdkKey = SDKKEY;
                     options.PollingMode = PollingModes.ManualPoll;
                     options.Logger = consoleLogger;
+                    options.HttpClientHandler = sharedHandler;
                 })
                 : ConfigCatClientBuilder
                 .Initialize(SDKKEY)
                 .WithLogger(consoleLogger)
                 .WithManualPoll()
+                .WithHttpClientHandler(sharedHandler)
                 .Create();
 
             manualPollClient.ForceRefresh();
@@ -181,17 +197,19 @@ namespace ConfigCat.Client.Tests
         [DataTestMethod]
         public void GetAllValues(bool useNewCreateApi)
         {
-            using IConfigCatClient manualPollClient = useNewCreateApi
+            IConfigCatClient manualPollClient = useNewCreateApi
                 ? new ConfigCatClient(options =>
                 {
                     options.SdkKey = SDKKEY;
                     options.PollingMode = PollingModes.ManualPoll;
                     options.Logger = consoleLogger;
+                    options.HttpClientHandler = sharedHandler;
                 })
                 : ConfigCatClientBuilder
                 .Initialize(SDKKEY)
                 .WithLogger(consoleLogger)
                 .WithManualPoll()
+                .WithHttpClientHandler(sharedHandler)
                 .Create();
 
             manualPollClient.ForceRefresh();
@@ -206,17 +224,19 @@ namespace ConfigCat.Client.Tests
         [DataTestMethod]
         public async Task GetAllValuesAsync(bool useNewCreateApi)
         {
-            using IConfigCatClient manualPollClient = useNewCreateApi
+            IConfigCatClient manualPollClient = useNewCreateApi
                 ? new ConfigCatClient(options =>
                 {
                     options.SdkKey = SDKKEY;
                     options.PollingMode = PollingModes.ManualPoll;
                     options.Logger = consoleLogger;
+                    options.HttpClientHandler = sharedHandler;
                 })
                 : ConfigCatClientBuilder
                 .Initialize(SDKKEY)
                 .WithLogger(consoleLogger)
                 .WithManualPoll()
+                .WithHttpClientHandler(sharedHandler)
                 .Create();
 
             await manualPollClient.ForceRefreshAsync();
@@ -247,17 +267,19 @@ namespace ConfigCat.Client.Tests
         [DataTestMethod]
         public void GetVariationId(bool useNewCreateApi)
         {
-            using IConfigCatClient manualPollClient = useNewCreateApi
+            IConfigCatClient manualPollClient = useNewCreateApi
                 ? new ConfigCatClient(options =>
                 {
                     options.SdkKey = SDKKEY;
                     options.PollingMode = PollingModes.ManualPoll;
                     options.Logger = consoleLogger;
+                    options.HttpClientHandler = sharedHandler;
                 })
                 : ConfigCatClientBuilder
                 .Initialize(SDKKEY)
                 .WithLogger(consoleLogger)
                 .WithManualPoll()
+                .WithHttpClientHandler(sharedHandler)
                 .Create();
 
             manualPollClient.ForceRefresh();
@@ -271,17 +293,19 @@ namespace ConfigCat.Client.Tests
         [DataTestMethod]
         public async Task GetVariationIdAsync(bool useNewCreateApi)
         {
-            using IConfigCatClient manualPollClient = useNewCreateApi
+            IConfigCatClient manualPollClient = useNewCreateApi
                 ? new ConfigCatClient(options =>
                 {
                     options.SdkKey = SDKKEY;
                     options.PollingMode = PollingModes.ManualPoll;
                     options.Logger = consoleLogger;
+                    options.HttpClientHandler = sharedHandler;
                 })
                 : ConfigCatClientBuilder
                 .Initialize(SDKKEY)
                 .WithLogger(consoleLogger)
                 .WithManualPoll()
+                .WithHttpClientHandler(sharedHandler)
                 .Create();
 
             await manualPollClient.ForceRefreshAsync();
@@ -302,17 +326,19 @@ namespace ConfigCat.Client.Tests
 
             var expectedValue = Newtonsoft.Json.JsonConvert.DeserializeObject<string[]>(expectedJsonString);
 
-            using IConfigCatClient manualPollClient = useNewCreateApi
+            IConfigCatClient manualPollClient = useNewCreateApi
                 ? new ConfigCatClient(options =>
                 {
                     options.SdkKey = SDKKEY;
                     options.PollingMode = PollingModes.ManualPoll;
                     options.Logger = consoleLogger;
+                    options.HttpClientHandler = sharedHandler;
                 })
                 : ConfigCatClientBuilder
                 .Initialize(SDKKEY)
                 .WithLogger(consoleLogger)
                 .WithManualPoll()
+                .WithHttpClientHandler(sharedHandler)
                 .Create();
 
             manualPollClient.ForceRefresh();
@@ -337,17 +363,19 @@ namespace ConfigCat.Client.Tests
 
             var expectedValue = Newtonsoft.Json.JsonConvert.DeserializeObject<string[]>(expectedJsonString);
 
-            using IConfigCatClient manualPollClient = useNewCreateApi
+            IConfigCatClient manualPollClient = useNewCreateApi
                 ? new ConfigCatClient(options =>
                 {
                     options.SdkKey = SDKKEY;
                     options.PollingMode = PollingModes.ManualPoll;
                     options.Logger = consoleLogger;
+                    options.HttpClientHandler = sharedHandler;
                 })
                 : ConfigCatClientBuilder
                 .Initialize(SDKKEY)
                 .WithLogger(consoleLogger)
                 .WithManualPoll()
+                .WithHttpClientHandler(sharedHandler)
                 .Create();
 
             await manualPollClient.ForceRefreshAsync();

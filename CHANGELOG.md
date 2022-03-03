@@ -1,3 +1,6 @@
+### 6.4.2
+- Fix README links in NuGet package.
+
 ### 6.4.0
 - **Introduced a new configuration API replacing the builder pattern**:
 
@@ -21,7 +24,7 @@
   });
   ```
   
-  The old API is still available it's just marked with the `  [Obsolete]` attribute.
+  The old API is still available it's just marked with the `[Obsolete]` attribute.
 
 - **`GetAllValues()` and `GetAllValuesAsync()`**:  
   These methods are now evaluating all feature flags and settings into an `IDictionary<string, object>`.

@@ -1,3 +1,6 @@
+### 6.4.8
+- Readd `System.Text.RegularExpressions` version `4.3.1` due to SNYK security report.
+
 ### 6.4.7
 - Remove unused `System.Text.RegularExpressions` dependency.
 

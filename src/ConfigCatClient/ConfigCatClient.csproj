@@ -15,61 +15,7 @@
     <RepositoryUrl>https://github.com/ConfigCat/.net-sdk</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <LangVersion>latest</LangVersion>
-    <PackageReleaseNotes>Version 6.2.1
-     * Reducing the number of json deserializations between `GetValue` calls.
-Version 6.1.20
-     * Bugfix: The SDK's json serialization behavior is not depending on the `JsonConvert.DefaultSettings` anymore.
-Version 6.1.0
-     * Bugfix (#17)
-Version 6.0.0
-     * Addressing global data handling and processing trends via Data Governance feature. Customers can control the geographic location where their config JSONs get published to. [See the docs.](https://configcat.com/docs/advanced/data-governance/)
-       We are introducing a new DataGovernance initialization parameter. Set this parameter to be in sync with the Data Governance preference on the [Dashboard](https://app.configcat.com/organization/data-governance).
-       Breaking change:
-       - Custom cache implementations should implement the new cache interface using key parameter in the get/set methods.
-Version 5.3.0
-     * VariationID, bugfix (#11)
-Version 5.2.0
-     * Bugfix (config fetch, caching)
-Version 5.1.0
-     * Remove semver nuget packages
-Version 5.0.0
-     * Breaking change: Renamed `API Key` to `SDK Key`.
-Version 4.0.0
-     * Supporting sensitive text comparators.
-Version 3.2.0
-     * Minor fix in info level logging
-Version 3.1.0
-     * Added new semantic version tests
-Version 3.0.0
-     * Support new types (number, semver), detailed log entries, compressed http communication
-Version 2.5.0
-     * Support custom HttpClientHandler
-Version 2.4.0
-     * Add GetAllKeys() function
-Version 2.3.0
-     * BaseUrl override oppurtunity
-     * IConfigCache override oppurtunity
-Version 2.3.0
-     * BaseUrl override oppurtunity
-     * IConfigCache override oppurtunity
-Version 2.2.1
-     * Bugfix (logger level)
-Version 2.2.0
-     * Namespace unification
-Version 2.1.0
-     * Rollout handling v2
-Version 2.0.1
-     * Bugfix
-Version 2.0.0
-     * Implement rollout feature
-Version 1.0.7
-     * Implement LazyLoad, AutoPoll, ManualPoll feature
-Version 1.0.6
-     * Finalize logging
-Version 1.0.5
-     * Implement tracing, add clear cache ability to client
-Version 1.0.4
-     * Initial release</PackageReleaseNotes>
+    <PackageReleaseNotes>https://github.com/configcat/.net-sdk/blob/master/CHANGELOG.md</PackageReleaseNotes>
     <PackageTags>feature flag toggle feature-flag feature-flags featureflag featureflags feature-toggle  feature-toggles featuretoggle featuretoggles canary release remote config remoteconfig remote-config configcat configcatclient</PackageTags>
     <Description>Feature Flags created by developers for developers with ❤️.
 
@@ -80,6 +26,7 @@ Works with .NET, .NET Core, .NET Standard</Description>
     <PackageIcon>icon.png</PackageIcon>
     <AssemblyVersion>0.1.0.0</AssemblyVersion>
     <FileVersion>0.1.0.0</FileVersion>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Configurations>Debug;Release;Benchmark</Configurations>
   </PropertyGroup>
@@ -112,6 +59,7 @@ Works with .NET, .NET Core, .NET Standard</Description>
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
     <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
     <None Include="icon.png" Pack="true" Visible="false" PackagePath="" />
+    <None Include="..\README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
 </Project>

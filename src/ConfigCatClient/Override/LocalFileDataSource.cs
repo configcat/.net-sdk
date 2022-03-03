@@ -93,8 +93,8 @@ namespace ConfigCat.Client.Override
             }
             finally
             {
-                this.SetInitialized();
                 Interlocked.Exchange(ref this.isReading, 0);
+                this.SetInitialized();
             }
         }
 

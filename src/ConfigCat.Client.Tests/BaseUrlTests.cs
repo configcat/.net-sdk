@@ -13,7 +13,7 @@ namespace ConfigCat.Client.Tests
 
         private readonly Uri workingBaseUrl = new Uri("https://cdn.configcat.com");
         private readonly Uri notWorkingBaseUrl = new Uri("https://thiswillnotwork.configcat.com");
-        private readonly HttpClientHandler sharedHandler = new HttpClientHandler();
+        private static readonly HttpClientHandler sharedHandler = new HttpClientHandler();
 
         [DataRow(true)]
         [DataRow(false)]

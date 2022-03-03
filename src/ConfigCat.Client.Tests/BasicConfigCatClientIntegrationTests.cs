@@ -15,7 +15,7 @@ namespace ConfigCat.Client.Tests
         private const string SDKKEY = "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A";
 
         private static readonly ILogger consoleLogger = new ConsoleLogger(LogLevel.Debug);
-        private readonly HttpClientHandler sharedHandler = new HttpClientHandler();
+        private static readonly HttpClientHandler sharedHandler = new HttpClientHandler();
 
         [DataRow(true)]
         [DataRow(false)]

@@ -1,0 +1,19 @@
+﻿{
+  "f": {
+    "disabledFeature": {
+      "v": false
+    },
+    "enabledFeature": {
+      "v": true
+    },
+    "intSetting": {
+      "v": 5
+    },
+    "doubleSetting": {
+      "v": 3.14
+    },
+    "stringSetting": {
+      "v": "test"
+    }
+  }
+}

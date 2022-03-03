@@ -10,6 +10,6 @@ namespace ConfigCat.Client
         /// <summary>
         /// Provides a value to use with events that do not have event data.
         /// </summary>
-        public new static readonly OnConfigurationChangedEventArgs Empty = new OnConfigurationChangedEventArgs();
+        public new static readonly OnConfigurationChangedEventArgs Empty = new();
     }
 }

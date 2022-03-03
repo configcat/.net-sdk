@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using ConfigCat.Client.Evaluate;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
 
 namespace ConfigCat.Client.Tests
@@ -30,7 +31,7 @@ namespace ConfigCat.Client.Tests
         [TestMethod]
         public void GetValue_WithEmptyProjectConfig_ShouldReturnDefaultValue()
         {
-            string actual = configEvaluator.Evaluate(ProjectConfig.Empty, "stringDefaultCat", "Default");
+            string actual = configEvaluator.Evaluate(new Dictionary<string, Setting>(), "stringDefaultCat", "Default");
 
             Assert.AreEqual("Default", actual);
         }

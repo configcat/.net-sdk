@@ -1,36 +1,35 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using ConfigCat.Client.Configuration;
 using ConfigCat.Client.Evaluate;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Moq.Protected;
-using Newtonsoft.Json;
 
 namespace ConfigCat.Client.Tests
 {
     [TestClass]
     public class DataGovernanceTests
     {
-        private static readonly Uri GlobalCdnUri = new Uri(ConfigurationBase.BaseUrlGlobal);
-        private static readonly Uri EuOnlyCdnUri = new Uri(ConfigurationBase.BaseUrlEu);
+        private static readonly Uri GlobalCdnUri = ConfigurationBase.BaseUrlGlobal;
+        private static readonly Uri EuOnlyCdnUri = ConfigurationBase.BaseUrlEu;
         private static readonly Uri CustomCdnUri = new Uri("https://custom-cdn.example.com");
         private static readonly Uri ForcedCdnUri = new Uri("https://forced-cdn.example.com");
 
-        [DataRow(DataGovernance.Global, ConfigurationBase.BaseUrlGlobal)]
-        [DataRow(DataGovernance.EuOnly, ConfigurationBase.BaseUrlEu)]
-        [DataRow(null, ConfigurationBase.BaseUrlGlobal)]
+        [DataRow(DataGovernance.Global, "https://cdn-global.configcat.com")]
+        [DataRow(DataGovernance.EuOnly, "https://cdn-eu.configcat.com")]
+        [DataRow(null, "https://cdn-global.configcat.com")]
         [DataTestMethod]
         public async Task WithDataGovernanceSetting_ShouldUseProperCdnUrl(DataGovernance dataGovernance, string expectedUrl)
         {
             // Arrange
 
-            var configuration = new AutoPollConfiguration
+            var configuration = new ConfigCatClientOptions
             {
                 SdkKey = "DEMO",
                 DataGovernance = dataGovernance
@@ -64,11 +63,12 @@ namespace ConfigCat.Client.Tests
                 Mock.Of<ILogger>(),
                 handlerMock.Object,
                 Mock.Of<IConfigDeserializer>(),
-                configuration.IsCustomBaseUrl);
+                configuration.IsCustomBaseUrl,
+                TimeSpan.FromSeconds(30));
 
             // Act
 
-            await fetcher.Fetch(ProjectConfig.Empty);
+            await fetcher.FetchAsync(ProjectConfig.Empty);
 
             // Assert
 
@@ -82,7 +82,7 @@ namespace ConfigCat.Client.Tests
         {
             // Arrange
 
-            var fetchConfig = new AutoPollConfiguration
+            var fetchConfig = new ConfigCatClientOptions
             {
                 SdkKey = "SDK-KEY",
                 DataGovernance = DataGovernance.Global
@@ -107,7 +107,7 @@ namespace ConfigCat.Client.Tests
         {
             // Arrange
 
-            var fetchConfig = new AutoPollConfiguration
+            var fetchConfig = new ConfigCatClientOptions
             {
                 SdkKey = "SDK-KEY",
                 DataGovernance = DataGovernance.EuOnly
@@ -135,7 +135,7 @@ namespace ConfigCat.Client.Tests
         {
             // Arrange
 
-            var fetchConfig = new AutoPollConfiguration
+            var fetchConfig = new ConfigCatClientOptions
             {
                 SdkKey = "SDK-KEY",
                 DataGovernance = DataGovernance.Global
@@ -164,7 +164,7 @@ namespace ConfigCat.Client.Tests
         {
             // Arrange
 
-            var fetchConfig = new AutoPollConfiguration
+            var fetchConfig = new ConfigCatClientOptions
             {
                 SdkKey = "SDK-KEY",
                 DataGovernance = DataGovernance.EuOnly
@@ -195,7 +195,7 @@ namespace ConfigCat.Client.Tests
                 {CustomCdnUri.Host, CreateResponse()}
             };
 
-            var fetchConfig = new AutoPollConfiguration
+            var fetchConfig = new ConfigCatClientOptions
             {
                 DataGovernance = DataGovernance.Global,
                 BaseUrl = CustomCdnUri
@@ -221,7 +221,7 @@ namespace ConfigCat.Client.Tests
                 {CustomCdnUri.Host, CreateResponse()}
             };
 
-            var fetchConfig = new AutoPollConfiguration
+            var fetchConfig = new ConfigCatClientOptions
             {
                 DataGovernance = DataGovernance.EuOnly,
                 BaseUrl = CustomCdnUri
@@ -244,11 +244,11 @@ namespace ConfigCat.Client.Tests
 
             var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
             {
-                {GlobalCdnUri.Host, CreateResponse(ForcedCdnUri.ToString(), RedirectMode.Force, false)},
-                {ForcedCdnUri.Host, CreateResponse(ForcedCdnUri.ToString(), RedirectMode.Force, true)}
+                {GlobalCdnUri.Host, CreateResponse(ForcedCdnUri, RedirectMode.Force, false)},
+                {ForcedCdnUri.Host, CreateResponse(ForcedCdnUri, RedirectMode.Force, true)}
             };
 
-            var fetchConfig = new AutoPollConfiguration
+            var fetchConfig = new ConfigCatClientOptions
             {
                 DataGovernance = DataGovernance.Global
             };
@@ -271,11 +271,11 @@ namespace ConfigCat.Client.Tests
 
             var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
             {
-                {EuOnlyCdnUri.Host, CreateResponse(ForcedCdnUri.ToString(), RedirectMode.Force, false)},
-                {ForcedCdnUri.Host, CreateResponse(ForcedCdnUri.ToString(), RedirectMode.Force, true)}
+                {EuOnlyCdnUri.Host, CreateResponse(ForcedCdnUri, RedirectMode.Force, false)},
+                {ForcedCdnUri.Host, CreateResponse(ForcedCdnUri, RedirectMode.Force, true)}
             };
 
-            var fetchConfig = new AutoPollConfiguration
+            var fetchConfig = new ConfigCatClientOptions
             {
                 DataGovernance = DataGovernance.EuOnly
             };
@@ -290,7 +290,7 @@ namespace ConfigCat.Client.Tests
             Assert.AreEqual(EuOnlyCdnUri.Host, requests[1].RequestUri.Host);
             Assert.IsTrue(requests.Values.Skip(1).All(m => m.RequestUri.Host == ForcedCdnUri.Host));
         }
-        
+
         [TestMethod]
         public async Task ClientIsGlobalAndHasCustomBaseUriAndOrgIsForced_FirstRequestInvokeCustomAndRedirectToForceUriAndAllRequestInvokeForcedUri()
         {
@@ -298,11 +298,11 @@ namespace ConfigCat.Client.Tests
 
             var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
             {
-                {CustomCdnUri.Host, CreateResponse(ForcedCdnUri.ToString(), RedirectMode.Force, false)},
-                {ForcedCdnUri.Host, CreateResponse(ForcedCdnUri.ToString(), RedirectMode.Force, true)}
+                {CustomCdnUri.Host, CreateResponse(ForcedCdnUri, RedirectMode.Force, false)},
+                {ForcedCdnUri.Host, CreateResponse(ForcedCdnUri, RedirectMode.Force, true)}
             };
 
-            var fetchConfig = new AutoPollConfiguration
+            var fetchConfig = new ConfigCatClientOptions
             {
                 DataGovernance = DataGovernance.Global,
                 BaseUrl = CustomCdnUri
@@ -318,7 +318,7 @@ namespace ConfigCat.Client.Tests
             Assert.AreEqual(CustomCdnUri.Host, responses[1].RequestUri.Host);
             Assert.IsTrue(responses.Values.Skip(1).All(m => m.RequestUri.Host == ForcedCdnUri.Host));
         }
-        
+
         [TestMethod]
         public async Task TestCircuitBreaker_WhenClientIsGlobalRedirectToEuAndRedirectToGlobal_MaximumInvokeCountShouldBeThree()
         {
@@ -326,26 +326,26 @@ namespace ConfigCat.Client.Tests
 
             var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
             {
-                {GlobalCdnUri.Host, CreateResponse(EuOnlyCdnUri.ToString(), RedirectMode.Should, false)},
-                {EuOnlyCdnUri.Host, CreateResponse(GlobalCdnUri.ToString(), RedirectMode.Should, false)}
+                {GlobalCdnUri.Host, CreateResponse(EuOnlyCdnUri, RedirectMode.Should, false)},
+                {EuOnlyCdnUri.Host, CreateResponse(GlobalCdnUri, RedirectMode.Should, false)}
             };
 
-            var fetchConfig = new AutoPollConfiguration
+            var fetchConfig = new ConfigCatClientOptions
             {
                 DataGovernance = DataGovernance.Global
             };
 
             // Act
 
-            var responses = await Fetch(fetchConfig, responsesRegistry);
+            var requests = await Fetch(fetchConfig, responsesRegistry);
 
             // Assert
 
-            Assert.AreEqual(3, responses.Count);
+            Assert.AreEqual(3, requests.Count);
         }
 
 
-        internal async Task<SortedList<byte, HttpRequestMessage>> Fetch(
+        internal static async Task<SortedList<byte, HttpRequestMessage>> Fetch(
             ConfigurationBase fetchConfig,
             Dictionary<string, SettingsWithPreferences> responsesRegistry,
             byte fetchInvokeCount = 1)
@@ -370,7 +370,7 @@ namespace ConfigCat.Client.Tests
                 .Returns<HttpRequestMessage, CancellationToken>((message, _) => Task.FromResult(new HttpResponseMessage()
                 {
                     StatusCode = HttpStatusCode.OK,
-                    Content = new StringContent(JsonConvert.SerializeObject(responsesRegistry[message.RequestUri.Host]))
+                    Content = new StringContent(responsesRegistry[message.RequestUri.Host].Serialize())
                 }))
                 .Verifiable();
 
@@ -379,15 +379,16 @@ namespace ConfigCat.Client.Tests
                 "DEMO",
                 Mock.Of<ILogger>(),
                 handlerMock.Object,
-                new ConfigDeserializer(Mock.Of<ILogger>(), JsonSerializer.Create()),
-                fetchConfig.IsCustomBaseUrl);
+                new ConfigDeserializer(),
+                fetchConfig.IsCustomBaseUrl,
+                TimeSpan.FromSeconds(30));
 
             // Act
 
             byte i = 0;
             do
             {
-                await fetcher.Fetch(ProjectConfig.Empty);
+                await fetcher.FetchAsync(ProjectConfig.Empty);
                 i++;
             } while (fetchInvokeCount > i);
 
@@ -396,16 +397,21 @@ namespace ConfigCat.Client.Tests
             return requests;
         }
 
-        private static SettingsWithPreferences CreateResponse(string url = ConfigurationBase.BaseUrlGlobal, RedirectMode redirectMode = RedirectMode.No, bool withSettings = true)
+        private static SettingsWithPreferences CreateResponse(Uri url = null, RedirectMode redirectMode = RedirectMode.No, bool withSettings = true)
         {
             return new SettingsWithPreferences
             {
                 Preferences = new Preferences
                 {
-                    Url = url,
+                    Url = (url ?? ConfigurationBase.BaseUrlGlobal).ToString(),
                     RedirectMode = redirectMode
                 },
-                Settings = withSettings ? new Dictionary<string, Setting> { { "myKey", new Setting { RawValue = "foo", SettingType = SettingTypeEnum.String } } } : null
+                Settings = withSettings
+                ? new Dictionary<string, Setting>
+                    {
+                        { "myKey", "foo".ToSetting() }
+                    }
+                : null
             };
         }
     }

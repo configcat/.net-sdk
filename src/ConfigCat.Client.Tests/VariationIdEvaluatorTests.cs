@@ -40,7 +40,7 @@ namespace ConfigCat.Client.Tests
         [TestMethod]
         public void EvaluateVariationId_WithEmptyProjectConfig_ShouldReturnDefaultValue()
         {
-            string actual = configEvaluator.EvaluateVariationId(ProjectConfig.Empty, "stringDefaultCat", "Default");
+            string actual = configEvaluator.EvaluateVariationId(new Dictionary<string, Setting>(), "stringDefaultCat", "Default");
 
             Assert.AreEqual("Default", actual);
         }

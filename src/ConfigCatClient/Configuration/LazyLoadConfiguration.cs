@@ -5,6 +5,7 @@ namespace ConfigCat.Client
     /// <summary>
     /// LazyLoad configuration settings object for <see cref="ConfigCatClient"/>
     /// </summary>
+    [Obsolete("Please use the 'new ConfigCatClient(options => { options.PollingMode = PollingModes.LazyLoad(); })' format.")]
     public class LazyLoadConfiguration : ConfigurationBase
     {
         /// <summary>

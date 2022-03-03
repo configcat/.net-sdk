@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ConfigCat.Client
@@ -6,6 +7,7 @@ namespace ConfigCat.Client
     /// <summary>
     /// Defines cache
     /// </summary>
+    [Obsolete("Use the IConfigCatCache instead.")]
     public interface IConfigCache
     {
         /// <summary>

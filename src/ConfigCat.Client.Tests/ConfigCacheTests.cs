@@ -1,8 +1,8 @@
 ﻿using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 
+#pragma warning disable CS0618 // Type or member is obsolete
 namespace ConfigCat.Client.Tests
 {
     [TestCategory(TestCategories.Integration)]
@@ -11,8 +11,10 @@ namespace ConfigCat.Client.Tests
     {
         private const string SDKKEY = "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A";
 
-        [TestMethod]
-        public void ConfigCache_Override_AutoPoll_Works()
+        [DataRow(true)]
+        [DataRow(false)]
+        [DataTestMethod]
+        public void ConfigCache_Override_AutoPoll_Works(bool useNewCreateApi)
         {
             ProjectConfig cachedConfig = ProjectConfig.Empty;
             Mock<IConfigCache> configCacheMock = new Mock<IConfigCache>();
@@ -24,12 +26,20 @@ namespace ConfigCat.Client.Tests
 
             configCacheMock.Setup(c => c.GetAsync(It.IsAny<string>(), CancellationToken.None)).ReturnsAsync(() => cachedConfig);
             
-            var client = ConfigCatClientBuilder
-                .Initialize(SDKKEY)
-                .WithLogger(new ConsoleLogger(LogLevel.Debug))
-                .WithAutoPoll()
-                .WithConfigCache(configCacheMock.Object)
-                .Create();
+            var client = useNewCreateApi 
+                ? new ConfigCatClient(options =>
+                {
+                    options.SdkKey = SDKKEY;
+                    options.Logger = new ConsoleLogger(LogLevel.Debug);
+                    options.PollingMode = PollingModes.AutoPoll();
+                    options.ConfigCache = configCacheMock.Object;
+                })
+                : ConfigCatClientBuilder
+                    .Initialize(SDKKEY)
+                    .WithLogger(new ConsoleLogger(LogLevel.Debug))
+                    .WithAutoPoll()
+                    .WithConfigCache(configCacheMock.Object)
+                    .Create();
             
             var actual = client.GetValue("stringDefaultCat", "N/A");
 
@@ -39,8 +49,10 @@ namespace ConfigCat.Client.Tests
             configCacheMock.Verify(c => c.GetAsync(It.IsAny<string>(), CancellationToken.None), Times.AtLeastOnce);
         }
 
-        [TestMethod]
-        public void ConfigCache_Override_ManualPoll_Works()
+        [DataRow(true)]
+        [DataRow(false)]
+        [DataTestMethod]
+        public void ConfigCache_Override_ManualPoll_Works(bool useNewCreateApi)
         {
             ProjectConfig cachedConfig = ProjectConfig.Empty;
             Mock<IConfigCache> configCacheMock = new Mock<IConfigCache>();
@@ -51,7 +63,15 @@ namespace ConfigCat.Client.Tests
 
             configCacheMock.Setup(c => c.GetAsync(It.IsAny<string>(), CancellationToken.None)).ReturnsAsync(() => cachedConfig);
 
-            var client = ConfigCatClientBuilder.Initialize(SDKKEY).WithManualPoll().WithConfigCache(configCacheMock.Object).Create();
+            var client = useNewCreateApi
+                ? new ConfigCatClient(options =>
+                {
+                    options.SdkKey = SDKKEY;
+                    options.Logger = new ConsoleLogger(LogLevel.Debug);
+                    options.PollingMode = PollingModes.ManualPoll;
+                    options.ConfigCache = configCacheMock.Object;
+                })
+                : ConfigCatClientBuilder.Initialize(SDKKEY).WithManualPoll().WithConfigCache(configCacheMock.Object).Create();
 
             configCacheMock.Verify(c => c.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>()), Times.Never);
             configCacheMock.Verify(c => c.GetAsync(It.IsAny<string>(), CancellationToken.None), Times.Never);
@@ -70,8 +90,10 @@ namespace ConfigCat.Client.Tests
             configCacheMock.Verify(c => c.GetAsync(It.IsAny<string>(), CancellationToken.None), Times.Exactly(3));
         }
 
-        [TestMethod]
-        public void ConfigCache_Override_LazyLoad_Works()
+        [DataRow(true)]
+        [DataRow(false)]
+        [DataTestMethod]
+        public void ConfigCache_Override_LazyLoad_Works(bool useNewCreateApi)
         {
             ProjectConfig cachedConfig = ProjectConfig.Empty;
             Mock<IConfigCache> configCacheMock = new Mock<IConfigCache>();
@@ -82,7 +104,15 @@ namespace ConfigCat.Client.Tests
 
             configCacheMock.Setup(c => c.GetAsync(It.IsAny<string>(), CancellationToken.None)).ReturnsAsync(() => cachedConfig);
 
-            var client = ConfigCatClientBuilder.Initialize(SDKKEY).WithLazyLoad().WithConfigCache(configCacheMock.Object).Create();
+            var client = useNewCreateApi
+                ? new ConfigCatClient(options =>
+                {
+                    options.SdkKey = SDKKEY;
+                    options.Logger = new ConsoleLogger(LogLevel.Debug);
+                    options.PollingMode = PollingModes.LazyLoad();
+                    options.ConfigCache = configCacheMock.Object;
+                })
+                : ConfigCatClientBuilder.Initialize(SDKKEY).WithLazyLoad().WithConfigCache(configCacheMock.Object).Create();
 
             var actual = client.GetValue("stringDefaultCat", "N/A");
             Assert.AreEqual("Cat", actual);

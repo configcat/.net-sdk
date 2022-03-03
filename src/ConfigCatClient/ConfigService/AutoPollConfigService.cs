@@ -2,108 +2,158 @@
 using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
+using ConfigCat.Client.Configuration;
+using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client.ConfigService
 {
     internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
     {
-        private readonly DateTime maxInitWaitExpire;
-
-        private readonly Timer timer;
-
-        private ManualResetEventSlim initializedEventSlim = new ManualResetEventSlim(false);
-
-        public event OnConfigurationChangedEventHandler OnConfigurationChanged;
+        private readonly DateTimeOffset maxInitWaitExpire;
+        private readonly ManualResetEventSlim initializedEventSlim = new(false);
+        private readonly AutoPoll configuration;
+        private readonly CancellationTokenSource timerCancellationTokenSource = new();
 
         internal AutoPollConfigService(
+            AutoPoll configuration,
             IConfigFetcher configFetcher,
             CacheParameters cacheParameters,
-            TimeSpan pollingInterval,
-            TimeSpan maxInitWaitTime,
-            ILogger logger) : this(configFetcher, cacheParameters, pollingInterval, maxInitWaitTime, logger, true)
-        {
-        }
+            ILogger logger) : this(configuration, configFetcher, cacheParameters, logger, true)
+        { }
 
-        /// <summary>
-        /// For test purpose only
-        /// </summary>
-        /// <param name="configFetcher"></param>
-        /// <param name="cacheParameters"></param>
-        /// <param name="pollingInterval"></param>
-        /// <param name="maxInitWaitTime"></param>
-        /// <param name="logger"></param>
-        /// <param name="startTimer"></param>
+        // For test purposes only
         internal AutoPollConfigService(
+            AutoPoll configuration,
             IConfigFetcher configFetcher,
             CacheParameters cacheParameters,
-            TimeSpan pollingInterval,
-            TimeSpan maxInitWaitTime,
             ILogger logger,
             bool startTimer
             ) : base(configFetcher, cacheParameters, logger)
         {
+            this.configuration = configuration;
+            this.maxInitWaitExpire = DateTimeOffset.UtcNow.Add(configuration.MaxInitWaitTime);
+
             if (startTimer)
             {
-                this.timer = new Timer(RefreshLogic, "auto", TimeSpan.Zero, pollingInterval);
+                StartScheduler(configuration.PollInterval);
             }
-
-            this.maxInitWaitExpire = DateTime.UtcNow.Add(maxInitWaitTime);
         }
 
         protected override void Dispose(bool disposing)
         {
-            this.timer?.Dispose();
-
+            this.timerCancellationTokenSource.Cancel();
+            this.initializedEventSlim.Dispose();
             base.Dispose(disposing);
+        }
+
+
+        public ProjectConfig GetConfig()
+        {
+            if (this.ConfigCache is IConfigCatCache cache)
+            {
+                var delay = this.maxInitWaitExpire.Subtract(DateTimeOffset.UtcNow);
+                var cacheConfig = cache.Get(base.CacheKey);
+
+                if (delay > TimeSpan.Zero && cacheConfig.Equals(ProjectConfig.Empty))
+                {
+                    initializedEventSlim.Wait(delay);
+                    cacheConfig = cache.Get(base.CacheKey);
+                }
+
+                return cacheConfig;
+            }
+
+            // worst scenario, fallback to sync over async, delete when we enforce IConfigCatCache.
+            return Syncer.Sync(this.GetConfigAsync);
         }
 
         public async Task<ProjectConfig> GetConfigAsync()
         {
-            var delay = this.maxInitWaitExpire - DateTime.UtcNow;
-
-            var cacheConfig = await this.configCache.GetAsync(base.cacheKey).ConfigureAwait(false);
+            var delay = this.maxInitWaitExpire.Subtract(DateTimeOffset.UtcNow);
+            var cacheConfig = await this.ConfigCache.GetAsync(base.CacheKey).ConfigureAwait(false);
 
             if (delay > TimeSpan.Zero && cacheConfig.Equals(ProjectConfig.Empty))
             {
-                if (!initializedEventSlim.Wait(delay))
-                {
-                    await RefreshLogicAsync("init").ConfigureAwait(false);
-                }
-
-                cacheConfig = await this.configCache.GetAsync(base.cacheKey).ConfigureAwait(false);
+                initializedEventSlim.Wait(delay);
+                cacheConfig = await this.ConfigCache.GetAsync(base.CacheKey).ConfigureAwait(false);
             }
 
             return cacheConfig;
         }
 
-        public async Task RefreshConfigAsync()
+        public void RefreshConfig()
         {
-            await RefreshLogicAsync("manual").ConfigureAwait(false);
+            // check for the new cache interface until we remove the old IConfigCache.
+            if (this.ConfigCache is IConfigCatCache cache)
+            {
+                var latestConfig = cache.Get(base.CacheKey);
+                var newConfig = this.ConfigFetcher.Fetch(latestConfig);
+
+                if (!latestConfig.Equals(newConfig) && !newConfig.Equals(ProjectConfig.Empty))
+                {
+                    this.Log.Debug("config changed");
+                    cache.Set(base.CacheKey, newConfig);
+                    this.configuration.RaiseOnConfigurationChanged(this, OnConfigurationChangedEventArgs.Empty);
+                    initializedEventSlim.Set();
+                }
+
+                return;
+            }
+
+            // worst scenario, fallback to sync over async, delete when we enforce IConfigCatCache.
+            Syncer.Sync(this.RefreshConfigAsync);
         }
 
-        private async Task RefreshLogicAsync(object sender)
+        public async Task RefreshConfigAsync()
         {
-            this.log.Debug($"RefreshLogic start [{sender}]");
-
-            var latestConfig = await this.configCache.GetAsync(base.cacheKey).ConfigureAwait(false);
-
-            var newConfig = await this.configFetcher.Fetch(latestConfig).ConfigureAwait(false);
+            var latestConfig = await this.ConfigCache.GetAsync(base.CacheKey).ConfigureAwait(false);
+            var newConfig = await this.ConfigFetcher.FetchAsync(latestConfig).ConfigureAwait(false);
 
             if (!latestConfig.Equals(newConfig) && !newConfig.Equals(ProjectConfig.Empty))
             {
-                this.log.Debug("config changed");
-
-                await this.configCache.SetAsync(base.cacheKey, newConfig).ConfigureAwait(false);
-
-                OnConfigurationChanged?.Invoke(this, OnConfigurationChangedEventArgs.Empty);
-
+                this.Log.Debug("config changed");
+                await this.ConfigCache.SetAsync(base.CacheKey, newConfig).ConfigureAwait(false);
+                this.configuration.RaiseOnConfigurationChanged(this, OnConfigurationChangedEventArgs.Empty);
                 initializedEventSlim.Set();
             }
         }
 
-        private void RefreshLogic(object sender)
+        private void StartScheduler(TimeSpan interval)
         {
-            this.RefreshLogicAsync(sender).Wait();
+            Task.Run(async () =>
+            {
+                while (!this.timerCancellationTokenSource.IsCancellationRequested)
+                {
+                    try
+                    {
+                        var scheduledNextTime = DateTimeOffset.UtcNow.Add(interval);
+                        try
+                        {
+                            await RefreshConfigAsync();
+                        }
+                        catch (Exception exception)
+                        {
+                            this.Log.Error($"Error occured during polling. {exception.Message}");
+                        }
+                        finally
+                        {
+                            var realNextTime = scheduledNextTime.Subtract(DateTimeOffset.UtcNow);
+                            if (realNextTime > TimeSpan.Zero)
+                            {
+                                await Task.Delay(interval, this.timerCancellationTokenSource.Token);
+                            }
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // ignore exceptions from cancellation.
+                    }
+                    catch (Exception exception)
+                    {
+                        this.Log.Error($"Error occured during polling. {exception.Message}");
+                    }
+                }
+            });
         }
     }
 }

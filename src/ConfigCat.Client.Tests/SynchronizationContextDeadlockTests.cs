@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
+#pragma warning disable CS0618 // Type or member is obsolete
 namespace ConfigCat.Client.Tests
 {
     [TestClass]
@@ -41,38 +42,62 @@ namespace ConfigCat.Client.Tests
             syncContextMock.Reset();
         }
 
-        [TestMethod]
-        public void AutoPollDeadLockCheck()
+        [DataRow(true)]
+        [DataRow(false)]
+        [DataTestMethod]
+        public void AutoPollDeadLockCheck(bool useNewCreateApi)
         {
-            var client = new ConfigCatClient(new AutoPollConfiguration
-            {
-                SdkKey = SDKKEY,
-                Logger = new ConsoleLogger(LogLevel.Off)                
-            });
+            var client = useNewCreateApi
+                ? new ConfigCatClient(options =>
+                {
+                    options.SdkKey = SDKKEY;
+                    options.Logger = new ConsoleLogger(LogLevel.Off);
+                })
+                : new ConfigCatClient(new AutoPollConfiguration
+                {
+                    SdkKey = SDKKEY,
+                    Logger = new ConsoleLogger(LogLevel.Off)                
+                });
 
             ClientDeadlockCheck(client);
         }
 
-        [TestMethod]
-        public void ManualPollDeadLockCheck()
+        [DataRow(true)]
+        [DataRow(false)]
+        [DataTestMethod]
+        public void ManualPollDeadLockCheck(bool useNewCreateApi)
         {
-            var client = new ConfigCatClient(new ManualPollConfiguration
-            {
-                SdkKey = SDKKEY,
-                Logger = new ConsoleLogger(LogLevel.Off)
-            });
+            var client = useNewCreateApi
+                ? new ConfigCatClient(options =>
+                {
+                    options.SdkKey = SDKKEY;
+                    options.Logger = new ConsoleLogger(LogLevel.Off);
+                })
+                : new ConfigCatClient(new ManualPollConfiguration
+                {
+                    SdkKey = SDKKEY,
+                    Logger = new ConsoleLogger(LogLevel.Off)
+                });
 
             ClientDeadlockCheck(client);
         }
 
-        [TestMethod]
-        public void LazyLoadDeadLockCheck()
+        [DataRow(true)]
+        [DataRow(false)]
+        [DataTestMethod]
+        public void LazyLoadDeadLockCheck(bool useNewCreateApi)
         {
-            var client = new ConfigCatClient(new LazyLoadConfiguration
-            {
-                SdkKey = SDKKEY,
-                Logger = new ConsoleLogger(LogLevel.Off)
-            });
+            var client = useNewCreateApi
+                ? new ConfigCatClient(options =>
+                {
+                    options.SdkKey = SDKKEY;
+                    options.Logger = new ConsoleLogger(LogLevel.Off);
+                })
+                : new ConfigCatClient(new LazyLoadConfiguration
+                {
+                    SdkKey = SDKKEY,
+                    Logger = new ConsoleLogger(LogLevel.Off)
+                });
 
             ClientDeadlockCheck(client);
         }

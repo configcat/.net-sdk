@@ -1,4 +1,9 @@
 ﻿using System.Collections.Generic;
+#if USE_NEWTONSOFT_JSON
+using Newtonsoft.Json;
+#else
+using System.Text.Json.Serialization;
+#endif
 
 namespace ConfigCat.Client
 {
@@ -32,7 +37,7 @@ namespace ConfigCat.Client
         /// <summary>
         /// Serve all user attributes
         /// </summary>
-        [Newtonsoft.Json.JsonIgnore]
+        [JsonIgnore]
         public IReadOnlyDictionary<string, string> AllAttributes
         {
             get
@@ -44,19 +49,16 @@ namespace ConfigCat.Client
                     { nameof(Country),  this.Country},
                 };
 
-                if (Custom != null && Custom.Count > 0)
+                if (Custom is not { Count: > 0 }) return result;
+                
+                foreach (var item in this.Custom)
                 {
-                    foreach (var item in this.Custom)
+                    if (item.Key is nameof(Identifier) or nameof(Email) or nameof(Country))
                     {
-                        if (item.Key == nameof(Identifier) ||
-                            item.Key == nameof(Email) ||
-                            item.Key == nameof(Country))
-                        {
-                            continue;
-                        }
-
-                        result.Add(item.Key, item.Value);
+                        continue;
                     }
+
+                    result.Add(item.Key, item.Value);
                 }
 
                 return result;

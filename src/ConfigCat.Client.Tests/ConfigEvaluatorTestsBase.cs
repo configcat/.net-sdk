@@ -1,6 +1,5 @@
 ﻿using ConfigCat.Client.Evaluate;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -14,7 +13,7 @@ namespace ConfigCat.Client.Tests
     {
         private readonly ILogger logger = new LoggerWrapper(new ConsoleLogger(LogLevel.Debug));
 
-        protected readonly ProjectConfig config;
+        private protected readonly IDictionary<string, Setting> config;
 
         internal readonly IRolloutEvaluator configEvaluator;
 
@@ -24,9 +23,9 @@ namespace ConfigCat.Client.Tests
 
         public ConfigEvaluatorTestsBase()
         {
-            this.configEvaluator = new RolloutEvaluator(logger, new ConfigDeserializer(logger, JsonSerializer.Create()));
+            this.configEvaluator = new RolloutEvaluator(logger);
 
-            this.config = new ProjectConfig(this.GetSampleJson(), DateTime.UtcNow, null);
+            this.config = this.GetSampleJson().Deserialize<SettingsWithPreferences>().Settings;
         }
 
         protected virtual void AssertValue(string keyName, string expected, User user)
@@ -61,49 +60,45 @@ namespace ConfigCat.Client.Tests
 
         protected string GetSampleJson()
         {
-            using (Stream stream = File.OpenRead("data" + Path.DirectorySeparatorChar + this.SampleJsonFileName))
-            using (StreamReader reader = new StreamReader(stream))
-            {
-                return reader.ReadToEnd();
-            }
+            using Stream stream = File.OpenRead("data" + Path.DirectorySeparatorChar + this.SampleJsonFileName);
+            using StreamReader reader = new(stream);
+            return reader.ReadToEnd();
         }
 
         public async Task MatrixTest(Action<string, string, User> assertation)
         {
-            using (Stream stream = File.OpenRead("data"+ Path.DirectorySeparatorChar + this.MatrixResultFileName))
-            using (StreamReader reader = new StreamReader(stream))
+            using Stream stream = File.OpenRead("data" + Path.DirectorySeparatorChar + this.MatrixResultFileName);
+            using StreamReader reader = new(stream);
+            var header = await reader.ReadLineAsync();
+
+            var columns = header.Split(new[] { ';' }).ToList();
+
+            while (!reader.EndOfStream)
             {
-                var header = await reader.ReadLineAsync();
+                var rawline = await reader.ReadLineAsync();
 
-                var columns = header.Split(new[] { ';' }).ToList();
-
-                while (!reader.EndOfStream)
+                if (string.IsNullOrEmpty(rawline))
                 {
-                    var rawline = await reader.ReadLineAsync();
+                    continue;
+                }
 
-                    if (string.IsNullOrEmpty(rawline))
+                var row = rawline.Split(new[] { ';' });
+
+                User u = null;
+
+                if (row[0] != "##null##")
+                {
+                    u = new User(row[0])
                     {
-                        continue;
-                    }
+                        Email = row[1] == "##null##" ? null : row[1],
+                        Country = row[2] == "##null##" ? null : row[2],
+                        Custom = row[3] == "##null##" ? null : new Dictionary<string, string> { { columns[3], row[3] } }
+                    };
+                }
 
-                    var row = rawline.Split(new[] { ';' });
-
-                    User u = null;
-
-                    if (row[0] != "##null##")
-                    {
-                        u = new User(row[0])
-                        {
-                            Email = row[1] == "##null##" ? null : row[1],
-                            Country = row[2] == "##null##" ? null : row[2],
-                            Custom = row[3] == "##null##" ? null : new Dictionary<string, string> { { columns[3], row[3] } }
-                        };
-                    }
-
-                    for (int i = 4; i < columns.Count; i++)
-                    {
-                        assertation(columns[i], row[i], u);
-                    }
+                for (int i = 4; i < columns.Count; i++)
+                {
+                    assertation(columns[i], row[i], u);
                 }
             }
         }

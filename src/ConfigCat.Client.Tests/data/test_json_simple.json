@@ -1,0 +1,9 @@
+﻿{
+  "flags": {
+    "disabledFeature": false,
+    "enabledFeature": true,
+    "intSetting": 5,
+    "doubleSetting": 3.14,
+    "stringSetting": "test"
+  }
+}

@@ -5,12 +5,13 @@ using Moq;
 using System;
 using System.Threading.Tasks;
 using System.Linq;
-using System.Collections.Generic;
 using ConfigCat.Client.Cache;
+using ConfigCat.Client.Configuration;
+using System.Collections.Generic;
 
+#pragma warning disable CS0618 // Type or member is obsolete
 namespace ConfigCat.Client.Tests
 {
-
     [TestClass]
     public class ConfigCatClientTests
     {
@@ -58,6 +59,34 @@ namespace ConfigCat.Client.Tests
             new ConfigCatClient(clientConfiguration);
         }
 
+        [ExpectedException(typeof(ArgumentException))]
+        [TestMethod]
+        public void CreateAnInstance_WhenAutoPollConfigurationSdkKeyIsNull_ShouldThrowArgumentException_NewApi()
+        {
+            new ConfigCatClient(options => { options.SdkKey = null; });
+        }
+
+
+
+        [ExpectedException(typeof(ArgumentException))]
+        [TestMethod]
+        public void CreateAnInstance_WhenConfigurationSdkKeyIsEmpty_ShouldThrowArgumentException()
+        {
+            var clientConfiguration = new AutoPollConfiguration
+            {
+                SdkKey = string.Empty
+            };
+
+            new ConfigCatClient(clientConfiguration);
+        }
+
+        [ExpectedException(typeof(ArgumentException))]
+        [TestMethod]
+        public void CreateAnInstance_WhenAutoPollConfigurationSdkKeyIsEmpty_ShouldThrowArgumentException_NewApi()
+        {
+            new ConfigCatClient(options => { options.SdkKey = string.Empty; });
+        }
+
         [ExpectedException(typeof(ArgumentOutOfRangeException))]
         [TestMethod]
         public void CreateAnInstance_WhenAutoPollConfigurationPollIntervalsZero_ShouldThrowArgumentOutOfRangeException()
@@ -71,16 +100,15 @@ namespace ConfigCat.Client.Tests
             new ConfigCatClient(clientConfiguration);
         }
 
-        [ExpectedException(typeof(ArgumentException))]
+        [ExpectedException(typeof(ArgumentOutOfRangeException))]
         [TestMethod]
-        public void CreateAnInstance_WhenConfigurationSdkKeyIsEmpty_ShouldThrowArgumentNullException()
+        public void CreateAnInstance_WhenAutoPollConfigurationPollIntervalsZero_ShouldThrowArgumentOutOfRangeException_NewApi()
         {
-            var clientConfiguration = new AutoPollConfiguration
+            new ConfigCatClient(options =>
             {
-                SdkKey = string.Empty
-            };
-
-            new ConfigCatClient(clientConfiguration);
+                options.SdkKey = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf";
+                options.PollingMode = PollingModes.AutoPoll(TimeSpan.FromSeconds(0));
+            });
         }
 
         [ExpectedException(typeof(ArgumentOutOfRangeException))]
@@ -94,6 +122,26 @@ namespace ConfigCat.Client.Tests
             };
 
             new ConfigCatClient(clientConfiguration);
+        }
+
+        [ExpectedException(typeof(ArgumentOutOfRangeException))]
+        [TestMethod]
+        public void CreateAnInstance_WhenLazyLoadConfigurationTimeToLiveSecondsIsZero_ShouldThrowArgumentOutOfRangeException_NewApi()
+        {
+            new ConfigCatClient(options =>
+            {
+                options.SdkKey = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf";
+                options.PollingMode = PollingModes.LazyLoad(TimeSpan.FromSeconds(0));
+            });
+        }
+
+        [ExpectedException(typeof(ArgumentNullException))]
+        [TestMethod]
+        public void CreateAnInstance_WhenOptionsIsNull_ShouldThrowArgumentNullException()
+        {
+            Action<ConfigCatClientOptions> config = null;
+
+            new ConfigCatClient(config);
         }
 
         [ExpectedException(typeof(ArgumentNullException))]
@@ -137,6 +185,18 @@ namespace ConfigCat.Client.Tests
 
         }
 
+        [ExpectedException(typeof(ArgumentNullException))]
+        [TestMethod]
+        public void CreateAnInstance_WhenLoggerIsNull_ShouldThrowArgumentNullException_NewApi()
+        {
+            new ConfigCatClient(options =>
+            {
+                options.SdkKey = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf";
+                options.Logger = null;
+            });
+
+        }
+
         [TestMethod]
         public void CreateAnInstance_WithValidConfiguration_ShouldCreateAnInstance()
         {
@@ -165,7 +225,7 @@ namespace ConfigCat.Client.Tests
         }
 
         [TestMethod]
-        public void GetValue_ConfigServiceThrowException_ShouldReturnDefaultValue()
+        public async Task GetValue_ConfigServiceThrowException_ShouldReturnDefaultValue()
         {
             // Arrange
 
@@ -173,6 +233,28 @@ namespace ConfigCat.Client.Tests
 
             configServiceMock
                 .Setup(m => m.GetConfigAsync())
+                .Throws<Exception>();
+
+            var client = new ConfigCatClient(configServiceMock.Object, loggerMock.Object, evaluatorMock.Object, configDeserializerMock.Object);
+
+            // Act
+
+            var actual = await client.GetValueAsync(null, defaultValue);
+
+            // Assert
+
+            Assert.AreEqual(defaultValue, actual);
+        }
+
+        [TestMethod]
+        public void GetValue_ConfigServiceThrowException_ShouldReturnDefaultValue_Sync()
+        {
+            // Arrange
+
+            const string defaultValue = "Victory for the Firstborn!";
+
+            configServiceMock
+                .Setup(m => m.GetConfig())
                 .Throws<Exception>();
 
             var client = new ConfigCatClient(configServiceMock.Object, loggerMock.Object, evaluatorMock.Object, configDeserializerMock.Object);
@@ -216,7 +298,7 @@ namespace ConfigCat.Client.Tests
             const string defaultValue = "Victory for the Firstborn!";
 
             evaluatorMock
-                .Setup(m => m.Evaluate(It.IsAny<ProjectConfig>(), It.IsAny<string>(), defaultValue, null))
+                .Setup(m => m.Evaluate(It.IsAny<IDictionary<string, Setting>>(), It.IsAny<string>(), defaultValue, null))
                 .Throws<Exception>();
 
             var client = new ConfigCatClient(configServiceMock.Object, loggerMock.Object, evaluatorMock.Object, configDeserializerMock.Object);
@@ -238,7 +320,7 @@ namespace ConfigCat.Client.Tests
             const string defaultValue = "Victory for the Firstborn!";
 
             evaluatorMock
-                .Setup(m => m.Evaluate(It.IsAny<ProjectConfig>(), It.IsAny<string>(), defaultValue, null))
+                .Setup(m => m.Evaluate(It.IsAny<IDictionary<string, Setting>>(), It.IsAny<string>(), defaultValue, null))
                 .Throws<Exception>();
 
             var client = new ConfigCatClient(configServiceMock.Object, loggerMock.Object, evaluatorMock.Object, configDeserializerMock.Object);
@@ -253,11 +335,35 @@ namespace ConfigCat.Client.Tests
         }
 
         [TestMethod]
-        public void GetAllKeys_ConfigServiceThrowException_ShouldReturnsWithEmptyArray()
+        public async Task GetAllKeys_ConfigServiceThrowException_ShouldReturnsWithEmptyArray()
         {
             // Arrange
 
             configServiceMock.Setup(m => m.GetConfigAsync()).Throws<Exception>();
+
+            IConfigCatClient instance = new ConfigCatClient(
+                configServiceMock.Object,
+                loggerMock.Object,
+                evaluatorMock.Object,
+                configDeserializerMock.Object);
+
+            // Act
+
+            var actualKeys = await instance.GetAllKeysAsync();
+
+            // Assert
+
+            Assert.IsNotNull(actualKeys);
+            Assert.AreEqual(0, actualKeys.Count());
+            loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
+        }
+
+        [TestMethod]
+        public void GetAllKeys_ConfigServiceThrowException_ShouldReturnsWithEmptyArray_Sync()
+        {
+            // Arrange
+
+            configServiceMock.Setup(m => m.GetConfig()).Throws<Exception>();
 
             IConfigCatClient instance = new ConfigCatClient(
                 configServiceMock.Object,
@@ -305,11 +411,39 @@ namespace ConfigCat.Client.Tests
         }
 
         [TestMethod]
-        public void GetAllKeys_DeserializeFailed_ShouldReturnsWithEmptyArray()
+        public async Task GetAllKeysAsync_DeserializeFailed_ShouldReturnsWithEmptyArray()
         {
             // Arrange
 
             configServiceMock.Setup(m => m.GetConfigAsync()).ReturnsAsync(ProjectConfig.Empty);
+            var o = new SettingsWithPreferences();
+            configDeserializerMock
+                .Setup(m => m.TryDeserialize(It.IsAny<string>(), out o))
+                .Returns(false);
+
+            IConfigCatClient instance = new ConfigCatClient(
+                configServiceMock.Object,
+                loggerMock.Object,
+                evaluatorMock.Object,
+                configDeserializerMock.Object);
+
+            // Act
+
+            var actualKeys = await instance.GetAllKeysAsync();
+
+            // Assert
+
+            Assert.IsNotNull(actualKeys);
+            Assert.AreEqual(0, actualKeys.Count());
+            loggerMock.Verify(m => m.Warning(It.IsAny<string>()), Times.Once);
+        }
+
+        [TestMethod]
+        public void GetAllKeys_DeserializeFailed_ShouldReturnsWithEmptyArray()
+        {
+            // Arrange
+
+            configServiceMock.Setup(m => m.GetConfig()).Returns(ProjectConfig.Empty);
             var o = new SettingsWithPreferences();
             configDeserializerMock
                 .Setup(m => m.TryDeserialize(It.IsAny<string>(), out o))
@@ -340,7 +474,7 @@ namespace ConfigCat.Client.Tests
             const string defaultValue = "Victory for the Firstborn!";
 
             evaluatorMock
-                .Setup(m => m.EvaluateVariationId(It.IsAny<ProjectConfig>(), It.IsAny<string>(), defaultValue, null))
+                .Setup(m => m.EvaluateVariationId(It.IsAny<IDictionary<string, Setting>>(), It.IsAny<string>(), defaultValue, null))
                 .Throws<Exception>();
 
             var client = new ConfigCatClient(configServiceMock.Object, loggerMock.Object, evaluatorMock.Object, configDeserializerMock.Object);
@@ -362,7 +496,7 @@ namespace ConfigCat.Client.Tests
             const string defaultValue = "Victory for the Firstborn!";
 
             evaluatorMock
-                .Setup(m => m.EvaluateVariationId(It.IsAny<ProjectConfig>(), It.IsAny<string>(), defaultValue, null))
+                .Setup(m => m.EvaluateVariationId(It.IsAny<IDictionary<string, Setting>>(), It.IsAny<string>(), defaultValue, null))
                 .Throws<Exception>();
 
             var client = new ConfigCatClient(configServiceMock.Object, loggerMock.Object, evaluatorMock.Object, configDeserializerMock.Object);
@@ -495,11 +629,33 @@ namespace ConfigCat.Client.Tests
         }
 
         [TestMethod]
-        public void ForceRefresh_ShouldInvokeConfigServiceRefreshConfigAsync()
+        public async Task ForceRefresh_ShouldInvokeConfigServiceRefreshConfigAsync()
         {
             // Arrange
 
-            configServiceMock.Setup(m => m.RefreshConfigAsync()).Returns(Task.CompletedTask);
+            configServiceMock.Setup(m => m.RefreshConfigAsync()).Returns(Task.FromResult(0));
+
+            IConfigCatClient instance = new ConfigCatClient(
+                configServiceMock.Object,
+                loggerMock.Object,
+                evaluatorMock.Object,
+                configDeserializerMock.Object);
+
+            // Act
+
+            await instance.ForceRefreshAsync();
+
+            // Assert
+
+            configServiceMock.Verify(m => m.RefreshConfigAsync(), Times.Once);
+        }
+
+        [TestMethod]
+        public void ForceRefresh_ShouldInvokeConfigServiceRefreshConfig()
+        {
+            // Arrange
+
+            configServiceMock.Setup(m => m.RefreshConfig());
 
             IConfigCatClient instance = new ConfigCatClient(
                 configServiceMock.Object,
@@ -513,7 +669,7 @@ namespace ConfigCat.Client.Tests
 
             // Assert
 
-            configServiceMock.Verify(m => m.RefreshConfigAsync(), Times.Once);
+            configServiceMock.Verify(m => m.RefreshConfig(), Times.Once);
         }
 
         [TestMethod]
@@ -521,7 +677,7 @@ namespace ConfigCat.Client.Tests
         {
             // Arrange
 
-            configServiceMock.Setup(m => m.RefreshConfigAsync()).Returns(Task.CompletedTask);
+            configServiceMock.Setup(m => m.RefreshConfigAsync()).Returns(Task.FromResult(0));
 
             IConfigCatClient instance = new ConfigCatClient(
                 configServiceMock.Object,
@@ -540,11 +696,33 @@ namespace ConfigCat.Client.Tests
 
 
         [TestMethod]
-        public void ForceRefresh_ConfigServiceThrowException_ShouldNotReThrowTheExceptionAndLogsError()
+        public async Task ForceRefresh_ConfigServiceThrowException_ShouldNotReThrowTheExceptionAndLogsError()
         {
             // Arrange
 
             configServiceMock.Setup(m => m.RefreshConfigAsync()).Throws<Exception>();
+
+            IConfigCatClient instance = new ConfigCatClient(
+                configServiceMock.Object,
+                loggerMock.Object,
+                evaluatorMock.Object,
+                configDeserializerMock.Object);
+
+            // Act
+
+            await instance.ForceRefreshAsync();
+
+            // Assert
+
+            loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
+        }
+
+        [TestMethod]
+        public void ForceRefresh_ConfigServiceThrowException_ShouldNotReThrowTheExceptionAndLogsError_Sync()
+        {
+            // Arrange
+
+            configServiceMock.Setup(m => m.RefreshConfig()).Throws<Exception>();
 
             IConfigCatClient instance = new ConfigCatClient(
                 configServiceMock.Object,
@@ -604,8 +782,16 @@ namespace ConfigCat.Client.Tests
 
             public Task RefreshConfigAsync()
             {
-                return Task.CompletedTask;
+                return Task.FromResult(0);
             }
+
+            public ProjectConfig GetConfig()
+            {
+                return ProjectConfig.Empty;
+            }
+
+            public void RefreshConfig()
+            { }
         }
     }
 }

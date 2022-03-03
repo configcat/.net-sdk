@@ -140,7 +140,7 @@ namespace ConfigCat.Client.ConfigService
                             var realNextTime = scheduledNextTime.Subtract(DateTimeOffset.UtcNow);
                             if (realNextTime > TimeSpan.Zero)
                             {
-                                await Task.Delay(interval, this.timerCancellationTokenSource.Token);
+                                await Task.Delay(realNextTime, this.timerCancellationTokenSource.Token);
                             }
                         }
                     }

@@ -350,7 +350,7 @@ namespace ConfigCat.Client.Tests
         [TestMethod]
         public async Task LocalFile_Watcher_Reload()
         {
-            await CreateFileAndWriteContent(SampleFileToCreate, "initial");
+            File.WriteAllText(SampleFileToCreate, GetJsonContent("initial"));
 
             using var client = new ConfigCatClient(options =>
             {
@@ -361,7 +361,7 @@ namespace ConfigCat.Client.Tests
 
             Assert.AreEqual("initial", await client.GetValueAsync("fakeKey", string.Empty));
 
-            await WriteContent(SampleFileToCreate, "modified");
+            File.WriteAllText(SampleFileToCreate, GetJsonContent("modified"));
             await Task.Delay(2000);
 
             Assert.AreEqual("modified", await client.GetValueAsync("fakeKey", string.Empty));
@@ -372,20 +372,6 @@ namespace ConfigCat.Client.Tests
         private static string GetJsonContent(string value)
         {
             return $"{{ \"f\": {{ \"fakeKey\": {{ \"v\": \"{value}\", \"p\": [] ,\"r\": [] }} }} }}";
-        }
-
-        private static async Task CreateFileAndWriteContent(string path, string content)
-        {
-            using var stream = File.Create(path);
-            using var writer = new StreamWriter(stream);
-            await writer.WriteAsync(GetJsonContent(content));
-        }
-
-        private static async Task WriteContent(string path, string content)
-        {
-            using var stream = File.OpenWrite(path);
-            using var writer = new StreamWriter(stream);
-            await writer.WriteAsync(GetJsonContent(content));
         }
     }
 }

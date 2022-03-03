@@ -3,15 +3,15 @@
 ### 6.1.20
 - Bugfix: The SDK's json serialization behavior is not depending on the `JsonConvert.DefaultSettings` anymore.
 ### 6.1.0
-- Bugfix (#17)
+- Bugfix ([#17](https://github.com/configcat/.net-sdk/issues/17))
 ### 6.0.0
 - Addressing global data handling and processing trends via Data Governance feature. Customers can control the geographic location where their config JSONs get published to. [See the docs](https://configcat.com/docs/advanced/data-governance/).
 We are introducing a new DataGovernance initialization parameter. Set this parameter to be in sync with the Data Governance preference on the [Dashboard](https://app.configcat.com/organization/data-governance).
        
-### Breaking change:
+#### Breaking change:
 - Custom cache implementations should implement the new cache interface using key parameter in the get/set methods.
 ### 5.3.0
-- VariationID, bugfix (#11)
+- VariationID, bugfix ([#11](https://github.com/configcat/.net-sdk/issues/11))
 ### 5.2.0
 - Bugfix (config fetch, caching)
 ### 5.1.0

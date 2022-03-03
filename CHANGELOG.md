@@ -1,3 +1,6 @@
+### 6.4.7
+- Remove unused `System.Text.RegularExpressions` dependency.
+
 ### 6.4.6
 - Fix the wait time calculation in auto-polling mode.
 

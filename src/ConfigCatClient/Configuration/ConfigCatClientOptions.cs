@@ -5,7 +5,10 @@
     /// </summary>
     public class ConfigCatClientOptions : ConfigurationBase
     {
-        internal PollingMode PollingMode { get; set; } = PollingModes.AutoPoll();
+        /// <summary>
+        /// The polling mode.
+        /// </summary>
+        public PollingMode PollingMode { get; set; } = PollingModes.AutoPoll();
 
         internal override void Validate()
         {

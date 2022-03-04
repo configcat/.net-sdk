@@ -1,3 +1,6 @@
+### 6.4.9
+- Move the PollingMode option to public scope.
+
 ### 6.4.8
 - Readd `System.Text.RegularExpressions` version `4.3.1` due to SNYK security report.
 

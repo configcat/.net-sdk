@@ -11,7 +11,7 @@ namespace ConfigCat.Client.Tests
 {
     public abstract class ConfigEvaluatorTestsBase
     {
-        private readonly ILogger logger = new LoggerWrapper(new ConsoleLogger(LogLevel.Debug));
+        private readonly ILogger logger = new ConsoleLogger(LogLevel.Debug);
 
         private protected readonly IDictionary<string, Setting> config;
 
@@ -23,7 +23,7 @@ namespace ConfigCat.Client.Tests
 
         public ConfigEvaluatorTestsBase()
         {
-            this.configEvaluator = new RolloutEvaluator(logger);
+            this.configEvaluator = new RolloutEvaluator(new LoggerWrapper(logger));
 
             this.config = this.GetSampleJson().Deserialize<SettingsWithPreferences>().Settings;
         }

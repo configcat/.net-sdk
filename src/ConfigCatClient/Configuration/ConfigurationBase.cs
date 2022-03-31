@@ -9,7 +9,7 @@ namespace ConfigCat.Client
     /// </summary>
     public abstract class ConfigurationBase
     {
-        private ILogger logger = LoggerWrapper.Default;
+        private ILogger logger = new ConsoleLogger(LogLevel.Warning);
 
         /// <summary>
         /// Logger instance.
@@ -19,7 +19,7 @@ namespace ConfigCat.Client
             get => this.logger;
             set
             {
-                this.logger = new LoggerWrapper(value ?? throw new ArgumentNullException(nameof(Logger)));
+                this.logger = value ?? throw new ArgumentNullException(nameof(Logger));
             }
         }
 

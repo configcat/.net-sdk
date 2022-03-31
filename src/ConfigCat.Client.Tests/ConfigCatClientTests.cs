@@ -27,6 +27,8 @@ namespace ConfigCat.Client.Tests
             loggerMock.Reset();
             evaluatorMock.Reset();
             configDeserializerMock.Reset();
+
+            loggerMock.Setup(l => l.LogLevel).Returns(LogLevel.Warning);
         }
 
         [ExpectedException(typeof(ArgumentException))]

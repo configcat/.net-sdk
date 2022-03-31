@@ -10,7 +10,11 @@ namespace ConfigCat.Client.Override
 {
     internal sealed class LocalFileDataSource : IOverrideDataSource
     {
+        const int WAIT_TIME_FOR_UNLOCK = 200; // ms
+        const int MAX_WAIT_ITERATIONS = 50;
+
         private int isReading;
+        private readonly string fullPath;
         private readonly ILogger logger;
         private readonly FileSystemWatcher fileSystemWatcher;
         private readonly TaskCompletionSource<bool> asyncInit = new();
@@ -20,33 +24,33 @@ namespace ConfigCat.Client.Override
 
         public LocalFileDataSource(string filePath, bool autoReload, ILogger logger)
         {
+            this.fullPath = Path.GetFullPath(filePath);
             if (autoReload)
             {
-                var directory = Path.GetDirectoryName(filePath);
+                var directory = Path.GetDirectoryName(this.fullPath);
                 if (string.IsNullOrWhiteSpace(directory))
                 {
-                    logger.Error($"Directory of {filePath} not found to watch.");
+                    logger.Error($"Directory of {this.fullPath} not found to watch.");
                 }
                 else
                 {
-                    this.fileSystemWatcher = new FileSystemWatcher(directory)
-                    {
-                        Filter = Path.GetFileName(filePath),
-                        NotifyFilter = NotifyFilters.LastWrite,
-                        EnableRaisingEvents = true
-                    };
-                    this.fileSystemWatcher.Changed += FileSystemWatcher_Changed;
-                    logger.Information($"Watching {filePath} for changes.");
+                    this.fileSystemWatcher = new FileSystemWatcher(directory);
+                    this.fileSystemWatcher.Changed += OnChanged;
+                    this.fileSystemWatcher.Created += OnChanged;
+                    this.fileSystemWatcher.Renamed += OnChanged;
+                    this.fileSystemWatcher.EnableRaisingEvents = true;
+                    logger.Information($"Watching {this.fullPath} for changes.");
                 }
             }
 
             this.logger = logger;
-            _ = this.ReadFileAsync(filePath);
+            _ = this.ReadFileAsync(this.fullPath);
         }
 
-        private async void FileSystemWatcher_Changed(object sender, FileSystemEventArgs e)
+        private async void OnChanged(object sender, FileSystemEventArgs e)
         {
-            if (e.ChangeType != WatcherChangeTypes.Changed)
+            // filter out events on temporary files
+            if (e.FullPath != this.fullPath)
                 return;
 
             this.logger.Information($"Reload file {e.FullPath}.");
@@ -74,18 +78,34 @@ namespace ConfigCat.Client.Override
 
             try
             {
-                using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
-                using var reader = new StreamReader(stream);
-                var content = await reader.ReadToEndAsync();
-                var simplified = content.DeserializeOrDefault<SimplifiedConfig>();
-                if (simplified?.Entries != null)
+                for (int i = 1; i <= MAX_WAIT_ITERATIONS; i++)
                 {
-                    this.overrideValues = simplified.Entries.ToDictionary(kv => kv.Key, kv => kv.Value.ToSetting());
-                    return;
-                }
+                    try
+                    {
+                        using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                        using var reader = new StreamReader(stream);
+                        var content = await reader.ReadToEndAsync();
+                        var simplified = content.DeserializeOrDefault<SimplifiedConfig>();
+                        if (simplified?.Entries != null)
+                        {
+                            this.overrideValues = simplified.Entries.ToDictionary(kv => kv.Key, kv => kv.Value.ToSetting());
+                            return;
+                        }
 
-                var deserialized = content.Deserialize<SettingsWithPreferences>();
-                this.overrideValues = deserialized.Settings;
+                        var deserialized = content.Deserialize<SettingsWithPreferences>();
+                        this.overrideValues = deserialized.Settings;
+                        break;
+                    }
+                    // this logic ensures that we keep trying to open the file for max 10s
+                    // when it's locked by another process.
+                    catch (IOException e) when (e.HResult == -2147024864) // ERROR_SHARING_VIOLATION
+                    {
+                        if (i >= MAX_WAIT_ITERATIONS)
+                            throw;
+
+                        await Task.Delay(WAIT_TIME_FOR_UNLOCK);
+                    }
+                }                
             }
             catch (Exception ex)
             {
@@ -108,10 +128,11 @@ namespace ConfigCat.Client.Override
         {
             if (this.fileSystemWatcher != null)
             {
-                this.fileSystemWatcher.Changed -= FileSystemWatcher_Changed;
+                this.fileSystemWatcher.Changed -= OnChanged;
+                this.fileSystemWatcher.Created -= OnChanged;
+                this.fileSystemWatcher.Renamed -= OnChanged;
                 this.fileSystemWatcher.Dispose();
             }
-
             this.syncInit.Dispose();
         }
 

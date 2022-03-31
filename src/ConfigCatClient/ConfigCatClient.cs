@@ -121,7 +121,7 @@ namespace ConfigCat.Client
 
             configuration.Validate();
 
-            this.log = configuration.Logger;
+            this.log = new LoggerWrapper(configuration.Logger);
             this.configDeserializer = new ConfigDeserializer();
             this.configEvaluator = new RolloutEvaluator(this.log);
 
@@ -151,12 +151,12 @@ namespace ConfigCat.Client
         }
 
         /// <summary>
-        /// For test purpose only
+        /// For testing purposes only
         /// </summary>        
         internal ConfigCatClient(IConfigService configService, ILogger logger, IRolloutEvaluator evaluator, IConfigDeserializer configDeserializer)
         {
             this.configService = configService;
-            this.log = logger;
+            this.log = new LoggerWrapper(logger);
             this.configEvaluator = evaluator;
             this.configDeserializer = configDeserializer;
         }

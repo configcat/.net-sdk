@@ -4,15 +4,16 @@ namespace ConfigCat.Client
 {
     internal sealed class LoggerWrapper : ILogger
     {
-        public static readonly LoggerWrapper Default = new(new ConsoleLogger());
-
         private readonly ILogger logger;
 
-        public LogLevel LogLevel { get; set; }
+        public LogLevel LogLevel
+        {
+            get => logger.LogLevel;
+            set => logger.LogLevel = value;
+        }
 
         internal LoggerWrapper(ILogger logger)
         {
-            this.LogLevel = logger.LogLevel;
             this.logger = logger;
         }
 

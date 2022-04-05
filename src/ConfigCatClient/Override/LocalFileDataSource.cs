@@ -17,8 +17,6 @@ namespace ConfigCat.Client.Override
         private DateTime fileLastWriteTime;
         private readonly string fullPath;
         private readonly ILogger logger;
-        private readonly TaskCompletionSource<bool> asyncInit = new();
-        private readonly ManualResetEvent syncInit = new(false);
         private readonly CancellationTokenSource cancellationTokenSource = new();
 
         private volatile IDictionary<string, Setting> overrideValues;

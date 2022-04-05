@@ -11,50 +11,31 @@ namespace ConfigCat.Client.Override
     internal sealed class LocalFileDataSource : IOverrideDataSource
     {
         const int WAIT_TIME_FOR_UNLOCK = 200; // ms
-        const int MAX_WAIT_ITERATIONS = 50;
+        const int MAX_WAIT_ITERATIONS = 50; // ms
+        const int FILE_POLL_INTERVAL = 1000; // ms
 
-        private int isReading;
+        private DateTime fileLastWriteTime;
         private readonly string fullPath;
         private readonly ILogger logger;
-        private readonly FileSystemWatcher fileSystemWatcher;
         private readonly TaskCompletionSource<bool> asyncInit = new();
         private readonly ManualResetEvent syncInit = new(false);
+        private readonly CancellationTokenSource pollerCancellationTokenSource = new();
 
         private volatile IDictionary<string, Setting> overrideValues;
 
         public LocalFileDataSource(string filePath, bool autoReload, ILogger logger)
         {
-            this.fullPath = Path.GetFullPath(filePath);
-            if (autoReload)
+            if (!File.Exists(filePath))
             {
-                var directory = Path.GetDirectoryName(this.fullPath);
-                if (string.IsNullOrWhiteSpace(directory))
-                {
-                    logger.Error($"Directory of {this.fullPath} not found to watch.");
-                }
-                else
-                {
-                    this.fileSystemWatcher = new FileSystemWatcher(directory);
-                    this.fileSystemWatcher.Changed += OnChanged;
-                    this.fileSystemWatcher.Created += OnChanged;
-                    this.fileSystemWatcher.Renamed += OnChanged;
-                    this.fileSystemWatcher.EnableRaisingEvents = true;
-                    logger.Information($"Watching {this.fullPath} for changes.");
-                }
+                logger.Error($"File {filePath} does not exist.");
+                this.SetInitialized();
+                return;
             }
 
+            this.fullPath = Path.GetFullPath(filePath);
             this.logger = logger;
-            _ = this.ReadFileAsync(this.fullPath);
-        }
 
-        private async void OnChanged(object sender, FileSystemEventArgs e)
-        {
-            // filter out events on temporary files
-            if (e.FullPath != this.fullPath)
-                return;
-
-            this.logger.Information($"Reload file {e.FullPath}.");
-            await this.ReadFileAsync(e.FullPath);
+            this.StartFileReading(autoReload);
         }
 
         public IDictionary<string, Setting> GetOverrides()
@@ -71,18 +52,64 @@ namespace ConfigCat.Client.Override
             return this.overrideValues ?? new Dictionary<string, Setting>();
         }
 
-        private async Task ReadFileAsync(string filePath)
+        private void StartFileReading(bool autoReload)
         {
-            if (Interlocked.CompareExchange(ref this.isReading, 1, 0) != 0)
-                return;
+            Task.Run(async () =>
+            {
+                try
+                {
+                    await ReadFileAsync();
 
+                    if (autoReload)
+                    {
+                        await this.StartWatchAsync();
+                    }
+                }
+                finally
+                {
+                    this.SetInitialized();
+                }
+            });
+        }
+
+        private async Task StartWatchAsync()
+        {
+            this.logger.Information($"Watching {this.fullPath} for changes.");
+            while (!this.pollerCancellationTokenSource.IsCancellationRequested)
+            {
+                try
+                {
+                    try
+                    {
+                        var lastWriteTime = File.GetLastWriteTimeUtc(this.fullPath);
+                        if (lastWriteTime > this.fileLastWriteTime)
+                        {
+                            this.logger.Information($"Reload file {this.fullPath}.");
+                            await ReadFileAsync();
+                        }
+                    }
+
+                    finally
+                    {
+                        await Task.Delay(FILE_POLL_INTERVAL, this.pollerCancellationTokenSource.Token);
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    // ignore exceptions from cancellation.
+                }
+            }
+        }
+
+        private async Task ReadFileAsync()
+        {
             try
             {
                 for (int i = 1; i <= MAX_WAIT_ITERATIONS; i++)
                 {
                     try
                     {
-                        using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                        using var stream = new FileStream(this.fullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                         using var reader = new StreamReader(stream);
                         var content = await reader.ReadToEndAsync();
                         var simplified = content.DeserializeOrDefault<SimplifiedConfig>();
@@ -105,15 +132,15 @@ namespace ConfigCat.Client.Override
 
                         await Task.Delay(WAIT_TIME_FOR_UNLOCK);
                     }
-                }                
+                }
             }
             catch (Exception ex)
             {
-                this.logger.Error($"Failed to read file {filePath}. {ex}");
+                this.logger.Error($"Failed to read file {this.fullPath}. {ex}");
             }
             finally
             {
-                Interlocked.Exchange(ref this.isReading, 0);
+                this.fileLastWriteTime = File.GetLastWriteTimeUtc(this.fullPath);
                 this.SetInitialized();
             }
         }
@@ -126,13 +153,7 @@ namespace ConfigCat.Client.Override
 
         public void Dispose()
         {
-            if (this.fileSystemWatcher != null)
-            {
-                this.fileSystemWatcher.Changed -= OnChanged;
-                this.fileSystemWatcher.Created -= OnChanged;
-                this.fileSystemWatcher.Renamed -= OnChanged;
-                this.fileSystemWatcher.Dispose();
-            }
+            this.pollerCancellationTokenSource.Cancel();
             this.syncInit.Dispose();
         }
 

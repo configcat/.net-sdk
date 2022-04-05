@@ -121,7 +121,7 @@ namespace ConfigCat.Client.Tests
         }
 
         [TestMethod]
-        public void LocalFile_Reload()
+        public void LocalFile_Read()
         {
             using var client = new ConfigCatClient(options =>
             {
@@ -137,7 +137,7 @@ namespace ConfigCat.Client.Tests
         }
 
         [TestMethod]
-        public async Task LocalFileAsync_Reload()
+        public async Task LocalFileAsync_Read()
         {
             using var client = new ConfigCatClient(options =>
             {
@@ -362,7 +362,7 @@ namespace ConfigCat.Client.Tests
             Assert.AreEqual("initial", await client.GetValueAsync("fakeKey", string.Empty));
 
             await WriteContent(SampleFileToCreate, "modified");
-            await Task.Delay(400);
+            await Task.Delay(1100);
 
             Assert.AreEqual("modified", await client.GetValueAsync("fakeKey", string.Empty));
 

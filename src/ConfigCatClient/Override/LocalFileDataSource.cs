@@ -19,7 +19,7 @@ namespace ConfigCat.Client.Override
         private readonly ILogger logger;
         private readonly TaskCompletionSource<bool> asyncInit = new();
         private readonly ManualResetEvent syncInit = new(false);
-        private readonly CancellationTokenSource pollerCancellationTokenSource = new();
+        private readonly CancellationTokenSource cancellationTokenSource = new();
 
         private volatile IDictionary<string, Setting> overrideValues;
 
@@ -28,80 +28,58 @@ namespace ConfigCat.Client.Override
             if (!File.Exists(filePath))
             {
                 logger.Error($"File {filePath} does not exist.");
-                this.SetInitialized();
                 return;
             }
 
             this.fullPath = Path.GetFullPath(filePath);
             this.logger = logger;
 
-            this.StartFileReading(autoReload);
+            this.ReloadFile();
+
+            if (autoReload)
+            {
+                this.StartWatch();
+            }
         }
 
-        public IDictionary<string, Setting> GetOverrides()
-        {
-            if (this.overrideValues != null) return this.overrideValues;
-            this.syncInit.WaitOne();
-            return this.overrideValues ?? new Dictionary<string, Setting>();
-        }
+        public IDictionary<string, Setting> GetOverrides() => this.overrideValues ?? new Dictionary<string, Setting>();
 
-        public async Task<IDictionary<string, Setting>> GetOverridesAsync()
-        {
-            if (this.overrideValues != null) return this.overrideValues;
-            await this.asyncInit.Task.ConfigureAwait(false);
-            return this.overrideValues ?? new Dictionary<string, Setting>();
-        }
+        public Task<IDictionary<string, Setting>> GetOverridesAsync() => Task.FromResult(this.overrideValues ?? new Dictionary<string, Setting>());
 
-        private void StartFileReading(bool autoReload)
+
+        private void StartWatch()
         {
             Task.Run(async () =>
             {
-                try
+                this.logger.Information($"Watching {this.fullPath} for changes.");
+                while (!this.cancellationTokenSource.IsCancellationRequested)
                 {
-                    await ReadFileAsync();
-
-                    if (autoReload)
+                    try
                     {
-                        await this.StartWatchAsync();
+                        try
+                        {
+                            var lastWriteTime = File.GetLastWriteTimeUtc(this.fullPath);
+                            if (lastWriteTime > this.fileLastWriteTime)
+                            {
+                                this.logger.Information($"Reload file {this.fullPath}.");
+                                this.ReloadFile();
+                            }
+                        }
+
+                        finally
+                        {
+                            await Task.Delay(FILE_POLL_INTERVAL, this.cancellationTokenSource.Token);
+                        }
                     }
-                }
-                finally
-                {
-                    this.SetInitialized();
+                    catch (OperationCanceledException)
+                    {
+                        // ignore exceptions from cancellation.
+                    }
                 }
             });
         }
 
-        private async Task StartWatchAsync()
-        {
-            this.logger.Information($"Watching {this.fullPath} for changes.");
-            while (!this.pollerCancellationTokenSource.IsCancellationRequested)
-            {
-                try
-                {
-                    try
-                    {
-                        var lastWriteTime = File.GetLastWriteTimeUtc(this.fullPath);
-                        if (lastWriteTime > this.fileLastWriteTime)
-                        {
-                            this.logger.Information($"Reload file {this.fullPath}.");
-                            await ReadFileAsync();
-                        }
-                    }
-
-                    finally
-                    {
-                        await Task.Delay(FILE_POLL_INTERVAL, this.pollerCancellationTokenSource.Token);
-                    }
-                }
-                catch (OperationCanceledException)
-                {
-                    // ignore exceptions from cancellation.
-                }
-            }
-        }
-
-        private async Task ReadFileAsync()
+        private void ReloadFile()
         {
             try
             {
@@ -109,9 +87,7 @@ namespace ConfigCat.Client.Override
                 {
                     try
                     {
-                        using var stream = new FileStream(this.fullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                        using var reader = new StreamReader(stream);
-                        var content = await reader.ReadToEndAsync();
+                        var content = File.ReadAllText(this.fullPath);
                         var simplified = content.DeserializeOrDefault<SimplifiedConfig>();
                         if (simplified?.Entries != null)
                         {
@@ -130,7 +106,7 @@ namespace ConfigCat.Client.Override
                         if (i >= MAX_WAIT_ITERATIONS)
                             throw;
 
-                        await Task.Delay(WAIT_TIME_FOR_UNLOCK);
+                        Thread.Sleep(WAIT_TIME_FOR_UNLOCK);
                     }
                 }
             }
@@ -141,20 +117,12 @@ namespace ConfigCat.Client.Override
             finally
             {
                 this.fileLastWriteTime = File.GetLastWriteTimeUtc(this.fullPath);
-                this.SetInitialized();
             }
-        }
-
-        private void SetInitialized()
-        {
-            this.syncInit.Set();
-            this.asyncInit.TrySetResult(true);
         }
 
         public void Dispose()
         {
-            this.pollerCancellationTokenSource.Cancel();
-            this.syncInit.Dispose();
+            this.cancellationTokenSource.Cancel();
         }
 
         private sealed class SimplifiedConfig

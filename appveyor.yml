@@ -10,11 +10,11 @@ skip_commits:
 dotnet_csproj:
   patch: true
   file: '**\*.csproj'
-  version: '{build_version}'
-  package_version: '{build_version}'
-  assembly_version: '{build_version}'
-  file_version: '{build_version}'
-  informational_version: '{build_version}'
+  version: $(build_version)
+  package_version: $(build_version)
+  assembly_version: $(build_version)
+  file_version: $(build_version)
+  informational_version: $(build_version)
 install:
 - cmd: dotnet tool install -g InheritDocTool
 build_script: 

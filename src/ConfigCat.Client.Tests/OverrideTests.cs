@@ -121,7 +121,7 @@ namespace ConfigCat.Client.Tests
         }
 
         [TestMethod]
-        public void LocalFile_Reload()
+        public void LocalFile_Read()
         {
             using var client = new ConfigCatClient(options =>
             {
@@ -137,7 +137,7 @@ namespace ConfigCat.Client.Tests
         }
 
         [TestMethod]
-        public async Task LocalFileAsync_Reload()
+        public async Task LocalFileAsync_Read()
         {
             using var client = new ConfigCatClient(options =>
             {
@@ -360,11 +360,33 @@ namespace ConfigCat.Client.Tests
             });
 
             Assert.AreEqual("initial", await client.GetValueAsync("fakeKey", string.Empty));
-
+            await Task.Delay(100);
             await WriteContent(SampleFileToCreate, "modified");
-            await Task.Delay(400);
+            await Task.Delay(1500);
 
             Assert.AreEqual("modified", await client.GetValueAsync("fakeKey", string.Empty));
+
+            File.Delete(SampleFileToCreate);
+        }
+
+        [TestMethod]
+        public async Task LocalFile_Watcher_Reload_Sync()
+        {
+            await CreateFileAndWriteContent(SampleFileToCreate, "initial");
+
+            using var client = new ConfigCatClient(options =>
+            {
+                options.SdkKey = "localhost";
+                options.FlagOverrides = FlagOverrides.LocalFile(SampleFileToCreate, true, OverrideBehaviour.LocalOnly);
+                options.Logger.LogLevel = LogLevel.Info;
+            });
+
+            Assert.AreEqual("initial", client.GetValue("fakeKey", string.Empty));
+            await Task.Delay(100);
+            await WriteContent(SampleFileToCreate, "modified");
+            await Task.Delay(1500);
+
+            Assert.AreEqual("modified", client.GetValue("fakeKey", string.Empty));
 
             File.Delete(SampleFileToCreate);
         }

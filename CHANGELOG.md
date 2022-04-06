@@ -1,3 +1,9 @@
+### 6.5.0
+- Replace `FileSystemWatcher` with file polling in local file override data source.
+
+### 6.4.12
+- Fix various local file override data source issues.
+
 ### 6.4.9
 - Move the PollingMode option to public scope.
 

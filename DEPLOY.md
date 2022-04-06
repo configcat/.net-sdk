@@ -1,6 +1,6 @@
 # Steps to Deploy
 1. Run tests
-2. Set version in `appveyor.yml` (e.g: from `version: 2.5.{build}` to `version: 2.6.{build}`)
+2. Set version in `appveyor.yml` (e.g: from `build_version: 6.5.0` to `build_version: 6.5.1`)
 3. Update release notes in ConfigCatClient.csproj (PackageReleaseNotes)
 4. Push to `master`
 5. Deploy to NuGet.org

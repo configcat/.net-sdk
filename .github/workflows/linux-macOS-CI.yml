@@ -1,6 +1,7 @@
 name: Build on Linux and macOS
 on:
   push:
+    branches: [ master ]
     paths-ignore:
       - '**.md'
       - 'appveyor*'

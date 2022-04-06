@@ -11,80 +11,81 @@ namespace ConfigCat.Client.Override
     internal sealed class LocalFileDataSource : IOverrideDataSource
     {
         const int WAIT_TIME_FOR_UNLOCK = 200; // ms
-        const int MAX_WAIT_ITERATIONS = 50;
+        const int MAX_WAIT_ITERATIONS = 50; // ms
+        const int FILE_POLL_INTERVAL = 1000; // ms
 
-        private int isReading;
+        private DateTime fileLastWriteTime;
         private readonly string fullPath;
         private readonly ILogger logger;
-        private readonly FileSystemWatcher fileSystemWatcher;
-        private readonly TaskCompletionSource<bool> asyncInit = new();
-        private readonly ManualResetEvent syncInit = new(false);
+        private readonly CancellationTokenSource cancellationTokenSource = new();
 
         private volatile IDictionary<string, Setting> overrideValues;
 
         public LocalFileDataSource(string filePath, bool autoReload, ILogger logger)
         {
-            this.fullPath = Path.GetFullPath(filePath);
-            if (autoReload)
+            if (!File.Exists(filePath))
             {
-                var directory = Path.GetDirectoryName(this.fullPath);
-                if (string.IsNullOrWhiteSpace(directory))
-                {
-                    logger.Error($"Directory of {this.fullPath} not found to watch.");
-                }
-                else
-                {
-                    this.fileSystemWatcher = new FileSystemWatcher(directory);
-                    this.fileSystemWatcher.Changed += OnChanged;
-                    this.fileSystemWatcher.Created += OnChanged;
-                    this.fileSystemWatcher.Renamed += OnChanged;
-                    this.fileSystemWatcher.EnableRaisingEvents = true;
-                    logger.Information($"Watching {this.fullPath} for changes.");
-                }
+                logger.Error($"File {filePath} does not exist.");
+                return;
             }
 
+            this.fullPath = Path.GetFullPath(filePath);
             this.logger = logger;
-            _ = this.ReadFileAsync(this.fullPath);
+
+            this.ReloadFile();
+
+            if (autoReload)
+            {
+                this.StartWatch();
+            }
         }
 
-        private async void OnChanged(object sender, FileSystemEventArgs e)
-        {
-            // filter out events on temporary files
-            if (e.FullPath != this.fullPath)
-                return;
+        public IDictionary<string, Setting> GetOverrides() => this.overrideValues ?? new Dictionary<string, Setting>();
 
-            this.logger.Information($"Reload file {e.FullPath}.");
-            await this.ReadFileAsync(e.FullPath);
+        public Task<IDictionary<string, Setting>> GetOverridesAsync() => Task.FromResult(this.overrideValues ?? new Dictionary<string, Setting>());
+
+
+        private void StartWatch()
+        {
+            Task.Run(async () =>
+            {
+                this.logger.Information($"Watching {this.fullPath} for changes.");
+                while (!this.cancellationTokenSource.IsCancellationRequested)
+                {
+                    try
+                    {
+                        try
+                        {
+                            var lastWriteTime = File.GetLastWriteTimeUtc(this.fullPath);
+                            if (lastWriteTime > this.fileLastWriteTime)
+                            {
+                                this.logger.Information($"Reload file {this.fullPath}.");
+                                this.ReloadFile();
+                            }
+                        }
+
+                        finally
+                        {
+                            await Task.Delay(FILE_POLL_INTERVAL, this.cancellationTokenSource.Token);
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // ignore exceptions from cancellation.
+                    }
+                }
+            });
         }
 
-        public IDictionary<string, Setting> GetOverrides()
+        private void ReloadFile()
         {
-            if (this.overrideValues != null) return this.overrideValues;
-            this.syncInit.WaitOne();
-            return this.overrideValues ?? new Dictionary<string, Setting>();
-        }
-
-        public async Task<IDictionary<string, Setting>> GetOverridesAsync()
-        {
-            if (this.overrideValues != null) return this.overrideValues;
-            await this.asyncInit.Task.ConfigureAwait(false);
-            return this.overrideValues ?? new Dictionary<string, Setting>();
-        }
-
-        private async Task ReadFileAsync(string filePath)
-        {
-            if (Interlocked.CompareExchange(ref this.isReading, 1, 0) != 0)
-                return;
-
             try
             {
                 for (int i = 1; i <= MAX_WAIT_ITERATIONS; i++)
                 {
                     try
                     {
-                        using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                        using var reader = new StreamReader(stream);
-                        var content = await reader.ReadToEndAsync();
+                        var content = File.ReadAllText(this.fullPath);
                         var simplified = content.DeserializeOrDefault<SimplifiedConfig>();
                         if (simplified?.Entries != null)
                         {
@@ -103,37 +104,23 @@ namespace ConfigCat.Client.Override
                         if (i >= MAX_WAIT_ITERATIONS)
                             throw;
 
-                        await Task.Delay(WAIT_TIME_FOR_UNLOCK);
+                        Thread.Sleep(WAIT_TIME_FOR_UNLOCK);
                     }
-                }                
+                }
             }
             catch (Exception ex)
             {
-                this.logger.Error($"Failed to read file {filePath}. {ex}");
+                this.logger.Error($"Failed to read file {this.fullPath}. {ex}");
             }
             finally
             {
-                Interlocked.Exchange(ref this.isReading, 0);
-                this.SetInitialized();
+                this.fileLastWriteTime = File.GetLastWriteTimeUtc(this.fullPath);
             }
-        }
-
-        private void SetInitialized()
-        {
-            this.syncInit.Set();
-            this.asyncInit.TrySetResult(true);
         }
 
         public void Dispose()
         {
-            if (this.fileSystemWatcher != null)
-            {
-                this.fileSystemWatcher.Changed -= OnChanged;
-                this.fileSystemWatcher.Created -= OnChanged;
-                this.fileSystemWatcher.Renamed -= OnChanged;
-                this.fileSystemWatcher.Dispose();
-            }
-            this.syncInit.Dispose();
+            this.cancellationTokenSource.Cancel();
         }
 
         private sealed class SimplifiedConfig

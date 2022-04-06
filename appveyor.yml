@@ -1,4 +1,6 @@
-version: 6.4.{build}
+environment:
+  build_version: 6.5.0
+version: $(build_version)-{build}
 image: Visual Studio 2022
 configuration: Release
 skip_commits:
@@ -8,11 +10,11 @@ skip_commits:
 dotnet_csproj:
   patch: true
   file: '**\*.csproj'
-  version: '{version}'
-  package_version: '{version}'
-  assembly_version: '{version}'
-  file_version: '{version}'
-  informational_version: '{version}'
+  version: $(build_version)
+  package_version: $(build_version)
+  assembly_version: $(build_version)
+  file_version: $(build_version)
+  informational_version: $(build_version)
 install:
 - cmd: dotnet tool install -g InheritDocTool
 build_script: 

@@ -1,3 +1,6 @@
+### 6.5.1
+- Add net461 to the target frameworks list to force the usage of `System.Text.Json` rather than `Newtonsoft.Json`.
+
 ### 6.5.0
 - Replace `FileSystemWatcher` with file polling in local file override data source.
 

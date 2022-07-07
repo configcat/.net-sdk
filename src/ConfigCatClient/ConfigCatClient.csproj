@@ -47,11 +47,11 @@ Works with .NET, .NET Core, .NET Standard</Description>
     <Reference Include="Microsoft.CSharp" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
-    <PackageReference Include="System.Memory" Version="4.5.4" />
+    <PackageReference Include="System.Memory" Version="4.5.5" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' != 'net45' ">
-    <PackageReference Include="System.Text.Json" Version="6.0.2" />
+    <PackageReference Include="System.Text.Json" Version="6.0.5" />
   </ItemGroup>
 	
   <ItemGroup>

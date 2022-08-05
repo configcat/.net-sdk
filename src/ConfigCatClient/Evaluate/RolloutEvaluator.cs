@@ -100,18 +100,12 @@ namespace ConfigCat.Client.Evaluate
 
                     // evaluate variations
 
-                    if (TryEvaluateVariations(setting.RolloutPercentageItems, key, user, out result))
+                    if (TryEvaluateVariations(setting.RolloutPercentageItems, key, user, evaluateLog, out result))
                     {
-                        evaluateLog.Log("Evaluate % option => user targeted");
                         evaluateLog.ReturnValue = result.Value.ToString();
                         evaluateLog.VariationId = result.VariationId;
-                        
                         result.SettingType = setting.SettingType;
                         return result;
-                    }
-                    else
-                    {
-                        evaluateLog.Log("Evaluate % option => user not targeted");
                     }
                 }
                 else if (setting.RolloutRules.Any() || setting.RolloutPercentageItems.Any())
@@ -139,7 +133,8 @@ namespace ConfigCat.Client.Evaluate
             }
         }
 
-        private static bool TryEvaluateVariations(ICollection<RolloutPercentageItem> rolloutPercentageItems, string key, User user, out EvaluateResult result)
+        private static bool TryEvaluateVariations<T>(ICollection<RolloutPercentageItem> rolloutPercentageItems, string key, User user, 
+            EvaluateLogger<T> evaluateLog, out EvaluateResult result)
         {
             result = new EvaluateResult();
 
@@ -160,7 +155,7 @@ namespace ConfigCat.Client.Evaluate
                     if (hashScale >= bucket) continue;
                     result.Value = variation.Value;
                     result.VariationId = variation.VariationId;
-
+                    evaluateLog.Log($"Evaluating % options, '{key}' evaluated to '{variation.Value}'.");
                     return true;
                 }
             }

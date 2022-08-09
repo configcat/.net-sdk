@@ -69,7 +69,7 @@ namespace ConfigCat.Client.Evaluate
             if (!settings.TryGetValue(key, out var setting))
             {
                 var keys = string.Join(",", settings.Keys.Select(s => $"'{s}'").ToArray());
-                this.log.Error($"Evaluating '{key}' failed. Returning default value: '{logDefaultValue}'. Here are the available keys: {keys}.");
+                this.log.Error($"Evaluating '{key}' failed (key not found in ConfigCat). Returning the sourcecode-level default value: '{logDefaultValue}'. Here are the available keys: {keys}.");
                 return null;
             }
 
@@ -110,7 +110,7 @@ namespace ConfigCat.Client.Evaluate
                 }
                 else if (setting.RolloutRules.Any() || setting.RolloutPercentageItems.Any())
                 {
-                    this.log.Warning($"Evaluating '{key}'. UserObject missing! You should pass a UserObject to GetValue() or GetValueAsync(), in order to make targeting work properly. Read more: https://configcat.com/docs/advanced/user-object");
+                    this.log.Warning($"Cannot evaluate targeting rules and % options for '{key}'. You should pass a UserObject to GetValue() or GetValueAsync(), in order to make targeting work properly. Read more: https://configcat.com/docs/advanced/user-object");
                 }
 
                 // regular evaluate
@@ -129,7 +129,7 @@ namespace ConfigCat.Client.Evaluate
             }
             finally
             {
-                this.log.Information(evaluateLog.ToString());
+                this.log.Information($"{evaluateLog}");
             }
         }
 
@@ -155,7 +155,7 @@ namespace ConfigCat.Client.Evaluate
                     if (hashScale >= bucket) continue;
                     result.Value = variation.Value;
                     result.VariationId = variation.VariationId;
-                    evaluateLog.Log($"Evaluating % options, '{key}' evaluated to '{variation.Value}'.");
+                    evaluateLog.Log($"- % options: evaluated to '{variation.Value}'.");
                     return true;
                 }
             }
@@ -185,7 +185,7 @@ namespace ConfigCat.Client.Evaluate
                         continue;
                     }
 
-                    string l = $"Evaluate rule: '{comparisonAttributeValue}' {EvaluateLogger<T>.FormatComparator(rule.Comparator)} '{rule.ComparisonValue}' => ";
+                    string l = $"- rule eval: ['{comparisonAttributeValue}' {EvaluateLogger<T>.FormatComparator(rule.Comparator)} '{rule.ComparisonValue}'] => ";
 
                     switch (rule.Comparator)
                     {
@@ -196,7 +196,7 @@ namespace ConfigCat.Client.Evaluate
                                 .Select(t => t.Trim())
                                 .Contains(comparisonAttributeValue))
                             {
-                                logger.Log(l + "match");
+                                logger.Log(l + "MATCH");
 
                                 return true;
                             }
@@ -212,7 +212,7 @@ namespace ConfigCat.Client.Evaluate
                                .Select(t => t.Trim())
                                .Contains(comparisonAttributeValue))
                             {
-                                logger.Log(l + "match");
+                                logger.Log(l + "MATCH");
 
                                 return true;
                             }
@@ -224,7 +224,7 @@ namespace ConfigCat.Client.Evaluate
 
                             if (comparisonAttributeValue.Contains(rule.ComparisonValue))
                             {
-                                logger.Log(l + "match");
+                                logger.Log(l + "MATCH");
 
                                 return true;
                             }
@@ -236,7 +236,7 @@ namespace ConfigCat.Client.Evaluate
 
                             if (!comparisonAttributeValue.Contains(rule.ComparisonValue))
                             {
-                                logger.Log(l + "match");
+                                logger.Log(l + "MATCH");
 
                                 return true;
                             }
@@ -253,7 +253,7 @@ namespace ConfigCat.Client.Evaluate
 
                             if (EvaluateSemVer(comparisonAttributeValue, rule.ComparisonValue, rule.Comparator))
                             {
-                                logger.Log(l + "match");
+                                logger.Log(l + "MATCH");
 
                                 return true;
                             }
@@ -271,7 +271,7 @@ namespace ConfigCat.Client.Evaluate
 
                             if (EvaluateNumber(comparisonAttributeValue, rule.ComparisonValue, rule.Comparator))
                             {
-                                logger.Log(l + "match");
+                                logger.Log(l + "MATCH");
 
                                 return true;
                             }
@@ -285,7 +285,7 @@ namespace ConfigCat.Client.Evaluate
                                 .Select(t => t.Trim())
                                 .Contains(comparisonAttributeValue.Hash()))
                             {
-                                logger.Log(l + "match");
+                                logger.Log(l + "MATCH");
 
                                 return true;
                             }
@@ -299,7 +299,7 @@ namespace ConfigCat.Client.Evaluate
                                .Select(t => t.Trim())
                                .Contains(comparisonAttributeValue.Hash()))
                             {
-                                logger.Log(l + "match");
+                                logger.Log(l + "MATCH");
 
                                 return true;
                             }

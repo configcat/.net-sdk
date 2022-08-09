@@ -25,18 +25,13 @@ namespace ConfigCat.Client.Evaluate
         {
             var result = new StringBuilder();
 
-            result.AppendLine($" Evaluate '{KeyName}'");
-
-            result.AppendLine($" VariationId: {this.VariationId ?? "null"}");
-
-            result.AppendLine($" User object: {this.User.Serialize()}");
-
+            result.Append($"Evaluating '{KeyName}'");
+            result.AppendLine($" for user '{this.User.Serialize()}'");
             foreach (var o in this.Operations)
             {
                 result.AppendLine(" " + o);
             }
-
-            result.AppendLine($" Returning: {this.ReturnValue}");
+            result.Append($" Returning '{this.ReturnValue}' (VariationId: '{this.VariationId ?? "null"}').");
 
             return result.ToString();
         }

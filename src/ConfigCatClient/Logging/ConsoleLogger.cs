@@ -27,30 +27,43 @@ namespace ConfigCat.Client
         /// <inheritdoc />
         public void Debug(string message)
         {
-            Console.WriteLine(FormatMessage(LogLevel.Debug, message));
+            PrintMessage(LogLevel.Debug, message);
         }
 
         /// <inheritdoc />
         public void Error(string message)
         {
-            Console.WriteLine(FormatMessage(LogLevel.Error, message));
+            PrintMessage(LogLevel.Error, message);
         }
 
         /// <inheritdoc />
         public void Information(string message)
         {
-            Console.WriteLine(FormatMessage(LogLevel.Info, message));
+            PrintMessage(LogLevel.Info, message);
         }
 
         /// <inheritdoc />
         public void Warning(string message)
         {
-            Console.WriteLine(FormatMessage(LogLevel.Warning, message));
+            PrintMessage(LogLevel.Warning, message);
         }
 
-        private string FormatMessage(LogLevel logLevel, string message)
+        private void PrintMessage(LogLevel logLevel, string message)
         {
-            return $"ConfigCat - {logLevel} - {message}";
+            var originalColor = Console.ForegroundColor;
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.Write("ConfigCat");
+            switch (logLevel)
+            {
+                case LogLevel.Error: Console.ForegroundColor = ConsoleColor.Red; break;
+                case LogLevel.Warning: Console.ForegroundColor = ConsoleColor.Yellow; break;
+                case LogLevel.Info: Console.ForegroundColor = ConsoleColor.Green; break;
+                case LogLevel.Debug: Console.ForegroundColor = ConsoleColor.Blue; break;
+            }
+            Console.Write($".{logLevel}");
+            //Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.WriteLine($": {message}");
+            Console.ForegroundColor = originalColor;
         }
     }
 }

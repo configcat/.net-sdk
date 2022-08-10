@@ -183,7 +183,7 @@ namespace ConfigCat.Client.Evaluate
                     var comparisonAttributeValue = user.AllAttributes[rule.ComparisonAttribute];
                     if (string.IsNullOrEmpty(comparisonAttributeValue))
                     {
-                        logger.Log($"- rule eval: ['null' {EvaluateLogger<T>.FormatComparator(rule.Comparator)} '{rule.ComparisonValue}'] => no match");
+                        logger.Log($"- rule evaluation: ['null' {EvaluateLogger<T>.FormatComparator(rule.Comparator)} '{rule.ComparisonValue}'] => no match");
                         continue;
                     }
 

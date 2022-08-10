@@ -52,7 +52,7 @@ namespace ConfigCat.Client
         {
             var originalColor = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.Write("ConfigCat");
+            Console.Write("ConfigCat.");
             switch (logLevel)
             {
                 case LogLevel.Error: Console.ForegroundColor = ConsoleColor.Red; break;
@@ -60,9 +60,9 @@ namespace ConfigCat.Client
                 case LogLevel.Info: Console.ForegroundColor = ConsoleColor.Green; break;
                 case LogLevel.Debug: Console.ForegroundColor = ConsoleColor.Blue; break;
             }
-            Console.Write($".{logLevel}");
-            //Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine($": {message}");
+            Console.Write("{0,-7}", logLevel.ToString().ToUpper());
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.WriteLine($" {message}");
             Console.ForegroundColor = originalColor;
         }
     }

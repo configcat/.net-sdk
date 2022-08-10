@@ -176,12 +176,14 @@ namespace ConfigCat.Client.Evaluate
 
                     if (!user.AllAttributes.ContainsKey(rule.ComparisonAttribute))
                     {
+                        logger.Log($"- rule eval: ['null' {EvaluateLogger<T>.FormatComparator(rule.Comparator)} '{rule.ComparisonValue}'] => no match");
                         continue;
                     }
 
                     var comparisonAttributeValue = user.AllAttributes[rule.ComparisonAttribute];
                     if (string.IsNullOrEmpty(comparisonAttributeValue))
                     {
+                        logger.Log($"- rule eval: ['null' {EvaluateLogger<T>.FormatComparator(rule.Comparator)} '{rule.ComparisonValue}'] => no match");
                         continue;
                     }
 

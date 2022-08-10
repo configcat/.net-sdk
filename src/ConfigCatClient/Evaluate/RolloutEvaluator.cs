@@ -176,7 +176,7 @@ namespace ConfigCat.Client.Evaluate
 
                     if (!user.AllAttributes.ContainsKey(rule.ComparisonAttribute))
                     {
-                        logger.Log($"- rule eval: ['null' {EvaluateLogger<T>.FormatComparator(rule.Comparator)} '{rule.ComparisonValue}'] => no match");
+                        logger.Log($"- rule evaluation: ['null' {EvaluateLogger<T>.FormatComparator(rule.Comparator)} '{rule.ComparisonValue}'] => no match");
                         continue;
                     }
 

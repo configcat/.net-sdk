@@ -187,7 +187,7 @@ namespace ConfigCat.Client.Evaluate
                         continue;
                     }
 
-                    string l = $"- rule eval: ['{comparisonAttributeValue}' {EvaluateLogger<T>.FormatComparator(rule.Comparator)} '{rule.ComparisonValue}'] => ";
+                    string l = $"- rule evaluation: ['{comparisonAttributeValue}' {EvaluateLogger<T>.FormatComparator(rule.Comparator)} '{rule.ComparisonValue}'] => ";
 
                     switch (rule.Comparator)
                     {

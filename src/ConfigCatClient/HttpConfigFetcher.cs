@@ -13,7 +13,7 @@ namespace ConfigCat.Client
     {
         private readonly object lck = new();
         private readonly string productVersion;
-        private readonly ILogger log;
+        private readonly LoggerWrapper log;
 
         private readonly HttpClientHandler httpClientHandler;
         private readonly IConfigDeserializer deserializer;

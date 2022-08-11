@@ -24,7 +24,7 @@ namespace ConfigCat.Client
 
         private Uri requestUri;
 
-        public HttpConfigFetcher(Uri requestUri, string productVersion, ILogger logger,
+        public HttpConfigFetcher(Uri requestUri, string productVersion, LoggerWrapper logger,
             HttpClientHandler httpClientHandler, IConfigDeserializer deserializer, bool isCustomUri, TimeSpan timeout)
         {
             this.requestUri = requestUri;

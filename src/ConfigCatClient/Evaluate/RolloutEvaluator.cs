@@ -13,9 +13,9 @@ namespace ConfigCat.Client.Evaluate
 {
     internal class RolloutEvaluator : IRolloutEvaluator
     {
-        private readonly ILogger log;
+        private readonly LoggerWrapper log;
 
-        public RolloutEvaluator(ILogger logger)
+        public RolloutEvaluator(LoggerWrapper logger)
         {
             this.log = logger;
         }

@@ -18,7 +18,7 @@ namespace ConfigCat.Client.ConfigService
             AutoPoll configuration,
             IConfigFetcher configFetcher,
             CacheParameters cacheParameters,
-            ILogger logger) : this(configuration, configFetcher, cacheParameters, logger, true)
+            LoggerWrapper logger) : this(configuration, configFetcher, cacheParameters, logger, true)
         { }
 
         // For test purposes only
@@ -26,7 +26,7 @@ namespace ConfigCat.Client.ConfigService
             AutoPoll configuration,
             IConfigFetcher configFetcher,
             CacheParameters cacheParameters,
-            ILogger logger,
+            LoggerWrapper logger,
             bool startTimer
             ) : base(configFetcher, cacheParameters, logger)
         {

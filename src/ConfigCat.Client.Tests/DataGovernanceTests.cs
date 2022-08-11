@@ -60,7 +60,7 @@ namespace ConfigCat.Client.Tests
             IConfigFetcher fetcher = new HttpConfigFetcher(
                 configuration.CreateUri(),
                 "DEMO",
-                Mock.Of<ILogger>(),
+                Mock.Of<ILogger>().AsWrapper(),
                 handlerMock.Object,
                 Mock.Of<IConfigDeserializer>(),
                 configuration.IsCustomBaseUrl,
@@ -377,7 +377,7 @@ namespace ConfigCat.Client.Tests
             IConfigFetcher fetcher = new HttpConfigFetcher(
                 fetchConfig.CreateUri(),
                 "DEMO",
-                Mock.Of<ILogger>(),
+                Mock.Of<ILogger>().AsWrapper(),
                 handlerMock.Object,
                 new ConfigDeserializer(),
                 fetchConfig.IsCustomBaseUrl,

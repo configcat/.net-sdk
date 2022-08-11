@@ -13,7 +13,7 @@ namespace ConfigCat.Client
     {
         private readonly object lck = new();
         private readonly string productVersion;
-        private readonly ILogger log;
+        private readonly LoggerWrapper log;
 
         private readonly HttpClientHandler httpClientHandler;
         private readonly IConfigDeserializer deserializer;
@@ -24,7 +24,7 @@ namespace ConfigCat.Client
 
         private Uri requestUri;
 
-        public HttpConfigFetcher(Uri requestUri, string productVersion, ILogger logger,
+        public HttpConfigFetcher(Uri requestUri, string productVersion, LoggerWrapper logger,
             HttpClientHandler httpClientHandler, IConfigDeserializer deserializer, bool isCustomUri, TimeSpan timeout)
         {
             this.requestUri = requestUri;

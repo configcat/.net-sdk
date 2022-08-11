@@ -16,12 +16,12 @@ namespace ConfigCat.Client.Override
 
         private DateTime fileLastWriteTime;
         private readonly string fullPath;
-        private readonly ILogger logger;
+        private readonly LoggerWrapper logger;
         private readonly CancellationTokenSource cancellationTokenSource = new();
 
         private volatile IDictionary<string, Setting> overrideValues;
 
-        public LocalFileDataSource(string filePath, bool autoReload, ILogger logger)
+        public LocalFileDataSource(string filePath, bool autoReload, LoggerWrapper logger)
         {
             if (!File.Exists(filePath))
             {

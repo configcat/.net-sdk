@@ -613,7 +613,7 @@ namespace ConfigCat.Client.Tests
         {
             // Arrange
             
-            var myMock = new FakeConfigService(Mock.Of<IConfigFetcher>(), new CacheParameters(), Mock.Of<ILogger>());
+            var myMock = new FakeConfigService(Mock.Of<IConfigFetcher>(), new CacheParameters(), Mock.Of<ILogger>().AsWrapper());
 
             IConfigCatClient instance = new ConfigCatClient(
                 myMock,
@@ -767,7 +767,7 @@ namespace ConfigCat.Client.Tests
         {
             public byte DisposeCount { get; private set; }
 
-            public FakeConfigService(IConfigFetcher configFetcher, CacheParameters cacheParameters, ILogger log) : base(configFetcher, cacheParameters, log)
+            public FakeConfigService(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper log) : base(configFetcher, cacheParameters, log)
             {
             }
 

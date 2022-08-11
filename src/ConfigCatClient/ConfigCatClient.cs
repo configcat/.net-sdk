@@ -17,7 +17,7 @@ namespace ConfigCat.Client
     /// </summary>
     public sealed class ConfigCatClient : IConfigCatClient
     {
-        private readonly ILogger log;
+        private readonly LoggerWrapper log;
         private readonly IRolloutEvaluator configEvaluator;
         private readonly IConfigService configService;
         private readonly IConfigDeserializer configDeserializer;
@@ -138,15 +138,16 @@ namespace ConfigCat.Client
             }
 
             this.configService = this.overrideBehaviour == null || this.overrideBehaviour != OverrideBehaviour.LocalOnly
-                ? DetermineConfigService(configuration,
+                ? DetermineConfigService(configuration.PollingMode,
                     new HttpConfigFetcher(configuration.CreateUri(),
                             $"{configuration.PollingMode.Identifier}-{Version}",
-                            configuration.Logger,
+                            this.log,
                             configuration.HttpClientHandler,
                             this.configDeserializer,
                             configuration.IsCustomBaseUrl,
                             configuration.HttpTimeout),
-                        cacheParameters)
+                        cacheParameters,
+                        this.log)
                 : new EmptyConfigService();
         }
 
@@ -464,21 +465,21 @@ namespace ConfigCat.Client
             }
         }
 
-        private static IConfigService DetermineConfigService(ConfigCatClientOptions options, HttpConfigFetcher fetcher, CacheParameters cacheParameters)
+        private static IConfigService DetermineConfigService(PollingMode pollingMode, HttpConfigFetcher fetcher, CacheParameters cacheParameters, LoggerWrapper logger)
         {
-            return options.PollingMode switch
+            return pollingMode switch
             {
                 AutoPoll autoPoll => new AutoPollConfigService(autoPoll,
                     fetcher,
                     cacheParameters,
-                    options.Logger),
+                    logger),
                 LazyLoad lazyLoad => new LazyLoadConfigService(fetcher,
                     cacheParameters,
-                    options.Logger,
+                    logger,
                     lazyLoad.CacheTimeToLive),
                 ManualPoll => new ManualPollConfigService(fetcher,
                     cacheParameters,
-                    options.Logger),
+                    logger),
                 _ => throw new ArgumentException("Invalid configuration type."),
             };
         }

@@ -13,11 +13,11 @@ namespace ConfigCat.Client.ConfigService
         protected readonly IConfigCache ConfigCache; // Backward compatibility, it'll be changed to IConfigCatCache later.
 #pragma warning restore CS0618 // Type or member is obsolete
 
-        protected readonly ILogger Log;
+        protected readonly LoggerWrapper Log;
 
         protected readonly string CacheKey;
 
-        protected ConfigServiceBase(IConfigFetcher configFetcher, CacheParameters cacheParameters, ILogger log)
+        protected ConfigServiceBase(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper log)
         {
             this.ConfigFetcher = configFetcher;
             this.ConfigCache = cacheParameters.ConfigCache;

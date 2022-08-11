@@ -35,7 +35,7 @@ namespace ConfigCat.Client
         /// </summary>
         public OverrideBehaviour OverrideBehaviour { get; private set; }
 
-        internal IOverrideDataSource BuildDataSource(ILogger logger)
+        internal IOverrideDataSource BuildDataSource(LoggerWrapper logger)
         {
             if (this.dictionary != null)
                 return new LocalDictionaryDataSource(this.dictionary);

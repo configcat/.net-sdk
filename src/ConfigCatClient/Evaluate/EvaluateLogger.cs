@@ -25,8 +25,7 @@ namespace ConfigCat.Client.Evaluate
         {
             var result = new StringBuilder();
 
-            result.Append($"Evaluating '{KeyName}'");
-            result.AppendLine($" for user '{this.User.Serialize()}'");
+            result.AppendLine($"Evaluating '{KeyName}'");
             foreach (var o in this.Operations)
             {
                 result.AppendLine(" " + o);
@@ -56,8 +55,8 @@ namespace ConfigCat.Client.Evaluate
                 Comparator.NumberGreaterThanEqual => ">=",
                 Comparator.NumberEqual => "=",
                 Comparator.NumberNotEqual => "!=",
-                Comparator.SensitiveOneOf => "IS ONE OF (Sensitive)",
-                Comparator.SensitiveNotOneOf => "IS NOT ONE OF (Sensitive)",
+                Comparator.SensitiveOneOf => "IS ONE OF (hashed)",
+                Comparator.SensitiveNotOneOf => "IS NOT ONE OF (hashed)",
                 _ => comparator.ToString()
             };
         }

@@ -7,6 +7,8 @@ namespace ConfigCat.Client
     /// </summary>
     public class ConsoleLogger : ILogger
     {
+        private object _lock = new object();
+
         /// <inheritdoc />
         public LogLevel LogLevel { get; set; }
 
@@ -50,20 +52,23 @@ namespace ConfigCat.Client
 
         private void PrintMessage(LogLevel logLevel, string message)
         {
-            var originalColor = Console.ForegroundColor;
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.Write("ConfigCat.");
-            switch (logLevel)
+            lock (this._lock)
             {
-                case LogLevel.Error: Console.ForegroundColor = ConsoleColor.Red; break;
-                case LogLevel.Warning: Console.ForegroundColor = ConsoleColor.Yellow; break;
-                case LogLevel.Info: Console.ForegroundColor = ConsoleColor.Green; break;
-                case LogLevel.Debug: Console.ForegroundColor = ConsoleColor.Blue; break;
+                var originalColor = Console.ForegroundColor;
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.Write("ConfigCat.");
+                switch (logLevel)
+                {
+                    case LogLevel.Error: Console.ForegroundColor = ConsoleColor.Red; break;
+                    case LogLevel.Warning: Console.ForegroundColor = ConsoleColor.Yellow; break;
+                    case LogLevel.Info: Console.ForegroundColor = ConsoleColor.Green; break;
+                    case LogLevel.Debug: Console.ForegroundColor = ConsoleColor.Blue; break;
+                }
+                Console.Write("{0,-7}", logLevel.ToString().ToUpper());
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.WriteLine($" {message}");
+                Console.ForegroundColor = originalColor;
             }
-            Console.Write("{0,-7}", logLevel.ToString().ToUpper());
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine($" {message}");
-            Console.ForegroundColor = originalColor;
         }
     }
 }

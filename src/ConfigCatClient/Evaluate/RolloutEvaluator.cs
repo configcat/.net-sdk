@@ -155,12 +155,12 @@ namespace ConfigCat.Client.Evaluate
 
                     if (hashScale >= bucket)
                     {
-                        evaluateLog.Log($"- % option: [IF {bucket} >= {hashScale} THEN '{variation.Value}'] => no match");
+                        evaluateLog.Log($"- % option: [IF {bucket} > {hashScale} THEN '{variation.Value}'] => no match");
                         continue;
                     }
                     result.Value = variation.Value;
                     result.VariationId = variation.VariationId;
-                    evaluateLog.Log($"- % option: [IF {bucket} >= {hashScale} THEN '{variation.Value}'] => MATCH, applying % option");
+                    evaluateLog.Log($"- % option: [IF {bucket} > {hashScale} THEN '{variation.Value}'] => MATCH, applying % option");
                     return true;
                 }
             }

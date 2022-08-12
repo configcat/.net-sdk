@@ -110,7 +110,7 @@ namespace ConfigCat.Client.Evaluate
                 }
                 else if (setting.RolloutRules.Any() || setting.RolloutPercentageItems.Any())
                 {
-                    this.log.Warning($"Cannot evaluate targeting rules and % options for '{key}' (UserObject mising). You should pass a UserObject to GetValue() or GetValueAsync(), in order to make targeting work properly. Read more: https://configcat.com/docs/advanced/user-object");
+                    this.log.Warning($"Cannot evaluate targeting rules and % options for '{key}' (UserObject missing). You should pass a UserObject to GetValue() or GetValueAsync(), in order to make targeting work properly. Read more: https://configcat.com/docs/advanced/user-object");
                 }
 
                 // regular evaluate

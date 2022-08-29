@@ -155,12 +155,12 @@ namespace ConfigCat.Client.Evaluate
 
                     if (hashScale >= bucket)
                     {
-                        evaluateLog.Log($"- % option: [IF {bucket} > {hashScale} THEN '{variation.Value}'] => no match");
+                        evaluateLog.Log($"  - % option: [IF {bucket} > {hashScale} THEN '{variation.Value}'] => no match");
                         continue;
                     }
                     result.Value = variation.Value;
                     result.VariationId = variation.VariationId;
-                    evaluateLog.Log($"- % option: [IF {bucket} > {hashScale} THEN '{variation.Value}'] => MATCH, applying % option");
+                    evaluateLog.Log($"  - % option: [IF {bucket} > {hashScale} THEN '{variation.Value}'] => MATCH, applying % option");
                     return true;
                 }
             }
@@ -180,7 +180,7 @@ namespace ConfigCat.Client.Evaluate
                     result.Value = rule.Value;
                     result.VariationId = rule.VariationId;
 
-                    string l = $"- rule: [IF User.{rule.ComparisonAttribute} {EvaluateLogger<T>.FormatComparator(rule.Comparator)} '{rule.ComparisonValue}' THEN {rule.Value}] => ";
+                    string l = $"  - rule: [IF User.{rule.ComparisonAttribute} {EvaluateLogger<T>.FormatComparator(rule.Comparator)} '{rule.ComparisonValue}' THEN {rule.Value}] => ";
                     if (!user.AllAttributes.ContainsKey(rule.ComparisonAttribute))
                     {
                         logger.Log(l + "no match");

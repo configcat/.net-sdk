@@ -28,9 +28,9 @@ namespace ConfigCat.Client.Evaluate
             result.AppendLine($"Evaluating '{KeyName}'");
             foreach (var o in this.Operations)
             {
-                result.AppendLine(" " + o);
+                result.AppendLine("  " + o);
             }
-            result.Append($" Returning '{this.ReturnValue}' (VariationId: '{this.VariationId ?? "null"}').");
+            result.Append($"  Returning '{this.ReturnValue}' (VariationId: '{this.VariationId ?? "null"}').");
 
             return result.ToString();
         }

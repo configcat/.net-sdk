@@ -69,7 +69,7 @@ namespace ConfigCat.Client.Evaluate
             if (!settings.TryGetValue(key, out var setting))
             {
                 var keys = string.Join(",", settings.Keys.Select(s => $"'{s}'").ToArray());
-                this.log.Error($"Evaluating '{key}' failed (key not found in ConfigCat). Returning the defaultValue defined in the app source code: '{logDefaultValue}'. Here are the available keys: {keys}.");
+                this.log.Error($"Evaluating '{key}' failed (key not found in ConfigCat). Returning the defaultValue that you defined in the source code: '{logDefaultValue}'. Here are the available keys: {keys}.");
                 return null;
             }
 
@@ -145,7 +145,7 @@ namespace ConfigCat.Client.Evaluate
                 var hashValue = hashCandidate.Hash().Substring(0, 7);
 
                 var hashScale = int.Parse(hashValue, NumberStyles.HexNumber) % 100;
-                evaluateLog.Log($"Applying the % option that matches the User's pseudo-random '{hashScale}' (this value is sticky and consitent across all SDKs):");
+                evaluateLog.Log($"Applying the % option that matches the User's pseudo-random '{hashScale}' (this value is sticky and consistent across all SDKs):");
 
                 var bucket = 0;
 

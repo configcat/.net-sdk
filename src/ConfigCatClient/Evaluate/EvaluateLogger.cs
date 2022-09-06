@@ -25,18 +25,12 @@ namespace ConfigCat.Client.Evaluate
         {
             var result = new StringBuilder();
 
-            result.AppendLine($" Evaluate '{KeyName}'");
-
-            result.AppendLine($" VariationId: {this.VariationId ?? "null"}");
-
-            result.AppendLine($" User object: {this.User.Serialize()}");
-
+            result.AppendLine($"Evaluating '{KeyName}'");
             foreach (var o in this.Operations)
             {
-                result.AppendLine(" " + o);
+                result.AppendLine("  " + o);
             }
-
-            result.AppendLine($" Returning: {this.ReturnValue}");
+            result.Append($"  Returning '{this.ReturnValue}' (VariationId: '{this.VariationId ?? "null"}').");
 
             return result.ToString();
         }
@@ -61,8 +55,8 @@ namespace ConfigCat.Client.Evaluate
                 Comparator.NumberGreaterThanEqual => ">=",
                 Comparator.NumberEqual => "=",
                 Comparator.NumberNotEqual => "!=",
-                Comparator.SensitiveOneOf => "IS ONE OF (Sensitive)",
-                Comparator.SensitiveNotOneOf => "IS NOT ONE OF (Sensitive)",
+                Comparator.SensitiveOneOf => "IS ONE OF (hashed)",
+                Comparator.SensitiveNotOneOf => "IS NOT ONE OF (hashed)",
                 _ => comparator.ToString()
             };
         }

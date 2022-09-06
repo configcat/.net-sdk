@@ -7,23 +7,23 @@
     public enum LogLevel
     {
         /// <summary>
-        /// No tracing and any debugging messages.
+        /// No messages are logged.
         /// </summary>
         Off = 0,
         /// <summary>
-        /// Error messages.
+        /// Error messages are logged. All other messages are discarded.
         /// </summary>
         Error = 1,
         /// <summary>
-        /// Error and warning messages.
+        /// Warning and Error messages should be logged. Information and Debug messages are discarded.
         /// </summary>
         Warning = 2,
         /// <summary>
-        /// Information, Error and Warning messages.
+        /// Information, Warning and Error are logged. Debug messages are discarded.
         /// </summary>
         Info = 3,
         /// <summary>
-        /// All messages
+        /// All messages should be logged.
         /// </summary>
         Debug = 4
     }

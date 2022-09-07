@@ -1,3 +1,7 @@
+### 6.5.3
+- Use logger wrapper everywhere internally. #39
+- Improved evaluation logging. #38
+
 ### 6.5.2
 - Consolidate percentage rule evaluation logs.
 

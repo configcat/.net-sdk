@@ -43,7 +43,7 @@ namespace ConfigCat.Client.Configuration
 
         internal override void Validate()
         {
-            if (PollInterval.TotalSeconds == 0)
+            if (PollInterval.TotalSeconds <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(this.PollInterval), "Value must be greater than zero.");
             }

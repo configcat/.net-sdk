@@ -129,7 +129,7 @@ namespace ConfigCat.Client.ConfigService
                         var scheduledNextTime = DateTimeOffset.UtcNow.Add(interval);
                         try
                         {
-                            await RefreshConfigAsync();
+                            await RefreshConfigAsync().ConfigureAwait(false);
                         }
                         catch (Exception exception)
                         {
@@ -140,7 +140,7 @@ namespace ConfigCat.Client.ConfigService
                             var realNextTime = scheduledNextTime.Subtract(DateTimeOffset.UtcNow);
                             if (realNextTime > TimeSpan.Zero)
                             {
-                                await Task.Delay(realNextTime, this.timerCancellationTokenSource.Token);
+                                await Task.Delay(realNextTime, this.timerCancellationTokenSource.Token).ConfigureAwait(false);
                             }
                         }
                     }

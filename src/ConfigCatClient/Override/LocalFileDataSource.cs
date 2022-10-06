@@ -61,13 +61,13 @@ namespace ConfigCat.Client.Override
                             if (lastWriteTime > this.fileLastWriteTime)
                             {
                                 this.logger.Information($"Reload file {this.fullPath}.");
-                                await this.ReloadFileAsync(isAsync: true);
+                                await this.ReloadFileAsync(isAsync: true).ConfigureAwait(false);
                             }
                         }
 
                         finally
                         {
-                            await Task.Delay(FILE_POLL_INTERVAL, this.cancellationTokenSource.Token);
+                            await Task.Delay(FILE_POLL_INTERVAL, this.cancellationTokenSource.Token).ConfigureAwait(false);
                         }
                     }
                     catch (OperationCanceledException)

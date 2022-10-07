@@ -43,7 +43,7 @@ namespace ConfigCat.Client.Configuration
 
         internal override void Validate()
         {
-            if (PollInterval.TotalSeconds <= 0)
+            if (PollInterval <= TimeSpan.Zero)
             {
                 throw new ArgumentOutOfRangeException(nameof(this.PollInterval), "Value must be greater than zero.");
             }
@@ -74,7 +74,7 @@ namespace ConfigCat.Client.Configuration
         {
             if (this.CacheTimeToLive < TimeSpan.FromSeconds(1))
             {
-                throw new ArgumentOutOfRangeException(nameof(this.CacheTimeToLive), "Value must be greater than 1 seconds.");
+                throw new ArgumentOutOfRangeException(nameof(this.CacheTimeToLive), "Value must be greater than or equal to 1 seconds.");
             }
         }
     }

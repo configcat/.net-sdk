@@ -38,7 +38,7 @@ namespace ConfigCat.Client
         {
             base.Validate();
 
-            if (PollIntervalSeconds <= 0)
+            if (PollIntervalSeconds == 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(this.PollIntervalSeconds), "Value must be greater than zero.");
             }

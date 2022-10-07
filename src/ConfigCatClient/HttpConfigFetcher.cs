@@ -112,6 +112,11 @@ namespace ConfigCat.Client
                 this.log.Error($"Http timeout {this.timeout} reached.");
                 this.ReInitializeHttpClient();
             }
+            catch (HttpRequestException ex) when (ex.InnerException is WebException { Status: WebExceptionStatus.SecureChannelFailure })
+            {
+                this.log.Error($"Secure connection could not be established. Please make sure that your application is enabled to use TLS 1.2+. For more information see https://stackoverflow.com/a/58195987/8656352.\n{ex}");
+                this.ReInitializeHttpClient();
+            }
             catch (Exception ex)
             {
                 this.log.Error($"Error occured during fetching.\n{ex}");
@@ -134,13 +139,21 @@ namespace ConfigCat.Client
                     request.Headers.IfNoneMatch.Add(new EntityTagHeaderValue(lastConfig.HttpETag));
                 }
 
+                HttpResponseMessage response;
+                try
+                {
 #if NET5_0_OR_GREATER
-                var response = isAsync
-                    ? await this.httpClient.SendAsync(request, this.cancellationTokenSource.Token).ConfigureAwait(false)
-                    : this.httpClient.Send(request, this.cancellationTokenSource.Token);
+                    response = isAsync
+                        ? await this.httpClient.SendAsync(request, this.cancellationTokenSource.Token).ConfigureAwait(false)
+                        : this.httpClient.Send(request, this.cancellationTokenSource.Token);
 #else
-                var response = await this.httpClient.SendAsync(request, this.cancellationTokenSource.Token).ConfigureAwait(false);
+                    response = await this.httpClient.SendAsync(request, this.cancellationTokenSource.Token).ConfigureAwait(false);
 #endif
+                }
+                catch (Exception ex) when (ex.InnerException is WebException { Status: WebExceptionStatus.SecureChannelFailure })
+                {
+                    throw;
+                }
 
                 if (response.IsSuccessStatusCode)
                 {

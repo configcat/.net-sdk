@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Net.Http;
+using System.Collections.Generic;
 
 #pragma warning disable CS0618 // Type or member is obsolete
 namespace ConfigCat.Client.Tests
@@ -110,9 +111,27 @@ namespace ConfigCat.Client.Tests
             ClientDeadlockCheck(client);
         }
 
+        private static readonly HashSet<string> MethodsToCheck = new HashSet<string>
+        {
+            "ForceRefresh",
+            "ForceRefreshAsync",
+            "GetAllKeys",
+            "GetAllKeysAsync",
+            "GetAllValues",
+            "GetAllValuesAsync",
+            "GetAllVariationId",
+            "GetAllVariationIdAsync",
+            "GetValue",
+            "GetValueAsync",
+            "GetVariationId",
+            "GetVariationIdAsync",
+        };
+
         private void ClientDeadlockCheck(IConfigCatClient client)
         {
-            var methods = typeof(IConfigCatClient).GetMethods().Where(x => !x.IsSpecialName).OrderBy(o => o.Name);
+            var methods = typeof(IConfigCatClient).GetMethods()
+                .Where(x => !x.IsSpecialName && MethodsToCheck.Contains(x.Name))
+                .OrderBy(o => o.Name);
 
             foreach (var m in methods)
             {

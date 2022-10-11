@@ -34,10 +34,10 @@ namespace ConfigCat.Client.Versioning
     /// Conforms with v2.0.0 of http://semver.org
     /// </summary>
 #if NETSTANDARD
-    public sealed class SemVersion : IComparable<SemVersion>, IComparable
+    public sealed class SemVersion : IEquatable<SemVersion>, IComparable<SemVersion>, IComparable
 #else
     [Serializable]
-    public sealed class SemVersion : IComparable<SemVersion>, IComparable, ISerializable
+    public sealed class SemVersion : IEquatable<SemVersion>, IComparable<SemVersion>, IComparable, ISerializable
 #endif
     {
         private static readonly Regex ParseEx =
@@ -460,16 +460,25 @@ namespace ConfigCat.Client.Versioning
         /// <returns>
         ///   <see langword="true"/> if the specified <see cref="object" /> is equal to this instance, otherwise <see langword="false"/>.
         /// </returns>
-        /// <exception cref="InvalidCastException">The <paramref name="obj"/> is not a <see cref="SemVersion"/>.</exception>
         public override bool Equals(object obj)
         {
-            if (obj is null)
+            return Equals(obj as SemVersion);
+        }
+
+        /// <summary>
+        /// Determines whether the specified <see cref="SemVersion" /> is equal to this instance.
+        /// </summary>
+        /// <param name="other">The <see cref="SemVersion" /> to compare with this instance.</param>
+        /// <returns>
+        ///   <see langword="true"/> if the specified <see cref="SemVersion" /> is equal to this instance, otherwise <see langword="false"/>.
+        /// </returns>
+        public bool Equals(SemVersion other)
+        {
+            if (other is null)
                 return false;
 
-            if (ReferenceEquals(this, obj))
+            if (ReferenceEquals(this, other))
                 return true;
-
-            var other = (SemVersion)obj;
 
             return Major == other.Major
                 && Minor == other.Minor

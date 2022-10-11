@@ -32,7 +32,8 @@ namespace ConfigCat.Client.Override
             this.fullPath = Path.GetFullPath(filePath);
             this.logger = logger;
 
-            this.ReloadFile();
+            // method executes synchronously, GetAwaiter().GetResult() is just for preventing compiler warnings
+            this.ReloadFileAsync(isAsync: false).GetAwaiter().GetResult();
 
             if (autoReload)
             {
@@ -60,13 +61,13 @@ namespace ConfigCat.Client.Override
                             if (lastWriteTime > this.fileLastWriteTime)
                             {
                                 this.logger.Information($"Reload file {this.fullPath}.");
-                                this.ReloadFile();
+                                await this.ReloadFileAsync(isAsync: true).ConfigureAwait(false);
                             }
                         }
 
                         finally
                         {
-                            await Task.Delay(FILE_POLL_INTERVAL, this.cancellationTokenSource.Token);
+                            await Task.Delay(FILE_POLL_INTERVAL, this.cancellationTokenSource.Token).ConfigureAwait(false);
                         }
                     }
                     catch (OperationCanceledException)
@@ -77,7 +78,7 @@ namespace ConfigCat.Client.Override
             });
         }
 
-        private void ReloadFile()
+        private async Task ReloadFileAsync(bool isAsync)
         {
             try
             {
@@ -104,7 +105,14 @@ namespace ConfigCat.Client.Override
                         if (i >= MAX_WAIT_ITERATIONS)
                             throw;
 
-                        Thread.Sleep(WAIT_TIME_FOR_UNLOCK);
+                        if (isAsync)
+                        {
+                            await Task.Delay(WAIT_TIME_FOR_UNLOCK).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            Thread.Sleep(WAIT_TIME_FOR_UNLOCK);
+                        }
                     }
                 }
             }

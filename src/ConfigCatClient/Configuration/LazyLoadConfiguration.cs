@@ -17,9 +17,9 @@ namespace ConfigCat.Client
         {
             base.Validate();
 
-            if (this.CacheTimeToLiveSeconds == 0)
+            if (this.CacheTimeToLiveSeconds < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.CacheTimeToLiveSeconds), "Value must be greater than zero.");
+                throw new ArgumentOutOfRangeException(nameof(this.CacheTimeToLiveSeconds), "Value must be greater than or equal to 1 seconds.");
             }
         }
     }

@@ -55,6 +55,10 @@ Works with .NET, .NET Core, .NET Standard</Description>
   </ItemGroup>
 	
   <ItemGroup>
+    <PackageReference Include="ConfigureAwaitChecker.Analyzer" Version="5.0.0.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="System.Data.HashFunction.MurmurHash" Version="2.0.0" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
     <!--Do not remove this reference, it was added due to a SNYK security report-->

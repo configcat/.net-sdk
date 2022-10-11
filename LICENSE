@@ -12,10 +12,18 @@ furnished to do so, subject to the following conditions:
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
 
-This repository includes two files originally copied from https://github.com/maxhauser/semver
-repository: https://github.com/maxhauser/semver/blob/master/Semver/IntExtensions.cs and
-https://github.com/maxhauser/semver/blob/master/Semver/SemVersion.cs. The
-original versions of the files are MIT licensed. See the file headers for details.
+This repository includes several pieces of source code authored by other parties.
+The files containing such source code are the following:
+* src/ConfigCatClient/Versioning/SemVersion.cs, which
+  is originally available at https://github.com/maxhauser/semver/blob/v2.2.0/Semver/SemVersion.cs and
+  is licensed under MIT license (see https://github.com/maxhauser/semver/blob/v2.2.0/License.txt).
+* src/ConfigCatClient/Versioning/IntExtensions.cs, which
+  is originally available at https://github.com/maxhauser/semver/blob/v2.2.0/Semver/Utility/IntExtensions.cs and
+  is licensed under MIT license (see https://github.com/maxhauser/semver/blob/v2.2.0/License.txt).
+* src/ConfigCat.Client.Tests/ModuleInitializerAttribute.cs, which
+  is originally available at https://github.com/dotnet/runtime/blob/v6.0.9/src/libraries/System.Private.CoreLib/src/System/Runtime/CompilerServices/ModuleInitializerAttribute.cs and
+  is licensed under MIT license (see https://github.com/dotnet/runtime/blob/main/LICENSE.TXT).
+See the file headers for details.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,

@@ -11,7 +11,7 @@
     <Company>ConfigCat</Company>
     <Authors>ConfigCat</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://configcat.com/docs/sdk-reference/csharp</PackageProjectUrl>
+    <PackageProjectUrl>https://configcat.com/docs/sdk-reference/dotnet</PackageProjectUrl>
     <RepositoryUrl>https://github.com/ConfigCat/.net-sdk</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <LangVersion>latest</LangVersion>

@@ -84,7 +84,7 @@ var isMyAwesomeFeatureEnabled = client.GetValue(
   * [Sample Web App](https://github.com/configcat/.net-sdk/tree/master/samples/ASP.NETCore)
 
 ## Polling Modes
-The ConfigCat SDK supports 3 different polling mechanisms to acquire the setting values from ConfigCat. After latest setting values are downloaded, they are stored in the internal cache then all requests are served from there. Read more about Polling Modes and how to use them at [ConfigCat Docs](https://configcat.com/docs/sdk-reference/csharp/).
+The ConfigCat SDK supports 3 different polling mechanisms to acquire the setting values from ConfigCat. After latest setting values are downloaded, they are stored in the internal cache then all requests are served from there. Read more about Polling Modes and how to use them at [ConfigCat Docs](https://configcat.com/docs/sdk-reference/dotnet/).
 
 ## Need help?
 https://configcat.com/support

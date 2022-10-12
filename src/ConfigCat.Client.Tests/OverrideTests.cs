@@ -17,7 +17,9 @@ namespace ConfigCat.Client.Tests
         {
             using var client = new ConfigCatClient(options =>
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
+#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalFile(ComplexJsonPath, false, OverrideBehaviour.LocalOnly);
             });
 
@@ -33,7 +35,9 @@ namespace ConfigCat.Client.Tests
         {
             using var client = new ConfigCatClient(options =>
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
+#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalFile(ComplexJsonPath, false, OverrideBehaviour.LocalOnly);
             });
 
@@ -48,7 +52,9 @@ namespace ConfigCat.Client.Tests
         {
             using var client = new ConfigCatClient(options =>
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
+#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalFile(ComplexJsonPath, false, OverrideBehaviour.LocalOnly);
             });
 
@@ -73,7 +79,9 @@ namespace ConfigCat.Client.Tests
 
             using var client = new ConfigCatClient(options =>
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
+#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalFile(ComplexJsonPath, false, OverrideBehaviour.LocalOnly);
             });
 
@@ -97,7 +105,9 @@ namespace ConfigCat.Client.Tests
 
             using var client = new ConfigCatClient(options =>
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
+#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalFile(ComplexJsonPath, false, OverrideBehaviour.LocalOnly);
             });
 
@@ -112,7 +122,9 @@ namespace ConfigCat.Client.Tests
         {
             using var client = new ConfigCatClient(options =>
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
+#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalFile("something-not-existing", false, OverrideBehaviour.LocalOnly);
             });
 
@@ -125,7 +137,9 @@ namespace ConfigCat.Client.Tests
         {
             using var client = new ConfigCatClient(options =>
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
+#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalFile(ComplexJsonPath, true, OverrideBehaviour.LocalOnly);
             });
 
@@ -141,7 +155,9 @@ namespace ConfigCat.Client.Tests
         {
             using var client = new ConfigCatClient(options =>
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
+#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalFile(ComplexJsonPath, true, OverrideBehaviour.LocalOnly);
             });
 
@@ -157,7 +173,9 @@ namespace ConfigCat.Client.Tests
         {
             using var client = new ConfigCatClient(options =>
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
+#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalFile("something-not-existing", true, OverrideBehaviour.LocalOnly);
             });
 
@@ -170,7 +188,9 @@ namespace ConfigCat.Client.Tests
         {
             using var client = new ConfigCatClient(options =>
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
+#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalFile(SimpleJsonPath, false, OverrideBehaviour.LocalOnly);
             });
 
@@ -186,7 +206,9 @@ namespace ConfigCat.Client.Tests
         {
             using var client = new ConfigCatClient(options =>
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
+#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalFile(SimpleJsonPath, false, OverrideBehaviour.LocalOnly);
             });
 
@@ -211,7 +233,9 @@ namespace ConfigCat.Client.Tests
 
             using var client = new ConfigCatClient(options =>
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
+#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalDictionary(dict, OverrideBehaviour.LocalOnly);
             });
 
@@ -236,7 +260,9 @@ namespace ConfigCat.Client.Tests
 
             using var client = new ConfigCatClient(options =>
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
+#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalDictionary(dict, OverrideBehaviour.LocalOnly);
             });
 
@@ -260,7 +286,9 @@ namespace ConfigCat.Client.Tests
 
             using var client = new ConfigCatClient(options =>
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
+#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalDictionary(dict, OverrideBehaviour.LocalOverRemote);
                 options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, GetJsonContent("false"));
                 options.PollingMode = PollingModes.ManualPoll;
@@ -285,7 +313,9 @@ namespace ConfigCat.Client.Tests
 
             using var client = new ConfigCatClient(options =>
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
+#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalDictionary(dict, OverrideBehaviour.LocalOverRemote);
                 options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, GetJsonContent("false"));
                 options.PollingMode = PollingModes.ManualPoll;
@@ -310,7 +340,9 @@ namespace ConfigCat.Client.Tests
 
             using var client = new ConfigCatClient(options =>
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
+#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalDictionary(dict, OverrideBehaviour.RemoteOverLocal);
                 options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, GetJsonContent("false"));
                 options.PollingMode = PollingModes.ManualPoll;
@@ -335,7 +367,9 @@ namespace ConfigCat.Client.Tests
 
             using var client = new ConfigCatClient(options =>
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
+#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalDictionary(dict, OverrideBehaviour.RemoteOverLocal);
                 options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, GetJsonContent("false"));
                 options.PollingMode = PollingModes.ManualPoll;
@@ -354,7 +388,9 @@ namespace ConfigCat.Client.Tests
 
             using var client = new ConfigCatClient(options =>
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
+#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalFile(SampleFileToCreate, true, OverrideBehaviour.LocalOnly);
                 options.Logger.LogLevel = LogLevel.Info;
             });
@@ -376,7 +412,9 @@ namespace ConfigCat.Client.Tests
 
             using var client = new ConfigCatClient(options =>
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
+#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalFile(SampleFileToCreate, true, OverrideBehaviour.LocalOnly);
                 options.Logger.LogLevel = LogLevel.Info;
             });

@@ -29,9 +29,9 @@ namespace ConfigCat.Client.Tests
         {
             // Arrange
 
+            var sdkKey = "DEMO";
             var configuration = new ConfigCatClientOptions
             {
-                SdkKey = "DEMO",
                 DataGovernance = dataGovernance
             };
 
@@ -58,7 +58,7 @@ namespace ConfigCat.Client.Tests
                 .Verifiable();
 
             IConfigFetcher fetcher = new HttpConfigFetcher(
-                configuration.CreateUri(),
+                configuration.CreateUri(sdkKey),
                 "DEMO",
                 Mock.Of<ILogger>().AsWrapper(),
                 handlerMock.Object,
@@ -82,9 +82,9 @@ namespace ConfigCat.Client.Tests
         {
             // Arrange
 
+            var sdkKey = "SDK-KEY";
             var fetchConfig = new ConfigCatClientOptions
             {
-                SdkKey = "SDK-KEY",
                 DataGovernance = DataGovernance.Global
             };
 
@@ -95,7 +95,7 @@ namespace ConfigCat.Client.Tests
 
             // Act
 
-            var requests = await Fetch(fetchConfig, responsesRegistry, 3);
+            var requests = await Fetch(sdkKey, fetchConfig, responsesRegistry, 3);
 
             // Assert
 
@@ -107,9 +107,9 @@ namespace ConfigCat.Client.Tests
         {
             // Arrange
 
+            var sdkKey = "SDK-KEY";
             var fetchConfig = new ConfigCatClientOptions
             {
-                SdkKey = "SDK-KEY",
                 DataGovernance = DataGovernance.EuOnly
             };
 
@@ -121,7 +121,7 @@ namespace ConfigCat.Client.Tests
 
             // Act
 
-            var requests = await Fetch(fetchConfig, responsesRegistry, 3);
+            var requests = await Fetch(sdkKey, fetchConfig, responsesRegistry, 3);
 
             // Assert
 
@@ -135,9 +135,9 @@ namespace ConfigCat.Client.Tests
         {
             // Arrange
 
+            var sdkKey = "SDK-KEY";
             var fetchConfig = new ConfigCatClientOptions
             {
-                SdkKey = "SDK-KEY",
                 DataGovernance = DataGovernance.Global
             };
 
@@ -149,7 +149,7 @@ namespace ConfigCat.Client.Tests
 
             // Act
 
-            var requests = await Fetch(fetchConfig, responsesRegistry, 3);
+            var requests = await Fetch(sdkKey, fetchConfig, responsesRegistry, 3);
 
             // Assert
 
@@ -164,9 +164,9 @@ namespace ConfigCat.Client.Tests
         {
             // Arrange
 
+            var sdkKey = "SDK-KEY";
             var fetchConfig = new ConfigCatClientOptions
             {
-                SdkKey = "SDK-KEY",
                 DataGovernance = DataGovernance.EuOnly
             };
 
@@ -177,7 +177,7 @@ namespace ConfigCat.Client.Tests
 
             // Act
 
-            var requests = await Fetch(fetchConfig, responsesRegistry, 3);
+            var requests = await Fetch(sdkKey, fetchConfig, responsesRegistry, 3);
 
             // Assert
 
@@ -195,6 +195,7 @@ namespace ConfigCat.Client.Tests
                 {CustomCdnUri.Host, CreateResponse()}
             };
 
+            string sdkKey = null;
             var fetchConfig = new ConfigCatClientOptions
             {
                 DataGovernance = DataGovernance.Global,
@@ -203,7 +204,7 @@ namespace ConfigCat.Client.Tests
 
             // Act
 
-            var requests = await Fetch(fetchConfig, responsesRegistry, 3);
+            var requests = await Fetch(sdkKey, fetchConfig, responsesRegistry, 3);
 
             // Assert
 
@@ -221,6 +222,7 @@ namespace ConfigCat.Client.Tests
                 {CustomCdnUri.Host, CreateResponse()}
             };
 
+            string sdkKey = null;
             var fetchConfig = new ConfigCatClientOptions
             {
                 DataGovernance = DataGovernance.EuOnly,
@@ -229,7 +231,7 @@ namespace ConfigCat.Client.Tests
 
             // Act
 
-            var requests = await Fetch(fetchConfig, responsesRegistry, 3);
+            var requests = await Fetch(sdkKey, fetchConfig, responsesRegistry, 3);
 
             // Assert
 
@@ -255,7 +257,8 @@ namespace ConfigCat.Client.Tests
 
             // Act
 
-            var requests = await Fetch(fetchConfig, responsesRegistry, 3);
+            string sdkKey = null;
+            var requests = await Fetch(sdkKey, fetchConfig, responsesRegistry, 3);
 
             // Assert
 
@@ -275,6 +278,7 @@ namespace ConfigCat.Client.Tests
                 {ForcedCdnUri.Host, CreateResponse(ForcedCdnUri, RedirectMode.Force, true)}
             };
 
+            string sdkKey = null;
             var fetchConfig = new ConfigCatClientOptions
             {
                 DataGovernance = DataGovernance.EuOnly
@@ -282,7 +286,7 @@ namespace ConfigCat.Client.Tests
 
             // Act
 
-            var requests = await Fetch(fetchConfig, responsesRegistry, 3);
+            var requests = await Fetch(sdkKey, fetchConfig, responsesRegistry, 3);
 
             // Assert
 
@@ -302,6 +306,7 @@ namespace ConfigCat.Client.Tests
                 {ForcedCdnUri.Host, CreateResponse(ForcedCdnUri, RedirectMode.Force, true)}
             };
 
+            string sdkKey = null;
             var fetchConfig = new ConfigCatClientOptions
             {
                 DataGovernance = DataGovernance.Global,
@@ -310,7 +315,7 @@ namespace ConfigCat.Client.Tests
 
             // Act
 
-            var responses = await Fetch(fetchConfig, responsesRegistry, 3);
+            var responses = await Fetch(sdkKey, fetchConfig, responsesRegistry, 3);
 
             // Assert
 
@@ -330,6 +335,7 @@ namespace ConfigCat.Client.Tests
                 {EuOnlyCdnUri.Host, CreateResponse(GlobalCdnUri, RedirectMode.Should, false)}
             };
 
+            string sdkKey = null;
             var fetchConfig = new ConfigCatClientOptions
             {
                 DataGovernance = DataGovernance.Global
@@ -337,7 +343,7 @@ namespace ConfigCat.Client.Tests
 
             // Act
 
-            var requests = await Fetch(fetchConfig, responsesRegistry);
+            var requests = await Fetch(sdkKey, fetchConfig, responsesRegistry);
 
             // Assert
 
@@ -346,6 +352,7 @@ namespace ConfigCat.Client.Tests
 
 
         internal static async Task<SortedList<byte, HttpRequestMessage>> Fetch(
+            string sdkKey,
             ConfigurationBase fetchConfig,
             Dictionary<string, SettingsWithPreferences> responsesRegistry,
             byte fetchInvokeCount = 1)
@@ -375,7 +382,7 @@ namespace ConfigCat.Client.Tests
                 .Verifiable();
 
             IConfigFetcher fetcher = new HttpConfigFetcher(
-                fetchConfig.CreateUri(),
+                fetchConfig.CreateUri(sdkKey),
                 "DEMO",
                 Mock.Of<ILogger>().AsWrapper(),
                 handlerMock.Object,

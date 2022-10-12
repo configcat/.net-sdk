@@ -17,6 +17,7 @@ namespace ConfigCat.Client
     /// </summary>
     public sealed class ConfigCatClient : IConfigCatClient
     {
+        private readonly string sdkKey;
         private readonly LoggerWrapper log;
         private readonly IRolloutEvaluator configEvaluator;
         private readonly IConfigService configService;
@@ -26,6 +27,8 @@ namespace ConfigCat.Client
         private User defaultUser;
 
         private static readonly string Version = typeof(ConfigCatClient).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
+
+        private static readonly ConfigCatClientCache Instances = new ConfigCatClientCache();
 
         /// <inheritdoc />
         public LogLevel LogLevel
@@ -111,16 +114,12 @@ namespace ConfigCat.Client
         /// <param name="configurationAction">The configuration action.</param>
         /// <exception cref="ArgumentNullException">When the <paramref name="configurationAction"/> is null.</exception>
         public ConfigCatClient(Action<ConfigCatClientOptions> configurationAction)
+            : this(sdkKey: BuildConfiguration(configurationAction ?? throw new ArgumentNullException(nameof(configurationAction)), out var configuration), configuration)
+        { }
+
+        internal ConfigCatClient(string sdkKey, ConfigCatClientOptions configuration)
         {
-            if (configurationAction == null)
-            {
-                throw new ArgumentNullException(nameof(configurationAction));
-            }
-
-            var configuration = new ConfigCatClientOptions();
-            configurationAction(configuration);
-
-            configuration.Validate();
+            this.sdkKey = sdkKey;
 
             this.log = new LoggerWrapper(configuration.Logger);
             this.configDeserializer = new ConfigDeserializer();
@@ -129,7 +128,7 @@ namespace ConfigCat.Client
             var cacheParameters = new CacheParameters
             {
                 ConfigCache = configuration.ConfigCache ?? new InMemoryConfigCache(),
-                CacheKey = GetCacheKey(configuration)
+                CacheKey = GetCacheKey(sdkKey)
             };
 
             if (configuration.FlagOverrides != null)
@@ -142,7 +141,7 @@ namespace ConfigCat.Client
 
             this.configService = this.overrideBehaviour == null || this.overrideBehaviour != OverrideBehaviour.LocalOnly
                 ? DetermineConfigService(configuration.PollingMode,
-                    new HttpConfigFetcher(configuration.CreateUri(),
+                    new HttpConfigFetcher(configuration.CreateUri(sdkKey),
                             $"{configuration.PollingMode.Identifier}-{Version}",
                             this.log,
                             configuration.HttpClientHandler,
@@ -163,6 +162,64 @@ namespace ConfigCat.Client
             this.log = new LoggerWrapper(logger);
             this.configEvaluator = evaluator;
             this.configDeserializer = configDeserializer;
+        }
+
+        // TODO: Remove this helper when we delete the obsolete client constructors.
+        private static string BuildConfiguration(Action<ConfigCatClientOptions> configurationAction, out ConfigCatClientOptions configuration)
+        {
+            configuration = new ConfigCatClientOptions();
+            configurationAction(configuration);
+
+            configuration.Validate();
+
+#pragma warning disable CS0618 // Type or member is obsolete
+            return configuration.SdkKey;
+#pragma warning restore CS0618 // Type or member is obsolete
+        }
+
+        /// <summary>
+        /// Returns a client object for the specified SDK Key, configured by <paramref name="configurationAction"/>.
+        /// </summary>
+        /// <remarks>
+        /// This method returns a single, shared instance per each distinct SDK Key.
+        /// That is, a new client object is created only when there is none available for the specified SDK Key.
+        /// Otherwise, the already created and configured instance is returned (in which case <paramref name="configurationAction"/> is ignored).
+        /// So, please keep in mind that when you make multiple calls to this method using the same SDK Key, you may end up with multiple references to the same client object.
+        /// </remarks>
+        /// <param name="sdkKey">SDK Key to access configuration. (For the moment, SDK Key can also be set using <paramref name="configurationAction"/>. This setting will, however, be ignored and <paramref name="sdkKey"/> will be used, regardless.)</param>
+        /// <param name="configurationAction">The configuration action.</param>
+        /// <exception cref="ArgumentNullException">When the <paramref name="configurationAction"/> is null.</exception>
+        public static IConfigCatClient Get(string sdkKey, Action<ConfigCatClientOptions> configurationAction = null)
+        {
+            if (sdkKey == null)
+            {
+                throw new ArgumentNullException(nameof(sdkKey));
+            }
+
+            if (sdkKey.Length == 0)
+            {
+                throw new ArgumentException("Invalid SDK Key.", nameof(sdkKey));
+            }
+
+            // TODO: This should be simplified after SdkKey gets removed from ConfigurationBase.
+            BuildConfiguration(options => 
+            { 
+                configurationAction?.Invoke(options);
+
+                // For the moment, we need to set SdkKey to keep ConfigurationBase.Validate happy.
+#pragma warning disable CS0618 // Type or member is obsolete
+                options.SdkKey = sdkKey;
+#pragma warning restore CS0618 // Type or member is obsolete
+            }, out var configuration);
+
+            var instance = Instances.GetOrCreate(sdkKey, configuration, out var instanceAlreadyCreated);
+
+            if (instanceAlreadyCreated && configurationAction is not null)
+            {
+                instance.log.Warning(message: $"Client for SDK key '{sdkKey}' is already created and will be reused; configuration action is being ignored.");
+            }
+
+            return instance;
         }
 
         /// <inheritdoc />
@@ -487,9 +544,9 @@ namespace ConfigCat.Client
             };
         }
 
-        private static string GetCacheKey(ConfigurationBase configuration)
+        private static string GetCacheKey(string sdkKey)
         {
-            var key = $"dotnet_{ConfigurationBase.ConfigFileName}_{configuration.SdkKey}";
+            var key = $"dotnet_{ConfigurationBase.ConfigFileName}_{sdkKey}";
             return key.Hash();
         }
 

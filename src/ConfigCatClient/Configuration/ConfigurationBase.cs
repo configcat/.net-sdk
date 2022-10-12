@@ -26,6 +26,7 @@ namespace ConfigCat.Client
         /// <summary>
         /// SDK Key to get your configuration.
         /// </summary>
+        [Obsolete("Please use the 'ConfigCatClient.Get(sdkKey, options => { /* configuration options */ })' format.")]
         public string SdkKey { set; get; }
 
         /// <summary>
@@ -68,10 +69,13 @@ namespace ConfigCat.Client
 
         internal virtual void Validate()
         {
+            // TODO: Remove this check when we delete the obsolete client constructors (as the check will then be done in ConfigCatClient.Get).
+#pragma warning disable CS0618 // Type or member is obsolete
             if (string.IsNullOrEmpty(this.SdkKey))
             {
                 throw new ArgumentException("Invalid SDK Key.", nameof(this.SdkKey));
             }
+#pragma warning restore CS0618 // Type or member is obsolete
 
             if (this.Logger == null)
             {
@@ -79,7 +83,7 @@ namespace ConfigCat.Client
             }
         }
 
-        internal Uri CreateUri()
+        internal Uri CreateUri(string sdkKey)
         {
             var baseUri = BaseUrl;
 
@@ -92,7 +96,7 @@ namespace ConfigCat.Client
                 };
             }
 
-            return new Uri(baseUri, "configuration-files/" + this.SdkKey + "/" + ConfigFileName);
+            return new Uri(baseUri, "configuration-files/" + sdkKey + "/" + ConfigFileName);
         }
 
         internal const string ConfigFileName = "config_v5.json";
@@ -103,12 +107,15 @@ namespace ConfigCat.Client
 
         internal bool IsCustomBaseUrl => BaseUrl != BaseUrlGlobal && BaseUrl != BaseUrlEu;
 
-        // Remove this helper when we delete the obsolate client constructors.
+        // TODO: Remove this helper when we delete the obsolete client constructors.
         internal void ToOptions(ConfigCatClientOptions options)
         {
+#pragma warning disable CS0618 // Type or member is obsolete
+            options.SdkKey = this.SdkKey;
+#pragma warning restore CS0618 // Type or member is obsolete
+
             options.Logger = this.Logger;
             options.HttpClientHandler = this.HttpClientHandler;
-            options.SdkKey = this.SdkKey;
             options.DataGovernance = this.DataGovernance;
             options.ConfigCache = this.ConfigCache;
             options.BaseUrl = this.BaseUrl;

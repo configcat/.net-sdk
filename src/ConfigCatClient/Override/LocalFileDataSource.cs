@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ConfigCat.Client.Override
 {
-    internal sealed class LocalFileDataSource : IOverrideDataSource
+    internal sealed class LocalFileDataSource : IOverrideDataSource, IBackgroundWorkRunner
     {
         const int WAIT_TIME_FOR_UNLOCK = 200; // ms
         const int MAX_WAIT_ITERATIONS = 50; // ms
@@ -126,9 +126,20 @@ namespace ConfigCat.Client.Override
             }
         }
 
+        private void Dispose(bool disposing)
+        {
+            // Background work should stop under all circumstances
+            this.cancellationTokenSource.Cancel();
+        }
+
         public void Dispose()
         {
-            this.cancellationTokenSource.Cancel();
+            Dispose(disposing: true);
+        }
+
+        void IBackgroundWorkRunner.Stop()
+        {
+            Dispose(disposing: false);
         }
 
         private sealed class SimplifiedConfig

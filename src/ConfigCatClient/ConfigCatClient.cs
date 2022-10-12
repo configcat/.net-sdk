@@ -18,6 +18,8 @@ namespace ConfigCat.Client
     public sealed class ConfigCatClient : IConfigCatClient
     {
         private readonly string sdkKey;
+        // TODO: Remove this field when we delete the obsolete client constructors.
+        private readonly bool isUncached;
         private readonly LoggerWrapper log;
         private readonly IRolloutEvaluator configEvaluator;
         private readonly IConfigService configService;
@@ -115,7 +117,9 @@ namespace ConfigCat.Client
         /// <exception cref="ArgumentNullException">When the <paramref name="configurationAction"/> is null.</exception>
         public ConfigCatClient(Action<ConfigCatClientOptions> configurationAction)
             : this(sdkKey: BuildConfiguration(configurationAction ?? throw new ArgumentNullException(nameof(configurationAction)), out var configuration), configuration)
-        { }
+        {
+            this.isUncached = true;
+        }
 
         internal ConfigCatClient(string sdkKey, ConfigCatClientOptions configuration)
         {
@@ -158,6 +162,8 @@ namespace ConfigCat.Client
         /// </summary>        
         internal ConfigCatClient(IConfigService configService, ILogger logger, IRolloutEvaluator evaluator, IConfigDeserializer configDeserializer)
         {
+            this.isUncached = true;
+
             this.configService = configService;
             this.log = new LoggerWrapper(logger);
             this.configEvaluator = evaluator;
@@ -352,14 +358,56 @@ namespace ConfigCat.Client
         }
 
         /// <inheritdoc />
-        public void Dispose()
+        ~ConfigCatClient()
         {
-            if (this.configService is IDisposable disposable)
+            // Safeguard against situations where user forgets to dispose of the client instance.
+
+            if (!this.isUncached && this.sdkKey is not null)
             {
-                disposable.Dispose();
+                Instances.Remove(this.sdkKey, out _);
             }
 
-            this.overrideDataSource?.Dispose();
+            Dispose(disposing: false);
+        }
+
+        private void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (this.configService is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+
+                this.overrideDataSource?.Dispose();
+            }
+            else
+            {
+                // The underlying services may do some long running background work (like AutoPollConfigService or LocalFileDataSource),
+                // in which case we need to signal these services to stop the background work, otherwise it would go on endlessly,
+                // which would prevent the GC from collecting the service instances, that is, as an end result, would cause a memory leak 
+                if (this.configService is IBackgroundWorkRunner backgroundWorkRunnerConfigService)
+                {
+                    backgroundWorkRunnerConfigService.Stop();
+                }
+
+                if (this.overrideDataSource is IBackgroundWorkRunner backgroundWorkRunnerOverrideDataSource)
+                {
+                    backgroundWorkRunnerOverrideDataSource.Stop();
+                }
+            }
+        }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            if (!this.isUncached)
+            {
+                Instances.Remove(this.sdkKey, out _);
+            }
+
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
 
         /// <inheritdoc />

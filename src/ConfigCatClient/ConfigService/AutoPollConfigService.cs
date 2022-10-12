@@ -7,7 +7,7 @@ using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client.ConfigService
 {
-    internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
+    internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService, IBackgroundWorkRunner
     {
         private readonly DateTimeOffset maxInitWaitExpire;
         private readonly ManualResetEventSlim initializedEventSlim = new(false);
@@ -41,11 +41,15 @@ namespace ConfigCat.Client.ConfigService
 
         protected override void Dispose(bool disposing)
         {
+            // Background work should stop under all circumstances
             this.timerCancellationTokenSource.Cancel();
-            this.initializedEventSlim.Dispose();
-            base.Dispose(disposing);
-        }
 
+            if (disposing)
+            {
+                this.initializedEventSlim.Dispose();
+                base.Dispose(disposing);
+            }
+        }
 
         public ProjectConfig GetConfig()
         {
@@ -154,6 +158,11 @@ namespace ConfigCat.Client.ConfigService
                     }
                 }
             });
+        }
+
+        void IBackgroundWorkRunner.Stop()
+        {
+            Dispose(disposing: false);
         }
     }
 }

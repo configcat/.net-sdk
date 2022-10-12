@@ -15,13 +15,13 @@ namespace ConfigCat.Client.Tests
         [TestMethod]
         public void LocalFile()
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             using var client = new ConfigCatClient(options =>
             {
-#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
-#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalFile(ComplexJsonPath, false, OverrideBehaviour.LocalOnly);
             });
+#pragma warning restore CS0618 // Type or member is obsolete
 
             Assert.IsTrue(client.GetValue("enabledFeature", false));
             Assert.IsFalse(client.GetValue("disabledFeature", false));
@@ -33,13 +33,13 @@ namespace ConfigCat.Client.Tests
         [TestMethod]
         public async Task LocalFileAsync()
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             using var client = new ConfigCatClient(options =>
             {
-#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
-#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalFile(ComplexJsonPath, false, OverrideBehaviour.LocalOnly);
             });
+#pragma warning restore CS0618 // Type or member is obsolete
 
             Assert.IsTrue(await client.GetValueAsync("enabledFeature", false));
             Assert.IsFalse(await client.GetValueAsync("disabledFeature", false));
@@ -50,13 +50,13 @@ namespace ConfigCat.Client.Tests
 
         public void LocalFile_Parallel()
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             using var client = new ConfigCatClient(options =>
             {
-#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
-#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalFile(ComplexJsonPath, false, OverrideBehaviour.LocalOnly);
             });
+#pragma warning restore CS0618 // Type or member is obsolete
 
             Assert.IsTrue(client.GetValue("enabledFeature", false));
             Assert.IsFalse(client.GetValue("disabledFeature", false));
@@ -77,13 +77,13 @@ namespace ConfigCat.Client.Tests
                 "stringSetting",
             };
 
+#pragma warning disable CS0618 // Type or member is obsolete
             using var client = new ConfigCatClient(options =>
             {
-#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
-#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalFile(ComplexJsonPath, false, OverrideBehaviour.LocalOnly);
             });
+#pragma warning restore CS0618 // Type or member is obsolete
 
             Parallel.ForEach(keys, async item =>
             {
@@ -103,13 +103,13 @@ namespace ConfigCat.Client.Tests
                 "stringSetting",
             };
 
+#pragma warning disable CS0618 // Type or member is obsolete
             using var client = new ConfigCatClient(options =>
             {
-#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
-#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalFile(ComplexJsonPath, false, OverrideBehaviour.LocalOnly);
             });
+#pragma warning restore CS0618 // Type or member is obsolete
 
             Parallel.ForEach(keys, item =>
             {
@@ -120,13 +120,13 @@ namespace ConfigCat.Client.Tests
         [TestMethod]
         public void LocalFile_Default_WhenErrorOccures()
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             using var client = new ConfigCatClient(options =>
             {
-#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
-#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalFile("something-not-existing", false, OverrideBehaviour.LocalOnly);
             });
+#pragma warning restore CS0618 // Type or member is obsolete
 
             Assert.IsFalse(client.GetValue("enabledFeature", false));
             Assert.AreEqual("default", client.GetValue("stringSetting", "default"));
@@ -135,13 +135,13 @@ namespace ConfigCat.Client.Tests
         [TestMethod]
         public void LocalFile_Read()
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             using var client = new ConfigCatClient(options =>
             {
-#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
-#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalFile(ComplexJsonPath, true, OverrideBehaviour.LocalOnly);
             });
+#pragma warning restore CS0618 // Type or member is obsolete
 
             Assert.IsTrue(client.GetValue("enabledFeature", false));
             Assert.IsFalse(client.GetValue("disabledFeature", false));
@@ -153,13 +153,13 @@ namespace ConfigCat.Client.Tests
         [TestMethod]
         public async Task LocalFileAsync_Read()
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             using var client = new ConfigCatClient(options =>
             {
-#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
-#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalFile(ComplexJsonPath, true, OverrideBehaviour.LocalOnly);
             });
+#pragma warning restore CS0618 // Type or member is obsolete
 
             Assert.IsTrue(await client.GetValueAsync("enabledFeature", false));
             Assert.IsFalse(await client.GetValueAsync("disabledFeature", false));
@@ -171,13 +171,13 @@ namespace ConfigCat.Client.Tests
         [TestMethod]
         public void LocalFile_Default_WhenErrorOccures_Reload()
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             using var client = new ConfigCatClient(options =>
             {
-#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
-#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalFile("something-not-existing", true, OverrideBehaviour.LocalOnly);
             });
+#pragma warning restore CS0618 // Type or member is obsolete
 
             Assert.IsFalse(client.GetValue("enabledFeature", false));
             Assert.AreEqual("default", client.GetValue("stringSetting", "default"));
@@ -186,13 +186,13 @@ namespace ConfigCat.Client.Tests
         [TestMethod]
         public void LocalFile_Simple()
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             using var client = new ConfigCatClient(options =>
             {
-#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
-#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalFile(SimpleJsonPath, false, OverrideBehaviour.LocalOnly);
             });
+#pragma warning restore CS0618 // Type or member is obsolete
 
             Assert.IsTrue(client.GetValue("enabledFeature", false));
             Assert.IsFalse(client.GetValue("disabledFeature", false));
@@ -204,13 +204,13 @@ namespace ConfigCat.Client.Tests
         [TestMethod]
         public async Task LocalFileAsync_Simple()
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             using var client = new ConfigCatClient(options =>
             {
-#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
-#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalFile(SimpleJsonPath, false, OverrideBehaviour.LocalOnly);
             });
+#pragma warning restore CS0618 // Type or member is obsolete
 
             Assert.IsTrue(await client.GetValueAsync("enabledFeature", false));
             Assert.IsFalse(await client.GetValueAsync("disabledFeature", false));
@@ -231,13 +231,13 @@ namespace ConfigCat.Client.Tests
                 {"stringSetting", "test"},
             };
 
+#pragma warning disable CS0618 // Type or member is obsolete
             using var client = new ConfigCatClient(options =>
             {
-#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
-#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalDictionary(dict, OverrideBehaviour.LocalOnly);
             });
+#pragma warning restore CS0618 // Type or member is obsolete
 
             Assert.IsTrue(client.GetValue("enabledFeature", false));
             Assert.IsFalse(client.GetValue("disabledFeature", false));
@@ -258,13 +258,13 @@ namespace ConfigCat.Client.Tests
                 {"stringSetting", "test"},
             };
 
+#pragma warning disable CS0618 // Type or member is obsolete
             using var client = new ConfigCatClient(options =>
             {
-#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
-#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalDictionary(dict, OverrideBehaviour.LocalOnly);
             });
+#pragma warning restore CS0618 // Type or member is obsolete
 
             Assert.IsTrue(await client.GetValueAsync("enabledFeature", false));
             Assert.IsFalse(await client.GetValueAsync("disabledFeature", false));
@@ -284,15 +284,15 @@ namespace ConfigCat.Client.Tests
 
             var fakeHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK);
 
+#pragma warning disable CS0618 // Type or member is obsolete
             using var client = new ConfigCatClient(options =>
             {
-#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
-#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalDictionary(dict, OverrideBehaviour.LocalOverRemote);
                 options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, GetJsonContent("false"));
                 options.PollingMode = PollingModes.ManualPoll;
             });
+#pragma warning restore CS0618 // Type or member is obsolete
 
             client.ForceRefresh();
 
@@ -311,15 +311,15 @@ namespace ConfigCat.Client.Tests
 
             var fakeHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK);
 
+#pragma warning disable CS0618 // Type or member is obsolete
             using var client = new ConfigCatClient(options =>
             {
-#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
-#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalDictionary(dict, OverrideBehaviour.LocalOverRemote);
                 options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, GetJsonContent("false"));
                 options.PollingMode = PollingModes.ManualPoll;
             });
+#pragma warning restore CS0618 // Type or member is obsolete
 
             await client.ForceRefreshAsync();
 
@@ -338,15 +338,15 @@ namespace ConfigCat.Client.Tests
 
             var fakeHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK);
 
+#pragma warning disable CS0618 // Type or member is obsolete
             using var client = new ConfigCatClient(options =>
             {
-#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
-#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalDictionary(dict, OverrideBehaviour.RemoteOverLocal);
                 options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, GetJsonContent("false"));
                 options.PollingMode = PollingModes.ManualPoll;
             });
+#pragma warning restore CS0618 // Type or member is obsolete
 
             client.ForceRefresh();
 
@@ -365,15 +365,15 @@ namespace ConfigCat.Client.Tests
 
             var fakeHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK);
 
+#pragma warning disable CS0618 // Type or member is obsolete
             using var client = new ConfigCatClient(options =>
             {
-#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
-#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalDictionary(dict, OverrideBehaviour.RemoteOverLocal);
                 options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, GetJsonContent("false"));
                 options.PollingMode = PollingModes.ManualPoll;
             });
+#pragma warning restore CS0618 // Type or member is obsolete
 
             await client.ForceRefreshAsync();
 
@@ -386,14 +386,14 @@ namespace ConfigCat.Client.Tests
         {
             await CreateFileAndWriteContent(SampleFileToCreate, "initial");
 
+#pragma warning disable CS0618 // Type or member is obsolete
             using var client = new ConfigCatClient(options =>
             {
-#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
-#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalFile(SampleFileToCreate, true, OverrideBehaviour.LocalOnly);
                 options.Logger.LogLevel = LogLevel.Info;
             });
+#pragma warning restore CS0618 // Type or member is obsolete
 
             Assert.AreEqual("initial", await client.GetValueAsync("fakeKey", string.Empty));
             await Task.Delay(100);
@@ -410,14 +410,14 @@ namespace ConfigCat.Client.Tests
         {
             await CreateFileAndWriteContent(SampleFileToCreate, "initial");
 
+#pragma warning disable CS0618 // Type or member is obsolete
             using var client = new ConfigCatClient(options =>
             {
-#pragma warning disable CS0618 // Type or member is obsolete
                 options.SdkKey = "localhost";
-#pragma warning restore CS0618 // Type or member is obsolete
                 options.FlagOverrides = FlagOverrides.LocalFile(SampleFileToCreate, true, OverrideBehaviour.LocalOnly);
                 options.Logger.LogLevel = LogLevel.Info;
             });
+#pragma warning restore CS0618 // Type or member is obsolete
 
             Assert.AreEqual("initial", client.GetValue("fakeKey", string.Empty));
             await Task.Delay(100);

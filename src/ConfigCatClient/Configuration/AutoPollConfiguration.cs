@@ -12,7 +12,7 @@ namespace ConfigCat.Client
     /// <summary>
     /// AutoPoll configuration settings object for <see cref="ConfigCatClient"/>
     /// </summary>
-    [Obsolete("Please use the 'new ConfigCatClient(options => { options.PollingMode = PollingMode.AutoPoll(); })' format.")]
+    [Obsolete("This class is obsolete and will be removed from the public API in a future major version. Please use the 'ConfigCatClient.Get(sdkKey, options => { options.PollingMode = PollingModes.AutoPoll(); })' format.")]
     public class AutoPollConfiguration : ConfigurationBase
     {
         /// <summary>

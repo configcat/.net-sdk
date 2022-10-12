@@ -7,7 +7,7 @@ namespace ConfigCat.Client
     /// <summary>
     /// Defines cache
     /// </summary>
-    [Obsolete("Use the IConfigCatCache instead.")]
+    [Obsolete("This interface is obsolete and will be removed from the public API in a future major version. Please use the IConfigCatCache interface instead.")]
     public interface IConfigCache
     {
         /// <summary>

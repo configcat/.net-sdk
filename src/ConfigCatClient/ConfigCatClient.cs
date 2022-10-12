@@ -45,6 +45,7 @@ namespace ConfigCat.Client
         /// <param name="sdkKey">SDK Key to access configuration</param>
         /// <param name="dataGovernance">Default: Global. Set this parameter to be in sync with the Data Governance preference on the Dashboard: https://app.configcat.com/organization/data-governance (Only Organization Admins have access)</param>
         /// <exception cref="ArgumentException">When the <paramref name="sdkKey"/> is null or empty</exception>                
+        [Obsolete("This constructor is obsolete and will be removed from the public API in a future major version. To obtain a ConfigCatClient instance for a specific SDK Key, please use the 'ConfigCatClient.Get(sdkKey, options => { /* configuration options */ })' format.")]
         public ConfigCatClient(string sdkKey, DataGovernance dataGovernance = DataGovernance.Global) : this(options => { options.SdkKey = sdkKey; options.DataGovernance = dataGovernance; })
         { }
 
@@ -54,7 +55,7 @@ namespace ConfigCat.Client
         /// <param name="configuration">Configuration for AutoPolling mode</param>
         /// <exception cref="ArgumentException">When the configuration contains any invalid property</exception>
         /// <exception cref="ArgumentNullException">When the configuration is null</exception>
-        [Obsolete(@"This constructor is obsolete. Please use the ConfigCatClient(options => { /* configuration options */ }) format.")]
+        [Obsolete("This constructor is obsolete and will be removed from the public API in a future major version. To obtain a ConfigCatClient instance for a specific SDK Key, please use the 'ConfigCatClient.Get(sdkKey, options => { /* configuration options */ })' format.")]
         public ConfigCatClient(AutoPollConfiguration configuration)
             : this(options =>
             {
@@ -76,7 +77,7 @@ namespace ConfigCat.Client
         /// <param name="configuration">Configuration for LazyLoading mode</param>
         /// <exception cref="ArgumentException">When the configuration contains any invalid property</exception>
         /// <exception cref="ArgumentNullException">When the configuration is null</exception>
-        [Obsolete(@"This constructor is obsolete. Please use the ConfigCatClient(options => { /* configuration options */ }) format.")]
+        [Obsolete("This constructor is obsolete and will be removed from the public API in a future major version. To obtain a ConfigCatClient instance for a specific SDK Key, please use the 'ConfigCatClient.Get(sdkKey, options => { /* configuration options */ })' format.")]
         public ConfigCatClient(LazyLoadConfiguration configuration)
             : this(options =>
             {
@@ -96,7 +97,7 @@ namespace ConfigCat.Client
         /// <param name="configuration">Configuration for LazyLoading mode</param>
         /// <exception cref="ArgumentException">When the configuration contains any invalid property</exception>
         /// <exception cref="ArgumentNullException">When the configuration is null</exception>
-        [Obsolete(@"This constructor is obsolete. Please use the ConfigCatClient(options => { /* configuration options */ }) format.")]
+        [Obsolete("This constructor is obsolete and will be removed from the public API in a future major version. To obtain a ConfigCatClient instance for a specific SDK Key, please use the 'ConfigCatClient.Get(sdkKey, options => { /* configuration options */ })' format.")]
         public ConfigCatClient(ManualPollConfiguration configuration)
             : this(options =>
             {
@@ -115,6 +116,7 @@ namespace ConfigCat.Client
         /// </summary>
         /// <param name="configurationAction">The configuration action.</param>
         /// <exception cref="ArgumentNullException">When the <paramref name="configurationAction"/> is null.</exception>
+        [Obsolete("This constructor is obsolete and will be removed from the public API in a future major version. To obtain a ConfigCatClient instance for a specific SDK Key, please use the 'ConfigCatClient.Get(sdkKey, options => { /* configuration options */ })' format.")]
         public ConfigCatClient(Action<ConfigCatClientOptions> configurationAction)
             : this(sdkKey: BuildConfiguration(configurationAction ?? throw new ArgumentNullException(nameof(configurationAction)), out var configuration), configuration)
         {
@@ -530,7 +532,7 @@ namespace ConfigCat.Client
         /// </summary>
         /// <param name="sdkKey"></param>
         /// <returns></returns>
-        [Obsolete("Please use the 'new ConfigCatClient(options => { /* configuration options */ })' format to instantiate a new ConfigCatClient.")]
+        [Obsolete("To obtain a ConfigCatClient instance for a specific SDK Key, please use the 'ConfigCatClient.Get(sdkKey, options => { /* configuration options */ })' format.")]
         public static ConfigCatClientBuilder Create(string sdkKey)
         {
             return ConfigCatClientBuilder.Initialize(sdkKey);

@@ -1,12 +1,15 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ConfigCat.Client" Version="6.0.0" />
+    <ProjectReference Include="..\..\src\ConfigCatClient\ConfigCatClient.csproj" />  
+    <!-- Use PackageReference instead of the ProjectReference above in your application. -->
+    <!--<PackageReference Include="ConfigCat.Client" Version="7.0.0" />-->
   </ItemGroup>
 
 </Project>

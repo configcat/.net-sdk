@@ -292,3 +292,4 @@ coverage.xml
 .DS_Store
 .vscode
 src/.idea
+/samples/ASP.NETCore/WebApplication/wwwroot/lib/

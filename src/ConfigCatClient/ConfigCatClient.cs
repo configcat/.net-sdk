@@ -30,7 +30,7 @@ namespace ConfigCat.Client
 
         private static readonly string Version = typeof(ConfigCatClient).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
 
-        private static readonly ConfigCatClientCache Instances = new ConfigCatClientCache();
+        internal static readonly ConfigCatClientCache Instances = new ConfigCatClientCache();
 
         /// <inheritdoc />
         public LogLevel LogLevel

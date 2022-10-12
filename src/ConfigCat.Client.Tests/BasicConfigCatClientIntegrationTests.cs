@@ -1,5 +1,7 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using ConfigCat.Client.Configuration;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.CodeDom;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
@@ -17,230 +19,284 @@ namespace ConfigCat.Client.Tests
         private static readonly ILogger consoleLogger = new ConsoleLogger(LogLevel.Debug);
         private static readonly HttpClientHandler sharedHandler = new HttpClientHandler();
 
-        [DataRow(true)]
-        [DataRow(false)]
+        [DataRow(ClientCreationStrategy.Singleton)]
+        [DataRow(ClientCreationStrategy.Constructor)]
+        [DataRow(ClientCreationStrategy.Builder)]
         [DataTestMethod]
-        public void ManualPollGetValue(bool useNewCreateApi)
+        public void ManualPollGetValue(ClientCreationStrategy creationStrategy)
         {
-            IConfigCatClient manualPollClient = useNewCreateApi
-                ? new ConfigCatClient(options =>
-                {
-                    options.SdkKey = SDKKEY;
-                    options.PollingMode = PollingModes.ManualPoll;
-                    options.Logger = consoleLogger;
-                    options.HttpClientHandler = sharedHandler;
-                })
-                : ConfigCatClientBuilder
-                .Initialize(SDKKEY)                
-                .WithLogger(consoleLogger)
-                .WithManualPoll()
-                .WithHttpClientHandler(sharedHandler)
-                .Create();
+            static void Configure(ConfigCatClientOptions options)
+            {
+                options.PollingMode = PollingModes.ManualPoll;
+                options.Logger = consoleLogger;
+                options.HttpClientHandler = sharedHandler;
+            }
 
-            manualPollClient.ForceRefresh();
+            using IConfigCatClient client = creationStrategy switch
+            {
+                ClientCreationStrategy.Singleton => ConfigCatClient.Get(SDKKEY, Configure),
+                ClientCreationStrategy.Constructor => new ConfigCatClient(options => { Configure(options); options.SdkKey = SDKKEY; }),
+                ClientCreationStrategy.Builder => ConfigCatClientBuilder
+                    .Initialize(SDKKEY)
+                    .WithLogger(consoleLogger)
+                    .WithManualPoll()
+                    .WithHttpClientHandler(sharedHandler)
+                    .Create(),
+                _ => throw new ArgumentOutOfRangeException(nameof(creationStrategy))
+            };
 
-            GetValueAndAssert(manualPollClient, "stringDefaultCat", "N/A", "Cat");
-        }
-
-        [DataRow(true)]
-        [DataRow(false)]
-        [DataTestMethod]
-        public void AutoPollGetValue(bool useNewCreateApi)
-        {
-            IConfigCatClient client = useNewCreateApi
-                ? new ConfigCatClient(options =>
-                {
-                    options.SdkKey = SDKKEY;
-                    options.PollingMode = PollingModes.AutoPoll(TimeSpan.FromSeconds(600), TimeSpan.FromSeconds(30));
-                    options.Logger = consoleLogger;
-                    options.HttpClientHandler = sharedHandler;
-                })
-                : ConfigCatClientBuilder
-                .Initialize(SDKKEY)
-                .WithLogger(consoleLogger)
-                .WithAutoPoll()
-                .WithMaxInitWaitTimeSeconds(30)
-                .WithPollIntervalSeconds(600)
-                .WithHttpClientHandler(sharedHandler)
-                .Create();
+            client.ForceRefresh();
 
             GetValueAndAssert(client, "stringDefaultCat", "N/A", "Cat");
         }
 
-        [DataRow(true)]
-        [DataRow(false)]
+        [DataRow(ClientCreationStrategy.Singleton)]
+        [DataRow(ClientCreationStrategy.Constructor)]
+        [DataRow(ClientCreationStrategy.Builder)]
         [DataTestMethod]
-        public void LazyLoadGetValue(bool useNewCreateApi)
+        public void AutoPollGetValue(ClientCreationStrategy creationStrategy)
         {
-            IConfigCatClient client = useNewCreateApi
-                ? new ConfigCatClient(options =>
-                {
-                    options.SdkKey = SDKKEY;
-                    options.PollingMode = PollingModes.LazyLoad(TimeSpan.FromSeconds(30));
-                    options.Logger = consoleLogger;
-                    options.HttpClientHandler = sharedHandler;
-                })
-                : ConfigCatClientBuilder
-                .Initialize(SDKKEY)
-                .WithLogger(consoleLogger)
-                .WithLazyLoad()
-                .WithCacheTimeToLiveSeconds(30)
-                .WithHttpClientHandler(sharedHandler)
-                .Create();
+            static void Configure(ConfigCatClientOptions options)
+            {
+                options.PollingMode = PollingModes.AutoPoll(TimeSpan.FromSeconds(600), TimeSpan.FromSeconds(30));
+                options.Logger = consoleLogger;
+                options.HttpClientHandler = sharedHandler;
+            }
+
+            using IConfigCatClient client = creationStrategy switch
+            {
+                ClientCreationStrategy.Singleton => ConfigCatClient.Get(SDKKEY, Configure),
+                ClientCreationStrategy.Constructor => new ConfigCatClient(options => { Configure(options); options.SdkKey = SDKKEY; }),
+                ClientCreationStrategy.Builder => ConfigCatClientBuilder
+                    .Initialize(SDKKEY)
+                    .WithLogger(consoleLogger)
+                    .WithAutoPoll()
+                    .WithMaxInitWaitTimeSeconds(30)
+                    .WithPollIntervalSeconds(600)
+                    .WithHttpClientHandler(sharedHandler)
+                    .Create(),
+                _ => throw new ArgumentOutOfRangeException(nameof(creationStrategy))
+            };
 
             GetValueAndAssert(client, "stringDefaultCat", "N/A", "Cat");
         }
 
-        [DataRow(true)]
-        [DataRow(false)]
+        [DataRow(ClientCreationStrategy.Singleton)]
+        [DataRow(ClientCreationStrategy.Constructor)]
+        [DataRow(ClientCreationStrategy.Builder)]
         [DataTestMethod]
-        public async Task ManualPollGetValueAsync(bool useNewCreateApi)
+        public void LazyLoadGetValue(ClientCreationStrategy creationStrategy)
         {
-            IConfigCatClient client = useNewCreateApi
-                ? new ConfigCatClient(options =>
-                {
-                    options.SdkKey = SDKKEY;
-                    options.PollingMode = PollingModes.ManualPoll;
-                    options.Logger = consoleLogger;
-                    options.HttpClientHandler = sharedHandler;
-                })
-                : ConfigCatClientBuilder
-                .Initialize(SDKKEY)
-                .WithLogger(consoleLogger)
-                .WithManualPoll()
-                .WithHttpClientHandler(sharedHandler)
-                .Create();
+            static void Configure(ConfigCatClientOptions options)
+            {
+                options.PollingMode = PollingModes.LazyLoad(TimeSpan.FromSeconds(30));
+                options.Logger = consoleLogger;
+                options.HttpClientHandler = sharedHandler;
+            }
+
+            using IConfigCatClient client = creationStrategy switch
+            {
+                ClientCreationStrategy.Singleton => ConfigCatClient.Get(SDKKEY, Configure),
+                ClientCreationStrategy.Constructor => new ConfigCatClient(options => { Configure(options); options.SdkKey = SDKKEY; }),
+                ClientCreationStrategy.Builder => ConfigCatClientBuilder
+                    .Initialize(SDKKEY)
+                    .WithLogger(consoleLogger)
+                    .WithLazyLoad()
+                    .WithCacheTimeToLiveSeconds(30)
+                    .WithHttpClientHandler(sharedHandler)
+                    .Create(),
+                _ => throw new ArgumentOutOfRangeException(nameof(creationStrategy))
+            };
+
+            GetValueAndAssert(client, "stringDefaultCat", "N/A", "Cat");
+        }
+
+        [DataRow(ClientCreationStrategy.Singleton)]
+        [DataRow(ClientCreationStrategy.Constructor)]
+        [DataRow(ClientCreationStrategy.Builder)]
+        [DataTestMethod]
+        public async Task ManualPollGetValueAsync(ClientCreationStrategy creationStrategy)
+        {
+            static void Configure(ConfigCatClientOptions options)
+            {
+                options.PollingMode = PollingModes.ManualPoll;
+                options.Logger = consoleLogger;
+                options.HttpClientHandler = sharedHandler;
+            }
+
+            using IConfigCatClient client = creationStrategy switch
+            {
+                ClientCreationStrategy.Singleton => ConfigCatClient.Get(SDKKEY, Configure),
+                ClientCreationStrategy.Constructor => new ConfigCatClient(options => { Configure(options); options.SdkKey = SDKKEY; }),
+                ClientCreationStrategy.Builder => ConfigCatClientBuilder
+                    .Initialize(SDKKEY)
+                    .WithLogger(consoleLogger)
+                    .WithManualPoll()
+                    .WithHttpClientHandler(sharedHandler)
+                    .Create(),
+                _ => throw new ArgumentOutOfRangeException(nameof(creationStrategy))
+            };
 
             await client.ForceRefreshAsync();
 
             await GetValueAsyncAndAssert(client, "stringDefaultCat", "N/A", "Cat");
         }
 
-        [DataRow(true)]
-        [DataRow(false)]
+        [DataRow(ClientCreationStrategy.Singleton)]
+        [DataRow(ClientCreationStrategy.Constructor)]
+        [DataRow(ClientCreationStrategy.Builder)]
         [DataTestMethod]
-        public async Task AutoPollGetValueAsync(bool useNewCreateApi)
+        public async Task AutoPollGetValueAsync(ClientCreationStrategy creationStrategy)
         {
-            IConfigCatClient client = useNewCreateApi
-                ? new ConfigCatClient(options =>
-                {
-                    options.SdkKey = SDKKEY;
-                    options.PollingMode = PollingModes.AutoPoll(TimeSpan.FromSeconds(600), TimeSpan.FromSeconds(30));
-                    options.Logger = consoleLogger;
-                    options.HttpClientHandler = sharedHandler;
-                })
-                : ConfigCatClientBuilder
-                .Initialize(SDKKEY)
-                .WithLogger(consoleLogger)
-                .WithAutoPoll()
-                .WithMaxInitWaitTimeSeconds(30)
-                .WithPollIntervalSeconds(600)
-                .WithHttpClientHandler(sharedHandler)
-                .Create();
+            static void Configure(ConfigCatClientOptions options)
+            {
+                options.PollingMode = PollingModes.AutoPoll(TimeSpan.FromSeconds(600), TimeSpan.FromSeconds(30));
+                options.Logger = consoleLogger;
+                options.HttpClientHandler = sharedHandler;
+            }
+
+            using IConfigCatClient client = creationStrategy switch
+            {
+                ClientCreationStrategy.Singleton => ConfigCatClient.Get(SDKKEY, Configure),
+                ClientCreationStrategy.Constructor => new ConfigCatClient(options => { Configure(options); options.SdkKey = SDKKEY; }),
+                ClientCreationStrategy.Builder => ConfigCatClientBuilder
+                    .Initialize(SDKKEY)
+                    .WithLogger(consoleLogger)
+                    .WithAutoPoll()
+                    .WithMaxInitWaitTimeSeconds(30)
+                    .WithPollIntervalSeconds(600)
+                    .WithHttpClientHandler(sharedHandler)
+                    .Create(),
+                _ => throw new ArgumentOutOfRangeException(nameof(creationStrategy))
+            };
 
             await GetValueAsyncAndAssert(client, "stringDefaultCat", "N/A", "Cat");
         }
 
-        [DataRow(true)]
-        [DataRow(false)]
+        [DataRow(ClientCreationStrategy.Singleton)]
+        [DataRow(ClientCreationStrategy.Constructor)]
+        [DataRow(ClientCreationStrategy.Builder)]
         [DataTestMethod]
-        public async Task LazyLoadGetValueAsync(bool useNewCreateApi)
+        public async Task LazyLoadGetValueAsync(ClientCreationStrategy creationStrategy)
         {
-            IConfigCatClient client = useNewCreateApi
-                ? new ConfigCatClient(options =>
-                {
-                    options.SdkKey = SDKKEY;
-                    options.PollingMode = PollingModes.LazyLoad(TimeSpan.FromSeconds(30));
-                    options.Logger = consoleLogger;
-                    options.HttpClientHandler = sharedHandler;
-                })
-                : ConfigCatClientBuilder
-                .Initialize(SDKKEY)
-                .WithLogger(consoleLogger)
-                .WithLazyLoad()
-                .WithCacheTimeToLiveSeconds(30)
-                .WithHttpClientHandler(sharedHandler)
-                .Create();
+            static void Configure(ConfigCatClientOptions options)
+            {
+                options.PollingMode = PollingModes.LazyLoad(TimeSpan.FromSeconds(30));
+                options.Logger = consoleLogger;
+                options.HttpClientHandler = sharedHandler;
+            }
+
+            using IConfigCatClient client = creationStrategy switch
+            {
+                ClientCreationStrategy.Singleton => ConfigCatClient.Get(SDKKEY, Configure),
+                ClientCreationStrategy.Constructor => new ConfigCatClient(options => { Configure(options); options.SdkKey = SDKKEY; }),
+                ClientCreationStrategy.Builder => ConfigCatClientBuilder
+                    .Initialize(SDKKEY)
+                    .WithLogger(consoleLogger)
+                    .WithLazyLoad()
+                    .WithCacheTimeToLiveSeconds(30)
+                    .WithHttpClientHandler(sharedHandler)
+                    .Create(),
+                _ => throw new ArgumentOutOfRangeException(nameof(creationStrategy))
+            };
 
             await GetValueAsyncAndAssert(client, "stringDefaultCat", "N/A", "Cat");
         }
 
-        [DataRow(true)]
-        [DataRow(false)]
+        [DataRow(ClientCreationStrategy.Singleton)]
+        [DataRow(ClientCreationStrategy.Constructor)]
+        [DataRow(ClientCreationStrategy.Builder)]
         [DataTestMethod]
-        public void GetAllKeys(bool useNewCreateApi)
+        public void GetAllKeys(ClientCreationStrategy creationStrategy)
         {
-            IConfigCatClient manualPollClient = useNewCreateApi
-                ? new ConfigCatClient(options =>
-                {
-                    options.SdkKey = SDKKEY;
-                    options.PollingMode = PollingModes.ManualPoll;
-                    options.Logger = consoleLogger;
-                    options.HttpClientHandler = sharedHandler;
-                })
-                : ConfigCatClientBuilder
-                .Initialize(SDKKEY)
-                .WithLogger(consoleLogger)
-                .WithManualPoll()
-                .WithHttpClientHandler(sharedHandler)
-                .Create();
+            static void Configure(ConfigCatClientOptions options)
+            {
+                options.PollingMode = PollingModes.ManualPoll;
+                options.Logger = consoleLogger;
+                options.HttpClientHandler = sharedHandler;
+            }
 
-            manualPollClient.ForceRefresh();
-            var keys = manualPollClient.GetAllKeys().ToArray();
+            using IConfigCatClient client = creationStrategy switch
+            {
+                ClientCreationStrategy.Singleton => ConfigCatClient.Get(SDKKEY, Configure),
+                ClientCreationStrategy.Constructor => new ConfigCatClient(options => { Configure(options); options.SdkKey = SDKKEY; }),
+                ClientCreationStrategy.Builder => ConfigCatClientBuilder
+                    .Initialize(SDKKEY)
+                    .WithLogger(consoleLogger)
+                    .WithManualPoll()
+                    .WithHttpClientHandler(sharedHandler)
+                    .Create(),
+                _ => throw new ArgumentOutOfRangeException(nameof(creationStrategy))
+            };
+
+            client.ForceRefresh();
+            var keys = client.GetAllKeys().ToArray();
 
             Assert.AreEqual(16, keys.Length);
             Assert.IsTrue(keys.Contains("stringDefaultCat"));
         }
 
-        [DataRow(true)]
-        [DataRow(false)]
+        [DataRow(ClientCreationStrategy.Singleton)]
+        [DataRow(ClientCreationStrategy.Constructor)]
+        [DataRow(ClientCreationStrategy.Builder)]
         [DataTestMethod]
-        public void GetAllValues(bool useNewCreateApi)
+        public void GetAllValues(ClientCreationStrategy creationStrategy)
         {
-            IConfigCatClient manualPollClient = useNewCreateApi
-                ? new ConfigCatClient(options =>
-                {
-                    options.SdkKey = SDKKEY;
-                    options.PollingMode = PollingModes.ManualPoll;
-                    options.Logger = consoleLogger;
-                    options.HttpClientHandler = sharedHandler;
-                })
-                : ConfigCatClientBuilder
-                .Initialize(SDKKEY)
-                .WithLogger(consoleLogger)
-                .WithManualPoll()
-                .WithHttpClientHandler(sharedHandler)
-                .Create();
+            static void Configure(ConfigCatClientOptions options)
+            {
+                options.PollingMode = PollingModes.ManualPoll;
+                options.Logger = consoleLogger;
+                options.HttpClientHandler = sharedHandler;
+            }
 
-            manualPollClient.ForceRefresh();
-            var dict = manualPollClient.GetAllValues();
+            using IConfigCatClient client = creationStrategy switch
+            {
+                ClientCreationStrategy.Singleton => ConfigCatClient.Get(SDKKEY, Configure),
+                ClientCreationStrategy.Constructor => new ConfigCatClient(options => { Configure(options); options.SdkKey = SDKKEY; }),
+                ClientCreationStrategy.Builder => ConfigCatClientBuilder
+                    .Initialize(SDKKEY)
+                    .WithLogger(consoleLogger)
+                    .WithManualPoll()
+                    .WithHttpClientHandler(sharedHandler)
+                    .Create(),
+                _ => throw new ArgumentOutOfRangeException(nameof(creationStrategy))
+            };
+
+            client.ForceRefresh();
+            var dict = client.GetAllValues();
 
             Assert.AreEqual(16, dict.Count);
             Assert.AreEqual("Cat", dict["stringDefaultCat"]);
         }
 
-        [DataRow(true)]
-        [DataRow(false)]
+        [DataRow(ClientCreationStrategy.Singleton)]
+        [DataRow(ClientCreationStrategy.Constructor)]
+        [DataRow(ClientCreationStrategy.Builder)]
         [DataTestMethod]
-        public async Task GetAllValuesAsync(bool useNewCreateApi)
+        public async Task GetAllValuesAsync(ClientCreationStrategy creationStrategy)
         {
-            IConfigCatClient manualPollClient = useNewCreateApi
-                ? new ConfigCatClient(options =>
-                {
-                    options.SdkKey = SDKKEY;
-                    options.PollingMode = PollingModes.ManualPoll;
-                    options.Logger = consoleLogger;
-                    options.HttpClientHandler = sharedHandler;
-                })
-                : ConfigCatClientBuilder
-                .Initialize(SDKKEY)
-                .WithLogger(consoleLogger)
-                .WithManualPoll()
-                .WithHttpClientHandler(sharedHandler)
-                .Create();
+            static void Configure(ConfigCatClientOptions options)
+            {
+                options.PollingMode = PollingModes.ManualPoll;
+                options.Logger = consoleLogger;
+                options.HttpClientHandler = sharedHandler;
+            }
 
-            await manualPollClient.ForceRefreshAsync();
-            var dict = await manualPollClient.GetAllValuesAsync();
+            using IConfigCatClient client = creationStrategy switch
+            {
+                ClientCreationStrategy.Singleton => ConfigCatClient.Get(SDKKEY, Configure),
+                ClientCreationStrategy.Constructor => new ConfigCatClient(options => { Configure(options); options.SdkKey = SDKKEY; }),
+                ClientCreationStrategy.Builder => ConfigCatClientBuilder
+                    .Initialize(SDKKEY)
+                    .WithLogger(consoleLogger)
+                    .WithManualPoll()
+                    .WithHttpClientHandler(sharedHandler)
+                    .Create(),
+                _ => throw new ArgumentOutOfRangeException(nameof(creationStrategy))
+            };
+
+            await client.ForceRefreshAsync();
+            var dict = await client.GetAllValuesAsync();
 
             Assert.AreEqual(16, dict.Count);
             Assert.AreEqual("Cat", dict["stringDefaultCat"]);
@@ -262,63 +318,76 @@ namespace ConfigCat.Client.Tests
             Assert.AreNotEqual(defaultValue, actual);
         }
 
-        [DataRow(true)]
-        [DataRow(false)]
+        [DataRow(ClientCreationStrategy.Singleton)]
+        [DataRow(ClientCreationStrategy.Constructor)]
+        [DataRow(ClientCreationStrategy.Builder)]
         [DataTestMethod]
-        public void GetVariationId(bool useNewCreateApi)
+        public void GetVariationId(ClientCreationStrategy creationStrategy)
         {
-            IConfigCatClient manualPollClient = useNewCreateApi
-                ? new ConfigCatClient(options =>
-                {
-                    options.SdkKey = SDKKEY;
-                    options.PollingMode = PollingModes.ManualPoll;
-                    options.Logger = consoleLogger;
-                    options.HttpClientHandler = sharedHandler;
-                })
-                : ConfigCatClientBuilder
-                .Initialize(SDKKEY)
-                .WithLogger(consoleLogger)
-                .WithManualPoll()
-                .WithHttpClientHandler(sharedHandler)
-                .Create();
+            static void Configure(ConfigCatClientOptions options)
+            {
+                options.PollingMode = PollingModes.ManualPoll;
+                options.Logger = consoleLogger;
+                options.HttpClientHandler = sharedHandler;
+            }
 
-            manualPollClient.ForceRefresh();
-            var actual = manualPollClient.GetVariationId("stringDefaultCat", "default");
+            using IConfigCatClient client = creationStrategy switch
+            {
+                ClientCreationStrategy.Singleton => ConfigCatClient.Get(SDKKEY, Configure),
+                ClientCreationStrategy.Constructor => new ConfigCatClient(options => { Configure(options); options.SdkKey = SDKKEY; }),
+                ClientCreationStrategy.Builder => ConfigCatClientBuilder
+                    .Initialize(SDKKEY)
+                    .WithLogger(consoleLogger)
+                    .WithManualPoll()
+                    .WithHttpClientHandler(sharedHandler)
+                    .Create(),
+                _ => throw new ArgumentOutOfRangeException(nameof(creationStrategy))
+            };
+
+            client.ForceRefresh();
+            var actual = client.GetVariationId("stringDefaultCat", "default");
 
             Assert.AreEqual("7a0be518", actual);            
         }
 
-        [DataRow(true)]
-        [DataRow(false)]
+        [DataRow(ClientCreationStrategy.Singleton)]
+        [DataRow(ClientCreationStrategy.Constructor)]
+        [DataRow(ClientCreationStrategy.Builder)]
         [DataTestMethod]
-        public async Task GetVariationIdAsync(bool useNewCreateApi)
+        public async Task GetVariationIdAsync(ClientCreationStrategy creationStrategy)
         {
-            IConfigCatClient manualPollClient = useNewCreateApi
-                ? new ConfigCatClient(options =>
-                {
-                    options.SdkKey = SDKKEY;
-                    options.PollingMode = PollingModes.ManualPoll;
-                    options.Logger = consoleLogger;
-                    options.HttpClientHandler = sharedHandler;
-                })
-                : ConfigCatClientBuilder
-                .Initialize(SDKKEY)
-                .WithLogger(consoleLogger)
-                .WithManualPoll()
-                .WithHttpClientHandler(sharedHandler)
-                .Create();
+            static void Configure(ConfigCatClientOptions options)
+            {
+                options.PollingMode = PollingModes.ManualPoll;
+                options.Logger = consoleLogger;
+                options.HttpClientHandler = sharedHandler;
+            }
 
-            await manualPollClient.ForceRefreshAsync();
+            using IConfigCatClient client = creationStrategy switch
+            {
+                ClientCreationStrategy.Singleton => ConfigCatClient.Get(SDKKEY, Configure),
+                ClientCreationStrategy.Constructor => new ConfigCatClient(options => { Configure(options); options.SdkKey = SDKKEY; }),
+                ClientCreationStrategy.Builder => ConfigCatClientBuilder
+                    .Initialize(SDKKEY)
+                    .WithLogger(consoleLogger)
+                    .WithManualPoll()
+                    .WithHttpClientHandler(sharedHandler)
+                    .Create(),
+                _ => throw new ArgumentOutOfRangeException(nameof(creationStrategy))
+            };
 
-            var actual = await manualPollClient.GetVariationIdAsync("stringDefaultCat", "default");
+            await client.ForceRefreshAsync();
+
+            var actual = await client.GetVariationIdAsync("stringDefaultCat", "default");
 
             Assert.AreEqual("7a0be518", actual);
         }
 
-        [DataRow(true)]
-        [DataRow(false)]
+        [DataRow(ClientCreationStrategy.Singleton)]
+        [DataRow(ClientCreationStrategy.Constructor)]
+        [DataRow(ClientCreationStrategy.Builder)]
         [DataTestMethod]
-        public void GetAllVariationId(bool useNewCreateApi)
+        public void GetAllVariationId(ClientCreationStrategy creationStrategy)
         {
             // Arrange
 
@@ -326,36 +395,42 @@ namespace ConfigCat.Client.Tests
 
             var expectedValue = Newtonsoft.Json.JsonConvert.DeserializeObject<string[]>(expectedJsonString);
 
-            IConfigCatClient manualPollClient = useNewCreateApi
-                ? new ConfigCatClient(options =>
-                {
-                    options.SdkKey = SDKKEY;
-                    options.PollingMode = PollingModes.ManualPoll;
-                    options.Logger = consoleLogger;
-                    options.HttpClientHandler = sharedHandler;
-                })
-                : ConfigCatClientBuilder
-                .Initialize(SDKKEY)
-                .WithLogger(consoleLogger)
-                .WithManualPoll()
-                .WithHttpClientHandler(sharedHandler)
-                .Create();
+            static void Configure(ConfigCatClientOptions options)
+            {
+                options.PollingMode = PollingModes.ManualPoll;
+                options.Logger = consoleLogger;
+                options.HttpClientHandler = sharedHandler;
+            }
 
-            manualPollClient.ForceRefresh();
+            using IConfigCatClient client = creationStrategy switch
+            {
+                ClientCreationStrategy.Singleton => ConfigCatClient.Get(SDKKEY, Configure),
+                ClientCreationStrategy.Constructor => new ConfigCatClient(options => { Configure(options); options.SdkKey = SDKKEY; }),
+                ClientCreationStrategy.Builder => ConfigCatClientBuilder
+                    .Initialize(SDKKEY)
+                    .WithLogger(consoleLogger)
+                    .WithManualPoll()
+                    .WithHttpClientHandler(sharedHandler)
+                    .Create(),
+                _ => throw new ArgumentOutOfRangeException(nameof(creationStrategy))
+            };
+
+            client.ForceRefresh();
 
             // Act
 
-            var actual = manualPollClient.GetAllVariationId(new User("a@configcat.com"));
+            var actual = client.GetAllVariationId(new User("a@configcat.com"));
 
             // Assert            
             Assert.AreEqual(16, expectedValue.Length);
             CollectionAssert.AreEquivalent(expectedValue, actual.ToArray());
         }
 
-        [DataRow(true)]
-        [DataRow(false)]
+        [DataRow(ClientCreationStrategy.Singleton)]
+        [DataRow(ClientCreationStrategy.Constructor)]
+        [DataRow(ClientCreationStrategy.Builder)]
         [DataTestMethod]
-        public async Task GetAllVariationIdAsync(bool useNewCreateApi)
+        public async Task GetAllVariationIdAsync(ClientCreationStrategy creationStrategy)
         {
             // Arrange
 
@@ -363,26 +438,31 @@ namespace ConfigCat.Client.Tests
 
             var expectedValue = Newtonsoft.Json.JsonConvert.DeserializeObject<string[]>(expectedJsonString);
 
-            IConfigCatClient manualPollClient = useNewCreateApi
-                ? new ConfigCatClient(options =>
-                {
-                    options.SdkKey = SDKKEY;
-                    options.PollingMode = PollingModes.ManualPoll;
-                    options.Logger = consoleLogger;
-                    options.HttpClientHandler = sharedHandler;
-                })
-                : ConfigCatClientBuilder
-                .Initialize(SDKKEY)
-                .WithLogger(consoleLogger)
-                .WithManualPoll()
-                .WithHttpClientHandler(sharedHandler)
-                .Create();
+            static void Configure(ConfigCatClientOptions options)
+            {
+                options.PollingMode = PollingModes.ManualPoll;
+                options.Logger = consoleLogger;
+                options.HttpClientHandler = sharedHandler;
+            }
 
-            await manualPollClient.ForceRefreshAsync();
+            using IConfigCatClient client = creationStrategy switch
+            {
+                ClientCreationStrategy.Singleton => ConfigCatClient.Get(SDKKEY, Configure),
+                ClientCreationStrategy.Constructor => new ConfigCatClient(options => { Configure(options); options.SdkKey = SDKKEY; }),
+                ClientCreationStrategy.Builder => ConfigCatClientBuilder
+                    .Initialize(SDKKEY)
+                    .WithLogger(consoleLogger)
+                    .WithManualPoll()
+                    .WithHttpClientHandler(sharedHandler)
+                    .Create(),
+                _ => throw new ArgumentOutOfRangeException(nameof(creationStrategy))
+            };
+
+            await client.ForceRefreshAsync();
 
             // Act
 
-            var actual = await manualPollClient.GetAllVariationIdAsync(new User("a@configcat.com"));
+            var actual = await client.GetAllVariationIdAsync(new User("a@configcat.com"));
 
             // Assert            
             Assert.AreEqual(16, expectedValue.Length);
@@ -519,6 +599,13 @@ namespace ConfigCat.Client.Tests
             {
                 manualPollClient.ForceRefresh();
             });
+        }
+
+        public enum ClientCreationStrategy
+        {
+            Singleton,
+            Constructor,
+            Builder,
         }
     }
 }

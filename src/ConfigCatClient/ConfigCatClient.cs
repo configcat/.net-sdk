@@ -410,6 +410,35 @@ namespace ConfigCat.Client
             GC.SuppressFinalize(this);
         }
 
+        /// <summary>
+        /// Disposes of all existing <see cref="ConfigCatClient"/> instances.
+        /// </summary>
+        /// <exception cref="AggregateException">Potential exceptions thrown by <see cref="Dispose()"/> of the individual clients.</exception>
+        public static void DisposeAll()
+        {
+            Instances.Clear(out var removedInstances);
+
+            List<Exception> exceptions = null;
+            foreach (var instance in removedInstances)
+            {
+                try
+                {
+                    instance.Dispose(disposing: true);
+                    GC.SuppressFinalize(instance);
+                }
+                catch (Exception ex)
+                {
+                    exceptions ??= new List<Exception>();
+                    exceptions.Add(ex);
+                }
+            }
+
+            if (exceptions is { Count: > 0 })
+            {
+                throw new AggregateException(exceptions);
+            }
+        }
+
         /// <inheritdoc />
         public string GetVariationId(string key, string defaultVariationId, User user = null)
         {

@@ -868,7 +868,6 @@ namespace ConfigCat.Client.Tests
             Assert.AreEqual("a0e56eda", await getVariationIdAsync(key, string.Empty, new User("c@example.com") { Email = "c@example.com" }));
         }
 
-
         [DataRow(true)]
         [DataRow(false)]
         [DataTestMethod]

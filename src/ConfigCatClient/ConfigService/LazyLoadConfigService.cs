@@ -7,11 +7,11 @@ namespace ConfigCat.Client.ConfigService
 {
     internal sealed class LazyLoadConfigService : ConfigServiceBase, IConfigService
     {
-        private readonly TimeSpan cacheTimeToLive;        
-
+        private readonly TimeSpan cacheTimeToLive;
+        
         internal LazyLoadConfigService(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger, TimeSpan cacheTimeToLive)
             : base(configFetcher, cacheParameters, logger)
-        {   
+        {
             this.cacheTimeToLive = cacheTimeToLive;
         }
 
@@ -25,8 +25,11 @@ namespace ConfigCat.Client.ConfigService
                 if (config.TimeStamp < DateTime.UtcNow.Subtract(this.cacheTimeToLive))
                 {
                     this.Log.Debug("config expired");
-                    config = this.ConfigFetcher.Fetch(config);
-                    cache.Set(base.CacheKey, config);
+                    if (!IsOffline)
+                    {
+                        config = this.ConfigFetcher.Fetch(config);
+                        cache.Set(base.CacheKey, config);
+                    }
                 }
 
                 return config;
@@ -43,7 +46,10 @@ namespace ConfigCat.Client.ConfigService
             if (config.TimeStamp < DateTime.UtcNow.Subtract(this.cacheTimeToLive))
             {
                 this.Log.Debug("config expired");
-                return await RefreshConfigLogic(config).ConfigureAwait(false);
+                if (!IsOffline)
+                {
+                    return await RefreshConfigLogic(config).ConfigureAwait(false);
+                }
             }
 
             return config;
@@ -54,9 +60,16 @@ namespace ConfigCat.Client.ConfigService
             // check for the new cache interface until we remove the old IConfigCache.
             if (this.ConfigCache is IConfigCatCache cache)
             {
-                var latestConfig = cache.Get(base.CacheKey);
-                var newConfig = this.ConfigFetcher.Fetch(latestConfig);
-                cache.Set(base.CacheKey, newConfig);
+                if (!IsOffline)
+                {
+                    var latestConfig = cache.Get(base.CacheKey);
+                    var newConfig = this.ConfigFetcher.Fetch(latestConfig);
+                    cache.Set(base.CacheKey, newConfig);
+                }
+                else
+                {
+                    this.Log.OfflineModeWarning();
+                }
 
                 return;
             }
@@ -67,10 +80,16 @@ namespace ConfigCat.Client.ConfigService
 
         public async Task RefreshConfigAsync()
         {
-            var config = await this.ConfigCache.GetAsync(base.CacheKey).ConfigureAwait(false);
-            await RefreshConfigLogic(config).ConfigureAwait(false);
+            if (!IsOffline)
+            {
+                var config = await this.ConfigCache.GetAsync(base.CacheKey).ConfigureAwait(false);
+                await RefreshConfigLogic(config).ConfigureAwait(false);
+            }
+            else
+            {
+                this.Log.OfflineModeWarning();
+            }
         }
-
 
         private async Task<ProjectConfig> RefreshConfigLogic(ProjectConfig config)
         {

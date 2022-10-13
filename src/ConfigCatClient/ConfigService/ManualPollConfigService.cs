@@ -31,9 +31,16 @@ namespace ConfigCat.Client.ConfigService
             // check for the new cache interface until we remove the old IConfigCache.
             if (this.ConfigCache is IConfigCatCache cache)
             {
-                var latestConfig = cache.Get(base.CacheKey);
-                var newConfig = this.ConfigFetcher.Fetch(latestConfig);
-                cache.Set(base.CacheKey, newConfig);
+                if (!IsOffline)
+                {
+                    var latestConfig = cache.Get(base.CacheKey);
+                    var newConfig = this.ConfigFetcher.Fetch(latestConfig);
+                    cache.Set(base.CacheKey, newConfig);
+                }
+                else
+                {
+                    this.Log.OfflineModeWarning();
+                }
 
                 return;
             }
@@ -44,9 +51,16 @@ namespace ConfigCat.Client.ConfigService
 
         public async Task RefreshConfigAsync()
         {
-            var config = await this.ConfigCache.GetAsync(base.CacheKey).ConfigureAwait(false);
-            config = await this.ConfigFetcher.FetchAsync(config).ConfigureAwait(false);
-            await this.ConfigCache.SetAsync(base.CacheKey, config).ConfigureAwait(false);
+            if (!IsOffline)
+            {
+                var config = await this.ConfigCache.GetAsync(base.CacheKey).ConfigureAwait(false);
+                config = await this.ConfigFetcher.FetchAsync(config).ConfigureAwait(false);
+                await this.ConfigCache.SetAsync(base.CacheKey, config).ConfigureAwait(false);
+            }
+            else
+            {
+                this.Log.OfflineModeWarning();
+            }
         }
     }
 }

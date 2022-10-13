@@ -162,7 +162,7 @@ namespace ConfigCat.Client
                         cacheParameters,
                         this.log,
                         clientWeakRef)
-                : new EmptyConfigService();
+                : new EmptyConfigService(this.log);
         }
 
         /// <summary>
@@ -631,6 +631,21 @@ namespace ConfigCat.Client
         public void ClearDefaultUser()
         {
             this.defaultUser = null;
+        }
+
+        /// <inheritdoc />
+        public bool IsOffline => this.configService.IsOffline;
+
+        /// <inheritdoc />
+        public void SetOnline()
+        {
+            this.configService.SetOnline();
+        }
+
+        /// <inheritdoc />
+        public void SetOffline()
+        {
+            this.configService.SetOffline();
         }
     }
 }

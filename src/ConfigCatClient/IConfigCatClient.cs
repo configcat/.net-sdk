@@ -112,5 +112,20 @@ namespace ConfigCat.Client
         /// Sets the default user to null.
         /// </summary>
         void ClearDefaultUser();
+
+        /// <summary>
+        /// True when the client is configured not to initiate HTTP requests, otherwise false.
+        /// </summary>
+        bool IsOffline { get; }
+
+        /// <summary>
+        /// Configures the client to allow HTTP requests.
+        /// </summary>
+        void SetOnline();
+
+        /// <summary>
+        /// Configures the client to not initiate HTTP requests and work only from its cache.
+        /// </summary>
+        void SetOffline();
     }
 }

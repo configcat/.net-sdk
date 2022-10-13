@@ -111,31 +111,23 @@ namespace ConfigCat.Client.Tests
             ClientDeadlockCheck(client);
         }
 
-        private static readonly HashSet<string> MethodsToCheck = new HashSet<string>
+        private static readonly Dictionary<string, object[]> SpecificMethodParams = new Dictionary<string, object[]>
         {
-            "ForceRefresh",
-            "ForceRefreshAsync",
-            "GetAllKeys",
-            "GetAllKeysAsync",
-            "GetAllValues",
-            "GetAllValuesAsync",
-            "GetAllVariationId",
-            "GetAllVariationIdAsync",
-            "GetValue",
-            "GetValueAsync",
-            "GetVariationId",
-            "GetVariationIdAsync",
+            ["SetDefaultUser"] = new object[] { new User("id") }
         };
 
         private void ClientDeadlockCheck(IConfigCatClient client)
         {
             var methods = typeof(IConfigCatClient).GetMethods()
-                .Where(x => !x.IsSpecialName && MethodsToCheck.Contains(x.Name))
+                .Where(x => !x.IsSpecialName)
                 .OrderBy(o => o.Name);
 
             foreach (var m in methods)
             {
-                var parameters = Enumerable.Repeat<object>(null, m.GetParameters().Length).ToArray();
+                if (!SpecificMethodParams.TryGetValue(m.Name, out var parameters))
+                {
+                    parameters = Enumerable.Repeat<object>(null, m.GetParameters().Length).ToArray();
+                }
 
                 MethodInfo mi = m;
 

@@ -20,7 +20,8 @@ namespace ConfigCat.Client.ConfigService
             IConfigFetcher configFetcher,
             CacheParameters cacheParameters,
             LoggerWrapper logger,
-            WeakReference<IConfigCatClient> clientWeakRef = null) : this(configuration, configFetcher, cacheParameters, logger, startTimer: true, clientWeakRef)
+            bool isOffline = false,
+            WeakReference<IConfigCatClient> clientWeakRef = null) : this(configuration, configFetcher, cacheParameters, logger, startTimer: true, isOffline, clientWeakRef)
         { }
 
         // For test purposes only
@@ -30,14 +31,14 @@ namespace ConfigCat.Client.ConfigService
             CacheParameters cacheParameters,
             LoggerWrapper logger,
             bool startTimer,
-            WeakReference<IConfigCatClient> clientWeakRef = null
-            ) : base(configFetcher, cacheParameters, logger)
+            bool isOffline = false,
+            WeakReference<IConfigCatClient> clientWeakRef = null) : base(configFetcher, cacheParameters, logger, isOffline)
         {
             this.configuration = configuration;
             this.maxInitWaitExpire = DateTimeOffset.UtcNow.Add(configuration.MaxInitWaitTime);
             this.clientWeakRef = clientWeakRef;
 
-            if (startTimer)
+            if (!isOffline && startTimer)
             {
                 StartScheduler(configuration.PollInterval);
             }

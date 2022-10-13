@@ -11,7 +11,7 @@ namespace ConfigCat.Client
         /// <summary>
         /// Constructs a new auto polling mode.
         /// </summary>
-        /// <param name="pollInterval">Configuration refresh period.</param>
+        /// <param name="pollInterval">Configuration refresh period. (Default value is 60 seconds.)</param>
         /// <param name="maxInitWaitTime">Maximum waiting time between initialization and the first config acquisition. (Default value is 5 seconds.)</param>
         /// <returns>The auto polling mode.</returns>
         public static AutoPoll AutoPoll(TimeSpan? pollInterval = null, TimeSpan? maxInitWaitTime = null) =>

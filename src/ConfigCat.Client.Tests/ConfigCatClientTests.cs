@@ -1017,7 +1017,7 @@ namespace ConfigCat.Client.Tests
         {
             public byte DisposeCount { get; private set; }
 
-            public FakeConfigService(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper log) : base(configFetcher, cacheParameters, log)
+            public FakeConfigService(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper log) : base(configFetcher, cacheParameters, log, isOffline: false)
             {
             }
 

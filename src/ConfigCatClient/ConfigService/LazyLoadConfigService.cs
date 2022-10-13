@@ -9,8 +9,8 @@ namespace ConfigCat.Client.ConfigService
     {
         private readonly TimeSpan cacheTimeToLive;
         
-        internal LazyLoadConfigService(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger, TimeSpan cacheTimeToLive)
-            : base(configFetcher, cacheParameters, logger)
+        internal LazyLoadConfigService(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger, TimeSpan cacheTimeToLive, bool isOffline = false)
+            : base(configFetcher, cacheParameters, logger, isOffline)
         {
             this.cacheTimeToLive = cacheTimeToLive;
         }

@@ -161,6 +161,7 @@ namespace ConfigCat.Client
                             configuration.HttpTimeout),
                         cacheParameters,
                         this.log,
+                        configuration.Offline,
                         clientWeakRef)
                 : new EmptyConfigService(this.log);
         }
@@ -595,7 +596,7 @@ namespace ConfigCat.Client
             }
         }
 
-        private static IConfigService DetermineConfigService(PollingMode pollingMode, HttpConfigFetcher fetcher, CacheParameters cacheParameters, LoggerWrapper logger, WeakReference<IConfigCatClient> clientWeakRef)
+        private static IConfigService DetermineConfigService(PollingMode pollingMode, HttpConfigFetcher fetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline, WeakReference<IConfigCatClient> clientWeakRef)
         {
             return pollingMode switch
             {
@@ -603,14 +604,17 @@ namespace ConfigCat.Client
                     fetcher,
                     cacheParameters,
                     logger,
+                    isOffline,
                     clientWeakRef),
                 LazyLoad lazyLoad => new LazyLoadConfigService(fetcher,
                     cacheParameters,
                     logger,
-                    lazyLoad.CacheTimeToLive),
+                    lazyLoad.CacheTimeToLive,
+                    isOffline),
                 ManualPoll => new ManualPollConfigService(fetcher,
                     cacheParameters,
-                    logger),
+                    logger,
+                    isOffline),
                 _ => throw new ArgumentException("Invalid configuration type."),
             };
         }

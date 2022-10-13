@@ -6,8 +6,8 @@ namespace ConfigCat.Client.ConfigService
 {
     internal sealed class ManualPollConfigService : ConfigServiceBase, IConfigService
     {
-        internal ManualPollConfigService(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger)
-            : base(configFetcher, cacheParameters, logger) { }
+        internal ManualPollConfigService(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline = false)
+            : base(configFetcher, cacheParameters, logger, isOffline) { }
 
         public ProjectConfig GetConfig()
         {

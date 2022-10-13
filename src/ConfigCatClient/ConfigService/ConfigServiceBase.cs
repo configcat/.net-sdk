@@ -25,12 +25,13 @@ namespace ConfigCat.Client.ConfigService
 
         protected readonly string CacheKey;
 
-        protected ConfigServiceBase(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper log)
+        protected ConfigServiceBase(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper log, bool isOffline)
         {
             this.ConfigFetcher = configFetcher;
             this.ConfigCache = cacheParameters.ConfigCache;
             this.CacheKey = cacheParameters.CacheKey;
             this.Log = log;
+            this.status = isOffline ? Status.Offline : Status.Online;
         }
 
         /// <remarks>

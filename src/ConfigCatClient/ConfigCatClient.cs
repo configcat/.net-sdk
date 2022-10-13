@@ -23,6 +23,7 @@ namespace ConfigCat.Client
         private readonly IConfigDeserializer configDeserializer;
         private readonly IOverrideDataSource overrideDataSource;
         private readonly OverrideBehaviour? overrideBehaviour;
+        private User defaultUser;
 
         private static readonly string Version = typeof(ConfigCatClient).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
 
@@ -137,6 +138,8 @@ namespace ConfigCat.Client
                 this.overrideBehaviour = configuration.FlagOverrides.OverrideBehaviour;
             }
 
+            this.defaultUser = configuration.DefaultUser;
+
             this.configService = this.overrideBehaviour == null || this.overrideBehaviour != OverrideBehaviour.LocalOnly
                 ? DetermineConfigService(configuration.PollingMode,
                     new HttpConfigFetcher(configuration.CreateUri(),
@@ -168,7 +171,7 @@ namespace ConfigCat.Client
             try
             {
                 var settings = this.GetSettings();
-                return this.configEvaluator.Evaluate(settings, key, defaultValue, user);
+                return this.configEvaluator.Evaluate(settings, key, defaultValue, user ?? this.defaultUser);
             }
             catch (Exception ex)
             {
@@ -183,7 +186,7 @@ namespace ConfigCat.Client
             try
             {
                 var settings = await this.GetSettingsAsync().ConfigureAwait(false);
-                return this.configEvaluator.Evaluate(settings, key, defaultValue, user);
+                return this.configEvaluator.Evaluate(settings, key, defaultValue, user ?? this.defaultUser);
             }
             catch (Exception ex)
             {
@@ -240,7 +243,7 @@ namespace ConfigCat.Client
             try
             {
                 var settings = this.GetSettings();
-                return GenerateSettingKeyValueMap(user, settings);
+                return GenerateSettingKeyValueMap(user ?? this.defaultUser, settings);
             }
             catch (Exception ex)
             {
@@ -255,7 +258,7 @@ namespace ConfigCat.Client
             try
             {
                 var settings = await this.GetSettingsAsync().ConfigureAwait(false);
-                return GenerateSettingKeyValueMap(user, settings);
+                return GenerateSettingKeyValueMap(user ?? this.defaultUser, settings);
             }
             catch (Exception ex)
             {
@@ -308,7 +311,7 @@ namespace ConfigCat.Client
             try
             {
                 var settings = this.GetSettings();
-                return this.configEvaluator.EvaluateVariationId(settings, key, defaultVariationId, user);
+                return this.configEvaluator.EvaluateVariationId(settings, key, defaultVariationId, user ?? this.defaultUser);
             }
             catch (Exception ex)
             {
@@ -323,7 +326,7 @@ namespace ConfigCat.Client
             try
             {
                 var settings = await this.GetSettingsAsync().ConfigureAwait(false);
-                return this.configEvaluator.EvaluateVariationId(settings, key, defaultVariationId, user);
+                return this.configEvaluator.EvaluateVariationId(settings, key, defaultVariationId, user ?? this.defaultUser);
             }
             catch (Exception ex)
             {
@@ -338,7 +341,7 @@ namespace ConfigCat.Client
             try
             {
                 var settings = this.GetSettings();
-                return GetAllVariationIdLogic(settings, user);
+                return GetAllVariationIdLogic(settings, user ?? this.defaultUser);
             }
             catch (Exception ex)
             {
@@ -353,7 +356,7 @@ namespace ConfigCat.Client
             try
             {
                 var settings = await this.GetSettingsAsync().ConfigureAwait(false);
-                return GetAllVariationIdLogic(settings, user);
+                return GetAllVariationIdLogic(settings, user ?? this.defaultUser);
             }
             catch (Exception ex)
             {
@@ -488,6 +491,18 @@ namespace ConfigCat.Client
         {
             var key = $"dotnet_{ConfigurationBase.ConfigFileName}_{configuration.SdkKey}";
             return key.Hash();
+        }
+
+        /// <inheritdoc />
+        public void SetDefaultUser(User user)
+        {
+            this.defaultUser = user ?? throw new ArgumentNullException(nameof(user));
+        }
+
+        /// <inheritdoc />
+        public void ClearDefaultUser()
+        {
+            this.defaultUser = null;
         }
     }
 }

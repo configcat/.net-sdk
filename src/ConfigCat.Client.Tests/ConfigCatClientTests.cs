@@ -8,6 +8,7 @@ using System.Linq;
 using ConfigCat.Client.Cache;
 using ConfigCat.Client.Configuration;
 using System.Collections.Generic;
+using System.IO;
 
 #pragma warning disable CS0618 // Type or member is obsolete
 namespace ConfigCat.Client.Tests
@@ -761,6 +762,138 @@ namespace ConfigCat.Client.Tests
             // Assert
 
             loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
+        }
+
+        private static IConfigCatClient CreateClientFromLocalFile(string fileName, User defaultUser = null)
+        {
+            return new ConfigCatClient(options =>
+            {
+                options.SdkKey = "localhost";
+                options.FlagOverrides = FlagOverrides.LocalFile(
+                    Path.Combine("data", fileName),
+                    autoReload: false,
+                    OverrideBehaviour.LocalOnly
+                );
+                options.DefaultUser = defaultUser;
+            });
+        }
+
+        [DataRow(true)]
+        [DataRow(false)]
+        [DataTestMethod]
+        public async Task DefaultUser_GetValue(bool isAsync)
+        {
+            IConfigCatClient client = CreateClientFromLocalFile("sample_v5.json", new User("a@configcat.com") { Email = "a@configcat.com" });
+
+            var getValueAsync = isAsync
+                ? new Func<string, string, User, Task<string>>(client.GetValueAsync)
+                : (key, defaultValue, user) => Task.FromResult(client.GetValue(key, defaultValue, user));
+
+            const string key = "stringIsInDogDefaultCat";
+
+            // 1. Checks that default user set in options is used for evaluation 
+            Assert.AreEqual("Dog", await getValueAsync(key, string.Empty, null));
+
+            client.ClearDefaultUser();
+
+            // 2. Checks that default user can be cleared
+            Assert.AreEqual("Cat", await getValueAsync(key, string.Empty, null));
+
+            client.SetDefaultUser(new User("b@configcat.com") { Email = "b@configcat.com" });
+
+            // 3. Checks that default user set on client is used for evaluation 
+            Assert.AreEqual("Dog", await getValueAsync(key, string.Empty, null));
+
+            // 4. Checks that default user can be overridden by parameter
+            Assert.AreEqual("Cat", await getValueAsync(key, string.Empty, new User("c@configcat.com") { Email = "c@configcat.com" }));
+        }
+
+        [DataRow(true)]
+        [DataRow(false)]
+        [DataTestMethod]
+        public async Task DefaultUser_GetAllValues(bool isAsync)
+        {
+            IConfigCatClient client = CreateClientFromLocalFile("sample_v5.json", new User("a@configcat.com") { Email = "a@configcat.com" });
+
+            var getAllValuesAsync = isAsync
+                ? new Func<User, Task<IDictionary<string, object>>>(client.GetAllValuesAsync)
+                : user => Task.FromResult(client.GetAllValues(user));
+
+            const string key = "stringIsInDogDefaultCat";
+
+            // 1. Checks that default user set in options is used for evaluation 
+            Assert.AreEqual("Dog", (await getAllValuesAsync(null))[key]);
+
+            client.ClearDefaultUser();
+
+            // 2. Checks that default user can be cleared
+            Assert.AreEqual("Cat", (await getAllValuesAsync(null))[key]);
+
+            client.SetDefaultUser(new User("b@configcat.com") { Email = "b@configcat.com" });
+
+            // 3. Checks that default user set on client is used for evaluation 
+            Assert.AreEqual("Dog", (await getAllValuesAsync(null))[key]);
+
+            // 4. Checks that default user can be overridden by parameter
+            Assert.AreEqual("Cat", (await getAllValuesAsync(new User("c@configcat.com") { Email = "c@configcat.com" }))[key]);
+        }
+
+        [DataRow(true)]
+        [DataRow(false)]
+        [DataTestMethod]
+        public async Task DefaultUser_GetVariationId(bool isAsync)
+        {
+            IConfigCatClient client = CreateClientFromLocalFile("sample_variationid_v5.json", new User("a@configcat.com") { Email = "a@configcat.com" });
+
+            var getVariationIdAsync = isAsync
+                ? new Func<string, string, User, Task<string>>(client.GetVariationIdAsync)
+                : (key, defaultValue, user) => Task.FromResult(client.GetVariationId(key, defaultValue, user));
+
+            const string key = "boolean";
+
+            // 1. Checks that default user set in options is used for evaluation 
+            Assert.AreEqual("67787ae4", await getVariationIdAsync(key, string.Empty, null));
+
+            client.ClearDefaultUser();
+
+            // 2. Checks that default user can be cleared
+            Assert.AreEqual("a0e56eda", await getVariationIdAsync(key, string.Empty, null));
+
+            client.SetDefaultUser(new User("b@configcat.com") { Email = "b@configcat.com" });
+
+            // 3. Checks that default user set on client is used for evaluation 
+            Assert.AreEqual("67787ae4", await getVariationIdAsync(key, string.Empty, null));
+
+            // 4. Checks that default user can be overridden by parameter
+            Assert.AreEqual("a0e56eda", await getVariationIdAsync(key, string.Empty, new User("c@example.com") { Email = "c@example.com" }));
+        }
+
+        [DataRow(true)]
+        [DataRow(false)]
+        [DataTestMethod]
+        public async Task DefaultUser_GetAllVariationId(bool isAsync)
+        {
+            IConfigCatClient client = CreateClientFromLocalFile("sample_variationid_v5.json", new User("a@configcat.com") { Email = "a@configcat.com" });
+
+            var getAllVariationIdAsync = isAsync
+                ? new Func<User, Task<IEnumerable<string>>>(client.GetAllVariationIdAsync)
+                : user => Task.FromResult(client.GetAllVariationId(user));
+
+            // 1. Checks that default user set in options is used for evaluation 
+            Assert.IsTrue((await getAllVariationIdAsync(null)).Contains("67787ae4"));
+
+            client.ClearDefaultUser();
+
+            // 2. Checks that default user can be cleared
+            Assert.IsTrue((await getAllVariationIdAsync(null)).Contains("a0e56eda"));
+
+            client.SetDefaultUser(new User("b@configcat.com") { Email = "b@configcat.com" });
+
+            // 3. Checks that default user set on client is used for evaluation 
+            Assert.IsTrue((await getAllVariationIdAsync(null)).Contains("67787ae4"));
+
+            // 4. Checks that default user can be overridden by parameter
+            Assert.IsTrue((await getAllVariationIdAsync(new User("c@example.com") { Email = "c@example.com" })).Contains("a0e56eda"));
         }
 
         internal class FakeConfigService : ConfigServiceBase, IConfigService

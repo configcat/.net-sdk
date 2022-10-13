@@ -101,5 +101,16 @@ namespace ConfigCat.Client
         /// <param name="user">The user object for variation evaluation.</param>
         /// <returns>Collection of all Variation IDs.</returns>
         Task<IEnumerable<string>> GetAllVariationIdAsync(User user = null);
+
+        /// <summary>
+        /// Sets the default user.
+        /// </summary>
+        /// <param name="user">The default user object for variation evaluation.</param>
+        void SetDefaultUser(User user);
+
+        /// <summary>
+        /// Sets the default user to null.
+        /// </summary>
+        void ClearDefaultUser();
     }
 }

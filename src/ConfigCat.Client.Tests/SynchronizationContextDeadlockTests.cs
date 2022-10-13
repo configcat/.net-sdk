@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Net.Http;
+using System.Collections.Generic;
 
 #pragma warning disable CS0618 // Type or member is obsolete
 namespace ConfigCat.Client.Tests
@@ -110,13 +111,23 @@ namespace ConfigCat.Client.Tests
             ClientDeadlockCheck(client);
         }
 
+        private static readonly Dictionary<string, object[]> SpecificMethodParams = new Dictionary<string, object[]>
+        {
+            ["SetDefaultUser"] = new object[] { new User("id") }
+        };
+
         private void ClientDeadlockCheck(IConfigCatClient client)
         {
-            var methods = typeof(IConfigCatClient).GetMethods().Where(x => !x.IsSpecialName).OrderBy(o => o.Name);
+            var methods = typeof(IConfigCatClient).GetMethods()
+                .Where(x => !x.IsSpecialName)
+                .OrderBy(o => o.Name);
 
             foreach (var m in methods)
             {
-                var parameters = Enumerable.Repeat<object>(null, m.GetParameters().Length).ToArray();
+                if (!SpecificMethodParams.TryGetValue(m.Name, out var parameters))
+                {
+                    parameters = Enumerable.Repeat<object>(null, m.GetParameters().Length).ToArray();
+                }
 
                 MethodInfo mi = m;
 

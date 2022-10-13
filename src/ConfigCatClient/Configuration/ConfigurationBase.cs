@@ -61,6 +61,11 @@ namespace ConfigCat.Client
         /// </summary>
         public FlagOverrides FlagOverrides { get; set; }
 
+        /// <summary>
+        /// The default user, used as fallback when there's no user parameter is passed to the <see cref="ConfigCatClient.GetValue{T}(string, T, User)"/>, <see cref="ConfigCatClient.GetAllValues(User)"/>, etc. methods.
+        /// </summary>
+        public User DefaultUser { get; set; }
+
         internal virtual void Validate()
         {
             if (string.IsNullOrEmpty(this.SdkKey))
@@ -107,6 +112,7 @@ namespace ConfigCat.Client
             options.DataGovernance = this.DataGovernance;
             options.ConfigCache = this.ConfigCache;
             options.BaseUrl = this.BaseUrl;
+            options.DefaultUser = this.DefaultUser;
         }
     }
 }

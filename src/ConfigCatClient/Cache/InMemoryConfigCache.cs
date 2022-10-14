@@ -5,7 +5,7 @@ namespace ConfigCat.Client
 {
     internal class InMemoryConfigCache : IConfigCatCache
     {
-        private ProjectConfig projectConfig;
+        private ProjectConfig projectConfig = ProjectConfig.Empty;
         private readonly ReaderWriterLockSlim lockSlim = new();
 
         /// <inheritdoc />

@@ -522,6 +522,7 @@ namespace ConfigCat.Client.Tests
         {
             // Arrange
 
+            configServiceMock.Setup(m => m.GetConfig()).Returns(ProjectConfig.Empty);
             configServiceMock.Setup(m => m.GetConfigAsync()).ReturnsAsync(ProjectConfig.Empty);
             var o = new SettingsWithPreferences();
             configDeserializerMock

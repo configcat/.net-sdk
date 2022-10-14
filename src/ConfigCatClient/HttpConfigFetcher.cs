@@ -59,8 +59,6 @@ namespace ConfigCat.Client
 
         private async ValueTask<ProjectConfig> FetchInternalAsync(ProjectConfig lastConfig, bool isAsync)
         {
-            var newConfig = lastConfig;
-
             try
             {
 #if NET5_0_OR_GREATER
@@ -87,8 +85,12 @@ namespace ConfigCat.Client
 
                 if (response is { IsSuccessStatusCode: true })
                 {
-                    newConfig.HttpETag = response.Headers.ETag?.Tag;
-                    newConfig.JsonString = fetchResult.Item2;
+                    return new ProjectConfig
+                    {
+                        HttpETag = response.Headers.ETag?.Tag,
+                        JsonString = fetchResult.Item2,
+                        TimeStamp = DateTime.UtcNow
+                    };
                 }
                 else
                     switch (response.StatusCode)
@@ -123,8 +125,7 @@ namespace ConfigCat.Client
                 this.ReInitializeHttpClient();
             }
 
-            newConfig.TimeStamp = DateTime.UtcNow;
-            return newConfig;
+            return lastConfig with { TimeStamp = DateTime.UtcNow };
         }
 
         private async ValueTask<Tuple<HttpResponseMessage, string>> FetchRequest(ProjectConfig lastConfig,

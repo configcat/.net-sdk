@@ -72,7 +72,7 @@ namespace ConfigCat.Client.Tests
         {
             // Arrange
 
-            var cachedPc = new ProjectConfig(null, DateTime.UtcNow, null);
+            var cachedPc = new ProjectConfig("{}", DateTime.UtcNow, "123");
 
             this.cacheMock
                 .Setup(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None))
@@ -176,7 +176,7 @@ namespace ConfigCat.Client.Tests
         }
 
         [TestMethod]
-        public async Task AutoPollConfigService_GetConfigAsync_WithTimer_ShouldInvokeFetchAndCacheSetAndCacheGet2x()
+        public async Task AutoPollConfigService_GetConfigAsync_WithTimer_ShouldInvokeFetchAndCacheSetAndCacheGet3x()
         {
             // Arrange            
 
@@ -195,7 +195,7 @@ namespace ConfigCat.Client.Tests
                 .Callback(() => wd.Set())
                 .Returns(Task.FromResult(0));
 
-            var config = PollingModes.AutoPoll(TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(0));
+            var config = PollingModes.AutoPoll(TimeSpan.FromSeconds(50), TimeSpan.FromSeconds(0));
             using var service = new AutoPollConfigService(config,
                 fetcherMock.Object,
                 new CacheParameters { ConfigCache = cacheMock.Object },
@@ -210,7 +210,7 @@ namespace ConfigCat.Client.Tests
             service.Dispose();
             // Assert
 
-            this.cacheMock.Verify(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None), Times.Exactly(2));
+            this.cacheMock.Verify(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None), Times.Exactly(3));
             this.cacheMock.Verify(m => m.SetAsync(It.IsAny<string>(), fetchedPc), Times.Once);
             this.fetcherMock.Verify(m => m.FetchAsync(cachedPc), Times.Once);
         }
@@ -489,6 +489,172 @@ namespace ConfigCat.Client.Tests
             // Act
 
             configService.Dispose();
+        }
+
+        [DataRow(false)]
+        [DataRow(true)]
+        [DataTestMethod]
+        public async Task AutoPollConfigService_GetConfig_ReturnsCachedConfigWhenCachedConfigIsNotExpired(bool isAsync)
+        {
+            // Arrange 
+
+            var pollInterval = defaultExpire + defaultExpire;
+
+            var cache = new InMemoryConfigCache();
+            cache.Set(null, cachedPc);
+
+            this.fetcherMock.Setup(m => m.FetchAsync(cachedPc)).ReturnsAsync(fetchedPc);
+
+            var config = PollingModes.AutoPoll(pollInterval, maxInitWaitTime: defaultExpire);
+            var service = new AutoPollConfigService(config,
+                fetcherMock.Object,
+                new CacheParameters { ConfigCache = cache },
+                loggerMock.Object.AsWrapper(),
+                startTimer: true);
+
+            // Act
+
+            ProjectConfig actualPc;
+            using (service)
+            {
+                actualPc = isAsync ? await service.GetConfigAsync() : service.GetConfig();
+            }
+            // Assert
+
+            Assert.AreEqual(cachedPc, actualPc);
+
+            this.fetcherMock.Verify(m => m.FetchAsync(cachedPc), Times.Never);
+        }
+
+        [DataRow(false)]
+        [DataRow(true)]
+        [DataTestMethod]
+        public async Task AutoPollConfigService_GetConfig_FetchesConfigWhenCachedConfigIsExpired(bool isAsync)
+        {
+            // Arrange 
+
+            var pollInterval = defaultExpire + defaultExpire;
+
+            var cache = new InMemoryConfigCache();
+            cache.Set(null, cachedPc with { TimeStamp = cachedPc.TimeStamp - pollInterval });
+
+            this.fetcherMock.Setup(m => m.FetchAsync(cachedPc)).ReturnsAsync(fetchedPc);
+
+            var config = PollingModes.AutoPoll(pollInterval, maxInitWaitTime: defaultExpire);
+            var service = new AutoPollConfigService(config,
+                fetcherMock.Object,
+                new CacheParameters { ConfigCache = cache },
+                loggerMock.Object.AsWrapper(),
+                startTimer: true);
+
+            // Act
+
+            ProjectConfig actualPc;
+            using (service)
+            {
+                actualPc = isAsync ? await service.GetConfigAsync() : service.GetConfig();
+            }
+            // Assert
+
+            Assert.AreEqual(fetchedPc, actualPc);
+
+            this.fetcherMock.Verify(m => m.FetchAsync(cachedPc), Times.Once);
+        }
+
+        [DataRow(false)]
+        [DataRow(true)]
+        [DataTestMethod]
+        public async Task LazyLoadConfigService_GetConfig_ReturnsCachedConfigWhenCachedConfigIsNotExpired(bool isAsync)
+        {
+            // Arrange 
+
+            var cacheTimeToLive = defaultExpire + defaultExpire;
+
+            var cache = new InMemoryConfigCache();
+            cache.Set(null, cachedPc);
+
+            if (isAsync)
+            {
+                this.fetcherMock.Setup(m => m.FetchAsync(cachedPc)).ReturnsAsync(fetchedPc);
+            }
+            else
+            {
+                this.fetcherMock.Setup(m => m.Fetch(cachedPc)).Returns(fetchedPc);
+            }
+
+            var config = PollingModes.LazyLoad(cacheTimeToLive);
+            var service = new LazyLoadConfigService(fetcherMock.Object,
+                new CacheParameters { ConfigCache = cache },
+                loggerMock.Object.AsWrapper(),
+                config.CacheTimeToLive);
+
+            // Act
+
+            ProjectConfig actualPc;
+            using (service)
+            {
+                actualPc = isAsync ? await service.GetConfigAsync() : service.GetConfig();
+            }
+            // Assert
+
+            Assert.AreEqual(cachedPc, actualPc);
+
+            if (isAsync)
+            {
+                this.fetcherMock.Verify(m => m.FetchAsync(cachedPc), Times.Never);
+            }
+            else
+            {
+                this.fetcherMock.Verify(m => m.Fetch(cachedPc), Times.Never);
+            }
+        }
+
+        [DataRow(false)]
+        [DataRow(true)]
+        [DataTestMethod]
+        public async Task LazyLoadConfigService_GetConfig_FetchesConfigWhenCachedConfigIsExpired(bool isAsync)
+        {
+            // Arrange 
+
+            var cacheTimeToLive = defaultExpire + defaultExpire;
+
+            var cache = new InMemoryConfigCache();
+            cache.Set(null, cachedPc with { TimeStamp = cachedPc.TimeStamp - cacheTimeToLive });
+
+            if (isAsync)
+            {
+                this.fetcherMock.Setup(m => m.FetchAsync(cachedPc)).ReturnsAsync(fetchedPc);
+            }
+            else 
+            {
+                this.fetcherMock.Setup(m => m.Fetch(cachedPc)).Returns(fetchedPc);
+            }
+
+            var config = PollingModes.LazyLoad(cacheTimeToLive);
+            var service = new LazyLoadConfigService(fetcherMock.Object,
+                new CacheParameters { ConfigCache = cache },
+                loggerMock.Object.AsWrapper(),
+                config.CacheTimeToLive);
+
+            // Act
+
+            ProjectConfig actualPc;
+            using (service)
+            {
+                actualPc = isAsync ? await service.GetConfigAsync() : service.GetConfig();
+            }
+            // Assert
+
+            Assert.AreEqual(fetchedPc, actualPc);
+
+            if (isAsync)
+            {
+                this.fetcherMock.Verify(m => m.FetchAsync(cachedPc), Times.Once);
+            }
+            else
+            {
+                this.fetcherMock.Verify(m => m.Fetch(cachedPc), Times.Once);
+            }
         }
     }
 }

@@ -9,12 +9,12 @@ namespace ConfigCat.Client
     public record class ProjectConfig : IEquatable<ProjectConfig>
     {
         /// <summary>
-        ///  A read-only instance of the ProjectConfig structure whose value is empty.
+        ///  A read-only instance of the <see cref="ProjectConfig"/> record whose value is empty.
         /// </summary>
         public static readonly ProjectConfig Empty = new(null, DateTime.MinValue, null);
 
         /// <summary>
-        /// ProjectConfig in json string format
+        /// The <see cref="ProjectConfig"/> in json string format
         /// </summary>
         public string JsonString
         {
@@ -27,7 +27,7 @@ namespace ConfigCat.Client
         }
 
         /// <summary>
-        /// TimeStamp of the ProjectConfig's acquire
+        /// Time of <see cref="ProjectConfig"/>'s successful download
         /// </summary>
         public DateTime TimeStamp
         {
@@ -40,7 +40,7 @@ namespace ConfigCat.Client
         }
 
         /// <summary>
-        /// Http entity tag of the ProjectConfig
+        /// Http entity tag of the <see cref="ProjectConfig"/>
         /// </summary>
         public string HttpETag
         {
@@ -92,6 +92,12 @@ namespace ConfigCat.Client
             hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(HttpETag);
             hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(JsonString);
             return hashCode;
+        }
+
+        internal bool IsExpired(TimeSpan expiration, out bool isEmpty)
+        {
+            isEmpty = Equals(Empty);
+            return isEmpty || TimeStamp + expiration < DateTime.UtcNow;
         }
     }
 }

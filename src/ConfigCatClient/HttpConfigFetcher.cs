@@ -96,7 +96,10 @@ namespace ConfigCat.Client
                     switch (response.StatusCode)
                     {
                         case HttpStatusCode.NotModified:
-                            break;
+                            return lastConfig with 
+                            {
+                                TimeStamp = DateTime.UtcNow
+                            };
                         case HttpStatusCode.NotFound:
                             this.log.Error("Double-check your SDK Key at https://app.configcat.com/sdkkey");
                             break;
@@ -125,7 +128,7 @@ namespace ConfigCat.Client
                 this.ReInitializeHttpClient();
             }
 
-            return lastConfig with { TimeStamp = DateTime.UtcNow };
+            return lastConfig;
         }
 
         private async ValueTask<Tuple<HttpResponseMessage, string>> FetchRequest(ProjectConfig lastConfig,
@@ -141,20 +144,13 @@ namespace ConfigCat.Client
                 }
 
                 HttpResponseMessage response;
-                try
-                {
 #if NET5_0_OR_GREATER
-                    response = isAsync
-                        ? await this.httpClient.SendAsync(request, this.cancellationTokenSource.Token).ConfigureAwait(false)
-                        : this.httpClient.Send(request, this.cancellationTokenSource.Token);
+                response = isAsync
+                    ? await this.httpClient.SendAsync(request, this.cancellationTokenSource.Token).ConfigureAwait(false)
+                    : this.httpClient.Send(request, this.cancellationTokenSource.Token);
 #else
-                    response = await this.httpClient.SendAsync(request, this.cancellationTokenSource.Token).ConfigureAwait(false);
+                response = await this.httpClient.SendAsync(request, this.cancellationTokenSource.Token).ConfigureAwait(false);
 #endif
-                }
-                catch (Exception ex) when (ex.InnerException is WebException { Status: WebExceptionStatus.SecureChannelFailure })
-                {
-                    throw;
-                }
 
                 if (response.IsSuccessStatusCode)
                 {

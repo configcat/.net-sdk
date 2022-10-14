@@ -1503,7 +1503,7 @@ namespace ConfigCat.Client.Tests
                 return Task.FromResult(ProjectConfig.Empty);
             }
 
-            public Task RefreshConfigAsync()
+            public override Task RefreshConfigAsync()
             {
                 return Task.FromResult(0);
             }
@@ -1513,7 +1513,7 @@ namespace ConfigCat.Client.Tests
                 return ProjectConfig.Empty;
             }
 
-            public void RefreshConfig()
+            public override void RefreshConfig()
             { }
         }
     }

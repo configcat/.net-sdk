@@ -163,7 +163,7 @@ namespace ConfigCat.Client
                         this.log,
                         configuration.Offline,
                         clientWeakRef)
-                : new EmptyConfigService(this.log);
+                : new NullConfigService(this.log);
         }
 
         /// <summary>

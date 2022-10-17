@@ -2,11 +2,11 @@
 
 namespace ConfigCat.Client.ConfigService
 {
-    internal sealed class EmptyConfigService : IConfigService
+    internal sealed class NullConfigService : IConfigService
     {
         private readonly LoggerWrapper log;
 
-        public EmptyConfigService(LoggerWrapper log)
+        public NullConfigService(LoggerWrapper log)
         {
             this.log = log;
         }

@@ -305,7 +305,7 @@ namespace ConfigCat.Client.Tests
             const string defaultValue = "Victory for the Firstborn!";
 
             evaluatorMock
-                .Setup(m => m.Evaluate(It.IsAny<IDictionary<string, Setting>>(), It.IsAny<string>(), defaultValue, null))
+                .Setup(m => m.Evaluate(It.IsAny<IDictionary<string, Setting>>(), It.IsAny<string>(), defaultValue, null, null, null))
                 .Throws<Exception>();
 
             var client = new ConfigCatClient(configServiceMock.Object, loggerMock.Object, evaluatorMock.Object, configDeserializerMock.Object);
@@ -327,7 +327,7 @@ namespace ConfigCat.Client.Tests
             const string defaultValue = "Victory for the Firstborn!";
 
             evaluatorMock
-                .Setup(m => m.Evaluate(It.IsAny<IDictionary<string, Setting>>(), It.IsAny<string>(), defaultValue, null))
+                .Setup(m => m.Evaluate(It.IsAny<IDictionary<string, Setting>>(), It.IsAny<string>(), defaultValue, null, null, null))
                 .Throws<Exception>();
 
             var client = new ConfigCatClient(configServiceMock.Object, loggerMock.Object, evaluatorMock.Object, configDeserializerMock.Object);
@@ -481,7 +481,7 @@ namespace ConfigCat.Client.Tests
             const string defaultValue = "Victory for the Firstborn!";
 
             evaluatorMock
-                .Setup(m => m.EvaluateVariationId(It.IsAny<IDictionary<string, Setting>>(), It.IsAny<string>(), defaultValue, null))
+                .Setup(m => m.EvaluateVariationIdWithDetails(It.IsAny<IDictionary<string, Setting>>(), It.IsAny<string>(), defaultValue, null, null))
                 .Throws<Exception>();
 
             var client = new ConfigCatClient(configServiceMock.Object, loggerMock.Object, evaluatorMock.Object, configDeserializerMock.Object);
@@ -503,7 +503,7 @@ namespace ConfigCat.Client.Tests
             const string defaultValue = "Victory for the Firstborn!";
 
             evaluatorMock
-                .Setup(m => m.EvaluateVariationId(It.IsAny<IDictionary<string, Setting>>(), It.IsAny<string>(), defaultValue, null))
+                .Setup(m => m.EvaluateVariationIdWithDetails(It.IsAny<IDictionary<string, Setting>>(), It.IsAny<string>(), defaultValue, null, null))
                 .Throws<Exception>();
 
             var client = new ConfigCatClient(configServiceMock.Object, loggerMock.Object, evaluatorMock.Object, configDeserializerMock.Object);

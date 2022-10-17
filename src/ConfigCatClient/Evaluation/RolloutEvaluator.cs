@@ -3,10 +3,11 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+
 #if USE_NEWTONSOFT_JSON
-using Newtonsoft.Json.Linq;
+using JsonValue = Newtonsoft.Json.Linq.JValue;
 #else
-using System.Text.Json;
+using JsonValue = System.Text.Json.JsonElement;
 #endif
 
 namespace ConfigCat.Client.Evaluation
@@ -20,51 +21,30 @@ namespace ConfigCat.Client.Evaluation
             this.log = logger;
         }
 
-        public T Evaluate<T>(IDictionary<string, Setting> settings, string key, T defaultValue, User user = null)
+        public EvaluationDetails Evaluate(IDictionary<string, Setting> settings, string key, string logDefaultValue, User user, ProjectConfig remoteConfig, EvaluationDetailsFactory detailsFactory)
         {
             if (settings.Count == 0)
             {
-                this.log.Error($"Config JSON is not present. Returning the defaultValue defined in the app source code: '{defaultValue}'.");
-                return defaultValue;
+                this.log.Error($"Config JSON is not present. Returning the defaultValue defined in the app source code: '{logDefaultValue}'.");
+                return null;
             }
 
-            var result = EvaluateLogic(settings, key, defaultValue?.ToString(), null, user);
-#if USE_NEWTONSOFT_JSON
-            return result == null ? defaultValue : result.Value.Value<T>();
-#else
-            return result == null ? defaultValue : result.Value.Deserialize<T>();
-#endif
+            return EvaluateLogic(settings, key, logDefaultValue, logDefaultVariationId: null, user, remoteConfig, detailsFactory);
         }
 
-        public object Evaluate(IDictionary<string, Setting> settings, string key, object defaultValue, User user = null)
+        public EvaluationDetails EvaluateVariationIdWithDetails(IDictionary<string, Setting> settings, string key, string logDefaultVariationId, User user, ProjectConfig remoteConfig)
         {
             if (settings.Count == 0)
             {
-                this.log.Error($"Config JSON is not present. Returning the defaultValue defined in the app source code: '{defaultValue}'.");
-                return defaultValue;
+                this.log.Error($"Config JSON is not present. Returning defaultVariationId: '{logDefaultVariationId}'.");
+                return null;
             }
 
-            var result = EvaluateLogic(settings, key, defaultValue?.ToString(), null, user);
-#if USE_NEWTONSOFT_JSON
-            return result == null ? defaultValue : result.Value.ToObject(DetermineTypeFromSettingType(result.SettingType));
-#else
-            return result == null ? defaultValue : result.Value.Deserialize(DetermineTypeFromSettingType(result.SettingType));
-#endif
+            return EvaluateLogic(settings, key, logDefaultValue: null, logDefaultVariationId, user, remoteConfig, detailsFactory: null);
         }
 
-        public string EvaluateVariationId(IDictionary<string, Setting> settings, string key, string defaultVariationId, User user = null)
-        {
-            if (settings.Count == 0)
-            {
-                this.log.Error($"Config JSON is not present. Returning defaultVariationId: '{defaultVariationId}'.");
-                return defaultVariationId;
-            }
-
-            var result = EvaluateLogic(settings, key, null, defaultVariationId, user);
-            return result == null ? defaultVariationId : result.VariationId;
-        }
-
-        private EvaluateResult EvaluateLogic(IDictionary<string, Setting> settings, string key, string logDefaultValue, string logDefaultVariationId, User user = null)
+        private EvaluationDetails EvaluateLogic(IDictionary<string, Setting> settings, string key, string logDefaultValue, string logDefaultVariationId, User user,
+            ProjectConfig remoteConfig, EvaluationDetailsFactory detailsFactory)
         {
             if (!settings.TryGetValue(key, out var setting))
             {
@@ -83,29 +63,45 @@ namespace ConfigCat.Client.Evaluation
 
             try
             {
-                EvaluateResult result;
+                JsonValue value;
+                string variationId;
 
                 if (user != null)
                 {
                     // evaluate rules
 
-                    if (TryEvaluateRules(setting.RolloutRules, user, evaluateLog, out result))
+                    if (TryEvaluateRules(setting.RolloutRules, user, evaluateLog, out value, out variationId, out var matchedEvaluationRule))
                     {
-                        evaluateLog.ReturnValue = result.Value.ToString();
-                        evaluateLog.VariationId = result.VariationId;
+                        evaluateLog.ReturnValue = value.ToString();
+                        evaluateLog.VariationId = variationId;
 
-                        result.SettingType = setting.SettingType;
-                        return result;
+                        return EvaluationDetails.FromJsonValue(
+                            detailsFactory,
+                            setting.SettingType,
+                            key,
+                            value,
+                            variationId,
+                            fetchTime: remoteConfig?.TimeStamp,
+                            user,
+                            matchedEvaluationRule: matchedEvaluationRule);
                     }
 
                     // evaluate variations
 
-                    if (TryEvaluateVariations(setting.RolloutPercentageItems, key, user, evaluateLog, out result))
+                    if (TryEvaluateVariations(setting.RolloutPercentageItems, key, user, evaluateLog, out value, out variationId, out var matchedEvaluationPercentageRule))
                     {
-                        evaluateLog.ReturnValue = result.Value.ToString();
-                        evaluateLog.VariationId = result.VariationId;
-                        result.SettingType = setting.SettingType;
-                        return result;
+                        evaluateLog.ReturnValue = value.ToString();
+                        evaluateLog.VariationId = variationId;
+
+                        return EvaluationDetails.FromJsonValue(
+                            detailsFactory,
+                            setting.SettingType,
+                            key,
+                            value,
+                            variationId,
+                            fetchTime: remoteConfig?.TimeStamp,
+                            user,
+                            matchedEvaluationPercentageRule: matchedEvaluationPercentageRule);
                     }
                 }
                 else if (setting.RolloutRules.Any() || setting.RolloutPercentageItems.Any())
@@ -115,17 +111,20 @@ namespace ConfigCat.Client.Evaluation
 
                 // regular evaluate
 
-                result = new EvaluateResult
-                {
-                    Value = setting.Value,
-                    VariationId = setting.VariationId,
-                    SettingType = setting.SettingType,
-                };
+                value = setting.Value;
+                variationId = setting.VariationId;
 
-                evaluateLog.ReturnValue = result.Value.ToString();
-                evaluateLog.VariationId = result.VariationId;
+                evaluateLog.ReturnValue = value.ToString();
+                evaluateLog.VariationId = variationId;
 
-                return result;
+                return EvaluationDetails.FromJsonValue(
+                    detailsFactory,
+                    setting.SettingType,
+                    key,
+                    value,
+                    variationId,
+                    fetchTime: remoteConfig?.TimeStamp,
+                    user);
             }
             finally
             {
@@ -134,10 +133,8 @@ namespace ConfigCat.Client.Evaluation
         }
 
         private static bool TryEvaluateVariations<T>(ICollection<RolloutPercentageItem> rolloutPercentageItems, string key, User user, 
-            EvaluateLogger<T> evaluateLog, out EvaluateResult result)
+            EvaluateLogger<T> evaluateLog, out JsonValue value, out string variationId, out RolloutPercentageItem matchedRule)
         {
-            result = new EvaluateResult();
-
             if (rolloutPercentageItems is { Count: > 0 })
             {
                 var hashCandidate = key + user.Identifier;
@@ -158,27 +155,31 @@ namespace ConfigCat.Client.Evaluation
                         evaluateLog.Log($"  - % option: [IF {bucket} > {hashScale} THEN '{variation.Value}'] => no match");
                         continue;
                     }
-                    result.Value = variation.Value;
-                    result.VariationId = variation.VariationId;
+                    value = variation.Value;
+                    variationId = variation.VariationId;
+                    matchedRule = variation;
                     evaluateLog.Log($"  - % option: [IF {bucket} > {hashScale} THEN '{variation.Value}'] => MATCH, applying % option");
                     return true;
                 }
             }
 
+            value = default;
+            variationId = default;
+            matchedRule = default;
             return false;
         }
 
-        private static bool TryEvaluateRules<T>(ICollection<RolloutRule> rules, User user, EvaluateLogger<T> logger, out EvaluateResult result)
+        private static bool TryEvaluateRules<T>(ICollection<RolloutRule> rules, User user, EvaluateLogger<T> logger,
+            out JsonValue value, out string variationId, out RolloutRule matchedRule)
         {
-            result = new EvaluateResult();
-
             if (rules is { Count: > 0 })
             {
                 logger.Log($"Applying the first targeting rule that matches the User '{user.Serialize()}':");
                 foreach (var rule in rules.OrderBy(o => o.Order))
                 {
-                    result.Value = rule.Value;
-                    result.VariationId = rule.VariationId;
+                    value = rule.Value;
+                    variationId = rule.VariationId;
+                    matchedRule = rule;
 
                     string l = $"  - rule: [IF User.{rule.ComparisonAttribute} {EvaluateLogger<T>.FormatComparator(rule.Comparator)} '{rule.ComparisonValue}' THEN {rule.Value}] => ";
                     if (!user.AllAttributes.ContainsKey(rule.ComparisonAttribute))
@@ -320,6 +321,9 @@ namespace ConfigCat.Client.Evaluation
                 }
             }
 
+            value = default;
+            variationId = default;
+            matchedRule = default;
             return false;
         }
 
@@ -420,15 +424,5 @@ namespace ConfigCat.Client.Evaluation
 
             return false;
         }
-
-        private static Type DetermineTypeFromSettingType(SettingType settingType) =>
-            settingType switch
-            {
-                SettingType.Boolean => typeof(bool),
-                SettingType.String => typeof(string),
-                SettingType.Int => typeof(int),
-                SettingType.Double => typeof(double),
-                _ => throw new ArgumentOutOfRangeException(nameof(settingType), settingType, null)
-            };
     }
 }

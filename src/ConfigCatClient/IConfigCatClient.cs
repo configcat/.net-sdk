@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using ConfigCat.Client.Evaluation;
 
 namespace ConfigCat.Client
 {
@@ -33,6 +34,26 @@ namespace ConfigCat.Client
         /// <param name="user">The user object for variation evaluation.</param>
         /// <returns>The task that will evaluate the value of the feature flag or setting.</returns>
         Task<T> GetValueAsync<T>(string key, T defaultValue, User user = null);
+
+        /// <summary>
+        /// Returns the value along with evaluation details of a feature flag or setting by the given key.
+        /// </summary>
+        /// <typeparam name="T">Setting type</typeparam>
+        /// <param name="key">Key for programs</param>
+        /// <param name="defaultValue">In case of failure return this value</param>
+        /// <param name="user">The user object for variation evaluation</param>
+        /// <returns>The value along with the details of evaluation of the feature flag or setting.</returns>
+        EvaluationDetails<T> GetValueDetails<T>(string key, T defaultValue, User user = null);
+
+        /// <summary>
+        /// Returns the value along with evaluation details of a feature flag or setting by the given key.
+        /// </summary>
+        /// <typeparam name="T">Setting type</typeparam>
+        /// <param name="key">Key for programs</param>
+        /// <param name="defaultValue">In case of failure return this value</param>
+        /// <param name="user">The user object for variation evaluation</param>
+        /// <returns>The value along with the details of evaluation of the feature flag or setting.</returns>
+        Task<EvaluationDetails<T>> GetValueDetailsAsync<T>(string key, T defaultValue, User user = null);
 
         /// <summary>
         /// Returns a collection with all keys.

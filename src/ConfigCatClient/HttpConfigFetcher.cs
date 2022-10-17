@@ -4,7 +4,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
-using ConfigCat.Client.Evaluate;
+using ConfigCat.Client.Evaluation;
 using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client

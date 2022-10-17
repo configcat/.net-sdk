@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace ConfigCat.Client.Evaluate
+namespace ConfigCat.Client.Evaluation
 {
     internal interface IRolloutEvaluator
     {

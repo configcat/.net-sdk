@@ -1,5 +1,5 @@
 ﻿using ConfigCat.Client.ConfigService;
-using ConfigCat.Client.Evaluate;
+using ConfigCat.Client.Evaluation;
 using System;
 using System.Collections.Generic;
 using System.Linq;

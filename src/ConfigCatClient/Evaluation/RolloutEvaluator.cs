@@ -9,7 +9,7 @@ using Newtonsoft.Json.Linq;
 using System.Text.Json;
 #endif
 
-namespace ConfigCat.Client.Evaluate
+namespace ConfigCat.Client.Evaluation
 {
     internal class RolloutEvaluator : IRolloutEvaluator
     {

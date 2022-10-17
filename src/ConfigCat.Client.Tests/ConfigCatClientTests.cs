@@ -1,5 +1,5 @@
 ﻿using ConfigCat.Client.ConfigService;
-using ConfigCat.Client.Evaluate;
+using ConfigCat.Client.Evaluation;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using System;

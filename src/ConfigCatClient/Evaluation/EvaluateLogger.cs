@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace ConfigCat.Client.Evaluate
+namespace ConfigCat.Client.Evaluation
 {
     internal sealed class EvaluateLogger<T>
     {

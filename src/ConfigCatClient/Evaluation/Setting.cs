@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 using System.Text.Json;
 #endif
 
-namespace ConfigCat.Client.Evaluate
+namespace ConfigCat.Client.Evaluation
 {
     internal class SettingsWithPreferences
     {

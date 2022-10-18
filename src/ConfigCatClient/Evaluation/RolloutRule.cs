@@ -74,6 +74,39 @@ namespace ConfigCat.Client.Evaluation
         [JsonPropertyName("i")]
 #endif
         public string VariationId { get; set; }
+
+        internal static string FormatComparator(Comparator comparator)
+        {
+            return comparator switch
+            {
+                Comparator.In => "IS ONE OF",
+                Comparator.SemVerIn => "IS ONE OF",
+                Comparator.NotIn => "IS NOT ONE OF",
+                Comparator.SemVerNotIn => "IS NOT ONE OF",
+                Comparator.Contains => "CONTAINS",
+                Comparator.NotContains => "DOES NOT CONTAIN",
+                Comparator.SemVerLessThan => "<",
+                Comparator.NumberLessThan => "<",
+                Comparator.SemVerLessThanEqual => "<=",
+                Comparator.NumberLessThanEqual => "<=",
+                Comparator.SemVerGreaterThan => ">",
+                Comparator.NumberGreaterThan => ">",
+                Comparator.SemVerGreaterThanEqual => ">=",
+                Comparator.NumberGreaterThanEqual => ">=",
+                Comparator.NumberEqual => "=",
+                Comparator.NumberNotEqual => "!=",
+                Comparator.SensitiveOneOf => "IS ONE OF (hashed)",
+                Comparator.SensitiveNotOneOf => "IS NOT ONE OF (hashed)",
+                _ => comparator.ToString()
+            };
+        }
+
+        /// <inheritdoc/>>
+        public override string ToString()
+        {
+            var variationIdString = !string.IsNullOrEmpty(VariationId) ? " [" + VariationId + "]" : string.Empty;
+            return $"({Order + 1}) {(Order > 0 ? "ELSE " : string.Empty)}IF user's {ComparisonAttribute} {FormatComparator(Comparator)} '{ComparisonValue}' => {Value}{variationIdString}";
+        }
     }
 
     /// <summary>

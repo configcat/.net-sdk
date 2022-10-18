@@ -181,7 +181,7 @@ namespace ConfigCat.Client.Evaluation
                     variationId = rule.VariationId;
                     matchedRule = rule;
 
-                    string l = $"  - rule: [IF User.{rule.ComparisonAttribute} {EvaluateLogger<T>.FormatComparator(rule.Comparator)} '{rule.ComparisonValue}' THEN {rule.Value}] => ";
+                    string l = $"  - rule: [IF User.{rule.ComparisonAttribute} {RolloutRule.FormatComparator(rule.Comparator)} '{rule.ComparisonValue}' THEN {rule.Value}] => ";
                     if (!user.AllAttributes.ContainsKey(rule.ComparisonAttribute))
                     {
                         logger.Log(l + "no match");

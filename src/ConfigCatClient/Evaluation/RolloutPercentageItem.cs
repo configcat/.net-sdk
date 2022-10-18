@@ -54,5 +54,12 @@ namespace ConfigCat.Client.Evaluation
         [JsonPropertyName("i")]
 #endif
         public string VariationId { get; set; }
+
+        /// <inheritdoc/>>
+        public override string ToString()
+        {
+            var variationIdString = !string.IsNullOrEmpty(VariationId) ? " [" + VariationId + "]" : string.Empty;
+            return $"({Order + 1}) {Percentage}% percent of users => {Value}{variationIdString}";
+        }
     }
 }

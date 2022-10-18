@@ -341,6 +341,318 @@ namespace ConfigCat.Client.Tests
             Assert.AreEqual(defaultValue, actual);
         }
 
+        [DataRow(false)]
+        [DataRow(true)]
+        [DataTestMethod]
+        public async Task GetValueDetails_ShouldReturnCorrectEvaluationDetails_SettingIsNotAvailable(bool isAsync)
+        {
+            // Arrange
+
+            const string key = "boolean";
+            const bool defaultValue = false;
+
+            const string cacheKey = "123";
+            var configJsonFilePath = Path.Combine("data", "sample_variationid_v5.json");
+
+            var client = CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock,
+                onFetch: _ => new ProjectConfig { JsonString = File.ReadAllText(configJsonFilePath), HttpETag = "12345", TimeStamp = DateTime.UtcNow },
+                configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
+                {
+                    var pollingMode = PollingModes.ManualPoll;
+                    return new ManualPollConfigService(fetcherMock.Object, cacheParams, loggerWrapper);
+                },
+                out var configService, out _);
+
+            var user = new User("a@configcat.com") { Email = "a@configcat.com" };
+
+            // Act
+
+            var actual = isAsync
+                ? await client.GetValueDetailsAsync(key, defaultValue, user)
+                : client.GetValueDetails(key, defaultValue, user);
+
+            // Assert
+
+            Assert.IsNotNull(actual);
+            Assert.AreEqual(key, actual.Key);
+            Assert.AreEqual(defaultValue, actual.Value);
+            Assert.IsTrue(actual.IsDefaultValue);
+            Assert.IsNull(actual.VariationId);
+            Assert.AreEqual(DateTime.MinValue, actual.FetchTime);
+            Assert.AreSame(user, actual.User);
+            Assert.IsNull(actual.ErrorMessage);
+            Assert.IsNull(actual.ErrorException);
+            Assert.IsNull(actual.MatchedEvaluationRule);
+            Assert.IsNull(actual.MatchedEvaluationPercentageRule);
+        }
+
+        [DataRow(false)]
+        [DataRow(true)]
+        [DataTestMethod]
+        public async Task GetValueDetails_ShouldReturnCorrectEvaluationDetails_SettingIsAvailableButNoRulesApply(bool isAsync)
+        {
+            // Arrange
+
+            const string key = "boolean";
+            const bool defaultValue = false;
+
+            const string cacheKey = "123";
+            var configJsonFilePath = Path.Combine("data", "sample_variationid_v5.json");
+            var timeStamp = DateTime.UtcNow;
+
+            var client = CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock,
+                onFetch: _ => new ProjectConfig { JsonString = File.ReadAllText(configJsonFilePath), HttpETag = "12345", TimeStamp = timeStamp },
+                configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
+                {
+                    var pollingMode = PollingModes.ManualPoll;
+                    return new ManualPollConfigService(fetcherMock.Object, cacheParams, loggerWrapper);
+                },
+                out var configService, out _);
+
+            if (isAsync)
+            {
+                await client.ForceRefreshAsync();
+            }
+            else
+            {
+                client.ForceRefresh();
+            }
+
+            // Act
+
+            var actual = isAsync
+                ? await client.GetValueDetailsAsync(key, defaultValue, user: null)
+                : client.GetValueDetails(key, defaultValue, user: null);
+
+            // Assert
+
+            Assert.IsNotNull(actual);
+            Assert.AreEqual(key, actual.Key);
+            Assert.AreEqual(false, actual.Value);
+            Assert.IsFalse(actual.IsDefaultValue);
+            Assert.AreEqual("a0e56eda", actual.VariationId);
+            Assert.AreEqual(timeStamp, actual.FetchTime);
+            Assert.IsNull(actual.User);
+            Assert.IsNull(actual.ErrorMessage);
+            Assert.IsNull(actual.ErrorException);
+            Assert.IsNull(actual.MatchedEvaluationRule);
+            Assert.IsNull(actual.MatchedEvaluationPercentageRule);
+        }
+
+        [DataRow(false)]
+        [DataRow(true)]
+        [DataTestMethod]
+        public async Task GetValueDetails_ShouldReturnCorrectEvaluationDetails_SettingIsAvailableAndComparisonRuleApplies(bool isAsync)
+        {
+            // Arrange
+
+            const string key = "boolean";
+            const bool defaultValue = false;
+
+            const string cacheKey = "123";
+            var configJsonFilePath = Path.Combine("data", "sample_variationid_v5.json");
+            var timeStamp = DateTime.UtcNow;
+
+            var client = CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock,
+                onFetch: _ => new ProjectConfig { JsonString = File.ReadAllText(configJsonFilePath), HttpETag = "12345", TimeStamp = timeStamp },
+                configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
+                {
+                    var pollingMode = PollingModes.ManualPoll;
+                    return new ManualPollConfigService(fetcherMock.Object, cacheParams, loggerWrapper);
+                },
+                out var configService, out _);
+
+            if (isAsync)
+            {
+                await client.ForceRefreshAsync();
+            }
+            else
+            {
+                client.ForceRefresh();
+            }
+
+            var user = new User("a@configcat.com") { Email = "a@configcat.com" };
+
+            // Act
+
+            var actual = isAsync
+                ? await client.GetValueDetailsAsync(key, defaultValue, user)
+                : client.GetValueDetails(key, defaultValue, user);
+
+            // Assert
+
+            Assert.IsNotNull(actual);
+            Assert.AreEqual(key, actual.Key);
+            Assert.AreEqual(true, actual.Value);
+            Assert.IsFalse(actual.IsDefaultValue);
+            Assert.AreEqual("67787ae4", actual.VariationId);
+            Assert.AreEqual(timeStamp, actual.FetchTime);
+            Assert.AreSame(user, actual.User);
+            Assert.IsNull(actual.ErrorMessage);
+            Assert.IsNull(actual.ErrorException);
+            Assert.IsNotNull(actual.MatchedEvaluationRule);
+            Assert.IsNull(actual.MatchedEvaluationPercentageRule);
+        }
+
+        [DataRow(false)]
+        [DataRow(true)]
+        [DataTestMethod]
+        public async Task GetValueDetails_ShouldReturnCorrectEvaluationDetails_SettingIsAvailableAndPercentageRuleApplies(bool isAsync)
+        {
+            // Arrange
+
+            const string key = "boolean";
+            const bool defaultValue = false;
+
+            const string cacheKey = "123";
+            var configJsonFilePath = Path.Combine("data", "sample_variationid_v5.json");
+            var timeStamp = DateTime.UtcNow;
+
+            var client = CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock,
+                onFetch: _ => new ProjectConfig { JsonString = File.ReadAllText(configJsonFilePath), HttpETag = "12345", TimeStamp = timeStamp },
+                configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
+                {
+                    var pollingMode = PollingModes.ManualPoll;
+                    return new ManualPollConfigService(fetcherMock.Object, cacheParams, loggerWrapper);
+                },
+                out var configService, out _);
+
+            if (isAsync)
+            {
+                await client.ForceRefreshAsync();
+            }
+            else
+            {
+                client.ForceRefresh();
+            }
+
+            var user = new User("a@example.com") { Email = "a@example.com" };
+
+            // Act
+
+            var actual = isAsync
+                ? await client.GetValueDetailsAsync(key, defaultValue, user)
+                : client.GetValueDetails(key, defaultValue, user);
+
+            // Assert
+
+            Assert.IsNotNull(actual);
+            Assert.AreEqual(key, actual.Key);
+            Assert.AreEqual(true, actual.Value);
+            Assert.IsFalse(actual.IsDefaultValue);
+            Assert.AreEqual("67787ae4", actual.VariationId);
+            Assert.AreEqual(timeStamp, actual.FetchTime);
+            Assert.AreSame(user, actual.User);
+            Assert.IsNull(actual.ErrorMessage);
+            Assert.IsNull(actual.ErrorException);
+            Assert.IsNull(actual.MatchedEvaluationRule);
+            Assert.IsNotNull(actual.MatchedEvaluationPercentageRule);
+        }
+
+        [DataRow(false)]
+        [DataRow(true)]
+        [DataTestMethod]
+        public async Task GetValueDetails_ConfigServiceThrowException_ShouldReturnDefaultValue(bool isAsync)
+        {
+            // Arrange
+
+            const string key = "Feature";
+            const string defaultValue = "Victory for the Firstborn!";
+            const string errorMessage = "Error";
+
+            if (isAsync)
+            {
+                configServiceMock.Setup(m => m.GetConfigAsync()).Throws(new ApplicationException(errorMessage));
+            }
+            else
+            {
+                configServiceMock.Setup(m => m.GetConfig()).Throws(new ApplicationException(errorMessage));
+            }
+
+            var client = new ConfigCatClient(configServiceMock.Object, loggerMock.Object, evaluatorMock.Object, configDeserializerMock.Object);
+
+            // Act
+
+            var actual = isAsync
+                ? await client.GetValueDetailsAsync(key, defaultValue)
+                : client.GetValueDetails(key, defaultValue);
+
+            // Assert
+
+            Assert.IsNotNull(actual);
+            Assert.AreEqual(key, actual.Key);
+            Assert.AreEqual(defaultValue, actual.Value);
+            Assert.IsTrue(actual.IsDefaultValue);
+            Assert.IsNull(actual.VariationId);
+            Assert.AreEqual(DateTime.MinValue, actual.FetchTime);
+            Assert.IsNull(actual.User);
+            Assert.AreEqual(errorMessage, actual?.ErrorMessage);
+            Assert.IsInstanceOfType(actual.ErrorException, typeof(ApplicationException));
+            Assert.IsNull(actual.MatchedEvaluationRule);
+            Assert.IsNull(actual.MatchedEvaluationPercentageRule);
+        }
+
+        [DataRow(false)]
+        [DataRow(true)]
+        [DataTestMethod]
+        public async Task GetValueDetails_EvaluateServiceThrowException_ShouldReturnDefaultValue(bool isAsync)
+        {
+            // Arrange
+
+            const string key = "Feature";
+            const string defaultValue = "Victory for the Firstborn!";
+            const string errorMessage = "Error";
+
+            const string cacheKey = "123";
+            var configJsonFilePath = Path.Combine("data", "sample_variationid_v5.json");
+            var timeStamp = DateTime.UtcNow;
+
+            evaluatorMock
+                .Setup(m => m.Evaluate(It.IsAny<IDictionary<string, Setting>>(), It.IsAny<string>(), defaultValue, It.IsAny<User>(), It.IsAny<ProjectConfig>(), It.IsNotNull<EvaluationDetailsFactory>()))
+                .Throws(new ApplicationException(errorMessage));
+
+            var client = CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock,
+                onFetch: _ => new ProjectConfig { JsonString = File.ReadAllText(configJsonFilePath), HttpETag = "12345", TimeStamp = timeStamp },
+                configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
+                {
+                    var pollingMode = PollingModes.ManualPoll;
+                    return new ManualPollConfigService(fetcherMock.Object, cacheParams, loggerWrapper);
+                },
+                evaluatorFactory: _ => evaluatorMock.Object,
+                out var configService, out _);
+
+            if (isAsync)
+            {
+                await client.ForceRefreshAsync();
+            }
+            else
+            {
+                client.ForceRefresh();
+            }
+
+            var user = new User("a@example.com") { Email = "a@example.com" };
+
+            // Act
+
+            var actual = isAsync
+                ? await client.GetValueDetailsAsync(key, defaultValue, user)
+                : client.GetValueDetails(key, defaultValue, user);
+
+            // Assert
+
+            Assert.IsNotNull(actual);
+            Assert.AreEqual(key, actual.Key);
+            Assert.AreEqual(defaultValue, actual.Value);
+            Assert.IsTrue(actual.IsDefaultValue);
+            Assert.IsNull(actual.VariationId);
+            Assert.AreEqual(timeStamp, actual.FetchTime);
+            Assert.AreSame(user, actual.User);
+            Assert.AreEqual(errorMessage, actual?.ErrorMessage);
+            Assert.IsInstanceOfType(actual.ErrorException, typeof(ApplicationException));
+            Assert.IsNull(actual.MatchedEvaluationRule);
+            Assert.IsNull(actual.MatchedEvaluationPercentageRule);
+        }
+
         [TestMethod]
         public async Task GetAllKeys_ConfigServiceThrowException_ShouldReturnsWithEmptyArray()
         {
@@ -1017,11 +1329,25 @@ namespace ConfigCat.Client.Tests
             Assert.AreEqual(0, instanceCount2);
         }
 
-        private static IConfigCatClient CreateClientForOfflineModeTests(string cacheKey,
+        private static IConfigCatClient CreateClientWithMockedFetcher(string cacheKey,
             Mock<ILogger> loggerMock,
             Mock<IConfigFetcher> fetcherMock,
             Func<ProjectConfig, ProjectConfig> onFetch,
             Func<IConfigFetcher, CacheParameters, LoggerWrapper, IConfigService> configServiceFactory,
+            out IConfigService configService,
+            out IConfigCatCache configCache)
+        {
+            return CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock, onFetch, configServiceFactory,
+                evaluatorFactory: loggerWrapper => new RolloutEvaluator(loggerWrapper),
+                out configService, out configCache);
+        }
+
+        private static IConfigCatClient CreateClientWithMockedFetcher(string cacheKey,
+            Mock<ILogger> loggerMock,
+            Mock<IConfigFetcher> fetcherMock,
+            Func<ProjectConfig, ProjectConfig> onFetch,
+            Func<IConfigFetcher, CacheParameters, LoggerWrapper, IConfigService> configServiceFactory,
+            Func<LoggerWrapper, IRolloutEvaluator> evaluatorFactory,
             out IConfigService configService,
             out IConfigCatCache configCache)
         {
@@ -1039,7 +1365,7 @@ namespace ConfigCat.Client.Tests
             };
 
             configService = configServiceFactory(fetcherMock.Object, cacheParams, loggerWrapper);
-            return new ConfigCatClient(configService, loggerMock.Object, new RolloutEvaluator(loggerWrapper), new ConfigDeserializer());
+            return new ConfigCatClient(configService, loggerMock.Object, evaluatorFactory(loggerWrapper), new ConfigDeserializer());
         }
 
         private static int ParseETagAsInt32(string etag)
@@ -1053,7 +1379,7 @@ namespace ConfigCat.Client.Tests
             const string cacheKey = "123";
             int httpETag = 0;
             
-            var client = CreateClientForOfflineModeTests(cacheKey, loggerMock, fetcherMock,
+            var client = CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock,
                 onFetch: cfg => new ProjectConfig { JsonString = "{}", HttpETag = (++httpETag).ToString(CultureInfo.InvariantCulture), TimeStamp = DateTime.UtcNow },
                 configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
                 {
@@ -1123,7 +1449,7 @@ namespace ConfigCat.Client.Tests
             const string cacheKey = "123";
             int httpETag = 0;
 
-            var client = CreateClientForOfflineModeTests(cacheKey, loggerMock, fetcherMock,
+            var client = CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock,
                 onFetch: cfg => new ProjectConfig { JsonString = "{}", HttpETag = (++httpETag).ToString(CultureInfo.InvariantCulture), TimeStamp = DateTime.UtcNow },
                 configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
                 {
@@ -1194,7 +1520,7 @@ namespace ConfigCat.Client.Tests
             const string cacheKey = "123";
             int httpETag = 0;
 
-            var client = CreateClientForOfflineModeTests(cacheKey, loggerMock, fetcherMock,
+            var client = CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock,
                 onFetch: cfg => new ProjectConfig { JsonString = "{}", HttpETag = (++httpETag).ToString(CultureInfo.InvariantCulture), TimeStamp = DateTime.UtcNow },
                 configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
                 {
@@ -1266,7 +1592,7 @@ namespace ConfigCat.Client.Tests
             const string cacheKey = "123";
             int httpETag = 0;
 
-            var client = CreateClientForOfflineModeTests(cacheKey, loggerMock, fetcherMock,
+            var client = CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock,
                 onFetch: cfg => new ProjectConfig { JsonString = "{}", HttpETag = (++httpETag).ToString(CultureInfo.InvariantCulture), TimeStamp = DateTime.UtcNow },
                 configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
                 {
@@ -1347,7 +1673,7 @@ namespace ConfigCat.Client.Tests
             const string cacheKey = "123";
             int httpETag = 0;
 
-            var client = CreateClientForOfflineModeTests(cacheKey, loggerMock, fetcherMock,
+            var client = CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock,
                 onFetch: cfg => new ProjectConfig { JsonString = "{}", HttpETag = (++httpETag).ToString(CultureInfo.InvariantCulture), TimeStamp = DateTime.UtcNow },
                 configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
                 {
@@ -1418,7 +1744,7 @@ namespace ConfigCat.Client.Tests
             const string cacheKey = "123";
             int httpETag = 0;
 
-            var client = CreateClientForOfflineModeTests(cacheKey, loggerMock, fetcherMock,
+            var client = CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock,
                 onFetch: cfg => new ProjectConfig { JsonString = "{}", HttpETag = (++httpETag).ToString(CultureInfo.InvariantCulture), TimeStamp = DateTime.UtcNow },
                 configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
                 {

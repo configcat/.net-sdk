@@ -7,18 +7,20 @@ using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client.ConfigService
 {
-    internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService, IBackgroundWorkRunner
+    internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
     {
         private readonly DateTimeOffset maxInitWaitExpire;
         private readonly ManualResetEventSlim initializedEventSlim = new(false);
         private readonly AutoPoll configuration;
+        private readonly WeakReference<IConfigCatClient> clientWeakRef;
         private readonly CancellationTokenSource timerCancellationTokenSource = new();
 
         internal AutoPollConfigService(
             AutoPoll configuration,
             IConfigFetcher configFetcher,
             CacheParameters cacheParameters,
-            LoggerWrapper logger) : this(configuration, configFetcher, cacheParameters, logger, true)
+            LoggerWrapper logger,
+            WeakReference<IConfigCatClient> clientWeakRef = null) : this(configuration, configFetcher, cacheParameters, logger, startTimer: true, clientWeakRef)
         { }
 
         // For test purposes only
@@ -27,11 +29,13 @@ namespace ConfigCat.Client.ConfigService
             IConfigFetcher configFetcher,
             CacheParameters cacheParameters,
             LoggerWrapper logger,
-            bool startTimer
+            bool startTimer,
+            WeakReference<IConfigCatClient> clientWeakRef = null
             ) : base(configFetcher, cacheParameters, logger)
         {
             this.configuration = configuration;
             this.maxInitWaitExpire = DateTimeOffset.UtcNow.Add(configuration.MaxInitWaitTime);
+            this.clientWeakRef = clientWeakRef;
 
             if (startTimer)
             {
@@ -126,7 +130,7 @@ namespace ConfigCat.Client.ConfigService
         {
             Task.Run(async () =>
             {
-                while (!this.timerCancellationTokenSource.IsCancellationRequested)
+                while (!this.timerCancellationTokenSource.IsCancellationRequested && (this.clientWeakRef is null || this.clientWeakRef.IsAlive()))
                 {
                     try
                     {
@@ -141,10 +145,13 @@ namespace ConfigCat.Client.ConfigService
                         }
                         finally
                         {
-                            var realNextTime = scheduledNextTime.Subtract(DateTimeOffset.UtcNow);
-                            if (realNextTime > TimeSpan.Zero)
+                            if (this.clientWeakRef is null || this.clientWeakRef.IsAlive())
                             {
-                                await Task.Delay(realNextTime, this.timerCancellationTokenSource.Token).ConfigureAwait(false);
+                                var realNextTime = scheduledNextTime.Subtract(DateTimeOffset.UtcNow);
+                                if (realNextTime > TimeSpan.Zero)
+                                {
+                                    await Task.Delay(realNextTime, this.timerCancellationTokenSource.Token).ConfigureAwait(false);
+                                }
                             }
                         }
                     }
@@ -158,11 +165,6 @@ namespace ConfigCat.Client.ConfigService
                     }
                 }
             });
-        }
-
-        void IBackgroundWorkRunner.Stop()
-        {
-            this.timerCancellationTokenSource.Cancel();
         }
     }
 }

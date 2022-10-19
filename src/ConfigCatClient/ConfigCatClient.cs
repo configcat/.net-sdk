@@ -137,9 +137,14 @@ namespace ConfigCat.Client
                 CacheKey = GetCacheKey(sdkKey)
             };
 
+            // Strong back-references to the client instance must be avoided so GC can collect it when user doesn't have references to it any more.
+            // (There are cases - like AutoPollConfigService or LocalFileDataSource - where the background work keeps the service object alive,
+            // so if that held a strong reference to the client object, it would be kept alive as well, which would create a memory leak.)
+            var clientWeakRef = new WeakReference<IConfigCatClient>(this);
+
             if (configuration.FlagOverrides != null)
             {
-                this.overrideDataSource = configuration.FlagOverrides.BuildDataSource(this.log);
+                this.overrideDataSource = configuration.FlagOverrides.BuildDataSource(this.log, clientWeakRef);
                 this.overrideBehaviour = configuration.FlagOverrides.OverrideBehaviour;
             }
 
@@ -155,7 +160,8 @@ namespace ConfigCat.Client
                             configuration.IsCustomBaseUrl,
                             configuration.HttpTimeout),
                         cacheParameters,
-                        this.log)
+                        this.log,
+                        clientWeakRef)
                 : new EmptyConfigService();
         }
 
@@ -383,21 +389,6 @@ namespace ConfigCat.Client
 
                 this.overrideDataSource?.Dispose();
             }
-            else
-            {
-                // The underlying services may do some long running background work (like AutoPollConfigService or LocalFileDataSource),
-                // in which case we need to signal these services to stop the background work, otherwise it would go on endlessly,
-                // which would prevent the GC from collecting the service instances, that is, as an end result, would cause a memory leak 
-                if (this.configService is IBackgroundWorkRunner backgroundWorkRunnerConfigService)
-                {
-                    backgroundWorkRunnerConfigService.Stop();
-                }
-
-                if (this.overrideDataSource is IBackgroundWorkRunner backgroundWorkRunnerOverrideDataSource)
-                {
-                    backgroundWorkRunnerOverrideDataSource.Stop();
-                }
-            }
         }
 
         /// <inheritdoc />
@@ -604,14 +595,15 @@ namespace ConfigCat.Client
             }
         }
 
-        private static IConfigService DetermineConfigService(PollingMode pollingMode, HttpConfigFetcher fetcher, CacheParameters cacheParameters, LoggerWrapper logger)
+        private static IConfigService DetermineConfigService(PollingMode pollingMode, HttpConfigFetcher fetcher, CacheParameters cacheParameters, LoggerWrapper logger, WeakReference<IConfigCatClient> clientWeakRef)
         {
             return pollingMode switch
             {
                 AutoPoll autoPoll => new AutoPollConfigService(autoPoll,
                     fetcher,
                     cacheParameters,
-                    logger),
+                    logger,
+                    clientWeakRef),
                 LazyLoad lazyLoad => new LazyLoadConfigService(fetcher,
                     cacheParameters,
                     logger,

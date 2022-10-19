@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ConfigCat.Client.Override
 {
-    internal sealed class LocalFileDataSource : IOverrideDataSource, IBackgroundWorkRunner
+    internal sealed class LocalFileDataSource : IOverrideDataSource
     {
         const int WAIT_TIME_FOR_UNLOCK = 200; // ms
         const int MAX_WAIT_ITERATIONS = 50; // ms
@@ -17,11 +17,12 @@ namespace ConfigCat.Client.Override
         private DateTime fileLastWriteTime;
         private readonly string fullPath;
         private readonly LoggerWrapper logger;
+        private readonly WeakReference<IConfigCatClient> clientWeakRef;
         private readonly CancellationTokenSource cancellationTokenSource = new();
 
         private volatile IDictionary<string, Setting> overrideValues;
 
-        public LocalFileDataSource(string filePath, bool autoReload, LoggerWrapper logger)
+        public LocalFileDataSource(string filePath, bool autoReload, LoggerWrapper logger, WeakReference<IConfigCatClient> clientWeakRef = null)
         {
             if (!File.Exists(filePath))
             {
@@ -31,6 +32,7 @@ namespace ConfigCat.Client.Override
 
             this.fullPath = Path.GetFullPath(filePath);
             this.logger = logger;
+            this.clientWeakRef = clientWeakRef;
 
             // method executes synchronously, GetAwaiter().GetResult() is just for preventing compiler warnings
             this.ReloadFileAsync(isAsync: false).GetAwaiter().GetResult();
@@ -45,13 +47,13 @@ namespace ConfigCat.Client.Override
 
         public Task<IDictionary<string, Setting>> GetOverridesAsync() => Task.FromResult(this.overrideValues ?? new Dictionary<string, Setting>());
 
-
         private void StartWatch()
         {
             Task.Run(async () =>
             {
                 this.logger.Information($"Watching {this.fullPath} for changes.");
-                while (!this.cancellationTokenSource.IsCancellationRequested)
+
+                while (!this.cancellationTokenSource.IsCancellationRequested && (this.clientWeakRef is null || this.clientWeakRef.IsAlive()))
                 {
                     try
                     {
@@ -67,7 +69,10 @@ namespace ConfigCat.Client.Override
 
                         finally
                         {
-                            await Task.Delay(FILE_POLL_INTERVAL, this.cancellationTokenSource.Token).ConfigureAwait(false);
+                            if (this.clientWeakRef is null || this.clientWeakRef.IsAlive())
+                            {
+                                await Task.Delay(FILE_POLL_INTERVAL, this.cancellationTokenSource.Token).ConfigureAwait(false);
+                            }
                         }
                     }
                     catch (OperationCanceledException)
@@ -135,11 +140,6 @@ namespace ConfigCat.Client.Override
         public void Dispose()
         {
             Dispose(disposing: true);
-        }
-
-        void IBackgroundWorkRunner.Stop()
-        {
-            Dispose(disposing: false);
         }
 
         private sealed class SimplifiedConfig

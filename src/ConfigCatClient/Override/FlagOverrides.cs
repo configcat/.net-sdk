@@ -27,7 +27,6 @@ namespace ConfigCat.Client
             this.OverrideBehaviour = overrideBehaviour;
         }
 
-
         /// <summary>
         /// The override behaviour. It can be used to set preference on whether the local values should
         /// override the remote values, or use local values only when a remote value doesn't exist,
@@ -35,13 +34,13 @@ namespace ConfigCat.Client
         /// </summary>
         public OverrideBehaviour OverrideBehaviour { get; private set; }
 
-        internal IOverrideDataSource BuildDataSource(LoggerWrapper logger, WeakReference<IConfigCatClient> clientWeakRef)
+        internal IOverrideDataSource BuildDataSource(LoggerWrapper logger, ConfigCatClientContext clientContext)
         {
             if (this.dictionary != null)
                 return new LocalDictionaryDataSource(this.dictionary);
 
             if (this.filePath != null)
-                return new LocalFileDataSource(this.filePath, this.autoReload, logger, clientWeakRef);
+                return new LocalFileDataSource(this.filePath, this.autoReload, logger, clientContext);
 
             throw new InvalidOperationException("Could not determine the right override data source.");
         }

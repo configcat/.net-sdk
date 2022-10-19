@@ -52,8 +52,6 @@ namespace ConfigCat.Client
             RolloutRule matchedEvaluationRule = null,
             RolloutPercentageItem matchedEvaluationPercentageRule = null)
         {
-            factory ??= static (_, _) => new EvaluationDetails<object>();
-
             var instance = factory(settingType, value);
 
             instance.Key = key;
@@ -78,6 +76,27 @@ namespace ConfigCat.Client
                 Value = defaultValue,
                 User = user,
                 IsDefaultValue = true,
+                ErrorMessage = errorMessage,
+                ErrorException = errorException
+            };
+
+            if (fetchTime is not null)
+            {
+                instance.FetchTime = fetchTime.Value;
+            }
+
+            return instance;
+        }
+
+        internal static EvaluationDetails FromDefaultVariationId(string key, string defaultVariationId, DateTime? fetchTime, User user,
+            string errorMessage = null, Exception errorException = null)
+        {
+            var instance = new EvaluationDetails<object>
+            {
+                Key = key,
+                User = user,
+                IsDefaultValue = true,
+                VariationId = defaultVariationId,
                 ErrorMessage = errorMessage,
                 ErrorException = errorException
             };

@@ -7,8 +7,8 @@ using System.Reflection;
 using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
 using ConfigCat.Client.Configuration;
-using ConfigCat.Client.Utils;
 using ConfigCat.Client.Override;
+using System.Threading;
 
 namespace ConfigCat.Client
 {
@@ -26,11 +26,17 @@ namespace ConfigCat.Client
         private readonly IConfigDeserializer configDeserializer;
         private readonly IOverrideDataSource overrideDataSource;
         private readonly OverrideBehaviour? overrideBehaviour;
-        private User defaultUser;
+        // NOTE: The following mutable fields may be accessed from multiple threads and we need to make sure that changes to them are observable in these threads.
+        // Volatile guarantees (see https://learn.microsoft.com/en-us/dotnet/api/system.threading.volatile) that such changes become visible to them *eventually*,
+        // which is good enough in these cases.
+        private volatile User defaultUser;
+        private volatile Hooks hooks;
 
         private static readonly string Version = typeof(ConfigCatClient).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
 
-        internal static readonly ConfigCatClientCache Instances = new ConfigCatClientCache();
+        internal static readonly ConfigCatClientCache Instances = new();
+
+        private static readonly NullHooks DisposedHooks = new();
 
         /// <inheritdoc />
         public LogLevel LogLevel
@@ -126,8 +132,15 @@ namespace ConfigCat.Client
         internal ConfigCatClient(string sdkKey, ConfigCatClientOptions configuration)
         {
             this.sdkKey = sdkKey;
+            this.hooks = configuration.Hooks;
 
-            this.log = new LoggerWrapper(configuration.Logger);
+            // Strong back-references to the client instance must be avoided so GC can collect it when user doesn't have references to it any more.
+            // (There are cases - like AutoPollConfigService or LocalFileDataSource - where the background work keeps the service object alive,
+            // so if that had a strong reference to the client object, it would be kept alive as well, which would create a memory leak.)
+            var clientContext = new ConfigCatClientContext(new WeakReference<IConfigCatClient>(this),
+                hooksAccessor: static client => ((ConfigCatClient)client).hooks);
+
+            this.log = new LoggerWrapper(configuration.Logger, clientContext);
             this.configDeserializer = new ConfigDeserializer();
             this.configEvaluator = new RolloutEvaluator(this.log);
 
@@ -137,14 +150,9 @@ namespace ConfigCat.Client
                 CacheKey = GetCacheKey(sdkKey)
             };
 
-            // Strong back-references to the client instance must be avoided so GC can collect it when user doesn't have references to it any more.
-            // (There are cases - like AutoPollConfigService or LocalFileDataSource - where the background work keeps the service object alive,
-            // so if that held a strong reference to the client object, it would be kept alive as well, which would create a memory leak.)
-            var clientWeakRef = new WeakReference<IConfigCatClient>(this);
-
             if (configuration.FlagOverrides != null)
             {
-                this.overrideDataSource = configuration.FlagOverrides.BuildDataSource(this.log, clientWeakRef);
+                this.overrideDataSource = configuration.FlagOverrides.BuildDataSource(this.log, clientContext);
                 this.overrideBehaviour = configuration.FlagOverrides.OverrideBehaviour;
             }
 
@@ -162,16 +170,18 @@ namespace ConfigCat.Client
                         cacheParameters,
                         this.log,
                         configuration.Offline,
-                        clientWeakRef)
-                : new NullConfigService(this.log);
+                        clientContext)
+                : new NullConfigService(this.log, clientContext);
         }
 
         /// <summary>
         /// For testing purposes only
         /// </summary>        
-        internal ConfigCatClient(IConfigService configService, ILogger logger, IRolloutEvaluator evaluator, IConfigDeserializer configDeserializer)
+        internal ConfigCatClient(IConfigService configService, ILogger logger, IRolloutEvaluator evaluator, IConfigDeserializer configDeserializer, Hooks hooks = null)
         {
             this.isUncached = true;
+
+            this.hooks = hooks ?? NullHooks.Instance;
 
             this.configService = configService;
             this.log = new LoggerWrapper(logger);
@@ -240,63 +250,85 @@ namespace ConfigCat.Client
         /// <inheritdoc />
         public T GetValue<T>(string key, T defaultValue, User user = null)
         {
+            T value;
+            EvaluationDetails<T> evaluationDetails;
+            SettingsWithRemoteConfig settings = default;
             try
             {
-                var settings = this.GetSettings();
-                return this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user ?? this.defaultUser, settings.RemoteConfig);
+                settings = this.GetSettings();
+                value = this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user ?? this.defaultUser, settings.RemoteConfig, this.log, out evaluationDetails);
             }
             catch (Exception ex)
             {
-                this.log.Error($"Error occured in 'GetValue' method.\n{ex}");
-                return defaultValue;
+                this.log.Error($"Error occured in '{nameof(GetValue)}' method.", ex);
+                evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user ?? this.defaultUser, ex.Message, ex);
+                value = defaultValue;
             }
+
+            this.hooks.RaiseFlagEvaluated(this, evaluationDetails);
+            return value;
         }
 
         /// <inheritdoc />
         public async Task<T> GetValueAsync<T>(string key, T defaultValue, User user = null)
         {
+            T value;
+            EvaluationDetails<T> evaluationDetails;
+            SettingsWithRemoteConfig settings = default;
             try
             {
-                var settings = await this.GetSettingsAsync().ConfigureAwait(false);
-                return this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user ?? this.defaultUser, settings.RemoteConfig);
+                settings = await this.GetSettingsAsync().ConfigureAwait(false);
+                value = this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user ?? this.defaultUser, settings.RemoteConfig, this.log, out evaluationDetails);
             }
             catch (Exception ex)
             {
-                this.log.Error($"Error occured in 'GetValueAsync' method.\n{ex}");
-                return defaultValue;
+                this.log.Error($"Error occured in '{nameof(GetValueAsync)}' method.", ex);
+                evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user ?? this.defaultUser, ex.Message, ex);
+                value = defaultValue;
             }
+
+            this.hooks.RaiseFlagEvaluated(this, evaluationDetails);
+            return evaluationDetails.Value;
         }
 
         /// <inheritdoc />
         public EvaluationDetails<T> GetValueDetails<T>(string key, T defaultValue, User user = null)
         {
+            EvaluationDetails<T> evaluationDetails;
             SettingsWithRemoteConfig settings = default;
             try
             {
                 settings = this.GetSettings();
-                return this.configEvaluator.EvaluateDetails(settings.Value, key, defaultValue, user ?? this.defaultUser, settings.RemoteConfig);
+                this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user ?? this.defaultUser, settings.RemoteConfig, this.log, out evaluationDetails);
             }
             catch (Exception ex)
             {
-                this.log.Error($"Error occured in 'GetValue' method.\n{ex}");
-                return EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user ?? this.defaultUser, ex.Message, ex);
+                this.log.Error($"Error occured in '{nameof(GetValueDetails)}' method.", ex);
+                evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user ?? this.defaultUser, ex.Message, ex);
             }
+
+            this.hooks.RaiseFlagEvaluated(this, evaluationDetails);
+            return evaluationDetails;
         }
 
         /// <inheritdoc />
         public async Task<EvaluationDetails<T>> GetValueDetailsAsync<T>(string key, T defaultValue, User user = null)
         {
+            EvaluationDetails<T> evaluationDetails;
             SettingsWithRemoteConfig settings = default;
             try
             {
                 settings = await this.GetSettingsAsync().ConfigureAwait(false);
-                return this.configEvaluator.EvaluateDetails(settings.Value, key, defaultValue, user ?? this.defaultUser, settings.RemoteConfig);
+                this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user ?? this.defaultUser, settings.RemoteConfig, this.log, out evaluationDetails);
             }
             catch (Exception ex)
             {
-                this.log.Error($"Error occured in 'GetValueAsync' method.\n{ex}");
-                return EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user ?? this.defaultUser, ex.Message, ex);
+                this.log.Error($"Error occured in '{nameof(GetValueDetailsAsync)}' method.", ex);
+                evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user ?? this.defaultUser, ex.Message, ex);
             }
+
+            this.hooks.RaiseFlagEvaluated(this, evaluationDetails);
+            return evaluationDetails;
         }
 
         /// <inheritdoc />
@@ -305,18 +337,16 @@ namespace ConfigCat.Client
             try
             {
                 var settings = this.GetSettings();
-                if (settings.Value.Count == 0)
+                if (!RolloutEvaluatorExtensions.CheckSettingsAvailable(settings.Value, this.log))
                 {
-                    this.log.Warning("Config deserialization failed.");
-                    return ArrayUtils.EmptyArray<string>();
+                    return Enumerable.Empty<string>();
                 }
-
                 return settings.Value.Keys;
             }
             catch (Exception ex)
             {
-                this.log.Error($"Error occured in 'GetAllKeys' method.\n{ex}");
-                return ArrayUtils.EmptyArray<string>();
+                this.log.Error($"Error occured in '{nameof(GetAllKeys)}' method.", ex);
+                return Enumerable.Empty<string>();
             }
         }
 
@@ -326,51 +356,66 @@ namespace ConfigCat.Client
             try
             {
                 var settings = await this.GetSettingsAsync().ConfigureAwait(false);
-                if (settings.Value.Count == 0)
+                if (!RolloutEvaluatorExtensions.CheckSettingsAvailable(settings.Value, this.log))
                 {
-                    this.log.Warning("Config deserialization failed.");
-                    return ArrayUtils.EmptyArray<string>();
+                    return Enumerable.Empty<string>();
                 }
-
                 return settings.Value.Keys;
             }
             catch (Exception ex)
             {
-                this.log.Error($"Error occured in 'GetAllKeysAsync' method.\n{ex}");
-                return ArrayUtils.EmptyArray<string>();
+                this.log.Error($"Error occured in '{nameof(GetAllKeysAsync)}' method.", ex);
+                return Enumerable.Empty<string>();
             }
         }
 
         /// <inheritdoc />
         public IDictionary<string, object> GetAllValues(User user = null)
         {
+            IDictionary<string, object> result;
+            EvaluationDetails[] evaluationDetailsArray = null;
             try
             {
                 var settings = this.GetSettings();
-                return GenerateSettingKeyValueMap(user ?? this.defaultUser, settings);
+                result = this.configEvaluator.EvaluateAll(settings.Value, user ?? this.defaultUser, settings.RemoteConfig, this.log, out evaluationDetailsArray);
             }
             catch (Exception ex)
             {
-                this.log.Error($"Error occured in 'GetAllValues' method.\n{ex}");
+                this.log.Error($"Error occured in '{nameof(GetAllValues)}' method.", ex);
                 return new Dictionary<string, object>();
             }
+
+            foreach (var evaluationDetails in evaluationDetailsArray)
+            {
+                this.hooks.RaiseFlagEvaluated(this, evaluationDetails);
+            }
+
+            return result;
         }
 
         /// <inheritdoc />
         public async Task<IDictionary<string, object>> GetAllValuesAsync(User user = null)
         {
+            IDictionary<string, object> result;
+            EvaluationDetails[] evaluationDetailsArray = null;
             try
             {
                 var settings = await this.GetSettingsAsync().ConfigureAwait(false);
-                return GenerateSettingKeyValueMap(user ?? this.defaultUser, settings);
+                result = this.configEvaluator.EvaluateAll(settings.Value, user ?? this.defaultUser, settings.RemoteConfig, this.log, out evaluationDetailsArray);
             }
             catch (Exception ex)
             {
-                this.log.Error($"Error occured in 'GetAllValuesAsync' method.\n{ex}");
+                this.log.Error($"Error occured in '{nameof(GetAllValuesAsync)}' method.", ex);
                 return new Dictionary<string, object>();
             }
-        }
 
+            foreach (var evaluationDetails in evaluationDetailsArray)
+            {
+                this.hooks.RaiseFlagEvaluated(this, evaluationDetails);
+            }
+
+            return result;
+        }
 
         /// <inheritdoc />
         public void ForceRefresh()
@@ -381,7 +426,7 @@ namespace ConfigCat.Client
             }
             catch (Exception ex)
             {
-                this.log.Error($"Error occured in 'ForceRefresh' method.\n{ex}");
+                this.log.Error($"Error occured in '{nameof(ForceRefresh)}' method.", ex);
             }
         }
 
@@ -394,7 +439,7 @@ namespace ConfigCat.Client
             }
             catch (Exception ex)
             {
-                this.log.Error($"Error occured in 'ForceRefreshAsync' method.\n{ex}");
+                this.log.Error($"Error occured in '{nameof(ForceRefreshAsync)}' method.", ex);
             }
         }
 
@@ -413,14 +458,31 @@ namespace ConfigCat.Client
 
         private void Dispose(bool disposing)
         {
+            // Replacing the current Hooks object (hooks) with a special instance of NullHooks (DisposedHooks) achieves multiple things:
+            // 1. determines whether the client instance has already been disposed or not,
+            // 1. removes implicit references to subscriber objects (so this instance won't keep them alive under any circumstances),
+            // 2. makes sure that future subscriptions are ignored from this point on.
+            var originalHooks = Interlocked.Exchange(ref this.hooks, DisposedHooks);
+            if (ReferenceEquals(originalHooks, DisposedHooks))
+            {
+                return;
+            }
+
             if (disposing)
             {
-                if (this.configService is IDisposable disposable)
+                try
                 {
-                    disposable.Dispose();
+                    originalHooks.RaiseBeforeClientDispose(this);
                 }
+                finally
+                {
+                    if (this.configService is IDisposable disposable)
+                    {
+                        disposable.Dispose();
+                    }
 
-                this.overrideDataSource?.Dispose();
+                    this.overrideDataSource?.Dispose();
+                }
             }
         }
 
@@ -468,87 +530,93 @@ namespace ConfigCat.Client
         /// <inheritdoc />
         public string GetVariationId(string key, string defaultVariationId, User user = null)
         {
+            string variationId;
+            EvaluationDetails evaluationDetails;
+            SettingsWithRemoteConfig settings = default;
             try
             {
-                var settings = this.GetSettings();
-                return this.configEvaluator.EvaluateVariationId(settings.Value, key, defaultVariationId, user ?? this.defaultUser, settings.RemoteConfig);
+                settings = this.GetSettings();
+                variationId = this.configEvaluator.EvaluateVariationId(settings.Value, key, defaultVariationId, user ?? this.defaultUser, settings.RemoteConfig, this.log, out evaluationDetails);
             }
             catch (Exception ex)
             {
-                this.log.Error($"Error occured in 'GetVariationId' method.\n{ex}");
-                return defaultVariationId;
+                this.log.Error($"Error occured in '{nameof(GetVariationId)}' method.", ex);
+                evaluationDetails = EvaluationDetails.FromDefaultVariationId(key, defaultVariationId, fetchTime: settings.RemoteConfig?.TimeStamp, user ?? this.defaultUser, ex.Message, ex);
+                variationId = defaultVariationId;
             }
+
+            this.hooks.RaiseFlagEvaluated(this, evaluationDetails);
+            return variationId;
         }
 
         /// <inheritdoc />
         public async Task<string> GetVariationIdAsync(string key, string defaultVariationId, User user = null)
         {
+            string variationId;
+            EvaluationDetails evaluationDetails;
+            SettingsWithRemoteConfig settings = default;
             try
             {
-                var settings = await this.GetSettingsAsync().ConfigureAwait(false);
-                return this.configEvaluator.EvaluateVariationId(settings.Value, key, defaultVariationId, user ?? this.defaultUser, settings.RemoteConfig);
+                settings = await this.GetSettingsAsync().ConfigureAwait(false);
+                variationId = this.configEvaluator.EvaluateVariationId(settings.Value, key, defaultVariationId, user ?? this.defaultUser, settings.RemoteConfig, this.log, out evaluationDetails);
             }
             catch (Exception ex)
             {
-                this.log.Error($"Error occured in 'GetVariationIdAsync' method.\n{ex}");
-                return defaultVariationId;
+                this.log.Error($"Error occured in '{nameof(GetVariationIdAsync)}' method.", ex);
+                evaluationDetails = EvaluationDetails.FromDefaultVariationId(key, defaultVariationId, fetchTime: settings.RemoteConfig?.TimeStamp, user ?? this.defaultUser, ex.Message, ex);
+                variationId = defaultVariationId;
             }
+
+            this.hooks.RaiseFlagEvaluated(this, evaluationDetails);
+            return variationId;
         }
 
         /// <inheritdoc />
         public IEnumerable<string> GetAllVariationId(User user = null)
         {
+            IList<string> result;
+            EvaluationDetails[] evaluationDetailsArray = null;
             try
             {
                 var settings = this.GetSettings();
-                return GetAllVariationIdLogic(settings, user ?? this.defaultUser);
+                result = this.configEvaluator.EvaluateAllVariationIds(settings.Value, user ?? this.defaultUser, settings.RemoteConfig, this.log, out evaluationDetailsArray);
             }
             catch (Exception ex)
             {
-                this.log.Error($"Error occured in 'GetAllVariationId' method.\n{ex}");
+                this.log.Error($"Error occured in '{nameof(GetAllVariationId)}' method.", ex);
                 return Enumerable.Empty<string>();
             }
+
+            foreach (var evaluationDetails in evaluationDetailsArray)
+            {
+                this.hooks.RaiseFlagEvaluated(this, evaluationDetails);
+            }
+
+            return result;
         }
 
         /// <inheritdoc />
         public async Task<IEnumerable<string>> GetAllVariationIdAsync(User user = null)
         {
+            IList<string> result;
+            EvaluationDetails[] evaluationDetailsArray = null;
             try
             {
                 var settings = await this.GetSettingsAsync().ConfigureAwait(false);
-                return GetAllVariationIdLogic(settings, user ?? this.defaultUser);
+                result = this.configEvaluator.EvaluateAllVariationIds(settings.Value, user ?? this.defaultUser, settings.RemoteConfig, this.log, out evaluationDetailsArray);
             }
             catch (Exception ex)
             {
-                this.log.Error($"Error occured in 'GetAllVariationIdAsync' method.\n{ex}");
+                this.log.Error($"Error occured in '{nameof(GetAllVariationIdAsync)}' method.", ex);
                 return Enumerable.Empty<string>();
             }
-        }
 
-        private IEnumerable<string> GetAllVariationIdLogic(SettingsWithRemoteConfig settings, User user)
-        {
-            if (settings.Value.Count == 0)
+            foreach (var evaluationDetails in evaluationDetailsArray)
             {
-                this.log.Warning("Config deserialization failed.");
-                return Enumerable.Empty<string>();
+                this.hooks.RaiseFlagEvaluated(this, evaluationDetails);
             }
-
-            var result = new List<string>(settings.Value.Keys.Count);
-            result.AddRange(settings.Value.Keys.Select(key => this.configEvaluator.EvaluateVariationId(settings.Value, key, defaultVariationId: null, user, settings.RemoteConfig))
-                .Where(r => r != null));
 
             return result;
-        }
-
-        private IDictionary<string, object> GenerateSettingKeyValueMap(User user, SettingsWithRemoteConfig settings)
-        {
-            if (settings.Value.Count == 0)
-            {
-                this.log.Warning("Config deserialization failed.");
-                return new Dictionary<string, object>();
-            }
-
-            return settings.Value.ToDictionary(kv => kv.Key, kv => this.configEvaluator.Evaluate(settings.Value, kv.Key, defaultValue: null, user, settings.RemoteConfig));
         }
 
         /// <summary>
@@ -628,7 +696,7 @@ namespace ConfigCat.Client
             }
         }
 
-        private static IConfigService DetermineConfigService(PollingMode pollingMode, HttpConfigFetcher fetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline, WeakReference<IConfigCatClient> clientWeakRef)
+        private static IConfigService DetermineConfigService(PollingMode pollingMode, HttpConfigFetcher fetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline, ConfigCatClientContext clientContext)
         {
             return pollingMode switch
             {
@@ -637,16 +705,18 @@ namespace ConfigCat.Client
                     cacheParameters,
                     logger,
                     isOffline,
-                    clientWeakRef),
+                    clientContext),
                 LazyLoad lazyLoad => new LazyLoadConfigService(fetcher,
                     cacheParameters,
                     logger,
                     lazyLoad.CacheTimeToLive,
-                    isOffline),
+                    isOffline,
+                    clientContext),
                 ManualPoll => new ManualPollConfigService(fetcher,
                     cacheParameters,
                     logger,
-                    isOffline),
+                    isOffline,
+                    clientContext),
                 _ => throw new ArgumentException("Invalid configuration type."),
             };
         }
@@ -683,7 +753,42 @@ namespace ConfigCat.Client
         {
             this.configService.SetOffline();
         }
- 
+
+        /// <inheritdoc/>
+        public event EventHandler ClientReady
+        {
+            add { this.hooks.ClientReady += value; }
+            remove { this.hooks.ClientReady -= value; }
+        }
+
+        /// <inheritdoc/>
+        public event EventHandler<FlagEvaluatedEventArgs> FlagEvaluated
+        {
+            add { this.hooks.FlagEvaluated += value; }
+            remove { this.hooks.FlagEvaluated -= value; }
+        }
+
+        /// <inheritdoc/>
+        public event EventHandler<ConfigChangedEventArgs> ConfigChanged
+        {
+            add { this.hooks.ConfigChanged += value; }
+            remove { this.hooks.ConfigChanged -= value; }
+        }
+
+        /// <inheritdoc/>
+        public event EventHandler<ConfigCatClientErrorEventArgs> Error
+        {
+            add { this.hooks.Error += value; }
+            remove { this.hooks.Error -= value; }
+        }
+
+        /// <inheritdoc/>
+        public event EventHandler BeforeClientDispose
+        {
+            add { this.hooks.BeforeClientDispose += value; }
+            remove { this.hooks.BeforeClientDispose -= value; }
+        }
+
         private readonly struct SettingsWithRemoteConfig
         {
             public SettingsWithRemoteConfig(IDictionary<string, Setting> value, ProjectConfig remoteConfig)

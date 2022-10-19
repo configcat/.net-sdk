@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 
 namespace ConfigCat.Client.ConfigService
 {
@@ -6,9 +7,11 @@ namespace ConfigCat.Client.ConfigService
     {
         private readonly LoggerWrapper log;
 
-        public NullConfigService(LoggerWrapper log)
+        public NullConfigService(LoggerWrapper log, ConfigCatClientContext clientContext = null)
         {
             this.log = log;
+
+            (clientContext ?? ConfigCatClientContext.None).RaiseClientReady();
         }
 
         public ProjectConfig GetConfig() => ProjectConfig.Empty;

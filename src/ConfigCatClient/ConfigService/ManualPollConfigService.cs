@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
 using ConfigCat.Client.Utils;
 
@@ -6,8 +7,11 @@ namespace ConfigCat.Client.ConfigService
 {
     internal sealed class ManualPollConfigService : ConfigServiceBase, IConfigService
     {
-        internal ManualPollConfigService(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline = false)
-            : base(configFetcher, cacheParameters, logger, isOffline) { }
+        internal ManualPollConfigService(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline = false, ConfigCatClientContext clientContext = null)
+            : base(configFetcher, cacheParameters, logger, isOffline, clientContext) 
+        {
+            this.ClientContext.RaiseClientReady();
+        }
 
         public ProjectConfig GetConfig()
         {

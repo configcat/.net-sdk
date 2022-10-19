@@ -125,12 +125,12 @@ namespace ConfigCat.Client
             }
             catch (HttpRequestException ex) when (ex.InnerException is WebException { Status: WebExceptionStatus.SecureChannelFailure })
             {
-                this.log.Error($"Secure connection could not be established. Please make sure that your application is enabled to use TLS 1.2+. For more information see https://stackoverflow.com/a/58195987/8656352.\n{ex}");
+                this.log.Error($"Secure connection could not be established. Please make sure that your application is enabled to use TLS 1.2+. For more information see https://stackoverflow.com/a/58195987/8656352.", ex);
                 this.ReInitializeHttpClient();
             }
             catch (Exception ex)
             {
-                this.log.Error($"Error occured during fetching.\n{ex}");
+                this.log.Error($"Error occured during fetching.", ex);
                 this.ReInitializeHttpClient();
             }
 

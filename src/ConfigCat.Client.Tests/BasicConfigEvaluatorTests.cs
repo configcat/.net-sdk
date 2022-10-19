@@ -14,7 +14,7 @@ namespace ConfigCat.Client.Tests
         [TestMethod]
         public void GetValue_WithSimpleKey_ShouldReturnCat()
         {
-            string actual = configEvaluator.Evaluate(config, "stringDefaultCat", string.Empty);
+            string actual = configEvaluator.Evaluate(config, "stringDefaultCat", string.Empty, user: null, null, this.logger, out _);
 
             Assert.AreNotEqual(string.Empty, actual);
             Assert.AreEqual("Cat", actual);
@@ -23,7 +23,7 @@ namespace ConfigCat.Client.Tests
         [TestMethod]
         public void GetValue_WithNonExistingKey_ShouldReturnDefaultValue()
         {
-            string actual = configEvaluator.Evaluate(config, "NotExistsKey", "NotExistsValue");
+            string actual = configEvaluator.Evaluate(config, "NotExistsKey", "NotExistsValue", user: null, null, this.logger, out _);
 
             Assert.AreEqual("NotExistsValue", actual);
         }
@@ -31,7 +31,7 @@ namespace ConfigCat.Client.Tests
         [TestMethod]
         public void GetValue_WithEmptyProjectConfig_ShouldReturnDefaultValue()
         {
-            string actual = configEvaluator.Evaluate(new Dictionary<string, Setting>(), "stringDefaultCat", "Default");
+            string actual = configEvaluator.Evaluate(new Dictionary<string, Setting>(), "stringDefaultCat", "Default", user: null, null, this.logger, out _);
 
             Assert.AreEqual("Default", actual);
         }
@@ -44,7 +44,7 @@ namespace ConfigCat.Client.Tests
                 Email = "c@configcat.com",
                 Country = "United Kingdom",
                 Custom = new Dictionary<string, string> { { "Custom1", "admin" } }
-            });
+            }, null, this.logger, out _);
 
             Assert.AreEqual(3.1415, actual);
         }

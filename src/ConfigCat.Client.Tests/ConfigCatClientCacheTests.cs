@@ -246,7 +246,7 @@ namespace ConfigCat.Client.Tests
             Assert.IsFalse(client2.TryGetTarget(out _));
             Assert.IsFalse(instanceAlreadyCreated2);
 
-            Assert.IsTrue(new[] { client1 }.SequenceEqual(removedInstances));
+            CollectionAssert.AreEqual(new[] { client1 }, removedInstances);
         }
     }
 }

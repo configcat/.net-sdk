@@ -7,7 +7,7 @@ namespace ConfigCat.Client
 {
     internal sealed class ConfigCatClientCache
     {
-        private readonly Dictionary<string, WeakReference<ConfigCatClient>> instances = new();
+        internal readonly Dictionary<string, WeakReference<ConfigCatClient>> instances = new();
 
         // For testing purposes only
         public int Count

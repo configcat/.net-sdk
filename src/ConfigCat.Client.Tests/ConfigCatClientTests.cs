@@ -948,11 +948,9 @@ namespace ConfigCat.Client.Tests
 
             // Act
 
-            int instanceCount1;
-            using (client1)
-            {
-                instanceCount1 = ConfigCatClient.Instances.Count;
-            }
+            var instanceCount1 = ConfigCatClient.Instances.Count;
+
+            client1.Dispose();
 
             var instanceCount2 = ConfigCatClient.Instances.Count;
 

@@ -47,8 +47,8 @@ namespace ConfigCat.Client.ConfigService
             if (disposing)
             {
                 this.initializedEventSlim.Dispose();
-                base.Dispose(disposing);
             }
+            base.Dispose(disposing);
         }
 
         public ProjectConfig GetConfig()
@@ -162,7 +162,7 @@ namespace ConfigCat.Client.ConfigService
 
         void IBackgroundWorkRunner.Stop()
         {
-            Dispose(disposing: false);
+            this.timerCancellationTokenSource.Cancel();
         }
     }
 }

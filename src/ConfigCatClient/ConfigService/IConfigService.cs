@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 
 namespace ConfigCat.Client.ConfigService
 {
@@ -11,5 +12,11 @@ namespace ConfigCat.Client.ConfigService
         Task RefreshConfigAsync();
 
         void RefreshConfig();
+
+        bool IsOffline { get; }
+
+        void SetOnline();
+
+        void SetOffline();
     }
 }

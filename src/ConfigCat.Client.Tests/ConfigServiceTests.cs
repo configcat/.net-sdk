@@ -162,7 +162,7 @@ namespace ConfigCat.Client.Tests
                 fetcherMock.Object,
                 new CacheParameters { ConfigCache = cacheMock.Object },
                 loggerMock.Object.AsWrapper(),
-                false);
+                startTimer: false);
 
             // Act            
 
@@ -200,7 +200,7 @@ namespace ConfigCat.Client.Tests
                 fetcherMock.Object,
                 new CacheParameters { ConfigCache = cacheMock.Object },
                 loggerMock.Object.AsWrapper(),
-                true);
+                startTimer: true);
 
             // Act            
 
@@ -237,7 +237,7 @@ namespace ConfigCat.Client.Tests
                 fetcherMock.Object,
                 new CacheParameters { ConfigCache = cacheMock.Object },
                 loggerMock.Object.AsWrapper(),
-                false);
+                startTimer: false);
 
             // Act
 
@@ -274,7 +274,7 @@ namespace ConfigCat.Client.Tests
                 fetcherMock.Object,
                 new CacheParameters { ConfigCache = cacheMock.Object },
                 loggerMock.Object.AsWrapper(),
-                false);
+                startTimer: false);
 
             config.OnConfigurationChanged += (o, s) => { eventChanged++; };
 
@@ -309,7 +309,7 @@ namespace ConfigCat.Client.Tests
                 fetcherMock.Object,
                 new CacheParameters { ConfigCache = cacheMock.Object, CacheKey = "" },
                 loggerMock.Object.AsWrapper(),
-                false);
+                startTimer: false);
 
             // Act
             await Task.Delay(TimeSpan.FromSeconds(1));
@@ -346,7 +346,7 @@ namespace ConfigCat.Client.Tests
                 fetcherMock.Object,
                 new CacheParameters { ConfigCache = cacheMock.Object },
                 loggerMock.Object.AsWrapper(),
-                false);
+                startTimer: false);
 
             // Act
             await Task.Delay(TimeSpan.FromSeconds(1));
@@ -438,9 +438,13 @@ namespace ConfigCat.Client.Tests
 
             var configServiceMock = new Mock<ConfigServiceBase>(
                 MockBehavior.Loose,
-                configFetcherMock.Object,
-                new CacheParameters { ConfigCache = new InMemoryConfigCache() },
-                loggerMock.Object.AsWrapper())
+                new object[]
+                {
+                    configFetcherMock.Object,
+                    new CacheParameters { ConfigCache = new InMemoryConfigCache() },
+                    loggerMock.Object.AsWrapper(),
+                    false
+                })
             {
                 CallBase = true
             };
@@ -469,9 +473,13 @@ namespace ConfigCat.Client.Tests
 
             var configServiceMock = new Mock<ConfigServiceBase>(
                 MockBehavior.Loose,
-                configFetcherMock.Object,
-                new CacheParameters { ConfigCache = new InMemoryConfigCache() },
-                new CounterLogger().AsWrapper())
+                new object[]
+                {
+                    configFetcherMock.Object,
+                    new CacheParameters { ConfigCache = new InMemoryConfigCache() },
+                    new CounterLogger().AsWrapper(),
+                    false
+                })
             {
                 CallBase = true
             };

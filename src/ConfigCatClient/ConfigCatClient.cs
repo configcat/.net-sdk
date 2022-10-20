@@ -161,8 +161,9 @@ namespace ConfigCat.Client
                             configuration.HttpTimeout),
                         cacheParameters,
                         this.log,
+                        configuration.Offline,
                         clientWeakRef)
-                : new EmptyConfigService();
+                : new NullConfigService(this.log);
         }
 
         /// <summary>
@@ -595,7 +596,7 @@ namespace ConfigCat.Client
             }
         }
 
-        private static IConfigService DetermineConfigService(PollingMode pollingMode, HttpConfigFetcher fetcher, CacheParameters cacheParameters, LoggerWrapper logger, WeakReference<IConfigCatClient> clientWeakRef)
+        private static IConfigService DetermineConfigService(PollingMode pollingMode, HttpConfigFetcher fetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline, WeakReference<IConfigCatClient> clientWeakRef)
         {
             return pollingMode switch
             {
@@ -603,14 +604,17 @@ namespace ConfigCat.Client
                     fetcher,
                     cacheParameters,
                     logger,
+                    isOffline,
                     clientWeakRef),
                 LazyLoad lazyLoad => new LazyLoadConfigService(fetcher,
                     cacheParameters,
                     logger,
-                    lazyLoad.CacheTimeToLive),
+                    lazyLoad.CacheTimeToLive,
+                    isOffline),
                 ManualPoll => new ManualPollConfigService(fetcher,
                     cacheParameters,
-                    logger),
+                    logger,
+                    isOffline),
                 _ => throw new ArgumentException("Invalid configuration type."),
             };
         }
@@ -631,6 +635,21 @@ namespace ConfigCat.Client
         public void ClearDefaultUser()
         {
             this.defaultUser = null;
+        }
+
+        /// <inheritdoc />
+        public bool IsOffline => this.configService.IsOffline;
+
+        /// <inheritdoc />
+        public void SetOnline()
+        {
+            this.configService.SetOnline();
+        }
+
+        /// <inheritdoc />
+        public void SetOffline()
+        {
+            this.configService.SetOffline();
         }
     }
 }

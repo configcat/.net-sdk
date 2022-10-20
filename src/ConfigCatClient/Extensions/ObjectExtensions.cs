@@ -1,4 +1,5 @@
-﻿using ConfigCat.Client.Evaluate;
+﻿using System.Runtime.CompilerServices;
+using ConfigCat.Client.Evaluate;
 
 namespace System
 {
@@ -50,6 +51,12 @@ namespace System
 
                 throw new ArgumentException($"Could not determine the setting type of {value}");
             }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static bool IsAlive<T>(this WeakReference<T> weakRef) where T : class
+        {
+            return weakRef.TryGetTarget(out _);
         }
     }
 }

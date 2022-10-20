@@ -6,7 +6,7 @@ namespace ConfigCat.Client
     /// <summary>
     /// Configuration builder for AutoPoll mode
     /// </summary>
-    [Obsolete("Please use the 'new ConfigCatClient(options => { options.PollingMode = PollingModes.AutoPoll(); })' format.")]
+    [Obsolete("This class is obsolete and will be removed from the public API in a future major version. To obtain a ConfigCatClient instance with auto polling for a specific SDK Key, please use the 'ConfigCatClient.Get(sdkKey, options => { options.PollingMode = PollingModes.AutoPoll(); })' format.")]
     public class AutoPollConfigurationBuilder : ConfigurationBuilderBase<AutoPollConfiguration>
     {
         internal AutoPollConfigurationBuilder(ConfigCatClientBuilder clientBuilder) : base(clientBuilder) { }
@@ -14,7 +14,7 @@ namespace ConfigCat.Client
         /// <summary>
         /// Configuration refresh period
         /// </summary>
-        [Obsolete("Please use the 'new ConfigCatClient(options => { options.PollingMode = PollingModes.AutoPoll(pollIntervalSeconds: TimeSpan.FromSeconds(60)); })' format.")]
+        [Obsolete("Please use the 'ConfigCatClient.Get(sdkKey, options => { options.PollingMode = PollingModes.AutoPoll(pollIntervalSeconds: TimeSpan.FromSeconds(60)); })' format.")]
         public AutoPollConfigurationBuilder WithPollIntervalSeconds(uint pollIntervalSeconds)
         {
             this.configuration.PollIntervalSeconds = pollIntervalSeconds;
@@ -25,7 +25,7 @@ namespace ConfigCat.Client
         /// <summary>
         /// Maximum waiting time between initialization and the first config acquisition in seconds. (Default value is 5.)
         /// </summary>
-        [Obsolete("Please use the 'new ConfigCatClient(options => { options.PollingMode = PollingModes.AutoPoll(maxInitWaitTimeSeconds: TimeSpan.FromSeconds(5)); })' format.")]
+        [Obsolete("Please use the 'ConfigCatClient.Get(sdkKey, options => { options.PollingMode = PollingModes.AutoPoll(maxInitWaitTimeSeconds: TimeSpan.FromSeconds(5)); })' format.")]
         public AutoPollConfigurationBuilder WithMaxInitWaitTimeSeconds(uint maxInitWaitTimeSeconds)
         {
             this.configuration.MaxInitWaitTimeSeconds = maxInitWaitTimeSeconds;
@@ -36,7 +36,7 @@ namespace ConfigCat.Client
         /// <summary>
         /// If you want to use custom caching instead of the client's default InMemoryConfigCache, You can provide an implementation of IConfigCache.
         /// </summary>
-        [Obsolete("Please use the 'new ConfigCatClient(options => { options.ConfigCache = /* your cache */; })' format.")]
+        [Obsolete("Please use the 'ConfigCatClient.Get(sdkKey, options => { options.ConfigCache = /* your cache */; })' format.")]
         public AutoPollConfigurationBuilder WithConfigCache(IConfigCache configCache)
         {
             this.configuration.ConfigCache = configCache;
@@ -47,7 +47,7 @@ namespace ConfigCat.Client
         /// <summary>
         /// You can set a BaseUrl if you want to use a proxy server between your application and ConfigCat
         /// </summary>
-        [Obsolete("Please use the 'new ConfigCatClient(options => { options.BaseUrl = new Uri(/* base url */); })' format.")]
+        [Obsolete("Please use the 'ConfigCatClient.Get(sdkKey, options => { options.BaseUrl = new Uri(/* base url */); })' format.")]
         public AutoPollConfigurationBuilder WithBaseUrl(Uri baseUrl)
         {
             this.configuration.BaseUrl = baseUrl;
@@ -58,7 +58,7 @@ namespace ConfigCat.Client
         /// <summary>
         /// HttpClientHandler to provide network credentials and proxy settings
         /// </summary>
-        [Obsolete("Please use the 'new ConfigCatClient(options => { options.HttpClientHandler = /* http client handler */; })' format.")]
+        [Obsolete("Please use the 'ConfigCatClient.Get(sdkKey, options => { options.HttpClientHandler = /* http client handler */; })' format.")]
         public AutoPollConfigurationBuilder WithHttpClientHandler(HttpClientHandler httpClientHandler)
         {
             this.configuration.HttpClientHandler = httpClientHandler;
@@ -70,7 +70,7 @@ namespace ConfigCat.Client
         /// Create a <see cref="IConfigCatClient"/> instance
         /// </summary>
         /// <returns></returns>
-        [Obsolete("Please use the 'new ConfigCatClient(options => { options.PollingMode = PollingModes.AutoPoll(); })' format.")]
+        [Obsolete("To obtain a ConfigCatClient instance with auto polling for a specific SDK Key, please use the 'ConfigCatClient.Get(sdkKey, options => { options.PollingMode = PollingModes.AutoPoll(); })' format.")]
         public IConfigCatClient Create()
         {
             return new ConfigCatClient(this.configuration);

@@ -9,6 +9,7 @@ using ConfigCat.Client.Cache;
 using ConfigCat.Client.Configuration;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.CompilerServices;
 
 #pragma warning disable CS0618 // Type or member is obsolete
 namespace ConfigCat.Client.Tests
@@ -613,7 +614,7 @@ namespace ConfigCat.Client.Tests
         public void Dispose_ConfigServiceIsDisposable_ShouldInvokeDispose()
         {
             // Arrange
-            
+
             var myMock = new FakeConfigService(Mock.Of<IConfigFetcher>(), new CacheParameters(), Mock.Of<ILogger>().AsWrapper());
 
             IConfigCatClient instance = new ConfigCatClient(
@@ -757,7 +758,7 @@ namespace ConfigCat.Client.Tests
 
             // Act
 
-            await instance.ForceRefreshAsync();            
+            await instance.ForceRefreshAsync();
 
             // Assert
 
@@ -894,6 +895,122 @@ namespace ConfigCat.Client.Tests
 
             // 4. Checks that default user can be overridden by parameter
             Assert.IsTrue((await getAllVariationIdAsync(new User("c@example.com") { Email = "c@example.com" })).Contains("a0e56eda"));
+        }
+
+        [DataRow(false)]
+        [DataRow(true)]
+        [DataTestMethod]
+        public void Get_ReturnsCachedInstance_NoWarning(bool passConfigureToSecondGet)
+        {
+            // Arrange
+
+            var warnings = new List<string>();
+
+            loggerMock.Setup(m => m.Warning(It.IsAny<string>())).Callback(warnings.Add);
+
+            void Configure(ConfigCatClientOptions options)
+            {
+                options.PollingMode = PollingModes.ManualPoll;
+                options.Logger = loggerMock.Object;
+            };
+
+            // Act
+
+            using var client1 = ConfigCatClient.Get("test", Configure);
+            var warnings1 = warnings.ToArray();
+
+            warnings.Clear();
+            using var client2 = ConfigCatClient.Get("test", passConfigureToSecondGet ? Configure : null);
+            var warnings2 = warnings.ToArray();
+
+            // Assert
+
+            Assert.AreEqual(1, ConfigCatClient.Instances.Count);
+            Assert.AreSame(client1, client2);
+            Assert.IsFalse(warnings1.Any(msg => msg.Contains("configuration action is being ignored")));
+
+            if (passConfigureToSecondGet)
+            {
+                Assert.IsTrue(warnings2.Any(msg => msg.Contains("configuration action is being ignored")));
+            }
+            else
+            {
+                Assert.IsFalse(warnings2.Any(msg => msg.Contains("configuration action is being ignored")));
+            }
+        }
+
+        [TestMethod]
+        public void Dispose_CachedInstanceRemoved()
+        {
+            // Arrange
+
+            var client1 = ConfigCatClient.Get("test", options => options.PollingMode = PollingModes.ManualPoll);
+
+            // Act
+
+            var instanceCount1 = ConfigCatClient.Instances.Count;
+
+            client1.Dispose();
+
+            var instanceCount2 = ConfigCatClient.Instances.Count;
+
+            // Assert
+
+            Assert.AreEqual(1, instanceCount1);
+            Assert.AreEqual(0, instanceCount2);
+        }
+
+        [TestMethod]
+        public void DisposeAll_CachedInstancesRemoved()
+        {
+            // Arrange
+
+            var client1 = ConfigCatClient.Get("test1", options => options.PollingMode = PollingModes.AutoPoll());
+            var client2 = ConfigCatClient.Get("test2", options => options.PollingMode = PollingModes.ManualPoll);
+
+            // Act
+
+            int instanceCount1;
+
+            instanceCount1 = ConfigCatClient.Instances.Count;
+
+            ConfigCatClient.DisposeAll();
+
+            var instanceCount2 = ConfigCatClient.Instances.Count;
+
+            // Assert
+
+            Assert.AreEqual(2, instanceCount1);
+            Assert.AreEqual(0, instanceCount2);
+        }
+
+        [TestMethod]
+        public void CachedInstancesCanBeGCdWhenNoReferencesAreLeft()
+        {
+            // Arrange
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            void CreateClients(out int instanceCount)
+            {
+                var client1 = ConfigCatClient.Get("test1", options => options.PollingMode = PollingModes.AutoPoll());
+                var client2 = ConfigCatClient.Get("test2", options => options.PollingMode = PollingModes.ManualPoll);
+
+                instanceCount = ConfigCatClient.Instances.Count;
+            }
+
+            // Act
+
+            CreateClients(out var instanceCount1);
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
+            var instanceCount2 = ConfigCatClient.Instances.Count;
+
+            // Assert
+
+            Assert.AreEqual(2, instanceCount1);
+            Assert.AreEqual(0, instanceCount2);
         }
 
         internal class FakeConfigService : ConfigServiceBase, IConfigService

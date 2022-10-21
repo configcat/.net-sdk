@@ -45,21 +45,18 @@ namespace ConfigCat.Client
             }
         }
 
-        public bool Remove(string sdkKey, out ConfigCatClient removedInstance)
+        public bool Remove(string sdkKey, ConfigCatClient instanceToRemove)
         {
             lock (instances)
             {
                 if (instances.TryGetValue(sdkKey, out var weakRef))
                 {
-                    instances.Remove(sdkKey);
-                    if (weakRef.TryGetTarget(out removedInstance))
+                    var instanceIsAvailable = weakRef.TryGetTarget(out var instance);
+                    if (!instanceIsAvailable || ReferenceEquals(instance, instanceToRemove))
                     {
-                        return true;
+                        instances.Remove(sdkKey);
+                        return instanceIsAvailable;
                     }
-                }
-                else
-                {
-                    removedInstance = default;
                 }
 
                 return false;

@@ -457,7 +457,7 @@ namespace ConfigCat.Client
 
             if (!this.isUncached && this.sdkKey is not null)
             {
-                Instances.Remove(this.sdkKey, out _);
+                Instances.Remove(this.sdkKey, instanceToRemove: this);
             }
 
             Dispose(disposing: false);
@@ -515,7 +515,7 @@ namespace ConfigCat.Client
         {
             if (!this.isUncached)
             {
-                Instances.Remove(this.sdkKey, out _);
+                Instances.Remove(this.sdkKey, instanceToRemove: this);
             }
 
             Dispose(disposing: true);

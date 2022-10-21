@@ -1291,6 +1291,43 @@ namespace ConfigCat.Client.Tests
 
         [TestMethod]
         [DoNotParallelize]
+        public void Dispose_CanRemoveCurrentCachedInstanceOnly()
+        {
+            // Arrange
+
+            var client1 = ConfigCatClient.Get("test", options => options.PollingMode = PollingModes.ManualPoll);
+
+            // Act
+
+            var instanceCount1 = ConfigCatClient.Instances.Count;
+
+            client1.Dispose();
+
+            var instanceCount2 = ConfigCatClient.Instances.Count;
+
+            var client2 = ConfigCatClient.Get("test", options => options.PollingMode = PollingModes.ManualPoll);
+
+            var instanceCount3 = ConfigCatClient.Instances.Count;
+
+            client1.Dispose();
+
+            var instanceCount4 = ConfigCatClient.Instances.Count;
+
+            client2.Dispose();
+
+            var instanceCount5 = ConfigCatClient.Instances.Count;
+
+            // Assert
+
+            Assert.AreEqual(1, instanceCount1);
+            Assert.AreEqual(0, instanceCount2);
+            Assert.AreEqual(1, instanceCount3);
+            Assert.AreEqual(1, instanceCount4);
+            Assert.AreEqual(0, instanceCount5);
+        }
+
+        [TestMethod]
+        [DoNotParallelize]
         public void DisposeAll_CachedInstancesRemoved()
         {
             // Arrange

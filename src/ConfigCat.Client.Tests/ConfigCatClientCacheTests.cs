@@ -112,7 +112,7 @@ namespace ConfigCat.Client.Tests
 
             // Act
 
-            var success = cache.Remove(sdkKey, out var removedInstance);
+            var success = cache.Remove(sdkKey, instanceToRemove: client1);
 
             // Assert
 
@@ -122,8 +122,6 @@ namespace ConfigCat.Client.Tests
 
             Assert.IsNotNull(client1);
             Assert.IsFalse(instanceAlreadyCreated1);
-
-            Assert.AreSame(client1, removedInstance);
         }
 
         [TestMethod]
@@ -157,7 +155,7 @@ namespace ConfigCat.Client.Tests
 
             // Act
 
-            var success = cache.Remove(sdkKey, out _);
+            var success = cache.Remove(sdkKey, instanceToRemove: null);
 
             // Assert
 
@@ -180,7 +178,7 @@ namespace ConfigCat.Client.Tests
 
             // Act
 
-            var success = cache.Remove(sdkKey, out _);
+            var success = cache.Remove(sdkKey, instanceToRemove: null);
 
             // Assert
 

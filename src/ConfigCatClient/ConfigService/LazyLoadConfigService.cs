@@ -31,7 +31,7 @@ namespace ConfigCat.Client.ConfigService
 
                     if (!IsOffline)
                     {
-                        return RefreshConfigCore(config) ?? config;
+                        return RefreshConfigCore(config);
                     }
                 }
 
@@ -55,7 +55,7 @@ namespace ConfigCat.Client.ConfigService
 
                 if (!IsOffline)
                 {
-                    return (await RefreshConfigCoreAsync(config).ConfigureAwait(false)) ?? config;
+                    return await RefreshConfigCoreAsync(config).ConfigureAwait(false);
                 }
             }
 

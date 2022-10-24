@@ -92,15 +92,21 @@ namespace ConfigCat.Client.ConfigService
         {
             var newConfig = this.ConfigFetcher.Fetch(latestConfig);
 
-            if (!latestConfig.Equals(newConfig) && !newConfig.Equals(ProjectConfig.Empty))
+            var configContentHasChanged = !latestConfig.Equals(newConfig);
+            if ((configContentHasChanged || newConfig.TimeStamp > latestConfig.TimeStamp) && !newConfig.Equals(ProjectConfig.Empty))
             {
                 // TODO: This cast can be removed when we delete the obsolete IConfigCache interface.
                 ((IConfigCatCache)this.ConfigCache).Set(this.CacheKey, newConfig);
-                OnConfigChanged();
+
+                if (configContentHasChanged)
+                {
+                    OnConfigChanged();
+                }
+
                 return newConfig;
             }
 
-            return null;
+            return latestConfig;
         }
 
         public virtual async Task RefreshConfigAsync()
@@ -120,14 +126,20 @@ namespace ConfigCat.Client.ConfigService
         {
             var newConfig = await this.ConfigFetcher.FetchAsync(latestConfig).ConfigureAwait(false);
 
-            if (!latestConfig.Equals(newConfig) && !newConfig.Equals(ProjectConfig.Empty))
+            var configContentHasChanged = !latestConfig.Equals(newConfig);
+            if ((configContentHasChanged || newConfig.TimeStamp > latestConfig.TimeStamp) && !newConfig.Equals(ProjectConfig.Empty))
             {
                 await this.ConfigCache.SetAsync(this.CacheKey, newConfig).ConfigureAwait(false);
-                OnConfigChanged();
+
+                if (configContentHasChanged)
+                {
+                    OnConfigChanged();
+                }
+
                 return newConfig;
             }
 
-            return null;
+            return latestConfig;
         }
 
         protected virtual void OnConfigChanged()

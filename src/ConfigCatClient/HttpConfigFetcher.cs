@@ -59,8 +59,6 @@ namespace ConfigCat.Client
 
         private async ValueTask<ProjectConfig> FetchInternalAsync(ProjectConfig lastConfig, bool isAsync)
         {
-            var newConfig = lastConfig;
-
             try
             {
 #if NET5_0_OR_GREATER
@@ -87,10 +85,15 @@ namespace ConfigCat.Client
 
                 if (response is { IsSuccessStatusCode: true })
                 {
-                    newConfig.HttpETag = response.Headers.ETag?.Tag;
-                    newConfig.JsonString = fetchResult.Item2;
+                    return new ProjectConfig
+                    {
+                        HttpETag = response.Headers.ETag?.Tag,
+                        JsonString = fetchResult.Item2,
+                        TimeStamp = DateTime.UtcNow
+                    };
                 }
                 else
+                {
                     switch (response.StatusCode)
                     {
                         case HttpStatusCode.NotModified:
@@ -102,6 +105,14 @@ namespace ConfigCat.Client
                             this.ReInitializeHttpClient();
                             break;
                     }
+
+                    // We update the timestamp even if a status code other than 304 NotModified is returned
+                    // for extra protection against flooding.
+                    return lastConfig with
+                    {
+                        TimeStamp = DateTime.UtcNow
+                    };
+                }
             }
             catch (OperationCanceledException) when (this.cancellationTokenSource.IsCancellationRequested)
             {
@@ -123,8 +134,7 @@ namespace ConfigCat.Client
                 this.ReInitializeHttpClient();
             }
 
-            newConfig.TimeStamp = DateTime.UtcNow;
-            return newConfig;
+            return lastConfig;
         }
 
         private async ValueTask<Tuple<HttpResponseMessage, string>> FetchRequest(ProjectConfig lastConfig,
@@ -140,20 +150,13 @@ namespace ConfigCat.Client
                 }
 
                 HttpResponseMessage response;
-                try
-                {
 #if NET5_0_OR_GREATER
-                    response = isAsync
-                        ? await this.httpClient.SendAsync(request, this.cancellationTokenSource.Token).ConfigureAwait(false)
-                        : this.httpClient.Send(request, this.cancellationTokenSource.Token);
+                response = isAsync
+                    ? await this.httpClient.SendAsync(request, this.cancellationTokenSource.Token).ConfigureAwait(false)
+                    : this.httpClient.Send(request, this.cancellationTokenSource.Token);
 #else
-                    response = await this.httpClient.SendAsync(request, this.cancellationTokenSource.Token).ConfigureAwait(false);
+                response = await this.httpClient.SendAsync(request, this.cancellationTokenSource.Token).ConfigureAwait(false);
 #endif
-                }
-                catch (Exception ex) when (ex.InnerException is WebException { Status: WebExceptionStatus.SecureChannelFailure })
-                {
-                    throw;
-                }
 
                 if (response.IsSuccessStatusCode)
                 {

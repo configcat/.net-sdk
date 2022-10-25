@@ -522,6 +522,7 @@ namespace ConfigCat.Client.Tests
         {
             // Arrange
 
+            configServiceMock.Setup(m => m.GetConfig()).Returns(ProjectConfig.Empty);
             configServiceMock.Setup(m => m.GetConfigAsync()).ReturnsAsync(ProjectConfig.Empty);
             var o = new SettingsWithPreferences();
             configDeserializerMock
@@ -1502,7 +1503,7 @@ namespace ConfigCat.Client.Tests
                 return Task.FromResult(ProjectConfig.Empty);
             }
 
-            public Task RefreshConfigAsync()
+            public override Task RefreshConfigAsync()
             {
                 return Task.FromResult(0);
             }
@@ -1512,7 +1513,7 @@ namespace ConfigCat.Client.Tests
                 return ProjectConfig.Empty;
             }
 
-            public void RefreshConfig()
+            public override void RefreshConfig()
             { }
         }
     }

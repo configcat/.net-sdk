@@ -9,7 +9,7 @@ namespace ConfigCat.Client.ConfigService
 {
     internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
     {
-        private readonly DateTimeOffset maxInitWaitExpire;
+        private readonly DateTime maxInitWaitExpire;
         private readonly ManualResetEventSlim initializedEventSlim = new(false);
         private readonly AutoPoll configuration;
         private readonly WeakReference<IConfigCatClient> clientWeakRef;
@@ -35,7 +35,7 @@ namespace ConfigCat.Client.ConfigService
             WeakReference<IConfigCatClient> clientWeakRef = null) : base(configFetcher, cacheParameters, logger, isOffline)
         {
             this.configuration = configuration;
-            this.maxInitWaitExpire = DateTimeOffset.UtcNow.Add(configuration.MaxInitWaitTime);
+            this.maxInitWaitExpire = DateTime.UtcNow.Add(configuration.MaxInitWaitTime);
             this.clientWeakRef = clientWeakRef;
 
             if (!isOffline && startTimer)
@@ -81,8 +81,8 @@ namespace ConfigCat.Client.ConfigService
 
                 if (!IsOffline)
                 {
-                    var delay = this.maxInitWaitExpire.Subtract(DateTimeOffset.UtcNow);
-                    if (delay > TimeSpan.Zero && cacheConfig.Equals(ProjectConfig.Empty))
+                    var delay = this.maxInitWaitExpire.Subtract(DateTime.UtcNow);
+                    if (delay > TimeSpan.Zero && cacheConfig.IsExpired(expiration: configuration.PollInterval, out _))
                     {
                         WaitForInitialization(delay);
                         cacheConfig = cache.Get(base.CacheKey);
@@ -102,8 +102,8 @@ namespace ConfigCat.Client.ConfigService
 
             if (!IsOffline)
             {
-                var delay = this.maxInitWaitExpire.Subtract(DateTimeOffset.UtcNow);
-                if (delay > TimeSpan.Zero && cacheConfig.Equals(ProjectConfig.Empty))
+                var delay = this.maxInitWaitExpire.Subtract(DateTime.UtcNow);
+                if (delay > TimeSpan.Zero && cacheConfig.IsExpired(expiration: configuration.PollInterval, out _))
                 {
                     WaitForInitialization(delay);
                     cacheConfig = await this.ConfigCache.GetAsync(base.CacheKey).ConfigureAwait(false);
@@ -113,60 +113,11 @@ namespace ConfigCat.Client.ConfigService
             return cacheConfig;
         }
 
-        public void RefreshConfig()
+        protected override void OnConfigChanged()
         {
-            // check for the new cache interface until we remove the old IConfigCache.
-            if (this.ConfigCache is IConfigCatCache cache)
-            {
-                if (!IsOffline)
-                {
-                    var latestConfig = cache.Get(base.CacheKey);
-                    var newConfig = this.ConfigFetcher.Fetch(latestConfig);
-
-                    if (!latestConfig.Equals(newConfig) && !newConfig.Equals(ProjectConfig.Empty))
-                    {
-                        this.Log.Debug("config changed");
-                        cache.Set(base.CacheKey, newConfig);
-                        this.configuration.RaiseOnConfigurationChanged(this, OnConfigurationChangedEventArgs.Empty);
-                        initializedEventSlim.Set();
-                    }
-                }
-                else
-                {
-                    this.Log.OfflineModeWarning();
-                }
-
-                return;
-            }
-
-            // worst scenario, fallback to sync over async, delete when we enforce IConfigCatCache.
-            Syncer.Sync(this.RefreshConfigAsync);
-        }
-
-        private async Task RefreshConfigCoreAsync()
-        {
-            var latestConfig = await this.ConfigCache.GetAsync(base.CacheKey).ConfigureAwait(false);
-            var newConfig = await this.ConfigFetcher.FetchAsync(latestConfig).ConfigureAwait(false);
-
-            if (!latestConfig.Equals(newConfig) && !newConfig.Equals(ProjectConfig.Empty))
-            {
-                this.Log.Debug("config changed");
-                await this.ConfigCache.SetAsync(base.CacheKey, newConfig).ConfigureAwait(false);
-                this.configuration.RaiseOnConfigurationChanged(this, OnConfigurationChangedEventArgs.Empty);
-                initializedEventSlim.Set();
-            }
-        }
-
-        public async Task RefreshConfigAsync()
-        {
-            if (!IsOffline)
-            {
-                await RefreshConfigCoreAsync().ConfigureAwait(false);
-            }
-            else
-            {
-                this.Log.OfflineModeWarning();
-            }
+            base.OnConfigChanged();
+            this.configuration.RaiseOnConfigurationChanged(this, OnConfigurationChangedEventArgs.Empty);
+            initializedEventSlim.Set();
         }
 
         protected override void SetOnlineCoreSynchronized()
@@ -189,12 +140,17 @@ namespace ConfigCat.Client.ConfigService
                 {
                     try
                     {
-                        var scheduledNextTime = DateTimeOffset.UtcNow.Add(interval);
+                        var scheduledNextTime = DateTime.UtcNow.Add(interval);
                         try
                         {
                             if (!IsOffline)
                             {
-                                await RefreshConfigCoreAsync().ConfigureAwait(false);
+                                var latestConfig = await this.ConfigCache.GetAsync(base.CacheKey).ConfigureAwait(false);
+
+                                if (latestConfig.IsExpired(expiration: interval, out _))
+                                {
+                                    await RefreshConfigCoreAsync(latestConfig).ConfigureAwait(false);
+                                }
                             }
                         }
                         catch (Exception exception)
@@ -205,7 +161,7 @@ namespace ConfigCat.Client.ConfigService
                         {
                             if (this.clientWeakRef is null || this.clientWeakRef.IsAlive())
                             {
-                                var realNextTime = scheduledNextTime.Subtract(DateTimeOffset.UtcNow);
+                                var realNextTime = scheduledNextTime.Subtract(DateTime.UtcNow);
                                 if (realNextTime > TimeSpan.Zero)
                                 {
                                     await Task.Delay(realNextTime, cts.Token).ConfigureAwait(false);

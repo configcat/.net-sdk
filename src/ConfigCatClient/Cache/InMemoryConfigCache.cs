@@ -5,14 +5,17 @@ namespace ConfigCat.Client
 {
     internal class InMemoryConfigCache : IConfigCatCache
     {
-        private ProjectConfig projectConfig;
-        private readonly ReaderWriterLockSlim lockSlim = new();
+        private ProjectConfig projectConfig = ProjectConfig.Empty;
 
         /// <inheritdoc />
         public Task SetAsync(string key, ProjectConfig config)
         {
             this.Set(key, config);
+#if NET45
             return Task.FromResult(0);
+#else
+            return Task.CompletedTask;
+#endif
         }
 
         /// <inheritdoc />
@@ -22,31 +25,14 @@ namespace ConfigCat.Client
         /// <inheritdoc />
         public void Set(string key, ProjectConfig config)
         {
-            this.lockSlim.EnterWriteLock();
-
-            try
-            {
-                this.projectConfig = config;
-            }
-            finally
-            {
-                this.lockSlim.ExitWriteLock();
-            }
+            Interlocked.Exchange(ref this.projectConfig, config);
         }
 
         /// <inheritdoc />
         public ProjectConfig Get(string key)
         {
-            this.lockSlim.EnterReadLock();
-
-            try
-            {
-                return this.projectConfig;
-            }
-            finally
-            {
-                this.lockSlim.ExitReadLock();
-            }
+            // NOTE: Volatile.Read(ref this.projectConfig) would probably be sufficient but Interlocked.CompareExchange is the 100% safe way.
+            return Interlocked.CompareExchange(ref this.projectConfig, null, null);
         }
     }
 }

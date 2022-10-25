@@ -93,13 +93,11 @@ namespace ConfigCat.Client
                     };
                 }
                 else
+                {
                     switch (response.StatusCode)
                     {
                         case HttpStatusCode.NotModified:
-                            return lastConfig with 
-                            {
-                                TimeStamp = DateTime.UtcNow
-                            };
+                            break;
                         case HttpStatusCode.NotFound:
                             this.log.Error("Double-check your SDK Key at https://app.configcat.com/sdkkey");
                             break;
@@ -107,6 +105,14 @@ namespace ConfigCat.Client
                             this.ReInitializeHttpClient();
                             break;
                     }
+
+                    // We update the timestamp even if a status code other than 304 NotModified is returned
+                    // for extra protection against flooding.
+                    return lastConfig with
+                    {
+                        TimeStamp = DateTime.UtcNow
+                    };
+                }
             }
             catch (OperationCanceledException) when (this.cancellationTokenSource.IsCancellationRequested)
             {

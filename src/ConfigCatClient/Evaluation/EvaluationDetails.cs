@@ -16,17 +16,53 @@ namespace ConfigCat.Client
     /// </summary>
     public abstract record class EvaluationDetails
     {
-        internal static EvaluationDetails<TValue> Create<TValue>(JsonValue value)
+        private static EvaluationDetails<TValue> Create<TValue>(JsonValue value)
         {
-            return new EvaluationDetails<TValue>
-            {
+            return new EvaluationDetails<TValue> { Value = value.ConvertTo<TValue>() };
+        }
 
-#if USE_NEWTONSOFT_JSON
-                Value = Newtonsoft.Json.Linq.Extensions.Value<TValue>(value)
-#else
-                Value = System.Text.Json.JsonSerializer.Deserialize<TValue>(value)
-#endif
-            };
+        internal static EvaluationDetails<TValue> Create<TValue>(SettingType settingType, JsonValue value)
+        {
+            var objectValueExpected = typeof(TValue) == typeof(object);
+            var expectedSettingType = typeof(TValue).ToSettingType();
+            expectedSettingType.EnsureSupportedSettingType(isAnyAllowed: objectValueExpected);
+
+            // SettingType was not specified in the config.json?
+            if (settingType == SettingType.Unknown)
+            {
+                // Let's try to infer it from the JSON value.
+                settingType = value.DetermineSettingType();
+
+                if (settingType == SettingType.Unknown)
+                {
+                    throw new ArgumentException($"The type of setting value '{value}' is not supported.", nameof(value));
+                }
+            }
+
+            if (!objectValueExpected)
+            {
+                if (settingType != expectedSettingType)
+                {
+                    throw new InvalidOperationException($"The type of a setting must match the type of the setting's default value.{Environment.NewLine}Setting's type was {settingType} but the default value's type was {typeof(TValue)}.{Environment.NewLine}Please use a default value which corresponds to the setting type {settingType}.");
+                }
+
+                return Create<TValue>(value);
+            }
+            else
+            {
+                EvaluationDetails evaluationDetails = new EvaluationDetails<object>
+                {
+                    Value = settingType switch
+                    {
+                        SettingType.Boolean => value.ConvertTo<bool>(),
+                        SettingType.String => value.ConvertTo<string>(),
+                        SettingType.Int => value.ConvertTo<int>(),
+                        SettingType.Double => value.ConvertTo<double>(),
+                        _ => throw new ArgumentOutOfRangeException(nameof(settingType), settingType, null)
+                    }
+                };
+                return (EvaluationDetails<TValue>)evaluationDetails;
+            }
         }
 
         internal static EvaluationDetails Create(SettingType settingType, JsonValue value)
@@ -35,7 +71,7 @@ namespace ConfigCat.Client
             {
                 SettingType.Boolean => Create<bool>(value),
                 SettingType.String => Create<string>(value),
-                SettingType.Int => Create<long>(value),
+                SettingType.Int => Create<int>(value),
                 SettingType.Double => Create<double>(value),
                 _ => throw new ArgumentOutOfRangeException(nameof(settingType), settingType, null)
             };

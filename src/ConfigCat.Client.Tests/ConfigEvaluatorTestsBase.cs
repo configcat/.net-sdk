@@ -60,14 +60,14 @@ namespace ConfigCat.Client.Tests
 
         protected string GetSampleJson()
         {
-            using Stream stream = File.OpenRead("data" + Path.DirectorySeparatorChar + this.SampleJsonFileName);
+            using Stream stream = File.OpenRead(Path.Combine("data", this.SampleJsonFileName));
             using StreamReader reader = new(stream);
             return reader.ReadToEnd();
         }
 
         public async Task MatrixTest(Action<string, string, User> assertation)
         {
-            using Stream stream = File.OpenRead("data" + Path.DirectorySeparatorChar + this.MatrixResultFileName);
+            using Stream stream = File.OpenRead(Path.Combine("data", this.MatrixResultFileName));
             using StreamReader reader = new(stream);
             var header = await reader.ReadLineAsync();
 

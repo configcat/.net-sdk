@@ -257,6 +257,7 @@ namespace ConfigCat.Client
             user ??= this.defaultUser;
             try
             {
+                typeof(T).EnsureSupportedSettingClrType();
                 settings = this.GetSettings();
                 value = this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, this.log, out evaluationDetails);
             }
@@ -280,6 +281,7 @@ namespace ConfigCat.Client
             user ??= this.defaultUser;
             try
             {
+                typeof(T).EnsureSupportedSettingClrType();
                 settings = await this.GetSettingsAsync().ConfigureAwait(false);
                 value = this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, this.log, out evaluationDetails);
             }
@@ -302,6 +304,7 @@ namespace ConfigCat.Client
             user ??= this.defaultUser;
             try
             {
+                typeof(T).EnsureSupportedSettingClrType();
                 settings = this.GetSettings();
                 this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, this.log, out evaluationDetails);
             }
@@ -323,6 +326,7 @@ namespace ConfigCat.Client
             user ??= this.defaultUser;
             try
             {
+                typeof(T).EnsureSupportedSettingClrType();
                 settings = await this.GetSettingsAsync().ConfigureAwait(false);
                 this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, this.log, out evaluationDetails);
             }

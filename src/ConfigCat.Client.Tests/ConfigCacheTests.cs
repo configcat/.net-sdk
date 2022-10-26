@@ -8,6 +8,7 @@ namespace ConfigCat.Client.Tests
 {
     [TestCategory(TestCategories.Integration)]
     [TestClass]
+    [DoNotParallelize]
     public class ConfigCacheTests
     {
         private const string SDKKEY = "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A";
@@ -26,7 +27,7 @@ namespace ConfigCat.Client.Tests
                 cachedConfig = config;
             });
 
-            configCacheMock.Setup(c => c.GetAsync(It.IsAny<string>(), CancellationToken.None)).ReturnsAsync(() => cachedConfig);
+            configCacheMock.Setup(c => c.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(() => cachedConfig);
             
             var client = useNewCreateApi 
                 ? new ConfigCatClient(options =>
@@ -44,7 +45,7 @@ namespace ConfigCat.Client.Tests
                     .WithConfigCache(configCacheMock.Object)
                     .WithHttpClientHandler(sharedHandler)
                     .Create();
-            
+
             var actual = client.GetValue("stringDefaultCat", "N/A");
 
             Assert.AreEqual("Cat", actual);

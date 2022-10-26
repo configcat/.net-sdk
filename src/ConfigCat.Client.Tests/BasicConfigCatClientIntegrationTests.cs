@@ -1,7 +1,10 @@
 ﻿using ConfigCat.Client.Configuration;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 using System;
 using System.CodeDom;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
@@ -12,9 +15,10 @@ namespace ConfigCat.Client.Tests
 {
     [TestCategory("Integration")]
     [TestClass]
+    [DoNotParallelize]
     public class BasicConfigCatClientIntegrationTests 
     {
-        private const string SDKKEY = "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A";
+        internal const string SDKKEY = "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A";
 
         private static readonly ILogger consoleLogger = new ConsoleLogger(LogLevel.Debug);
         private static readonly HttpClientHandler sharedHandler = new HttpClientHandler();
@@ -263,10 +267,23 @@ namespace ConfigCat.Client.Tests
             };
 
             client.ForceRefresh();
+
+            var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
+            client.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
+
             var dict = client.GetAllValues();
 
             Assert.AreEqual(16, dict.Count);
             Assert.AreEqual("Cat", dict["stringDefaultCat"]);
+
+            Assert.AreEqual(16, flagEvaluatedEvents.Count);
+            var evaluationDetails = flagEvaluatedEvents.ToDictionary(e => e.EvaluationDetails.Key, e => e.EvaluationDetails);
+            foreach (var entry in dict)
+            {
+                Assert.IsTrue(evaluationDetails.TryGetValue(entry.Key, out var evaluationDetail));
+                Assert.AreEqual(entry.Value, evaluationDetail.Value);
+                Assert.IsFalse(evaluationDetail.IsDefaultValue);
+            }
         }
 
         [DataRow(ClientCreationStrategy.Singleton)]
@@ -295,27 +312,133 @@ namespace ConfigCat.Client.Tests
                 _ => throw new ArgumentOutOfRangeException(nameof(creationStrategy))
             };
 
+            var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
+            client.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
+
             await client.ForceRefreshAsync();
             var dict = await client.GetAllValuesAsync();
 
             Assert.AreEqual(16, dict.Count);
             Assert.AreEqual("Cat", dict["stringDefaultCat"]);
+
+            Assert.AreEqual(16, flagEvaluatedEvents.Count);
+            var evaluationDetails = flagEvaluatedEvents.ToDictionary(e => e.EvaluationDetails.Key, e => e.EvaluationDetails);
+            foreach (var entry in dict)
+            {
+                Assert.IsTrue(evaluationDetails.TryGetValue(entry.Key, out var evaluationDetail));
+                Assert.AreEqual(entry.Value, evaluationDetail.Value);
+                Assert.IsFalse(evaluationDetail.IsDefaultValue);
+            }
         }
 
         private static void GetValueAndAssert(IConfigCatClient client, string key, string defaultValue, string expectedValue)
         {
+            var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
+            client.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
+
             var actual = client.GetValue(key, defaultValue);
 
             Assert.AreEqual(expectedValue, actual);
             Assert.AreNotEqual(defaultValue, actual);
+
+            Assert.AreEqual(1, flagEvaluatedEvents.Count);
+            Assert.AreEqual(expectedValue, flagEvaluatedEvents[0].EvaluationDetails.Value);
+            Assert.IsFalse(flagEvaluatedEvents[0].EvaluationDetails.IsDefaultValue);
         }
 
         private static async Task GetValueAsyncAndAssert(IConfigCatClient client, string key, string defaultValue, string expectedValue)
         {
+            var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
+            client.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
+
             var actual = await client.GetValueAsync(key, defaultValue);
 
             Assert.AreEqual(expectedValue, actual);
             Assert.AreNotEqual(defaultValue, actual);
+
+            Assert.AreEqual(1, flagEvaluatedEvents.Count);
+            Assert.AreEqual(expectedValue, flagEvaluatedEvents[0].EvaluationDetails.Value);
+            Assert.IsFalse(flagEvaluatedEvents[0].EvaluationDetails.IsDefaultValue);
+        }
+
+        [DataRow(ClientCreationStrategy.Singleton)]
+        [DataRow(ClientCreationStrategy.Constructor)]
+        [DataRow(ClientCreationStrategy.Builder)]
+        [DataTestMethod]
+        public void GetValueDetailsId(ClientCreationStrategy creationStrategy)
+        {
+            static void Configure(ConfigCatClientOptions options)
+            {
+                options.PollingMode = PollingModes.ManualPoll;
+                options.Logger = consoleLogger;
+                options.HttpClientHandler = sharedHandler;
+            }
+
+            using IConfigCatClient client = creationStrategy switch
+            {
+                ClientCreationStrategy.Singleton => ConfigCatClient.Get(SDKKEY, Configure),
+                ClientCreationStrategy.Constructor => new ConfigCatClient(options => { Configure(options); options.SdkKey = SDKKEY; }),
+                ClientCreationStrategy.Builder => ConfigCatClientBuilder
+                    .Initialize(SDKKEY)
+                    .WithLogger(consoleLogger)
+                    .WithManualPoll()
+                    .WithHttpClientHandler(sharedHandler)
+                    .Create(),
+                _ => throw new ArgumentOutOfRangeException(nameof(creationStrategy))
+            };
+
+            client.ForceRefresh();
+
+            var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
+            client.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
+
+            var actual = client.GetValueDetails("stringDefaultCat", "N/A");
+
+            Assert.AreEqual("Cat", actual.Value);
+            Assert.IsFalse(actual.IsDefaultValue);
+
+            Assert.AreEqual(1, flagEvaluatedEvents.Count);
+            Assert.AreSame(actual, flagEvaluatedEvents[0].EvaluationDetails);
+        }
+
+        [DataRow(ClientCreationStrategy.Singleton)]
+        [DataRow(ClientCreationStrategy.Constructor)]
+        [DataRow(ClientCreationStrategy.Builder)]
+        [DataTestMethod]
+        public async Task GetValueDetailsAsync(ClientCreationStrategy creationStrategy)
+        {
+            static void Configure(ConfigCatClientOptions options)
+            {
+                options.PollingMode = PollingModes.ManualPoll;
+                options.Logger = consoleLogger;
+                options.HttpClientHandler = sharedHandler;
+            }
+
+            using IConfigCatClient client = creationStrategy switch
+            {
+                ClientCreationStrategy.Singleton => ConfigCatClient.Get(SDKKEY, Configure),
+                ClientCreationStrategy.Constructor => new ConfigCatClient(options => { Configure(options); options.SdkKey = SDKKEY; }),
+                ClientCreationStrategy.Builder => ConfigCatClientBuilder
+                    .Initialize(SDKKEY)
+                    .WithLogger(consoleLogger)
+                    .WithManualPoll()
+                    .WithHttpClientHandler(sharedHandler)
+                    .Create(),
+                _ => throw new ArgumentOutOfRangeException(nameof(creationStrategy))
+            };
+
+            await client.ForceRefreshAsync();
+
+            var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
+            client.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
+
+            var actual = await client.GetValueDetailsAsync("stringDefaultCat", "N/A");
+
+            Assert.AreEqual("Cat", actual.Value);
+            Assert.IsFalse(actual.IsDefaultValue);
+
+            Assert.AreEqual(1, flagEvaluatedEvents.Count);
+            Assert.AreSame(actual, flagEvaluatedEvents[0].EvaluationDetails);
         }
 
         [DataRow(ClientCreationStrategy.Singleton)]
@@ -345,9 +468,16 @@ namespace ConfigCat.Client.Tests
             };
 
             client.ForceRefresh();
+
+            var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
+            client.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
+
             var actual = client.GetVariationId("stringDefaultCat", "default");
 
-            Assert.AreEqual("7a0be518", actual);            
+            Assert.AreEqual("7a0be518", actual);
+
+            Assert.AreEqual(1, flagEvaluatedEvents.Count);
+            Assert.AreEqual("7a0be518", flagEvaluatedEvents[0].EvaluationDetails.VariationId);
         }
 
         [DataRow(ClientCreationStrategy.Singleton)]
@@ -378,9 +508,15 @@ namespace ConfigCat.Client.Tests
 
             await client.ForceRefreshAsync();
 
+            var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
+            client.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
+
             var actual = await client.GetVariationIdAsync("stringDefaultCat", "default");
 
             Assert.AreEqual("7a0be518", actual);
+
+            Assert.AreEqual(1, flagEvaluatedEvents.Count);
+            Assert.AreEqual("7a0be518", flagEvaluatedEvents[0].EvaluationDetails.VariationId);
         }
 
         [DataRow(ClientCreationStrategy.Singleton)]
@@ -417,6 +553,9 @@ namespace ConfigCat.Client.Tests
 
             client.ForceRefresh();
 
+            var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
+            client.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
+
             // Act
 
             var actual = client.GetAllVariationId(new User("a@configcat.com"));
@@ -424,6 +563,8 @@ namespace ConfigCat.Client.Tests
             // Assert            
             Assert.AreEqual(16, expectedValue.Length);
             CollectionAssert.AreEquivalent(expectedValue, actual.ToArray());
+
+            CollectionAssert.AreEquivalent(expectedValue, flagEvaluatedEvents.Select(e => e.EvaluationDetails.VariationId).ToArray());
         }
 
         [DataRow(ClientCreationStrategy.Singleton)]
@@ -460,6 +601,9 @@ namespace ConfigCat.Client.Tests
 
             await client.ForceRefreshAsync();
 
+            var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
+            client.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
+
             // Act
 
             var actual = await client.GetAllVariationIdAsync(new User("a@configcat.com"));
@@ -467,6 +611,8 @@ namespace ConfigCat.Client.Tests
             // Assert            
             Assert.AreEqual(16, expectedValue.Length);
             CollectionAssert.AreEquivalent(expectedValue, actual.ToArray());
+
+            CollectionAssert.AreEquivalent(expectedValue, flagEvaluatedEvents.Select(e => e.EvaluationDetails.VariationId).ToArray());
         }
 
         [TestMethod]

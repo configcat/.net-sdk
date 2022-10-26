@@ -168,7 +168,9 @@ namespace ConfigCat.Client
                     var responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 #endif
 
-                    if (!this.deserializer.TryDeserialize(responseBody, out var body))
+                    var httpETag = response.Headers.ETag?.Tag;
+
+                    if (!this.deserializer.TryDeserialize(responseBody, httpETag, out var body))
                         return Tuple.Create<HttpResponseMessage, string>(response, null);
 
                     if (body?.Preferences != null)

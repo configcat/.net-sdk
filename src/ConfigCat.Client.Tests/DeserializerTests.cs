@@ -18,7 +18,7 @@ namespace ConfigCat.Client.Tests
             };
 
             var deserializer = new ConfigDeserializer();
-            deserializer.TryDeserialize("{\"p\": {\"u\": \"http://example.com\", \"r\": 0}}", out var configs);
+            deserializer.TryDeserialize("{\"p\": {\"u\": \"http://example.com\", \"r\": 0}}", httpETag: null, out var configs);
         }
     }
 }

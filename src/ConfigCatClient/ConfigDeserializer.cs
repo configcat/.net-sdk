@@ -1,17 +1,15 @@
 ﻿using ConfigCat.Client.Evaluation;
 using System;
-using System.Data.HashFunction;
-using System.Data.HashFunction.MurmurHash;
 
 namespace ConfigCat.Client
 {
     internal class ConfigDeserializer : IConfigDeserializer
     {
-        private readonly IHashFunction hasher = MurmurHash3Factory.Instance.Create(new MurmurHash3Config { HashSizeInBits = 128 });
-        private SettingsWithPreferences lastSerializedSettings;
-        private byte[] hashToCompare;
+        private SettingsWithPreferences lastDeserializedSettings;
+        private string lastConfig;
+        private string lastHttpETag;
 
-        public bool TryDeserialize(string config, out SettingsWithPreferences settings)
+        public bool TryDeserialize(string config, string httpETag, out SettingsWithPreferences settings)
         {
             if (config == null)
             {
@@ -19,18 +17,20 @@ namespace ConfigCat.Client
                 return false;
             }
 
-            var hash = this.hasher.ComputeHash(config).Hash;
-            if (CompareByteArrays(this.hashToCompare, hash))
+            var configContentHasChanged = this.lastHttpETag is not null && httpETag is not null
+                ? this.lastHttpETag != httpETag
+                : this.lastConfig != config;
+
+            if (!configContentHasChanged)
             {
-                settings = this.lastSerializedSettings;
+                settings = this.lastDeserializedSettings;
                 return true;
             }
 
-            this.lastSerializedSettings = settings = config.Deserialize<SettingsWithPreferences>();
-            this.hashToCompare = hash;
+            this.lastDeserializedSettings = settings = config.Deserialize<SettingsWithPreferences>();
+            this.lastConfig = config;
+            this.lastHttpETag = httpETag;
             return true;
         }
-
-        private static bool CompareByteArrays(ReadOnlySpan<byte> b1, ReadOnlySpan<byte> b2) => b1.SequenceEqual(b2);
     }
 }

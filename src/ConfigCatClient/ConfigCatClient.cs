@@ -688,7 +688,7 @@ namespace ConfigCat.Client
             SettingsWithRemoteConfig GetRemoteConfig()
             {
                 var config = this.configService.GetConfig();
-                if (!this.configDeserializer.TryDeserialize(config.JsonString, out var deserialized))
+                if (!this.configDeserializer.TryDeserialize(config.JsonString, config.HttpETag, out var deserialized))
                     return new SettingsWithRemoteConfig(new Dictionary<string, Setting>(), config);
 
                 return new SettingsWithRemoteConfig(deserialized.Settings, config);
@@ -721,7 +721,7 @@ namespace ConfigCat.Client
             async Task<SettingsWithRemoteConfig> GetRemoteConfigAsync()
             {
                 var config = await this.configService.GetConfigAsync().ConfigureAwait(false);
-                if (!this.configDeserializer.TryDeserialize(config.JsonString, out var deserialized))
+                if (!this.configDeserializer.TryDeserialize(config.JsonString, config.HttpETag, out var deserialized))
                     return new SettingsWithRemoteConfig(new Dictionary<string, Setting>(), config);
 
                 return new SettingsWithRemoteConfig(deserialized.Settings, config);

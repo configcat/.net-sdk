@@ -9,6 +9,7 @@ using ConfigCat.Client.Cache;
 using ConfigCat.Client.Configuration;
 using ConfigCat.Client.Override;
 using System.Threading;
+using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client
 {
@@ -756,7 +757,8 @@ namespace ConfigCat.Client
         private static string GetCacheKey(string sdkKey)
         {
             var key = $"dotnet_{ConfigurationBase.ConfigFileName}_{sdkKey}";
-            return key.Hash();
+            using var hasher = Hasher.Create();
+            return hasher.Hash(key);
         }
 
         /// <inheritdoc />

@@ -1,12 +1,13 @@
 ﻿using System.Net;
-using System.Runtime.CompilerServices;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ConfigCat.Client.Tests
 {
-    internal class ModuleInitializer
+    [TestClass]
+    public class AssemblyInitializer
     {
-        [ModuleInitializer]
-        internal static void Setup()
+        [AssemblyInitialize]
+        public static void AssemblyInitialize(TestContext context)
         {
 #if NET45
             // TLS 1.2 was not enabled before .NET 4.6 by default (see https://stackoverflow.com/a/58195987/8656352),

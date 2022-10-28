@@ -279,7 +279,7 @@ namespace ConfigCat.Client
             catch (Exception ex)
             {
                 this.log.Error($"Error occured in 'GetValue' method.\n{ex}");
-                return EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user, ex.Message, ex);
+                return EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user ?? this.defaultUser, ex.Message, ex);
             }
         }
 
@@ -295,7 +295,7 @@ namespace ConfigCat.Client
             catch (Exception ex)
             {
                 this.log.Error($"Error occured in 'GetValueAsync' method.\n{ex}");
-                return EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user, ex.Message, ex);
+                return EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user ?? this.defaultUser, ex.Message, ex);
             }
         }
 

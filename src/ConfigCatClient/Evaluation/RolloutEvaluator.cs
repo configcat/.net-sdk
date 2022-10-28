@@ -63,45 +63,42 @@ namespace ConfigCat.Client.Evaluation
 
             try
             {
-                JsonValue value;
-                string variationId;
-
                 if (user != null)
                 {
-                    // evaluate rules
+                    // evaluate comparison-based rules
 
-                    if (TryEvaluateRules(setting.RolloutRules, user, evaluateLog, out value, out variationId, out var matchedEvaluationRule))
+                    if (TryEvaluateRules(setting.RolloutRules, user, evaluateLog, out var evaluateRulesResult))
                     {
-                        evaluateLog.ReturnValue = value.ToString();
-                        evaluateLog.VariationId = variationId;
+                        evaluateLog.ReturnValue = evaluateRulesResult.Value.ToString();
+                        evaluateLog.VariationId = evaluateRulesResult.VariationId;
 
                         return EvaluationDetails.FromJsonValue(
                             detailsFactory,
                             setting.SettingType,
                             key,
-                            value,
-                            variationId,
+                            evaluateRulesResult.Value,
+                            evaluateRulesResult.VariationId,
                             fetchTime: remoteConfig?.TimeStamp,
                             user,
-                            matchedEvaluationRule: matchedEvaluationRule);
+                            matchedEvaluationRule: evaluateRulesResult.MatchedRule);
                     }
 
-                    // evaluate variations
+                    // evaluate percentage-based rules
 
-                    if (TryEvaluateVariations(setting.RolloutPercentageItems, key, user, evaluateLog, out value, out variationId, out var matchedEvaluationPercentageRule))
+                    if (TryEvaluatePercentageRules(setting.RolloutPercentageItems, key, user, evaluateLog, out var evaluatePercentageRulesResult))
                     {
-                        evaluateLog.ReturnValue = value.ToString();
-                        evaluateLog.VariationId = variationId;
+                        evaluateLog.ReturnValue = evaluatePercentageRulesResult.Value.ToString();
+                        evaluateLog.VariationId = evaluatePercentageRulesResult.VariationId;
 
                         return EvaluationDetails.FromJsonValue(
                             detailsFactory,
                             setting.SettingType,
                             key,
-                            value,
-                            variationId,
+                            evaluatePercentageRulesResult.Value,
+                            evaluatePercentageRulesResult.VariationId,
                             fetchTime: remoteConfig?.TimeStamp,
                             user,
-                            matchedEvaluationPercentageRule: matchedEvaluationPercentageRule);
+                            matchedEvaluationPercentageRule: evaluatePercentageRulesResult.MatchedRule);
                     }
                 }
                 else if (setting.RolloutRules.Any() || setting.RolloutPercentageItems.Any())
@@ -111,18 +108,15 @@ namespace ConfigCat.Client.Evaluation
 
                 // regular evaluate
 
-                value = setting.Value;
-                variationId = setting.VariationId;
-
-                evaluateLog.ReturnValue = value.ToString();
-                evaluateLog.VariationId = variationId;
+                evaluateLog.ReturnValue = setting.Value.ToString();
+                evaluateLog.VariationId = setting.VariationId;
 
                 return EvaluationDetails.FromJsonValue(
                     detailsFactory,
                     setting.SettingType,
                     key,
-                    value,
-                    variationId,
+                    setting.Value,
+                    setting.VariationId,
                     fetchTime: remoteConfig?.TimeStamp,
                     user);
             }
@@ -132,8 +126,7 @@ namespace ConfigCat.Client.Evaluation
             }
         }
 
-        private static bool TryEvaluateVariations<T>(ICollection<RolloutPercentageItem> rolloutPercentageItems, string key, User user, 
-            EvaluateLogger<T> evaluateLog, out JsonValue value, out string variationId, out RolloutPercentageItem matchedRule)
+        private static bool TryEvaluatePercentageRules<T>(ICollection<RolloutPercentageItem> rolloutPercentageItems, string key, User user, EvaluateLogger<T> evaluateLog, out EvaluateResult<RolloutPercentageItem> result)
         {
             if (rolloutPercentageItems is { Count: > 0 })
             {
@@ -146,40 +139,33 @@ namespace ConfigCat.Client.Evaluation
 
                 var bucket = 0;
 
-                foreach (var variation in rolloutPercentageItems.OrderBy(o => o.Order))
+                foreach (var percentageRule in rolloutPercentageItems.OrderBy(o => o.Order))
                 {
-                    bucket += variation.Percentage;
+                    bucket += percentageRule.Percentage;
 
                     if (hashScale >= bucket)
                     {
-                        evaluateLog.Log($"  - % option: [IF {bucket} > {hashScale} THEN '{variation.Value}'] => no match");
+                        evaluateLog.Log($"  - % option: [IF {bucket} > {hashScale} THEN '{percentageRule.Value}'] => no match");
                         continue;
                     }
-                    value = variation.Value;
-                    variationId = variation.VariationId;
-                    matchedRule = variation;
-                    evaluateLog.Log($"  - % option: [IF {bucket} > {hashScale} THEN '{variation.Value}'] => MATCH, applying % option");
+                    result = new EvaluateResult<RolloutPercentageItem>(percentageRule.Value, percentageRule.VariationId, percentageRule);
+                    evaluateLog.Log($"  - % option: [IF {bucket} > {hashScale} THEN '{percentageRule.Value}'] => MATCH, applying % option");
                     return true;
                 }
             }
 
-            value = default;
-            variationId = default;
-            matchedRule = default;
+            result = default;
             return false;
         }
 
-        private static bool TryEvaluateRules<T>(ICollection<RolloutRule> rules, User user, EvaluateLogger<T> logger,
-            out JsonValue value, out string variationId, out RolloutRule matchedRule)
+        private static bool TryEvaluateRules<T>(ICollection<RolloutRule> rules, User user, EvaluateLogger<T> logger, out EvaluateResult<RolloutRule> result)
         {
             if (rules is { Count: > 0 })
             {
                 logger.Log($"Applying the first targeting rule that matches the User '{user.Serialize()}':");
                 foreach (var rule in rules.OrderBy(o => o.Order))
                 {
-                    value = rule.Value;
-                    variationId = rule.VariationId;
-                    matchedRule = rule;
+                    result = new EvaluateResult<RolloutRule>(rule.Value, rule.VariationId, rule);
 
                     string l = $"  - rule: [IF User.{rule.ComparisonAttribute} {RolloutRule.FormatComparator(rule.Comparator)} '{rule.ComparisonValue}' THEN {rule.Value}] => ";
                     if (!user.AllAttributes.ContainsKey(rule.ComparisonAttribute))
@@ -321,9 +307,7 @@ namespace ConfigCat.Client.Evaluation
                 }
             }
 
-            value = default;
-            variationId = default;
-            matchedRule = default;
+            result = default;
             return false;
         }
 
@@ -423,6 +407,20 @@ namespace ConfigCat.Client.Evaluation
             }
 
             return false;
+        }
+ 
+        private readonly struct EvaluateResult<TRule>
+        {
+            public EvaluateResult(JsonValue value, string variationId, TRule matchedRule)
+            {
+                Value = value;
+                VariationId = variationId;
+                MatchedRule = matchedRule;
+            }
+
+            public JsonValue Value { get; }
+            public string VariationId { get; }
+            public TRule MatchedRule { get; }
         }
     }
 }

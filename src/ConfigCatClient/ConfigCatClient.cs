@@ -1,5 +1,5 @@
 ﻿using ConfigCat.Client.ConfigService;
-using ConfigCat.Client.Evaluate;
+using ConfigCat.Client.Evaluation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -243,7 +243,7 @@ namespace ConfigCat.Client
             try
             {
                 var settings = this.GetSettings();
-                return this.configEvaluator.Evaluate(settings, key, defaultValue, user ?? this.defaultUser);
+                return this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user ?? this.defaultUser, settings.RemoteConfig);
             }
             catch (Exception ex)
             {
@@ -258,7 +258,7 @@ namespace ConfigCat.Client
             try
             {
                 var settings = await this.GetSettingsAsync().ConfigureAwait(false);
-                return this.configEvaluator.Evaluate(settings, key, defaultValue, user ?? this.defaultUser);
+                return this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user ?? this.defaultUser, settings.RemoteConfig);
             }
             catch (Exception ex)
             {
@@ -268,18 +268,50 @@ namespace ConfigCat.Client
         }
 
         /// <inheritdoc />
+        public EvaluationDetails<T> GetValueDetails<T>(string key, T defaultValue, User user = null)
+        {
+            SettingsWithRemoteConfig settings = default;
+            try
+            {
+                settings = this.GetSettings();
+                return this.configEvaluator.EvaluateDetails(settings.Value, key, defaultValue, user ?? this.defaultUser, settings.RemoteConfig);
+            }
+            catch (Exception ex)
+            {
+                this.log.Error($"Error occured in 'GetValue' method.\n{ex}");
+                return EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user ?? this.defaultUser, ex.Message, ex);
+            }
+        }
+
+        /// <inheritdoc />
+        public async Task<EvaluationDetails<T>> GetValueDetailsAsync<T>(string key, T defaultValue, User user = null)
+        {
+            SettingsWithRemoteConfig settings = default;
+            try
+            {
+                settings = await this.GetSettingsAsync().ConfigureAwait(false);
+                return this.configEvaluator.EvaluateDetails(settings.Value, key, defaultValue, user ?? this.defaultUser, settings.RemoteConfig);
+            }
+            catch (Exception ex)
+            {
+                this.log.Error($"Error occured in 'GetValueAsync' method.\n{ex}");
+                return EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user ?? this.defaultUser, ex.Message, ex);
+            }
+        }
+
+        /// <inheritdoc />
         public IEnumerable<string> GetAllKeys()
         {
             try
             {
                 var settings = this.GetSettings();
-                if (settings.Count == 0)
+                if (settings.Value.Count == 0)
                 {
                     this.log.Warning("Config deserialization failed.");
                     return ArrayUtils.EmptyArray<string>();
                 }
 
-                return settings.Keys;
+                return settings.Value.Keys;
             }
             catch (Exception ex)
             {
@@ -294,13 +326,13 @@ namespace ConfigCat.Client
             try
             {
                 var settings = await this.GetSettingsAsync().ConfigureAwait(false);
-                if (settings.Count == 0)
+                if (settings.Value.Count == 0)
                 {
                     this.log.Warning("Config deserialization failed.");
                     return ArrayUtils.EmptyArray<string>();
                 }
 
-                return settings.Keys;
+                return settings.Value.Keys;
             }
             catch (Exception ex)
             {
@@ -439,7 +471,7 @@ namespace ConfigCat.Client
             try
             {
                 var settings = this.GetSettings();
-                return this.configEvaluator.EvaluateVariationId(settings, key, defaultVariationId, user ?? this.defaultUser);
+                return this.configEvaluator.EvaluateVariationId(settings.Value, key, defaultVariationId, user ?? this.defaultUser, settings.RemoteConfig);
             }
             catch (Exception ex)
             {
@@ -454,7 +486,7 @@ namespace ConfigCat.Client
             try
             {
                 var settings = await this.GetSettingsAsync().ConfigureAwait(false);
-                return this.configEvaluator.EvaluateVariationId(settings, key, defaultVariationId, user ?? this.defaultUser);
+                return this.configEvaluator.EvaluateVariationId(settings.Value, key, defaultVariationId, user ?? this.defaultUser, settings.RemoteConfig);
             }
             catch (Exception ex)
             {
@@ -493,30 +525,30 @@ namespace ConfigCat.Client
             }
         }
 
-        private IEnumerable<string> GetAllVariationIdLogic(IDictionary<string, Setting> settings, User user)
+        private IEnumerable<string> GetAllVariationIdLogic(SettingsWithRemoteConfig settings, User user)
         {
-            if (settings.Count == 0)
+            if (settings.Value.Count == 0)
             {
                 this.log.Warning("Config deserialization failed.");
                 return Enumerable.Empty<string>();
             }
 
-            var result = new List<string>(settings.Keys.Count);
-            result.AddRange(settings.Keys.Select(key => this.configEvaluator.EvaluateVariationId(settings, key, null, user))
+            var result = new List<string>(settings.Value.Keys.Count);
+            result.AddRange(settings.Value.Keys.Select(key => this.configEvaluator.EvaluateVariationId(settings.Value, key, defaultVariationId: null, user, settings.RemoteConfig))
                 .Where(r => r != null));
 
             return result;
         }
 
-        private IDictionary<string, object> GenerateSettingKeyValueMap(User user, IDictionary<string, Setting> settings)
+        private IDictionary<string, object> GenerateSettingKeyValueMap(User user, SettingsWithRemoteConfig settings)
         {
-            if (settings.Count == 0)
+            if (settings.Value.Count == 0)
             {
                 this.log.Warning("Config deserialization failed.");
                 return new Dictionary<string, object>();
             }
 
-            return settings.ToDictionary(kv => kv.Key, kv => this.configEvaluator.Evaluate(settings, kv.Key, null, user));
+            return settings.Value.ToDictionary(kv => kv.Key, kv => this.configEvaluator.Evaluate(settings.Value, kv.Key, defaultValue: null, user, settings.RemoteConfig));
         }
 
         /// <summary>
@@ -530,69 +562,69 @@ namespace ConfigCat.Client
             return ConfigCatClientBuilder.Initialize(sdkKey);
         }
 
-        private IDictionary<string, Setting> GetSettings()
+        private SettingsWithRemoteConfig GetSettings()
         {
             if (this.overrideBehaviour != null)
             {
                 IDictionary<string, Setting> local;
-                IDictionary<string, Setting> remote;
+                SettingsWithRemoteConfig remote;
                 switch (this.overrideBehaviour)
                 {
                     case OverrideBehaviour.LocalOnly:
-                        return this.overrideDataSource.GetOverrides();
+                        return new SettingsWithRemoteConfig(this.overrideDataSource.GetOverrides(), remoteConfig: null);
                     case OverrideBehaviour.LocalOverRemote:
                         local = this.overrideDataSource.GetOverrides();
                         remote = GetRemoteConfig();
-                        return remote.MergeOverwriteWith(local);
+                        return new SettingsWithRemoteConfig(remote.Value.MergeOverwriteWith(local), remote.RemoteConfig);
                     case OverrideBehaviour.RemoteOverLocal:
                         local = this.overrideDataSource.GetOverrides();
                         remote = GetRemoteConfig();
-                        return local.MergeOverwriteWith(remote);
+                        return new SettingsWithRemoteConfig(local.MergeOverwriteWith(remote.Value), remote.RemoteConfig);
                 }
             }
 
             return GetRemoteConfig();
 
-            IDictionary<string, Setting> GetRemoteConfig()
+            SettingsWithRemoteConfig GetRemoteConfig()
             {
                 var config = this.configService.GetConfig();
                 if (!this.configDeserializer.TryDeserialize(config.JsonString, out var deserialized))
-                    return new Dictionary<string, Setting>();
+                    return new SettingsWithRemoteConfig(new Dictionary<string, Setting>(), config);
 
-                return deserialized.Settings;
+                return new SettingsWithRemoteConfig(deserialized.Settings, config);
             }
         }
 
-        private async Task<IDictionary<string, Setting>> GetSettingsAsync()
+        private async Task<SettingsWithRemoteConfig> GetSettingsAsync()
         {
             if (this.overrideBehaviour != null)
             {
                 IDictionary<string, Setting> local;
-                IDictionary<string, Setting> remote;
+                SettingsWithRemoteConfig remote;
                 switch (this.overrideBehaviour)
                 {
                     case OverrideBehaviour.LocalOnly:
-                        return await this.overrideDataSource.GetOverridesAsync().ConfigureAwait(false);
+                        return new SettingsWithRemoteConfig(await this.overrideDataSource.GetOverridesAsync().ConfigureAwait(false), remoteConfig: null);
                     case OverrideBehaviour.LocalOverRemote:
                         local = await this.overrideDataSource.GetOverridesAsync().ConfigureAwait(false);
                         remote = await GetRemoteConfigAsync().ConfigureAwait(false);
-                        return remote.MergeOverwriteWith(local);
+                        return new SettingsWithRemoteConfig(remote.Value.MergeOverwriteWith(local), remote.RemoteConfig);
                     case OverrideBehaviour.RemoteOverLocal:
                         local = await this.overrideDataSource.GetOverridesAsync().ConfigureAwait(false);
                         remote = await GetRemoteConfigAsync().ConfigureAwait(false);
-                        return local.MergeOverwriteWith(remote);
+                        return new SettingsWithRemoteConfig(local.MergeOverwriteWith(remote.Value), remote.RemoteConfig);
                 }
             }
 
             return await GetRemoteConfigAsync().ConfigureAwait(false);
 
-            async Task<IDictionary<string, Setting>> GetRemoteConfigAsync()
+            async Task<SettingsWithRemoteConfig> GetRemoteConfigAsync()
             {
                 var config = await this.configService.GetConfigAsync().ConfigureAwait(false);
                 if (!this.configDeserializer.TryDeserialize(config.JsonString, out var deserialized))
-                    return new Dictionary<string, Setting>();
+                    return new SettingsWithRemoteConfig(new Dictionary<string, Setting>(), config);
 
-                return deserialized.Settings;
+                return new SettingsWithRemoteConfig(deserialized.Settings, config);
             }
         }
 
@@ -650,6 +682,18 @@ namespace ConfigCat.Client
         public void SetOffline()
         {
             this.configService.SetOffline();
+        }
+ 
+        private readonly struct SettingsWithRemoteConfig
+        {
+            public SettingsWithRemoteConfig(IDictionary<string, Setting> value, ProjectConfig remoteConfig)
+            {
+                Value = value;
+                RemoteConfig = remoteConfig;
+            }
+
+            public IDictionary<string, Setting> Value { get; }
+            public ProjectConfig RemoteConfig { get; }
         }
     }
 }

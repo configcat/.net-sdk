@@ -74,5 +74,11 @@ namespace ConfigCat.Client
             this.Identifier = string.IsNullOrEmpty(identifier) ? DefaultIdentifierValue : identifier;
             this.Custom = new Dictionary<string, string>(0);
         }
+
+        /// <inheritdoc/>
+        public override string ToString()
+        {
+            return Identifier;
+        }
     }
 }

@@ -1,4 +1,4 @@
-﻿using ConfigCat.Client.Evaluate;
+﻿using ConfigCat.Client.Evaluation;
 using System;
 using System.Data.HashFunction;
 using System.Data.HashFunction.MurmurHash;

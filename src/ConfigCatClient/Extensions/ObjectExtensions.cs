@@ -1,5 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
-using ConfigCat.Client.Evaluate;
+using ConfigCat.Client.Evaluation;
 
 namespace System
 {

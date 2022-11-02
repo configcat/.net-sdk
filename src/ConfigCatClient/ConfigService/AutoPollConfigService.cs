@@ -115,15 +115,18 @@ namespace ConfigCat.Client.ConfigService
         {
             if (this.ConfigCache is IConfigCatCache cache)
             {
-                var cacheConfig = cache.Get(base.CacheKey);
-
-                if (!IsOffline && !IsInitialized && cacheConfig.IsExpired(expiration: configuration.PollInterval, out _))
+                if (!IsOffline && !IsInitialized)
                 {
+                    var cacheConfig = cache.Get(base.CacheKey);
+                    if (!cacheConfig.IsExpired(expiration: configuration.PollInterval, out _))
+                    {
+                        return cacheConfig;
+                    }
+
                     WaitForInitialization();
-                    cacheConfig = cache.Get(base.CacheKey);
                 }
 
-                return cacheConfig;
+                return cache.Get(base.CacheKey);
             }
 
             // worst scenario, fallback to sync over async, delete when we enforce IConfigCatCache.
@@ -132,15 +135,18 @@ namespace ConfigCat.Client.ConfigService
 
         public async Task<ProjectConfig> GetConfigAsync()
         {
-            var cacheConfig = await this.ConfigCache.GetAsync(base.CacheKey).ConfigureAwait(false);
-
-            if (!IsOffline && !IsInitialized && cacheConfig.IsExpired(expiration: configuration.PollInterval, out _))
+            if (!IsOffline && !IsInitialized)
             {
+                var cacheConfig = await this.ConfigCache.GetAsync(base.CacheKey).ConfigureAwait(false);
+                if (!cacheConfig.IsExpired(expiration: configuration.PollInterval, out _))
+                {
+                    return cacheConfig;
+                }
+
                 await WaitForInitializationAsync().ConfigureAwait(false);
-                cacheConfig = await this.ConfigCache.GetAsync(base.CacheKey).ConfigureAwait(false);
             }
 
-            return cacheConfig;
+            return await this.ConfigCache.GetAsync(base.CacheKey).ConfigureAwait(false);
         }
 
         protected override void OnConfigUpdated(ProjectConfig newConfig)

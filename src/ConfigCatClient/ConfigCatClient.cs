@@ -288,7 +288,7 @@ namespace ConfigCat.Client
             }
 
             this.hooks.RaiseFlagEvaluated(this, evaluationDetails);
-            return evaluationDetails.Value;
+            return value;
         }
 
         /// <inheritdoc />

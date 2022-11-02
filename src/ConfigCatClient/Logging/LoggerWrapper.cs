@@ -58,7 +58,7 @@ namespace ConfigCat.Client
             if (this.TargetLogEnabled(LogLevel.Error))
             {
                 var logMessage = exception is not null
-                    ? message + "\n" + exception
+                    ? message + Environment.NewLine + exception
                     : message;
 
                 this.logger.Error(logMessage);

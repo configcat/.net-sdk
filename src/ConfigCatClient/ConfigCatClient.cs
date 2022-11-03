@@ -133,14 +133,9 @@ namespace ConfigCat.Client
         {
             this.sdkKey = sdkKey;
             this.hooks = configuration.Hooks;
+            this.hooks.SetSender(this);
 
-            // Strong back-references to the client instance must be avoided so GC can collect it when user doesn't have references to it any more.
-            // (There are cases - like AutoPollConfigService or LocalFileDataSource - where the background work keeps the service object alive,
-            // so if that had a strong reference to the client object, it would be kept alive as well, which would create a memory leak.)
-            var clientContext = new ConfigCatClientContext(new WeakReference<IConfigCatClient>(this),
-                hooksAccessor: static client => ((ConfigCatClient)client).hooks);
-
-            this.log = new LoggerWrapper(configuration.Logger, clientContext);
+            this.log = new LoggerWrapper(configuration.Logger, this.hooks);
             this.configDeserializer = new ConfigDeserializer();
             this.configEvaluator = new RolloutEvaluator(this.log);
 
@@ -152,7 +147,7 @@ namespace ConfigCat.Client
 
             if (configuration.FlagOverrides != null)
             {
-                this.overrideDataSource = configuration.FlagOverrides.BuildDataSource(this.log, clientContext);
+                this.overrideDataSource = configuration.FlagOverrides.BuildDataSource(this.log);
                 this.overrideBehaviour = configuration.FlagOverrides.OverrideBehaviour;
             }
 
@@ -170,8 +165,8 @@ namespace ConfigCat.Client
                         cacheParameters,
                         this.log,
                         configuration.Offline,
-                        clientContext)
-                : new NullConfigService(this.log, clientContext);
+                        this.hooks)
+                : new NullConfigService(this.log, this.hooks);
         }
 
         /// <summary>
@@ -181,7 +176,15 @@ namespace ConfigCat.Client
         {
             this.isUncached = true;
 
-            this.hooks = hooks ?? NullHooks.Instance;
+            if (hooks is not null)
+            {
+                this.hooks = hooks;
+                this.hooks.SetSender(this);
+            }
+            else
+            {
+                this.hooks = NullHooks.Instance;
+            }
 
             this.configService = configService;
             this.log = new LoggerWrapper(logger);
@@ -265,7 +268,7 @@ namespace ConfigCat.Client
                 value = defaultValue;
             }
 
-            this.hooks.RaiseFlagEvaluated(this, evaluationDetails);
+            this.hooks.RaiseFlagEvaluated(evaluationDetails);
             return value;
         }
 
@@ -287,7 +290,7 @@ namespace ConfigCat.Client
                 value = defaultValue;
             }
 
-            this.hooks.RaiseFlagEvaluated(this, evaluationDetails);
+            this.hooks.RaiseFlagEvaluated(evaluationDetails);
             return value;
         }
 
@@ -307,7 +310,7 @@ namespace ConfigCat.Client
                 evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user ?? this.defaultUser, ex.Message, ex);
             }
 
-            this.hooks.RaiseFlagEvaluated(this, evaluationDetails);
+            this.hooks.RaiseFlagEvaluated(evaluationDetails);
             return evaluationDetails;
         }
 
@@ -327,7 +330,7 @@ namespace ConfigCat.Client
                 evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user ?? this.defaultUser, ex.Message, ex);
             }
 
-            this.hooks.RaiseFlagEvaluated(this, evaluationDetails);
+            this.hooks.RaiseFlagEvaluated(evaluationDetails);
             return evaluationDetails;
         }
 
@@ -387,7 +390,7 @@ namespace ConfigCat.Client
 
             foreach (var evaluationDetails in evaluationDetailsArray)
             {
-                this.hooks.RaiseFlagEvaluated(this, evaluationDetails);
+                this.hooks.RaiseFlagEvaluated(evaluationDetails);
             }
 
             return result;
@@ -411,7 +414,7 @@ namespace ConfigCat.Client
 
             foreach (var evaluationDetails in evaluationDetailsArray)
             {
-                this.hooks.RaiseFlagEvaluated(this, evaluationDetails);
+                this.hooks.RaiseFlagEvaluated(evaluationDetails);
             }
 
             return result;
@@ -472,7 +475,7 @@ namespace ConfigCat.Client
             {
                 try
                 {
-                    originalHooks.RaiseBeforeClientDispose(this);
+                    originalHooks.RaiseBeforeClientDispose();
                 }
                 finally
                 {
@@ -482,6 +485,22 @@ namespace ConfigCat.Client
                     }
 
                     this.overrideDataSource?.Dispose();
+                }
+            }
+            else
+            {
+                // Execution gets here when consumer forgets to dispose the client instance.
+                // In this case we need to make sure that background work is stopped,
+                // otherwise it would go on endlessly, that is, we'd end up with a memory leak.
+                var autoPollConfigService = this.configService as AutoPollConfigService;
+                var localFileDataSource = this.overrideDataSource as LocalFileDataSource;
+                if (autoPollConfigService is not null || localFileDataSource is not null)
+                {
+                    Task.Run(() =>
+                    {
+                        autoPollConfigService?.StopScheduler();
+                        localFileDataSource?.StopWatch();
+                    });
                 }
             }
         }
@@ -545,7 +564,7 @@ namespace ConfigCat.Client
                 variationId = defaultVariationId;
             }
 
-            this.hooks.RaiseFlagEvaluated(this, evaluationDetails);
+            this.hooks.RaiseFlagEvaluated(evaluationDetails);
             return variationId;
         }
 
@@ -567,7 +586,7 @@ namespace ConfigCat.Client
                 variationId = defaultVariationId;
             }
 
-            this.hooks.RaiseFlagEvaluated(this, evaluationDetails);
+            this.hooks.RaiseFlagEvaluated(evaluationDetails);
             return variationId;
         }
 
@@ -589,7 +608,7 @@ namespace ConfigCat.Client
 
             foreach (var evaluationDetails in evaluationDetailsArray)
             {
-                this.hooks.RaiseFlagEvaluated(this, evaluationDetails);
+                this.hooks.RaiseFlagEvaluated(evaluationDetails);
             }
 
             return result;
@@ -613,7 +632,7 @@ namespace ConfigCat.Client
 
             foreach (var evaluationDetails in evaluationDetailsArray)
             {
-                this.hooks.RaiseFlagEvaluated(this, evaluationDetails);
+                this.hooks.RaiseFlagEvaluated(evaluationDetails);
             }
 
             return result;
@@ -696,7 +715,7 @@ namespace ConfigCat.Client
             }
         }
 
-        private static IConfigService DetermineConfigService(PollingMode pollingMode, HttpConfigFetcher fetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline, ConfigCatClientContext clientContext)
+        private static IConfigService DetermineConfigService(PollingMode pollingMode, HttpConfigFetcher fetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline, Hooks hooks)
         {
             return pollingMode switch
             {
@@ -705,18 +724,18 @@ namespace ConfigCat.Client
                     cacheParameters,
                     logger,
                     isOffline,
-                    clientContext),
+                    hooks),
                 LazyLoad lazyLoad => new LazyLoadConfigService(fetcher,
                     cacheParameters,
                     logger,
                     lazyLoad.CacheTimeToLive,
                     isOffline,
-                    clientContext),
+                    hooks),
                 ManualPoll => new ManualPollConfigService(fetcher,
                     cacheParameters,
                     logger,
                     isOffline,
-                    clientContext),
+                    hooks),
                 _ => throw new ArgumentException("Invalid configuration type."),
             };
         }

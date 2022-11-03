@@ -165,7 +165,7 @@ namespace ConfigCat.Client.Tests
                 new CacheParameters { ConfigCache = cacheMock.Object },
                 loggerMock.Object.AsWrapper(),
                 defaultExpire,
-                clientContext: new ConfigCatClientContext(hooksAccessor: _ => hooks));
+                hooks: hooks);
 
             // Act
 
@@ -321,7 +321,7 @@ namespace ConfigCat.Client.Tests
                 new CacheParameters { ConfigCache = cacheMock.Object },
                 loggerMock.Object.AsWrapper(),
                 startTimer: false,
-                clientContext: new ConfigCatClientContext(hooksAccessor: _ => hooks));
+                hooks: hooks);
 
 #pragma warning disable CS0618 // Type or member is obsolete
             config.OnConfigurationChanged += (o, s) => { eventChanged++; };
@@ -428,7 +428,7 @@ namespace ConfigCat.Client.Tests
                 fetcherMock.Object,
                 new CacheParameters { ConfigCache = cacheMock.Object },
                 loggerMock.Object.AsWrapper(),
-                clientContext: new ConfigCatClientContext(hooksAccessor: _ => hooks));
+                hooks: hooks);
 
             // Act
 
@@ -476,7 +476,7 @@ namespace ConfigCat.Client.Tests
                 fetcherMock.Object,
                 new CacheParameters { ConfigCache = cacheMock.Object },
                 loggerMock.Object.AsWrapper(),
-                clientContext: new ConfigCatClientContext(hooksAccessor: _ => hooks));
+                hooks: hooks);
             // Act
 
             await service.RefreshConfigAsync();
@@ -516,7 +516,7 @@ namespace ConfigCat.Client.Tests
                 fetcherMock.Object,
                 new CacheParameters { ConfigCache = cacheMock.Object },
                 loggerMock.Object.AsWrapper(),
-                clientContext: new ConfigCatClientContext(hooksAccessor: _ => hooks));
+                hooks: hooks);
 
             // Act
 
@@ -628,7 +628,7 @@ namespace ConfigCat.Client.Tests
                 new CacheParameters { ConfigCache = cache },
                 loggerMock.Object.AsWrapper(),
                 startTimer: true,
-                clientContext: new ConfigCatClientContext(hooksAccessor: _ => hooks));
+                hooks: hooks);
 
             // Act
 
@@ -688,7 +688,7 @@ namespace ConfigCat.Client.Tests
                 new CacheParameters { ConfigCache = cache },
                 loggerMock.Object.AsWrapper(),
                 startTimer: true,
-                clientContext: new ConfigCatClientContext(hooksAccessor: _ => hooks));
+                hooks: hooks);
 
             // Act
 
@@ -741,7 +741,7 @@ namespace ConfigCat.Client.Tests
                 new CacheParameters { ConfigCache = cache },
                 loggerMock.Object.AsWrapper(),
                 startTimer: true,
-                clientContext: new ConfigCatClientContext(hooksAccessor: _ => hooks));
+                hooks: hooks);
 
             // Act
 
@@ -798,7 +798,7 @@ namespace ConfigCat.Client.Tests
                 new CacheParameters { ConfigCache = cache },
                 loggerMock.Object.AsWrapper(),
                 config.CacheTimeToLive,
-                clientContext: new ConfigCatClientContext(hooksAccessor: _ => hooks));
+                hooks: hooks);
 
             // Act
 
@@ -854,7 +854,7 @@ namespace ConfigCat.Client.Tests
                 new CacheParameters { ConfigCache = cache },
                 loggerMock.Object.AsWrapper(),
                 config.CacheTimeToLive,
-                clientContext: new ConfigCatClientContext(hooksAccessor: _ => hooks));
+                hooks: hooks);
 
             // Act
 

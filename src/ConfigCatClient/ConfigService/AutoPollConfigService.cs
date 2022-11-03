@@ -19,7 +19,7 @@ namespace ConfigCat.Client.ConfigService
             CacheParameters cacheParameters,
             LoggerWrapper logger,
             bool isOffline = false,
-            ConfigCatClientContext clientContext = null) : this(configuration, configFetcher, cacheParameters, logger, startTimer: true, isOffline, clientContext)
+            Hooks hooks = null) : this(configuration, configFetcher, cacheParameters, logger, startTimer: true, isOffline, hooks)
         { }
 
         // For test purposes only
@@ -30,11 +30,11 @@ namespace ConfigCat.Client.ConfigService
             LoggerWrapper logger,
             bool startTimer,
             bool isOffline = false,
-            ConfigCatClientContext clientContext = null) : base(configFetcher, cacheParameters, logger, isOffline, clientContext)
+            Hooks hooks = null) : base(configFetcher, cacheParameters, logger, isOffline, hooks)
         {
             this.configuration = configuration;
 
-            initializationCancellationTokenSource.Token.Register(this.ClientContext.RaiseClientReady, useSynchronizationContext: false);
+            initializationCancellationTokenSource.Token.Register(this.Hooks.RaiseClientReady, useSynchronizationContext: false);
             if (configuration.MaxInitWaitTime > TimeSpan.Zero)
             {
                 initializationCancellationTokenSource.CancelAfter(configuration.MaxInitWaitTime);
@@ -179,8 +179,7 @@ namespace ConfigCat.Client.ConfigService
             {
                 var isFirstIteration = true;
 
-                while (!this.ClientContext.ClientIsGone
-                    && Synchronize(static @this => @this.timerCancellationTokenSource?.Token, this) is { } cancellationToken
+                while (Synchronize(static @this => @this.timerCancellationTokenSource?.Token, this) is { } cancellationToken
                     && !cancellationToken.IsCancellationRequested)
                 {
                     try
@@ -195,13 +194,10 @@ namespace ConfigCat.Client.ConfigService
                             this.Log.Error($"Error occured during polling.", ex);
                         }
 
-                        if (!this.ClientContext.ClientIsGone)
+                        var realNextTime = scheduledNextTime.Subtract(DateTime.UtcNow);
+                        if (realNextTime > TimeSpan.Zero)
                         {
-                            var realNextTime = scheduledNextTime.Subtract(DateTime.UtcNow);
-                            if (realNextTime > TimeSpan.Zero)
-                            {
-                                await Task.Delay(realNextTime, cancellationToken).ConfigureAwait(false);
-                            }
+                            await Task.Delay(realNextTime, cancellationToken).ConfigureAwait(false);
                         }
                     }
                     catch (OperationCanceledException)
@@ -243,6 +239,15 @@ namespace ConfigCat.Client.ConfigService
                     await RefreshConfigCoreAsync(latestConfig).ConfigureAwait(false);
                 }
             }
+        }
+
+        internal void StopScheduler()
+        {
+            Synchronize(static @this =>
+            {
+                @this.timerCancellationTokenSource?.Cancel();
+                return default(object);
+            }, this);
         }
     }
 }

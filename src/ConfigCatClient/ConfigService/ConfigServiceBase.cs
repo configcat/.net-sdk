@@ -25,15 +25,15 @@ namespace ConfigCat.Client.ConfigService
 
         protected readonly LoggerWrapper Log;
         protected readonly string CacheKey;
-        protected readonly ConfigCatClientContext ClientContext;
+        protected readonly Hooks Hooks;
 
-        protected ConfigServiceBase(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper log, bool isOffline, ConfigCatClientContext clientContext)
+        protected ConfigServiceBase(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper log, bool isOffline, Hooks hooks)
         {
             this.ConfigFetcher = configFetcher;
             this.ConfigCache = cacheParameters.ConfigCache;
             this.CacheKey = cacheParameters.CacheKey;
             this.Log = log;
-            this.ClientContext = clientContext ?? ConfigCatClientContext.None;
+            this.Hooks = hooks ?? NullHooks.Instance;
             this.status = isOffline ? Status.Offline : Status.Online;
         }
 
@@ -153,7 +153,7 @@ namespace ConfigCat.Client.ConfigService
         {
             this.Log.Debug("config changed");
             
-            this.ClientContext.RaiseConfigChanged(newConfig);
+            this.Hooks.RaiseConfigChanged(newConfig);
         }
 
         public bool IsOffline

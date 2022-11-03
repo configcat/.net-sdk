@@ -17,12 +17,11 @@ namespace ConfigCat.Client.Override
         private DateTime fileLastWriteTime;
         private readonly string fullPath;
         private readonly LoggerWrapper logger;
-        private readonly ConfigCatClientContext clientContext;
         private readonly CancellationTokenSource cancellationTokenSource = new();
 
         private volatile IDictionary<string, Setting> overrideValues;
 
-        public LocalFileDataSource(string filePath, bool autoReload, LoggerWrapper logger, ConfigCatClientContext clientContext = null)
+        public LocalFileDataSource(string filePath, bool autoReload, LoggerWrapper logger)
         {
             if (!File.Exists(filePath))
             {
@@ -32,7 +31,6 @@ namespace ConfigCat.Client.Override
 
             this.fullPath = Path.GetFullPath(filePath);
             this.logger = logger;
-            this.clientContext = clientContext ?? ConfigCatClientContext.None;
 
             // method executes synchronously, GetAwaiter().GetResult() is just for preventing compiler warnings
             this.ReloadFileAsync(isAsync: false).GetAwaiter().GetResult();
@@ -56,7 +54,7 @@ namespace ConfigCat.Client.Override
             {
                 this.logger.Information($"Watching {this.fullPath} for changes.");
 
-                while (!this.clientContext.ClientIsGone && !cancellationToken.IsCancellationRequested)
+                while (!cancellationToken.IsCancellationRequested)
                 {
                     try
                     {
@@ -69,10 +67,7 @@ namespace ConfigCat.Client.Override
                             this.logger.Error($"Error occured during watching {this.fullPath} for changes.", ex);
                         }
 
-                        if (!this.clientContext.ClientIsGone)
-                        {
-                            await Task.Delay(FILE_POLL_INTERVAL, cancellationToken).ConfigureAwait(false);
-                        }
+                        await Task.Delay(FILE_POLL_INTERVAL, cancellationToken).ConfigureAwait(false);
                     }
                     catch (OperationCanceledException)
                     {
@@ -140,6 +135,11 @@ namespace ConfigCat.Client.Override
             }
 
             this.fileLastWriteTime = File.GetLastWriteTimeUtc(this.fullPath);
+        }
+
+        internal void StopWatch()
+        {
+            this.cancellationTokenSource.Cancel();
         }
 
         private void Dispose(bool disposing)

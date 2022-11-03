@@ -7,10 +7,10 @@ namespace ConfigCat.Client.ConfigService
 {
     internal sealed class ManualPollConfigService : ConfigServiceBase, IConfigService
     {
-        internal ManualPollConfigService(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline = false, ConfigCatClientContext clientContext = null)
-            : base(configFetcher, cacheParameters, logger, isOffline, clientContext) 
+        internal ManualPollConfigService(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline = false, Hooks hooks = null)
+            : base(configFetcher, cacheParameters, logger, isOffline, hooks) 
         {
-            this.ClientContext.RaiseClientReady();
+            hooks?.RaiseClientReady();
         }
 
         public ProjectConfig GetConfig()

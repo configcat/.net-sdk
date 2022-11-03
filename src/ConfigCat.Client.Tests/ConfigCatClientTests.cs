@@ -1847,9 +1847,7 @@ namespace ConfigCat.Client.Tests
             hooks.Error += (s, e) => errorEvents.Add(e);
             hooks.BeforeClientDispose += (s, e) => beforeClientDisposeEventCount++;
 
-            var clientContext = new ConfigCatClientContext(hooksAccessor: _ => hooks);
-
-            var loggerWrapper = new LoggerWrapper(loggerMock.Object, clientContext);
+            var loggerWrapper = new LoggerWrapper(loggerMock.Object, hooks);
 
             const string errorMessage = "Error occured during fetching.";
             var errorException = new HttpRequestException();
@@ -1869,7 +1867,7 @@ namespace ConfigCat.Client.Tests
                 CacheKey = cacheKey
             };
 
-            var configService = new ManualPollConfigService(fetcherMock.Object, cacheParams, loggerWrapper, clientContext: clientContext);
+            var configService = new ManualPollConfigService(fetcherMock.Object, cacheParams, loggerWrapper, hooks: hooks);
 
             // 1. Client gets created
             var client = new ConfigCatClient(configService, loggerMock.Object, new RolloutEvaluator(loggerWrapper), new ConfigDeserializer(), hooks);
@@ -2039,7 +2037,7 @@ namespace ConfigCat.Client.Tests
             public byte DisposeCount { get; private set; }
 
             public FakeConfigService(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper log)
-                : base(configFetcher, cacheParameters, log, isOffline: false, clientContext: null)
+                : base(configFetcher, cacheParameters, log, isOffline: false, hooks: null)
             {
             }
 

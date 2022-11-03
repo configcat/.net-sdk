@@ -7,11 +7,11 @@ namespace ConfigCat.Client.ConfigService
     {
         private readonly LoggerWrapper log;
 
-        public NullConfigService(LoggerWrapper log, ConfigCatClientContext clientContext = null)
+        public NullConfigService(LoggerWrapper log, Hooks hooks = null)
         {
             this.log = log;
 
-            (clientContext ?? ConfigCatClientContext.None).RaiseClientReady();
+            hooks?.RaiseClientReady();
         }
 
         public ProjectConfig GetConfig() => ProjectConfig.Empty;

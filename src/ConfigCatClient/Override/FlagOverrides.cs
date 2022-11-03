@@ -34,13 +34,13 @@ namespace ConfigCat.Client
         /// </summary>
         public OverrideBehaviour OverrideBehaviour { get; private set; }
 
-        internal IOverrideDataSource BuildDataSource(LoggerWrapper logger, ConfigCatClientContext clientContext)
+        internal IOverrideDataSource BuildDataSource(LoggerWrapper logger)
         {
             if (this.dictionary != null)
                 return new LocalDictionaryDataSource(this.dictionary);
 
             if (this.filePath != null)
-                return new LocalFileDataSource(this.filePath, this.autoReload, logger, clientContext);
+                return new LocalFileDataSource(this.filePath, this.autoReload, logger);
 
             throw new InvalidOperationException("Could not determine the right override data source.");
         }

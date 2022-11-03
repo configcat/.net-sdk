@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 
 namespace ConfigCat.Client
 {
@@ -12,6 +13,28 @@ namespace ConfigCat.Client
         private EventHandler<ConfigCatClientErrorEventArgs> error;
         private EventHandler beforeClientDispose;
 
+        private WeakReference<IConfigCatClient> clientWeakRef; // should be null only in case of testing
+
+        private bool TryGetSender(out IConfigCatClient client)
+        {
+            if (this.clientWeakRef == null)
+            {
+                client = null;
+                return true;
+            }
+
+            return this.clientWeakRef.TryGetTarget(out client);
+        }
+
+        public void SetSender(IConfigCatClient client)
+        {
+            // Strong back-references to the client instance must be avoided so GC can collect it when user doesn't have references to it any more.
+            // (There are cases - like AutoPollConfigService or LocalFileDataSource - where the background work keeps the service object alive,
+            // so if that had a strong reference to the client object, it would be kept alive as well, which would create a memory leak.)
+
+            this.clientWeakRef = new WeakReference<IConfigCatClient>(client);
+        }
+
         /// <inheritdoc/>
         public virtual event EventHandler ClientReady
         {
@@ -19,9 +42,13 @@ namespace ConfigCat.Client
             remove { this.clientReady -= value; }
         }
 
-        internal void RaiseClientReady(IConfigCatClient client)
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal void RaiseClientReady()
         {
-            this.clientReady?.Invoke(client, EventArgs.Empty);
+            if (this.clientReady is { } clientReady && TryGetSender(out var client))
+            {
+                clientReady(client, EventArgs.Empty);
+            }
         }
 
         /// <inheritdoc/>
@@ -31,9 +58,13 @@ namespace ConfigCat.Client
             remove { this.flagEvaluated -= value; }
         }
 
-        internal void RaiseFlagEvaluated(IConfigCatClient client, EvaluationDetails evaluationDetails)
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal void RaiseFlagEvaluated(EvaluationDetails evaluationDetails)
         {
-            this.flagEvaluated?.Invoke(client, new FlagEvaluatedEventArgs(evaluationDetails));
+            if (this.flagEvaluated is { } flagEvaluated && TryGetSender(out var client))
+            {
+                flagEvaluated(client, new FlagEvaluatedEventArgs(evaluationDetails));
+            }
         }
 
         /// <inheritdoc/>
@@ -43,9 +74,13 @@ namespace ConfigCat.Client
             remove { this.configChanged -= value; }
         }
 
-        internal void RaiseConfigChanged(IConfigCatClient client, ProjectConfig newConfig)
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal void RaiseConfigChanged(ProjectConfig newConfig)
         {
-            this.configChanged?.Invoke(client, new ConfigChangedEventArgs(newConfig));
+            if (this.configChanged is { } configChanged && TryGetSender(out var client))
+            {
+                configChanged(client, new ConfigChangedEventArgs(newConfig));
+            }
         }
 
         /// <inheritdoc/>
@@ -55,9 +90,13 @@ namespace ConfigCat.Client
             remove { this.error -= value; }
         }
 
-        internal void RaiseError(IConfigCatClient client, string message, Exception exception)
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal void RaiseError(string message, Exception exception)
         {
-            this.error?.Invoke(client, new ConfigCatClientErrorEventArgs(message, exception));
+            if (this.error is { } error && TryGetSender(out var client))
+            {
+                error(client, new ConfigCatClientErrorEventArgs(message, exception));
+            }
         }
 
         /// <inheritdoc/>
@@ -67,9 +106,13 @@ namespace ConfigCat.Client
             remove { this.beforeClientDispose -= value; }
         }
 
-        internal void RaiseBeforeClientDispose(IConfigCatClient client)
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal void RaiseBeforeClientDispose()
         {
-            this.beforeClientDispose?.Invoke(client, EventArgs.Empty);
+            if (this.beforeClientDispose is { } beforeClientDispose && TryGetSender(out var client))
+            {
+                beforeClientDispose(client, EventArgs.Empty);
+            }
         }
     }
 }

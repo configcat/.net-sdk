@@ -21,38 +21,21 @@ namespace ConfigCat.Client.Evaluation
             this.log = logger;
         }
 
-        public EvaluationDetails Evaluate(IDictionary<string, Setting> settings, string key, string logDefaultValue, User user, ProjectConfig remoteConfig, EvaluationDetailsFactory detailsFactory)
-        {
-            if (settings.Count == 0)
-            {
-                this.log.Error($"Config JSON is not present. Returning the defaultValue defined in the app source code: '{logDefaultValue}'.");
-                return null;
-            }
-
-            return EvaluateLogic(settings, key, logDefaultValue, logDefaultVariationId: null, user, remoteConfig, detailsFactory);
-        }
-
-        public EvaluationDetails EvaluateVariationIdWithDetails(IDictionary<string, Setting> settings, string key, string logDefaultVariationId, User user, ProjectConfig remoteConfig)
-        {
-            if (settings.Count == 0)
-            {
-                this.log.Error($"Config JSON is not present. Returning defaultVariationId: '{logDefaultVariationId}'.");
-                return null;
-            }
-
-            return EvaluateLogic(settings, key, logDefaultValue: null, logDefaultVariationId, user, remoteConfig, detailsFactory: null);
-        }
-
-        private EvaluationDetails EvaluateLogic(IDictionary<string, Setting> settings, string key, string logDefaultValue, string logDefaultVariationId, User user,
+        public EvaluationDetails Evaluate(Setting setting, string key, string logDefaultValue, User user,
             ProjectConfig remoteConfig, EvaluationDetailsFactory detailsFactory)
         {
-            if (!settings.TryGetValue(key, out var setting))
-            {
-                var keys = string.Join(",", settings.Keys.Select(s => $"'{s}'").ToArray());
-                this.log.Error($"Evaluating '{key}' failed (key not found in ConfigCat). Returning the defaultValue that you defined in the source code: '{logDefaultValue}'. Here are the available keys: {keys}.");
-                return null;
-            }
+            return EvaluateLogic(setting, key, logDefaultValue, logDefaultVariationId: null, user, remoteConfig, detailsFactory);
+        }
 
+        public EvaluationDetails EvaluateVariationId(Setting setting, string key, string logDefaultVariationId, User user,
+            ProjectConfig remoteConfig, EvaluationDetailsFactory detailsFactory)
+        {
+            return EvaluateLogic(setting, key, logDefaultValue: null, logDefaultVariationId, user, remoteConfig, detailsFactory);
+        }
+
+        private EvaluationDetails EvaluateLogic(Setting setting, string key, string logDefaultValue, string logDefaultVariationId, User user,
+            ProjectConfig remoteConfig, EvaluationDetailsFactory detailsFactory)
+        {
             var evaluateLog = new EvaluateLogger<string>
             {
                 ReturnValue = logDefaultValue,

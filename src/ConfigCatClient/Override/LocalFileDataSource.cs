@@ -17,12 +17,11 @@ namespace ConfigCat.Client.Override
         private DateTime fileLastWriteTime;
         private readonly string fullPath;
         private readonly LoggerWrapper logger;
-        private readonly WeakReference<IConfigCatClient> clientWeakRef;
         private readonly CancellationTokenSource cancellationTokenSource = new();
 
         private volatile IDictionary<string, Setting> overrideValues;
 
-        public LocalFileDataSource(string filePath, bool autoReload, LoggerWrapper logger, WeakReference<IConfigCatClient> clientWeakRef = null)
+        public LocalFileDataSource(string filePath, bool autoReload, LoggerWrapper logger)
         {
             if (!File.Exists(filePath))
             {
@@ -32,7 +31,6 @@ namespace ConfigCat.Client.Override
 
             this.fullPath = Path.GetFullPath(filePath);
             this.logger = logger;
-            this.clientWeakRef = clientWeakRef;
 
             // method executes synchronously, GetAwaiter().GetResult() is just for preventing compiler warnings
             this.ReloadFileAsync(isAsync: false).GetAwaiter().GetResult();
@@ -49,41 +47,51 @@ namespace ConfigCat.Client.Override
 
         private void StartWatch()
         {
+            // It's better to acquire a CancellationToken here because the getter might throw if CTS got disposed of.
+            var cancellationToken = this.cancellationTokenSource.Token;
+
             Task.Run(async () =>
             {
                 this.logger.Information($"Watching {this.fullPath} for changes.");
 
-                while (!this.cancellationTokenSource.IsCancellationRequested && (this.clientWeakRef is null || this.clientWeakRef.IsAlive()))
+                while (!cancellationToken.IsCancellationRequested)
                 {
                     try
                     {
                         try
                         {
-                            var lastWriteTime = File.GetLastWriteTimeUtc(this.fullPath);
-                            if (lastWriteTime > this.fileLastWriteTime)
-                            {
-                                this.logger.Information($"Reload file {this.fullPath}.");
-                                await this.ReloadFileAsync(isAsync: true).ConfigureAwait(false);
-                            }
+                            await WatchCoreAsync(cancellationToken).ConfigureAwait(false);
+                        }
+                        catch (Exception ex) when (ex is not OperationCanceledException)
+                        {
+                            this.logger.Error($"Error occured during watching {this.fullPath} for changes.", ex);
                         }
 
-                        finally
-                        {
-                            if (this.clientWeakRef is null || this.clientWeakRef.IsAlive())
-                            {
-                                await Task.Delay(FILE_POLL_INTERVAL, this.cancellationTokenSource.Token).ConfigureAwait(false);
-                            }
-                        }
+                        await Task.Delay(FILE_POLL_INTERVAL, cancellationToken).ConfigureAwait(false);
                     }
                     catch (OperationCanceledException)
                     {
                         // ignore exceptions from cancellation.
                     }
+                    catch (Exception ex)
+                    {
+                        this.logger.Error($"Error occured during watching {this.fullPath} for changes.", ex);
+                    }
                 }
             });
         }
 
-        private async Task ReloadFileAsync(bool isAsync)
+        private async Task WatchCoreAsync(CancellationToken cancellationToken)
+        {
+            var lastWriteTime = File.GetLastWriteTimeUtc(this.fullPath);
+            if (lastWriteTime > this.fileLastWriteTime)
+            {
+                this.logger.Information($"Reload file {this.fullPath}.");
+                await this.ReloadFileAsync(isAsync: true, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        private async Task ReloadFileAsync(bool isAsync, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -112,7 +120,7 @@ namespace ConfigCat.Client.Override
 
                         if (isAsync)
                         {
-                            await Task.Delay(WAIT_TIME_FOR_UNLOCK).ConfigureAwait(false);
+                            await Task.Delay(WAIT_TIME_FOR_UNLOCK, cancellationToken).ConfigureAwait(false);
                         }
                         else
                         {
@@ -121,14 +129,17 @@ namespace ConfigCat.Client.Override
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                this.logger.Error($"Failed to read file {this.fullPath}. {ex}");
+                this.logger.Error($"Failed to read file {this.fullPath}.", ex);
             }
-            finally
-            {
-                this.fileLastWriteTime = File.GetLastWriteTimeUtc(this.fullPath);
-            }
+
+            this.fileLastWriteTime = File.GetLastWriteTimeUtc(this.fullPath);
+        }
+
+        internal void StopWatch()
+        {
+            this.cancellationTokenSource.Cancel();
         }
 
         private void Dispose(bool disposing)

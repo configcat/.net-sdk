@@ -1,14 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using ConfigCat.Client.Evaluation;
 
 namespace ConfigCat.Client
 {
     /// <summary>
     /// Provides client definition for <see cref="ConfigCatClient"/>
     /// </summary>
-    public interface IConfigCatClient : IDisposable
+    public interface IConfigCatClient : IProvidesHooks, IDisposable
     {
         /// <summary>
         /// Sets or gets the logging level.

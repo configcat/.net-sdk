@@ -15,7 +15,7 @@ namespace ConfigCat.Client.Tests
 
         protected override void AssertValue(string keyName, string expected, User user)
         {
-            var actual = base.configEvaluator.EvaluateVariationId(base.config, keyName, null, user);
+            var actual = base.configEvaluator.EvaluateVariationId(base.config, keyName, null, user, null, this.logger, out _);
 
             Assert.AreEqual(expected, actual);
         }
@@ -23,7 +23,7 @@ namespace ConfigCat.Client.Tests
         [TestMethod]
         public void EvaluateVariationId_WithSimpleKey_ShouldReturnCat()
         {
-            string actual = configEvaluator.EvaluateVariationId(base.config, "boolean", string.Empty);
+            string actual = configEvaluator.EvaluateVariationId(base.config, "boolean", string.Empty, user: null, null, this.logger, out _);
 
             Assert.AreNotEqual(string.Empty, actual);
             Assert.AreEqual("a0e56eda", actual);
@@ -32,7 +32,7 @@ namespace ConfigCat.Client.Tests
         [TestMethod]
         public void EvaluateVariationId_WithNonExistingKey_ShouldReturnDefaultValue()
         {
-            string actual = configEvaluator.EvaluateVariationId(config, "NotExistsKey", "DefaultVariationId");
+            string actual = configEvaluator.EvaluateVariationId(config, "NotExistsKey", "DefaultVariationId", user: null, null, this.logger, out _);
 
             Assert.AreEqual("DefaultVariationId", actual);
         }
@@ -40,7 +40,7 @@ namespace ConfigCat.Client.Tests
         [TestMethod]
         public void EvaluateVariationId_WithEmptyProjectConfig_ShouldReturnDefaultValue()
         {
-            string actual = configEvaluator.EvaluateVariationId(new Dictionary<string, Setting>(), "stringDefaultCat", "Default");
+            string actual = configEvaluator.EvaluateVariationId(new Dictionary<string, Setting>(), "stringDefaultCat", "Default", user: null, null, this.logger, out _);
 
             Assert.AreEqual("Default", actual);
         }
@@ -56,7 +56,10 @@ namespace ConfigCat.Client.Tests
                 {
                     Email = "bryanw@verizon.net",
                     Country = "Hungary"
-                });
+                },
+                null,
+                this.logger,
+                out _);
 
             Assert.AreEqual("30ba32b9", actual);
         }

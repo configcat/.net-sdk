@@ -5,6 +5,7 @@ namespace ConfigCat.Client.Tests
 {
     [TestCategory(TestCategories.Integration)]
     [TestClass]
+    [DoNotParallelize]
     public class CustomHttpClientHandlerTests
     {
         private const string SDKKEY = "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A";

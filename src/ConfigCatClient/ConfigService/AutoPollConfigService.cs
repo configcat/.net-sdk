@@ -9,11 +9,9 @@ namespace ConfigCat.Client.ConfigService
 {
     internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
     {
-        private readonly DateTime maxInitWaitExpire;
-        private readonly ManualResetEventSlim initializedEventSlim = new(false);
         private readonly AutoPoll configuration;
-        private readonly WeakReference<IConfigCatClient> clientWeakRef;
-        private CancellationTokenSource timerCancellationTokenSource = new();
+        private readonly CancellationTokenSource initializationCancellationTokenSource = new(); // used for signalling initialization
+        private CancellationTokenSource timerCancellationTokenSource = new(); // used for signalling background work to stop
 
         internal AutoPollConfigService(
             AutoPoll configuration,
@@ -21,7 +19,7 @@ namespace ConfigCat.Client.ConfigService
             CacheParameters cacheParameters,
             LoggerWrapper logger,
             bool isOffline = false,
-            WeakReference<IConfigCatClient> clientWeakRef = null) : this(configuration, configFetcher, cacheParameters, logger, startTimer: true, isOffline, clientWeakRef)
+            Hooks hooks = null) : this(configuration, configFetcher, cacheParameters, logger, startTimer: true, isOffline, hooks)
         { }
 
         // For test purposes only
@@ -32,11 +30,19 @@ namespace ConfigCat.Client.ConfigService
             LoggerWrapper logger,
             bool startTimer,
             bool isOffline = false,
-            WeakReference<IConfigCatClient> clientWeakRef = null) : base(configFetcher, cacheParameters, logger, isOffline)
+            Hooks hooks = null) : base(configFetcher, cacheParameters, logger, isOffline, hooks)
         {
             this.configuration = configuration;
-            this.maxInitWaitExpire = DateTime.UtcNow.Add(configuration.MaxInitWaitTime);
-            this.clientWeakRef = clientWeakRef;
+
+            initializationCancellationTokenSource.Token.Register(this.Hooks.RaiseClientReady, useSynchronizationContext: false);
+            if (configuration.MaxInitWaitTime > TimeSpan.Zero)
+            {
+                initializationCancellationTokenSource.CancelAfter(configuration.MaxInitWaitTime);
+            }
+            else
+            {
+                initializationCancellationTokenSource.Cancel();
+            }
 
             if (!isOffline && startTimer)
             {
@@ -62,34 +68,65 @@ namespace ConfigCat.Client.ConfigService
         {
             if (disposing)
             {
-                this.initializedEventSlim.Dispose();
+                this.initializationCancellationTokenSource.Dispose();
             }
 
             base.Dispose(disposing);
         }
 
-        internal bool WaitForInitialization(TimeSpan timeout)
+        private bool IsInitialized => this.initializationCancellationTokenSource.IsCancellationRequested;
+
+        private void SignalInitialization()
         {
-            return this.initializedEventSlim.Wait(timeout);
+            try
+            {
+                this.initializationCancellationTokenSource.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+                // Since SignalInitialization and Dispose are not synchronized,
+                // in extreme conditions a call to SignalInitialization may slip past the disposal of initializationCancellationTokenSource.
+                // In such cases we get an ObjectDisposedException here, which means that the config service has been disposed of in the meantime.
+                // Thus, we can safely swallow this exception.
+            }
+        }
+
+        internal bool WaitForInitialization()
+        {
+            // An infinite timeout would also work but we limit waiting to MaxInitWaitTime for maximum safety.
+            return this.initializationCancellationTokenSource.Token.WaitHandle.WaitOne(configuration.MaxInitWaitTime);
+        }
+
+        internal async Task<bool> WaitForInitializationAsync()
+        {
+            try
+            {
+                // An infinite timeout would also work but we limit waiting to MaxInitWaitTime for maximum safety.
+                await Task.Delay(configuration.MaxInitWaitTime, this.initializationCancellationTokenSource.Token).ConfigureAwait(false);
+                return false;
+            }
+            catch (OperationCanceledException)
+            {
+                return true;
+            }
         }
 
         public ProjectConfig GetConfig()
         {
             if (this.ConfigCache is IConfigCatCache cache)
             {
-                var cacheConfig = cache.Get(base.CacheKey);
-
-                if (!IsOffline)
+                if (!IsOffline && !IsInitialized)
                 {
-                    var delay = this.maxInitWaitExpire.Subtract(DateTime.UtcNow);
-                    if (delay > TimeSpan.Zero && cacheConfig.IsExpired(expiration: configuration.PollInterval, out _))
+                    var cacheConfig = cache.Get(base.CacheKey);
+                    if (!cacheConfig.IsExpired(expiration: configuration.PollInterval, out _))
                     {
-                        WaitForInitialization(delay);
-                        cacheConfig = cache.Get(base.CacheKey);
+                        return cacheConfig;
                     }
+
+                    WaitForInitialization();
                 }
 
-                return cacheConfig;
+                return cache.Get(base.CacheKey);
             }
 
             // worst scenario, fallback to sync over async, delete when we enforce IConfigCatCache.
@@ -98,26 +135,30 @@ namespace ConfigCat.Client.ConfigService
 
         public async Task<ProjectConfig> GetConfigAsync()
         {
-            var cacheConfig = await this.ConfigCache.GetAsync(base.CacheKey).ConfigureAwait(false);
-
-            if (!IsOffline)
+            if (!IsOffline && !IsInitialized)
             {
-                var delay = this.maxInitWaitExpire.Subtract(DateTime.UtcNow);
-                if (delay > TimeSpan.Zero && cacheConfig.IsExpired(expiration: configuration.PollInterval, out _))
+                var cacheConfig = await this.ConfigCache.GetAsync(base.CacheKey).ConfigureAwait(false);
+                if (!cacheConfig.IsExpired(expiration: configuration.PollInterval, out _))
                 {
-                    WaitForInitialization(delay);
-                    cacheConfig = await this.ConfigCache.GetAsync(base.CacheKey).ConfigureAwait(false);
+                    return cacheConfig;
                 }
+
+                await WaitForInitializationAsync().ConfigureAwait(false);
             }
 
-            return cacheConfig;
+            return await this.ConfigCache.GetAsync(base.CacheKey).ConfigureAwait(false);
         }
 
-        protected override void OnConfigChanged()
+        protected override void OnConfigUpdated(ProjectConfig newConfig)
         {
-            base.OnConfigChanged();
+            base.OnConfigUpdated(newConfig);
+            SignalInitialization();
+        }
+
+        protected override void OnConfigChanged(ProjectConfig newConfig)
+        {
+            base.OnConfigChanged(newConfig);
             this.configuration.RaiseOnConfigurationChanged(this, OnConfigurationChangedEventArgs.Empty);
-            initializedEventSlim.Set();
         }
 
         protected override void SetOnlineCoreSynchronized()
@@ -136,49 +177,77 @@ namespace ConfigCat.Client.ConfigService
         {
             Task.Run(async () =>
             {
-                while ((this.clientWeakRef is null || this.clientWeakRef.IsAlive()) && Synchronize(static @this => @this.timerCancellationTokenSource, this) is CancellationTokenSource cts && !cts.IsCancellationRequested)
+                var isFirstIteration = true;
+
+                while (Synchronize(static @this => @this.timerCancellationTokenSource?.Token, this) is { } cancellationToken
+                    && !cancellationToken.IsCancellationRequested)
                 {
                     try
                     {
                         var scheduledNextTime = DateTime.UtcNow.Add(interval);
                         try
                         {
-                            if (!IsOffline)
-                            {
-                                var latestConfig = await this.ConfigCache.GetAsync(base.CacheKey).ConfigureAwait(false);
+                            await PollCoreAsync(isFirstIteration, interval, cancellationToken).ConfigureAwait(false);
+                        }
+                        catch (Exception ex) when (ex is not OperationCanceledException)
+                        {
+                            this.Log.Error($"Error occured during polling.", ex);
+                        }
 
-                                if (latestConfig.IsExpired(expiration: interval, out _))
-                                {
-                                    await RefreshConfigCoreAsync(latestConfig).ConfigureAwait(false);
-                                }
-                            }
-                        }
-                        catch (Exception exception)
+                        var realNextTime = scheduledNextTime.Subtract(DateTime.UtcNow);
+                        if (realNextTime > TimeSpan.Zero)
                         {
-                            this.Log.Error($"Error occured during polling. {exception.Message}");
-                        }
-                        finally
-                        {
-                            if (this.clientWeakRef is null || this.clientWeakRef.IsAlive())
-                            {
-                                var realNextTime = scheduledNextTime.Subtract(DateTime.UtcNow);
-                                if (realNextTime > TimeSpan.Zero)
-                                {
-                                    await Task.Delay(realNextTime, cts.Token).ConfigureAwait(false);
-                                }
-                            }
+                            await Task.Delay(realNextTime, cancellationToken).ConfigureAwait(false);
                         }
                     }
                     catch (OperationCanceledException)
                     {
                         // ignore exceptions from cancellation.
                     }
-                    catch (Exception exception)
+                    catch (Exception ex)
                     {
-                        this.Log.Error($"Error occured during polling. {exception.Message}");
+                        this.Log.Error($"Error occured during polling.", ex);
                     }
+
+                    isFirstIteration = false;
                 }
             });
+        }
+
+        private async Task PollCoreAsync(bool isFirstIteration, TimeSpan interval, CancellationToken cancellationToken)
+        {
+            if (isFirstIteration)
+            {
+                var latestConfig = await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(false);
+                if (latestConfig.IsExpired(expiration: interval, out _))
+                {
+                    if (!IsOffline)
+                    {
+                        await RefreshConfigCoreAsync(latestConfig).ConfigureAwait(false);
+                    }
+                }
+                else
+                {
+                    SignalInitialization();
+                }
+            }
+            else
+            {
+                if (!IsOffline)
+                {
+                    var latestConfig = await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(false);
+                    await RefreshConfigCoreAsync(latestConfig).ConfigureAwait(false);
+                }
+            }
+        }
+
+        internal void StopScheduler()
+        {
+            Synchronize(static @this =>
+            {
+                @this.timerCancellationTokenSource?.Cancel();
+                return default(object);
+            }, this);
         }
     }
 }

@@ -11,7 +11,7 @@ namespace ConfigCat.Client.Tests
 {
     public abstract class ConfigEvaluatorTestsBase
     {
-        private readonly ILogger logger = new ConsoleLogger(LogLevel.Debug);
+        protected readonly ILogger logger = new ConsoleLogger(LogLevel.Debug);
 
         private protected readonly IDictionary<string, Setting> config;
 
@@ -34,25 +34,25 @@ namespace ConfigCat.Client.Tests
 
             if (k.StartsWith("bool"))
             {
-                var actual = configEvaluator.Evaluate(config, keyName, false, user);
+                var actual = configEvaluator.Evaluate(config, keyName, false, user, null, logger, out _);
 
                 Assert.AreEqual(bool.Parse(expected), actual, $"keyName: {keyName} | userId: {user?.Identifier}");
             }
             else if (k.StartsWith("double"))
             {
-                var actual = configEvaluator.Evaluate(config, keyName, double.NaN, user);
+                var actual = configEvaluator.Evaluate(config, keyName, double.NaN, user, null, logger, out _);
 
                 Assert.AreEqual(double.Parse(expected, CultureInfo.InvariantCulture), actual, $"keyName: {keyName} | userId: {user?.Identifier}");
             }
             else if (k.StartsWith("integer"))
             {
-                var actual = configEvaluator.Evaluate(config, keyName, int.MinValue, user);
+                var actual = configEvaluator.Evaluate(config, keyName, int.MinValue, user, null, logger, out _);
 
                 Assert.AreEqual(int.Parse(expected), actual, $"keyName: {keyName} | userId: {user?.Identifier}");
             }
             else
             {
-                var actual = configEvaluator.Evaluate(config, keyName, string.Empty, user);
+                var actual = configEvaluator.Evaluate(config, keyName, string.Empty, user, null, logger, out _);
 
                 Assert.AreEqual(expected, actual, $"keyName: {keyName} | userId: {user?.Identifier}");
             }

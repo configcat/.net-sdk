@@ -9,10 +9,12 @@ namespace ConfigCat.Client.ConfigService
     {
         private readonly TimeSpan cacheTimeToLive;
         
-        internal LazyLoadConfigService(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger, TimeSpan cacheTimeToLive, bool isOffline = false)
-            : base(configFetcher, cacheParameters, logger, isOffline)
+        internal LazyLoadConfigService(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger, TimeSpan cacheTimeToLive, bool isOffline = false, Hooks hooks = null)
+            : base(configFetcher, cacheParameters, logger, isOffline, hooks)
         {
             this.cacheTimeToLive = cacheTimeToLive;
+
+            hooks?.RaiseClientReady();
         }
 
         public ProjectConfig GetConfig()

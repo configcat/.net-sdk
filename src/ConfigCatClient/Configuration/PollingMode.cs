@@ -32,7 +32,7 @@ namespace ConfigCat.Client.Configuration
         /// <summary>
         /// <see cref="OnConfigurationChanged"/> raised when the configuration was updated
         /// </summary>
-
+        [Obsolete("This event is obsolete and will be removed from the public API in a future major version. Please use the 'ConfigCatClientOptions.ConfigChanged' event instead.")]
         public event OnConfigurationChangedEventHandler OnConfigurationChanged;
 
         internal AutoPoll(TimeSpan pollInterval, TimeSpan maxInitWaitTime)

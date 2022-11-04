@@ -24,15 +24,16 @@ namespace ConfigCat.Client.ConfigService
 #pragma warning restore CS0618 // Type or member is obsolete
 
         protected readonly LoggerWrapper Log;
-
         protected readonly string CacheKey;
+        protected readonly Hooks Hooks;
 
-        protected ConfigServiceBase(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper log, bool isOffline)
+        protected ConfigServiceBase(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper log, bool isOffline, Hooks hooks)
         {
             this.ConfigFetcher = configFetcher;
             this.ConfigCache = cacheParameters.ConfigCache;
             this.CacheKey = cacheParameters.CacheKey;
             this.Log = log;
+            this.Hooks = hooks ?? NullHooks.Instance;
             this.status = isOffline ? Status.Offline : Status.Online;
         }
 
@@ -98,9 +99,11 @@ namespace ConfigCat.Client.ConfigService
                 // TODO: This cast can be removed when we delete the obsolete IConfigCache interface.
                 ((IConfigCatCache)this.ConfigCache).Set(this.CacheKey, newConfig);
 
+                OnConfigUpdated(newConfig);
+
                 if (configContentHasChanged)
                 {
-                    OnConfigChanged();
+                    OnConfigChanged(newConfig);
                 }
 
                 return newConfig;
@@ -131,9 +134,11 @@ namespace ConfigCat.Client.ConfigService
             {
                 await this.ConfigCache.SetAsync(this.CacheKey, newConfig).ConfigureAwait(false);
 
+                OnConfigUpdated(newConfig);
+
                 if (configContentHasChanged)
                 {
-                    OnConfigChanged();
+                    OnConfigChanged(newConfig);
                 }
 
                 return newConfig;
@@ -142,9 +147,13 @@ namespace ConfigCat.Client.ConfigService
             return latestConfig;
         }
 
-        protected virtual void OnConfigChanged()
+        protected virtual void OnConfigUpdated(ProjectConfig newConfig) { }
+
+        protected virtual void OnConfigChanged(ProjectConfig newConfig)
         {
             this.Log.Debug("config changed");
+            
+            this.Hooks.RaiseConfigChanged(newConfig);
         }
 
         public bool IsOffline

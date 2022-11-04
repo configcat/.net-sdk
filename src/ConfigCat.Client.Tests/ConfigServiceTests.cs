@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
@@ -8,7 +10,6 @@ using Moq;
 
 namespace ConfigCat.Client.Tests
 {
-    [DoNotParallelize]
     [TestClass]
     public class ConfigServiceTests
     {
@@ -138,6 +139,46 @@ namespace ConfigCat.Client.Tests
         }
 
         [TestMethod]
+        public async Task LazyLoadConfigService_RefreshConfigAsync_ConfigChanged_ShouldRaiseEvent()
+        {
+            // Arrange
+
+            var hooks = new Hooks();
+
+            var configChangedEvents = new ConcurrentQueue<ConfigChangedEventArgs>();
+            hooks.ConfigChanged += (s, e) => configChangedEvents.Enqueue(e);
+
+            this.cacheMock
+                .Setup(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None))
+                .ReturnsAsync(cachedPc);
+
+            this.fetcherMock
+                .Setup(m => m.FetchAsync(cachedPc))
+                .Returns(Task.FromResult(fetchedPc));
+
+            this.cacheMock
+                .Setup(m => m.SetAsync(It.IsAny<string>(), fetchedPc))
+                .Returns(Task.FromResult(0));
+
+            using var service = new LazyLoadConfigService(
+                fetcherMock.Object,
+                new CacheParameters { ConfigCache = cacheMock.Object },
+                loggerMock.Object.AsWrapper(),
+                defaultExpire,
+                hooks: hooks);
+
+            // Act
+
+            await service.RefreshConfigAsync();
+
+            // Assert
+
+            Assert.IsTrue(configChangedEvents.TryDequeue(out var configChangedEvent));
+            Assert.AreSame(fetchedPc, configChangedEvent.NewConfig);
+            Assert.AreEqual(0, configChangedEvents.Count);
+        }
+
+        [TestMethod]
         public async Task AutoPollConfigService_GetConfigAsync_WithoutTimerWithCachedConfig_ShouldInvokeCacheGet1xAndSetNeverFetchNever()
         {
             // Arrange            
@@ -183,7 +224,7 @@ namespace ConfigCat.Client.Tests
             var wd = new ManualResetEventSlim(false);
 
             this.cacheMock
-                .Setup(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None))
+                .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(cachedPc);
 
             this.fetcherMock
@@ -210,7 +251,7 @@ namespace ConfigCat.Client.Tests
             service.Dispose();
             // Assert
 
-            this.cacheMock.Verify(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None), Times.Exactly(3));
+            this.cacheMock.Verify(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(3));
             this.cacheMock.Verify(m => m.SetAsync(It.IsAny<string>(), fetchedPc), Times.Once);
             this.fetcherMock.Verify(m => m.FetchAsync(cachedPc), Times.Once);
         }
@@ -255,6 +296,11 @@ namespace ConfigCat.Client.Tests
         {
             // Arrange
 
+            var hooks = new Hooks();
+
+            var configChangedEvents = new ConcurrentQueue<ConfigChangedEventArgs>();
+            hooks.ConfigChanged += (s, e) => configChangedEvents.Enqueue(e);
+
             byte eventChanged = 0;
 
             this.cacheMock
@@ -274,9 +320,12 @@ namespace ConfigCat.Client.Tests
                 fetcherMock.Object,
                 new CacheParameters { ConfigCache = cacheMock.Object },
                 loggerMock.Object.AsWrapper(),
-                startTimer: false);
+                startTimer: false,
+                hooks: hooks);
 
+#pragma warning disable CS0618 // Type or member is obsolete
             config.OnConfigurationChanged += (o, s) => { eventChanged++; };
+#pragma warning restore CS0618 // Type or member is obsolete
 
             // Act
 
@@ -285,6 +334,10 @@ namespace ConfigCat.Client.Tests
             // Assert
 
             Assert.AreEqual(1, eventChanged);
+
+            Assert.IsTrue(configChangedEvents.TryDequeue(out var configChangedEvent));
+            Assert.AreSame(fetchedPc, configChangedEvent.NewConfig);
+            Assert.AreEqual(0, configChangedEvents.Count);
         }
 
         [TestMethod]
@@ -362,6 +415,11 @@ namespace ConfigCat.Client.Tests
         {
             // Arrange
 
+            var hooks = new Hooks();
+
+            var clientReadyEventCount = 0;
+            hooks.ClientReady += (s, e) => Interlocked.Increment(ref clientReadyEventCount);
+
             this.cacheMock
                 .Setup(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None))
                 .ReturnsAsync(cachedPc);
@@ -369,7 +427,8 @@ namespace ConfigCat.Client.Tests
             using var service = new ManualPollConfigService(
                 fetcherMock.Object,
                 new CacheParameters { ConfigCache = cacheMock.Object },
-                loggerMock.Object.AsWrapper());
+                loggerMock.Object.AsWrapper(),
+                hooks: hooks);
 
             // Act
 
@@ -382,12 +441,19 @@ namespace ConfigCat.Client.Tests
             this.cacheMock.Verify(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None), Times.Once);
             this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Never);
             this.cacheMock.Verify(m => m.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>()), Times.Never);
+
+            Assert.AreEqual(1, Volatile.Read(ref clientReadyEventCount));
         }
 
         [TestMethod]
         public async Task ManualPollConfigService_RefreshConfigAsync_ShouldInvokeCacheGet()
         {
             // Arrange
+
+            var hooks = new Hooks();
+
+            var clientReadyEventCount = 0;
+            hooks.ClientReady += (s, e) => Interlocked.Increment(ref clientReadyEventCount);
 
             byte callOrder = 1;
 
@@ -409,8 +475,8 @@ namespace ConfigCat.Client.Tests
             using var service = new ManualPollConfigService(
                 fetcherMock.Object,
                 new CacheParameters { ConfigCache = cacheMock.Object },
-                loggerMock.Object.AsWrapper());
-
+                loggerMock.Object.AsWrapper(),
+                hooks: hooks);
             // Act
 
             await service.RefreshConfigAsync();
@@ -420,6 +486,47 @@ namespace ConfigCat.Client.Tests
             this.cacheMock.Verify(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None), Times.Once);
             this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Once);
             this.cacheMock.Verify(m => m.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>()), Times.Once);
+
+            Assert.AreEqual(1, Volatile.Read(ref clientReadyEventCount));
+        }
+
+        [TestMethod]
+        public async Task ManualPollConfigService_RefreshConfigAsync_ConfigChanged_ShouldRaiseEvent()
+        {
+            // Arrange
+
+            var hooks = new Hooks();
+
+            var configChangedEvents = new ConcurrentQueue<ConfigChangedEventArgs>();
+            hooks.ConfigChanged += (s, e) => configChangedEvents.Enqueue(e);
+
+            this.cacheMock
+                .Setup(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None))
+                .ReturnsAsync(cachedPc);
+
+            this.fetcherMock
+                .Setup(m => m.FetchAsync(cachedPc))
+                .Returns(Task.FromResult(fetchedPc));
+
+            this.cacheMock
+                .Setup(m => m.SetAsync(It.IsAny<string>(), fetchedPc))
+                .Returns(Task.FromResult(0));
+
+            using var service = new ManualPollConfigService(
+                fetcherMock.Object,
+                new CacheParameters { ConfigCache = cacheMock.Object },
+                loggerMock.Object.AsWrapper(),
+                hooks: hooks);
+
+            // Act
+
+            await service.RefreshConfigAsync();
+
+            // Assert
+
+            Assert.IsTrue(configChangedEvents.TryDequeue(out var configChangedEvent));
+            Assert.AreSame(fetchedPc, configChangedEvent.NewConfig);
+            Assert.AreEqual(0, configChangedEvents.Count);
         }
 
         [TestMethod]
@@ -443,7 +550,8 @@ namespace ConfigCat.Client.Tests
                     configFetcherMock.Object,
                     new CacheParameters { ConfigCache = new InMemoryConfigCache() },
                     loggerMock.Object.AsWrapper(),
-                    false
+                    false,
+                    null
                 })
             {
                 CallBase = true
@@ -478,7 +586,8 @@ namespace ConfigCat.Client.Tests
                     configFetcherMock.Object,
                     new CacheParameters { ConfigCache = new InMemoryConfigCache() },
                     new CounterLogger().AsWrapper(),
-                    false
+                    false,
+                    null
                 })
             {
                 CallBase = true
@@ -491,39 +600,66 @@ namespace ConfigCat.Client.Tests
             configService.Dispose();
         }
 
-        [DataRow(false)]
-        [DataRow(true)]
+        [DataRow(false, false)]
+        [DataRow(true, false)]
+        [DataRow(false, true)]
+        [DataRow(true, true)]
         [DataTestMethod]
-        public async Task AutoPollConfigService_GetConfig_ReturnsCachedConfigWhenCachedConfigIsNotExpired(bool isAsync)
+        public async Task AutoPollConfigService_GetConfig_ReturnsCachedConfigWhenCachedConfigIsNotExpired(bool isAsync, bool waitForClientReady)
         {
             // Arrange 
 
+            var hooks = new Hooks();
+
+            var clientReadyTcs = new TaskCompletionSource<object>();
+            hooks.ClientReady += (s, e) => clientReadyTcs.TrySetResult(default);
+
             var pollInterval = defaultExpire + defaultExpire;
+            var maxInitWaitTime = defaultExpire;
 
             var cache = new InMemoryConfigCache();
             cache.Set(null, cachedPc);
 
             this.fetcherMock.Setup(m => m.FetchAsync(cachedPc)).ReturnsAsync(fetchedPc);
 
-            var config = PollingModes.AutoPoll(pollInterval, maxInitWaitTime: defaultExpire);
+            var config = PollingModes.AutoPoll(pollInterval, maxInitWaitTime);
             var service = new AutoPollConfigService(config,
                 fetcherMock.Object,
                 new CacheParameters { ConfigCache = cache },
                 loggerMock.Object.AsWrapper(),
-                startTimer: true);
+                startTimer: true,
+                hooks: hooks);
 
             // Act
 
+            bool clientReadyCalled = false;
             ProjectConfig actualPc;
             using (service)
             {
+                if (waitForClientReady)
+                {
+                    await service.WaitForInitializationAsync();
+
+                    // Allow some time for other initalization callbacks to execute.
+                    using var cts = new CancellationTokenSource();
+                    var task = await Task.WhenAny(clientReadyTcs.Task, Task.Delay(maxInitWaitTime, cts.Token));
+                    cts.Cancel();
+                    clientReadyCalled = task == clientReadyTcs.Task && task.Status == TaskStatus.RanToCompletion;
+                }
+
                 actualPc = isAsync ? await service.GetConfigAsync() : service.GetConfig();
             }
+
             // Assert
 
             Assert.AreEqual(cachedPc, actualPc);
 
             this.fetcherMock.Verify(m => m.FetchAsync(cachedPc), Times.Never);
+
+            if (waitForClientReady)
+            {
+                Assert.IsTrue(clientReadyCalled);
+            }
         }
 
         [DataRow(false)]
@@ -533,32 +669,102 @@ namespace ConfigCat.Client.Tests
         {
             // Arrange 
 
+            var hooks = new Hooks();
+
+            var clientReadyTcs = new TaskCompletionSource<object>();
+            hooks.ClientReady += (s, e) => clientReadyTcs.TrySetResult(default);
+
             var pollInterval = defaultExpire + defaultExpire;
+            var maxInitWaitTime = defaultExpire;
 
             var cache = new InMemoryConfigCache();
             cache.Set(null, cachedPc with { TimeStamp = cachedPc.TimeStamp - pollInterval });
 
             this.fetcherMock.Setup(m => m.FetchAsync(cachedPc)).ReturnsAsync(fetchedPc);
 
-            var config = PollingModes.AutoPoll(pollInterval, maxInitWaitTime: defaultExpire);
+            var config = PollingModes.AutoPoll(pollInterval, maxInitWaitTime);
             var service = new AutoPollConfigService(config,
                 fetcherMock.Object,
                 new CacheParameters { ConfigCache = cache },
                 loggerMock.Object.AsWrapper(),
-                startTimer: true);
+                startTimer: true,
+                hooks: hooks);
 
             // Act
 
+            bool clientReadyCalled;
             ProjectConfig actualPc;
             using (service)
             {
                 actualPc = isAsync ? await service.GetConfigAsync() : service.GetConfig();
+
+                // Allow some time for other initalization callbacks to execute.
+                using var cts = new CancellationTokenSource();
+                var task = await Task.WhenAny(clientReadyTcs.Task, Task.Delay(maxInitWaitTime, cts.Token));
+                cts.Cancel();
+                clientReadyCalled = task == clientReadyTcs.Task && task.Status == TaskStatus.RanToCompletion;
             }
+
             // Assert
 
             Assert.AreEqual(fetchedPc, actualPc);
 
             this.fetcherMock.Verify(m => m.FetchAsync(cachedPc), Times.Once);
+
+            Assert.IsTrue(clientReadyCalled);
+        }
+
+        [DataRow(false)]
+        [DataRow(true)]
+        [DataTestMethod]
+        public async Task AutoPollConfigService_GetConfig_ReturnsExpiredConfigWhenCantRefreshWithinMaxInitWaitTime(bool isAsync)
+        {
+            // Arrange 
+
+            var hooks = new Hooks();
+
+            var clientReadyTcs = new TaskCompletionSource<object>();
+            hooks.ClientReady += (s, e) => clientReadyTcs.TrySetResult(default);
+
+            var pollInterval = TimeSpan.FromSeconds(5);
+            var maxInitWaitTime = pollInterval + pollInterval;
+
+            var cache = new InMemoryConfigCache();
+            var cachedPc = this.cachedPc with { TimeStamp = DateTime.UtcNow - pollInterval - pollInterval };
+            cache.Set(null, cachedPc);
+
+            this.fetcherMock.Setup(m => m.FetchAsync(cachedPc)).ReturnsAsync(cachedPc);
+
+            var config = PollingModes.AutoPoll(pollInterval, maxInitWaitTime);
+            var service = new AutoPollConfigService(config,
+                fetcherMock.Object,
+                new CacheParameters { ConfigCache = cache },
+                loggerMock.Object.AsWrapper(),
+                startTimer: true,
+                hooks: hooks);
+
+            // Act
+
+            bool clientReadyCalled;
+            ProjectConfig actualPc;
+            using (service)
+            {
+                actualPc = isAsync ? await service.GetConfigAsync() : service.GetConfig();
+
+                // Allow some time for other initalization callbacks to execute.
+                using var cts = new CancellationTokenSource();
+                var task = await Task.WhenAny(clientReadyTcs.Task, Task.Delay(maxInitWaitTime, cts.Token));
+                cts.Cancel();
+                clientReadyCalled = task == clientReadyTcs.Task && task.Status == TaskStatus.RanToCompletion;
+            }
+
+            // Assert
+
+            Assert.AreEqual(cachedPc, actualPc);
+
+            this.fetcherMock.Verify(m => m.FetchAsync(cachedPc), Times.AtLeast(2));
+
+            Assert.IsTrue(clientReadyCalled);
         }
 
         [DataRow(false)]
@@ -567,6 +773,11 @@ namespace ConfigCat.Client.Tests
         public async Task LazyLoadConfigService_GetConfig_ReturnsCachedConfigWhenCachedConfigIsNotExpired(bool isAsync)
         {
             // Arrange 
+
+            var hooks = new Hooks();
+
+            var clientReadyEventCount = 0;
+            hooks.ClientReady += (s, e) => Interlocked.Increment(ref clientReadyEventCount);
 
             var cacheTimeToLive = defaultExpire + defaultExpire;
 
@@ -586,7 +797,8 @@ namespace ConfigCat.Client.Tests
             var service = new LazyLoadConfigService(fetcherMock.Object,
                 new CacheParameters { ConfigCache = cache },
                 loggerMock.Object.AsWrapper(),
-                config.CacheTimeToLive);
+                config.CacheTimeToLive,
+                hooks: hooks);
 
             // Act
 
@@ -607,6 +819,8 @@ namespace ConfigCat.Client.Tests
             {
                 this.fetcherMock.Verify(m => m.Fetch(cachedPc), Times.Never);
             }
+
+            Assert.AreEqual(1, Volatile.Read(ref clientReadyEventCount));
         }
 
         [DataRow(false)]
@@ -615,6 +829,11 @@ namespace ConfigCat.Client.Tests
         public async Task LazyLoadConfigService_GetConfig_FetchesConfigWhenCachedConfigIsExpired(bool isAsync)
         {
             // Arrange 
+
+            var hooks = new Hooks();
+
+            var clientReadyEventCount = 0;
+            hooks.ClientReady += (s, e) => Interlocked.Increment(ref clientReadyEventCount);
 
             var cacheTimeToLive = defaultExpire + defaultExpire;
 
@@ -634,7 +853,8 @@ namespace ConfigCat.Client.Tests
             var service = new LazyLoadConfigService(fetcherMock.Object,
                 new CacheParameters { ConfigCache = cache },
                 loggerMock.Object.AsWrapper(),
-                config.CacheTimeToLive);
+                config.CacheTimeToLive,
+                hooks: hooks);
 
             // Act
 
@@ -655,6 +875,8 @@ namespace ConfigCat.Client.Tests
             {
                 this.fetcherMock.Verify(m => m.Fetch(cachedPc), Times.Once);
             }
+
+            Assert.AreEqual(1, Volatile.Read(ref clientReadyEventCount));
         }
     }
 }

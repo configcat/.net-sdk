@@ -5,6 +5,7 @@ namespace ConfigCat.Client
     internal sealed class LoggerWrapper : ILogger
     {
         private readonly ILogger logger;
+        private readonly Hooks hooks;
 
         public LogLevel LogLevel
         {
@@ -12,9 +13,10 @@ namespace ConfigCat.Client
             set => logger.LogLevel = value;
         }
 
-        internal LoggerWrapper(ILogger logger)
+        internal LoggerWrapper(ILogger logger, Hooks hooks = null)
         {
             this.logger = logger;
+            this.hooks = hooks ?? NullHooks.Instance;
         }
 
         private bool TargetLogEnabled(LogLevel targetTrace)
@@ -49,13 +51,20 @@ namespace ConfigCat.Client
             }
         }
 
-        /// <inheritdoc />
-        public void Error(string message)
+        public void Error(string message) => Error(message, exception: null);
+
+        public void Error(string message, Exception exception)
         {
             if (this.TargetLogEnabled(LogLevel.Error))
             {
-                this.logger.Error(message);
+                var logMessage = exception is not null
+                    ? message + Environment.NewLine + exception
+                    : message;
+
+                this.logger.Error(logMessage);
             }
+
+            this.hooks.RaiseError(message, exception);
         }
     }
 }

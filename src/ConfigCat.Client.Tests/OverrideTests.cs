@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 namespace ConfigCat.Client.Tests
 {
     [TestClass]
+    [DoNotParallelize]
     public class OverrideTests
     {
         private static readonly string ComplexJsonPath = Path.Combine("data", "test_json_complex.json");

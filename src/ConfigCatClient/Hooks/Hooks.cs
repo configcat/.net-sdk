@@ -1,19 +1,38 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace ConfigCat.Client
 {
     internal class Hooks : IProvidesHooks
     {
-        // NOTE: SonarQube doesn't like virtual field-like events, so we need to define them with the explicit add/remove pattern.
+        private static readonly EventHandlers DisconnectedEventHandlers = new();
 
-        private EventHandler clientReady;
-        private EventHandler<FlagEvaluatedEventArgs> flagEvaluated;
-        private EventHandler<ConfigChangedEventArgs> configChanged;
-        private EventHandler<ConfigCatClientErrorEventArgs> error;
-        private EventHandler beforeClientDispose;
-
+        private volatile EventHandlers eventHandlers;
         private WeakReference<IConfigCatClient> clientWeakRef; // should be null only in case of testing
+
+        protected Hooks(EventHandlers eventHandlers)
+        {
+            this.eventHandlers = eventHandlers;
+        }
+
+        public Hooks() : this(new ActualEventHandlers()) { }
+
+        public virtual bool TryDisconnect(out Action<IConfigCatClient> raiseBeforeClientDispose)
+        {
+            // Replacing the current EventHandlers object (eventHandlers) with a special instance of EventHandlers (DisconnectedEventHandlers) achieves multiple things:
+            // 1. determines whether the hooks instance has already been disconnected or not,
+            // 2. removes implicit references to subscriber objects (so this instance won't keep them alive under any circumstances),
+            // 3. makes sure that future subscriptions are ignored from this point on.
+            var originalEventHandlers = Interlocked.Exchange(ref this.eventHandlers, DisconnectedEventHandlers);
+
+            var beforeClientDispose = originalEventHandlers.BeforeClientDispose;
+            raiseBeforeClientDispose = beforeClientDispose is not null
+                ? sender => beforeClientDispose(sender, EventArgs.Empty)
+                : null;
+
+            return !ReferenceEquals(originalEventHandlers, DisconnectedEventHandlers);
+        }
 
         private bool TryGetSender(out IConfigCatClient client)
         {
@@ -26,93 +45,103 @@ namespace ConfigCat.Client
             return this.clientWeakRef.TryGetTarget(out client);
         }
 
-        public void SetSender(IConfigCatClient client)
+        public virtual void SetSender(IConfigCatClient client)
         {
             // Strong back-references to the client instance must be avoided so GC can collect it when user doesn't have references to it any more.
             // (There are cases - like AutoPollConfigService or LocalFileDataSource - where the background work keeps the service object alive,
             // so if that had a strong reference to the client object, it would be kept alive as well, which would create a memory leak.)
-
             this.clientWeakRef = new WeakReference<IConfigCatClient>(client);
         }
 
         /// <inheritdoc/>
-        public virtual event EventHandler ClientReady
+        public event EventHandler ClientReady
         {
-            add { this.clientReady += value; }
-            remove { this.clientReady -= value; }
+            add { this.eventHandlers.ClientReady += value; }
+            remove { this.eventHandlers.ClientReady -= value; }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal void RaiseClientReady()
         {
-            if (this.clientReady is { } clientReady && TryGetSender(out var client))
+            if (this.eventHandlers.ClientReady is { } clientReady && TryGetSender(out var client))
             {
                 clientReady(client, EventArgs.Empty);
             }
         }
 
         /// <inheritdoc/>
-        public virtual event EventHandler<FlagEvaluatedEventArgs> FlagEvaluated
+        public event EventHandler<FlagEvaluatedEventArgs> FlagEvaluated
         {
-            add { this.flagEvaluated += value; }
-            remove { this.flagEvaluated -= value; }
+            add { this.eventHandlers.FlagEvaluated += value; }
+            remove { this.eventHandlers.FlagEvaluated -= value; }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal void RaiseFlagEvaluated(EvaluationDetails evaluationDetails)
         {
-            if (this.flagEvaluated is { } flagEvaluated && TryGetSender(out var client))
+            if (this.eventHandlers.FlagEvaluated is { } flagEvaluated && TryGetSender(out var client))
             {
                 flagEvaluated(client, new FlagEvaluatedEventArgs(evaluationDetails));
             }
         }
 
         /// <inheritdoc/>
-        public virtual event EventHandler<ConfigChangedEventArgs> ConfigChanged
+        public event EventHandler<ConfigChangedEventArgs> ConfigChanged
         {
-            add { this.configChanged += value; }
-            remove { this.configChanged -= value; }
+            add { this.eventHandlers.ConfigChanged += value; }
+            remove { this.eventHandlers.ConfigChanged -= value; }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal void RaiseConfigChanged(ProjectConfig newConfig)
         {
-            if (this.configChanged is { } configChanged && TryGetSender(out var client))
+            if (this.eventHandlers.ConfigChanged is { } configChanged && TryGetSender(out var client))
             {
                 configChanged(client, new ConfigChangedEventArgs(newConfig));
             }
         }
 
         /// <inheritdoc/>
-        public virtual event EventHandler<ConfigCatClientErrorEventArgs> Error
+        public event EventHandler<ConfigCatClientErrorEventArgs> Error
         {
-            add { this.error += value; }
-            remove { this.error -= value; }
+            add { this.eventHandlers.Error += value; }
+            remove { this.eventHandlers.Error -= value; }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal void RaiseError(string message, Exception exception)
         {
-            if (this.error is { } error && TryGetSender(out var client))
+            if (this.eventHandlers.Error is { } error && TryGetSender(out var client))
             {
                 error(client, new ConfigCatClientErrorEventArgs(message, exception));
             }
         }
 
         /// <inheritdoc/>
-        public virtual event EventHandler BeforeClientDispose
+        public event EventHandler BeforeClientDispose
         {
-            add { this.beforeClientDispose += value; }
-            remove { this.beforeClientDispose -= value; }
+            add { this.eventHandlers.BeforeClientDispose += value; }
+            remove { this.eventHandlers.BeforeClientDispose -= value; }
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        internal void RaiseBeforeClientDispose()
+        protected class EventHandlers
         {
-            if (this.beforeClientDispose is { } beforeClientDispose && TryGetSender(out var client))
-            {
-                beforeClientDispose(client, EventArgs.Empty);
-            }
+            private static void Noop(Delegate eventHandler) { /* This method is for keeping SonarQube happy. */ }
+
+            public virtual EventHandler ClientReady { get => null; set => Noop(value); }
+            public virtual EventHandler<FlagEvaluatedEventArgs> FlagEvaluated { get => null; set => Noop(value); }
+            public virtual EventHandler<ConfigChangedEventArgs> ConfigChanged { get => null; set => Noop(value); }
+            public virtual EventHandler<ConfigCatClientErrorEventArgs> Error { get => null; set => Noop(value); }
+            public virtual EventHandler BeforeClientDispose { get => null; set => Noop(value); }
+        }
+
+        private sealed class ActualEventHandlers : EventHandlers
+        {
+            public override EventHandler ClientReady { get; set; }
+            public override EventHandler<FlagEvaluatedEventArgs> FlagEvaluated { get; set; }
+            public override EventHandler<ConfigChangedEventArgs> ConfigChanged { get; set; }
+            public override EventHandler<ConfigCatClientErrorEventArgs> Error { get; set; }
+            public override EventHandler BeforeClientDispose { get; set; }
         }
     }
 }

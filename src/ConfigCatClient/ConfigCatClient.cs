@@ -26,17 +26,15 @@ namespace ConfigCat.Client
         private readonly IConfigDeserializer configDeserializer;
         private readonly IOverrideDataSource overrideDataSource;
         private readonly OverrideBehaviour? overrideBehaviour;
-        // NOTE: The following mutable fields may be accessed from multiple threads and we need to make sure that changes to them are observable in these threads.
+        private readonly Hooks hooks;
+        // NOTE: The following mutable field(s) may be accessed from multiple threads and we need to make sure that changes to them are observable in these threads.
         // Volatile guarantees (see https://learn.microsoft.com/en-us/dotnet/api/system.threading.volatile) that such changes become visible to them *eventually*,
         // which is good enough in these cases.
         private volatile User defaultUser;
-        private volatile Hooks hooks;
 
         private static readonly string Version = typeof(ConfigCatClient).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
 
         internal static readonly ConfigCatClientCache Instances = new();
-
-        private static readonly NullHooks DisposedHooks = new();
 
         /// <inheritdoc />
         public LogLevel LogLevel
@@ -187,7 +185,7 @@ namespace ConfigCat.Client
             }
 
             this.configService = configService;
-            this.log = new LoggerWrapper(logger);
+            this.log = new LoggerWrapper(logger, this.hooks);
             this.configEvaluator = evaluator;
             this.configDeserializer = configDeserializer;
         }
@@ -467,21 +465,14 @@ namespace ConfigCat.Client
 
         private void Dispose(bool disposing)
         {
-            // Replacing the current Hooks object (hooks) with a special instance of NullHooks (DisposedHooks) achieves multiple things:
-            // 1. determines whether the client instance has already been disposed or not,
-            // 1. removes implicit references to subscriber objects (so this instance won't keep them alive under any circumstances),
-            // 2. makes sure that future subscriptions are ignored from this point on.
-            var originalHooks = Interlocked.Exchange(ref this.hooks, DisposedHooks);
-            if (ReferenceEquals(originalHooks, DisposedHooks))
-            {
-                return;
-            }
-
             if (disposing)
             {
                 try
                 {
-                    originalHooks.RaiseBeforeClientDispose();
+                    if (this.hooks.TryDisconnect(out var raiseBeforeClientDispose))
+                    {
+                        raiseBeforeClientDispose?.Invoke(this);
+                    }
                 }
                 finally
                 {
@@ -495,18 +486,26 @@ namespace ConfigCat.Client
             }
             else
             {
-                // Execution gets here when consumer forgets to dispose the client instance.
-                // In this case we need to make sure that background work is stopped,
-                // otherwise it would go on endlessly, that is, we'd end up with a memory leak.
-                var autoPollConfigService = this.configService as AutoPollConfigService;
-                var localFileDataSource = this.overrideDataSource as LocalFileDataSource;
-                if (autoPollConfigService is not null || localFileDataSource is not null)
+                try
                 {
-                    Task.Run(() =>
+                    // NOTE: hooks may be null (e.g. if already collected) when this method is called by the finalizer
+                    this.hooks?.TryDisconnect(out _);
+                }
+                finally
+                {
+                    // Execution gets here when consumer forgets to dispose the client instance.
+                    // In this case we need to make sure that background work is stopped,
+                    // otherwise it would go on endlessly, that is, we'd end up with a memory leak.
+                    var autoPollConfigService = this.configService as AutoPollConfigService;
+                    var localFileDataSource = this.overrideDataSource as LocalFileDataSource;
+                    if (autoPollConfigService is not null || localFileDataSource is not null)
                     {
-                        autoPollConfigService?.StopScheduler();
-                        localFileDataSource?.StopWatch();
-                    });
+                        Task.Run(() =>
+                        {
+                            autoPollConfigService?.StopScheduler();
+                            localFileDataSource?.StopWatch();
+                        });
+                    }
                 }
             }
         }

@@ -1903,7 +1903,7 @@ namespace ConfigCat.Client.Tests
             var evaluationDetails = new List<EvaluationDetails>();
             foreach (var key in keys)
             {
-                evaluationDetails.Add(await client.GetValueDetailsAsync(key, defaultValue: ""));
+                evaluationDetails.Add(await client.GetValueDetailsAsync<object>(key, defaultValue: ""));
             }
 
             Assert.AreEqual(evaluationDetails.Count, flagEvaluatedEvents.Count);

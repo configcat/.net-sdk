@@ -256,15 +256,16 @@ namespace ConfigCat.Client
             T value;
             EvaluationDetails<T> evaluationDetails;
             SettingsWithRemoteConfig settings = default;
+            user ??= this.defaultUser;
             try
             {
                 settings = this.GetSettings();
-                value = this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user ?? this.defaultUser, settings.RemoteConfig, this.log, out evaluationDetails);
+                value = this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, this.log, out evaluationDetails);
             }
             catch (Exception ex)
             {
                 this.log.Error($"Error occured in '{nameof(GetValue)}' method.", ex);
-                evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user ?? this.defaultUser, ex.Message, ex);
+                evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user, ex.Message, ex);
                 value = defaultValue;
             }
 
@@ -278,15 +279,16 @@ namespace ConfigCat.Client
             T value;
             EvaluationDetails<T> evaluationDetails;
             SettingsWithRemoteConfig settings = default;
+            user ??= this.defaultUser;
             try
             {
                 settings = await this.GetSettingsAsync().ConfigureAwait(false);
-                value = this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user ?? this.defaultUser, settings.RemoteConfig, this.log, out evaluationDetails);
+                value = this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, this.log, out evaluationDetails);
             }
             catch (Exception ex)
             {
                 this.log.Error($"Error occured in '{nameof(GetValueAsync)}' method.", ex);
-                evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user ?? this.defaultUser, ex.Message, ex);
+                evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user, ex.Message, ex);
                 value = defaultValue;
             }
 
@@ -299,15 +301,16 @@ namespace ConfigCat.Client
         {
             EvaluationDetails<T> evaluationDetails;
             SettingsWithRemoteConfig settings = default;
+            user ??= this.defaultUser;
             try
             {
                 settings = this.GetSettings();
-                this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user ?? this.defaultUser, settings.RemoteConfig, this.log, out evaluationDetails);
+                this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, this.log, out evaluationDetails);
             }
             catch (Exception ex)
             {
                 this.log.Error($"Error occured in '{nameof(GetValueDetails)}' method.", ex);
-                evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user ?? this.defaultUser, ex.Message, ex);
+                evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user, ex.Message, ex);
             }
 
             this.hooks.RaiseFlagEvaluated(evaluationDetails);
@@ -319,15 +322,16 @@ namespace ConfigCat.Client
         {
             EvaluationDetails<T> evaluationDetails;
             SettingsWithRemoteConfig settings = default;
+            user ??= this.defaultUser;
             try
             {
                 settings = await this.GetSettingsAsync().ConfigureAwait(false);
-                this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user ?? this.defaultUser, settings.RemoteConfig, this.log, out evaluationDetails);
+                this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, this.log, out evaluationDetails);
             }
             catch (Exception ex)
             {
                 this.log.Error($"Error occured in '{nameof(GetValueDetailsAsync)}' method.", ex);
-                evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user ?? this.defaultUser, ex.Message, ex);
+                evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user, ex.Message, ex);
             }
 
             this.hooks.RaiseFlagEvaluated(evaluationDetails);
@@ -377,10 +381,11 @@ namespace ConfigCat.Client
         {
             IDictionary<string, object> result;
             EvaluationDetails[] evaluationDetailsArray = null;
+            user ??= this.defaultUser;
             try
             {
                 var settings = this.GetSettings();
-                result = this.configEvaluator.EvaluateAll(settings.Value, user ?? this.defaultUser, settings.RemoteConfig, this.log, out evaluationDetailsArray);
+                result = this.configEvaluator.EvaluateAll(settings.Value, user, settings.RemoteConfig, this.log, out evaluationDetailsArray);
             }
             catch (Exception ex)
             {
@@ -401,10 +406,11 @@ namespace ConfigCat.Client
         {
             IDictionary<string, object> result;
             EvaluationDetails[] evaluationDetailsArray = null;
+            user ??= this.defaultUser;
             try
             {
                 var settings = await this.GetSettingsAsync().ConfigureAwait(false);
-                result = this.configEvaluator.EvaluateAll(settings.Value, user ?? this.defaultUser, settings.RemoteConfig, this.log, out evaluationDetailsArray);
+                result = this.configEvaluator.EvaluateAll(settings.Value, user, settings.RemoteConfig, this.log, out evaluationDetailsArray);
             }
             catch (Exception ex)
             {
@@ -552,15 +558,16 @@ namespace ConfigCat.Client
             string variationId;
             EvaluationDetails evaluationDetails;
             SettingsWithRemoteConfig settings = default;
+            user ??= this.defaultUser;
             try
             {
                 settings = this.GetSettings();
-                variationId = this.configEvaluator.EvaluateVariationId(settings.Value, key, defaultVariationId, user ?? this.defaultUser, settings.RemoteConfig, this.log, out evaluationDetails);
+                variationId = this.configEvaluator.EvaluateVariationId(settings.Value, key, defaultVariationId, user, settings.RemoteConfig, this.log, out evaluationDetails);
             }
             catch (Exception ex)
             {
                 this.log.Error($"Error occured in '{nameof(GetVariationId)}' method.", ex);
-                evaluationDetails = EvaluationDetails.FromDefaultVariationId(key, defaultVariationId, fetchTime: settings.RemoteConfig?.TimeStamp, user ?? this.defaultUser, ex.Message, ex);
+                evaluationDetails = EvaluationDetails.FromDefaultVariationId(key, defaultVariationId, fetchTime: settings.RemoteConfig?.TimeStamp, user, ex.Message, ex);
                 variationId = defaultVariationId;
             }
 
@@ -574,15 +581,16 @@ namespace ConfigCat.Client
             string variationId;
             EvaluationDetails evaluationDetails;
             SettingsWithRemoteConfig settings = default;
+            user ??= this.defaultUser;
             try
             {
                 settings = await this.GetSettingsAsync().ConfigureAwait(false);
-                variationId = this.configEvaluator.EvaluateVariationId(settings.Value, key, defaultVariationId, user ?? this.defaultUser, settings.RemoteConfig, this.log, out evaluationDetails);
+                variationId = this.configEvaluator.EvaluateVariationId(settings.Value, key, defaultVariationId, user, settings.RemoteConfig, this.log, out evaluationDetails);
             }
             catch (Exception ex)
             {
                 this.log.Error($"Error occured in '{nameof(GetVariationIdAsync)}' method.", ex);
-                evaluationDetails = EvaluationDetails.FromDefaultVariationId(key, defaultVariationId, fetchTime: settings.RemoteConfig?.TimeStamp, user ?? this.defaultUser, ex.Message, ex);
+                evaluationDetails = EvaluationDetails.FromDefaultVariationId(key, defaultVariationId, fetchTime: settings.RemoteConfig?.TimeStamp, user, ex.Message, ex);
                 variationId = defaultVariationId;
             }
 
@@ -595,10 +603,11 @@ namespace ConfigCat.Client
         {
             IList<string> result;
             EvaluationDetails[] evaluationDetailsArray = null;
+            user ??= this.defaultUser;
             try
             {
                 var settings = this.GetSettings();
-                result = this.configEvaluator.EvaluateAllVariationIds(settings.Value, user ?? this.defaultUser, settings.RemoteConfig, this.log, out evaluationDetailsArray);
+                result = this.configEvaluator.EvaluateAllVariationIds(settings.Value, user, settings.RemoteConfig, this.log, out evaluationDetailsArray);
             }
             catch (Exception ex)
             {
@@ -619,10 +628,11 @@ namespace ConfigCat.Client
         {
             IList<string> result;
             EvaluationDetails[] evaluationDetailsArray = null;
+            user ??= this.defaultUser;
             try
             {
                 var settings = await this.GetSettingsAsync().ConfigureAwait(false);
-                result = this.configEvaluator.EvaluateAllVariationIds(settings.Value, user ?? this.defaultUser, settings.RemoteConfig, this.log, out evaluationDetailsArray);
+                result = this.configEvaluator.EvaluateAllVariationIds(settings.Value, user, settings.RemoteConfig, this.log, out evaluationDetailsArray);
             }
             catch (Exception ex)
             {

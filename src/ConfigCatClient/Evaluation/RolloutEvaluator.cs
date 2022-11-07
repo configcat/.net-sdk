@@ -1,5 +1,4 @@
-﻿using ConfigCat.Client.Utils;
-using ConfigCat.Client.Versioning;
+﻿using ConfigCat.Client.Versioning;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -49,48 +48,40 @@ namespace ConfigCat.Client.Evaluation
             {
                 if (user != null)
                 {
-                    Hasher? hasher = null;
-                    try
+                    // evaluate comparison-based rules
+
+                    if (TryEvaluateRules(setting.RolloutRules, user, evaluateLog, out var evaluateRulesResult))
                     {
-                        // evaluate comparison-based rules
+                        evaluateLog.ReturnValue = evaluateRulesResult.Value.ToString();
+                        evaluateLog.VariationId = evaluateRulesResult.VariationId;
 
-                        if (TryEvaluateRules(setting.RolloutRules, user, evaluateLog, ref hasher, out var evaluateRulesResult))
-                        {
-                            evaluateLog.ReturnValue = evaluateRulesResult.Value.ToString();
-                            evaluateLog.VariationId = evaluateRulesResult.VariationId;
-
-                            return EvaluationDetails.FromJsonValue(
-                                detailsFactory,
-                                setting.SettingType,
-                                key,
-                                evaluateRulesResult.Value,
-                                evaluateRulesResult.VariationId,
-                                fetchTime: remoteConfig?.TimeStamp,
-                                user,
-                                matchedEvaluationRule: evaluateRulesResult.MatchedRule);
-                        }
-
-                        // evaluate percentage-based rules
-
-                        if (TryEvaluatePercentageRules(setting.RolloutPercentageItems, key, user, evaluateLog, ref hasher, out var evaluatePercentageRulesResult))
-                        {
-                            evaluateLog.ReturnValue = evaluatePercentageRulesResult.Value.ToString();
-                            evaluateLog.VariationId = evaluatePercentageRulesResult.VariationId;
-
-                            return EvaluationDetails.FromJsonValue(
-                                detailsFactory,
-                                setting.SettingType,
-                                key,
-                                evaluatePercentageRulesResult.Value,
-                                evaluatePercentageRulesResult.VariationId,
-                                fetchTime: remoteConfig?.TimeStamp,
-                                user,
-                                matchedEvaluationPercentageRule: evaluatePercentageRulesResult.MatchedRule);
-                        }
+                        return EvaluationDetails.FromJsonValue(
+                            detailsFactory,
+                            setting.SettingType,
+                            key,
+                            evaluateRulesResult.Value,
+                            evaluateRulesResult.VariationId,
+                            fetchTime: remoteConfig?.TimeStamp,
+                            user,
+                            matchedEvaluationRule: evaluateRulesResult.MatchedRule);
                     }
-                    finally
+
+                    // evaluate percentage-based rules
+
+                    if (TryEvaluatePercentageRules(setting.RolloutPercentageItems, key, user, evaluateLog, out var evaluatePercentageRulesResult))
                     {
-                        hasher?.Dispose();
+                        evaluateLog.ReturnValue = evaluatePercentageRulesResult.Value.ToString();
+                        evaluateLog.VariationId = evaluatePercentageRulesResult.VariationId;
+
+                        return EvaluationDetails.FromJsonValue(
+                            detailsFactory,
+                            setting.SettingType,
+                            key,
+                            evaluatePercentageRulesResult.Value,
+                            evaluatePercentageRulesResult.VariationId,
+                            fetchTime: remoteConfig?.TimeStamp,
+                            user,
+                            matchedEvaluationPercentageRule: evaluatePercentageRulesResult.MatchedRule);
                     }
                 }
                 else if (setting.RolloutRules.Any() || setting.RolloutPercentageItems.Any())
@@ -118,15 +109,13 @@ namespace ConfigCat.Client.Evaluation
             }
         }
 
-        private static bool TryEvaluatePercentageRules<T>(ICollection<RolloutPercentageItem> rolloutPercentageItems, string key, User user, EvaluateLogger<T> evaluateLog,
-            ref Hasher? hasher, out EvaluateResult<RolloutPercentageItem> result)
+        private static bool TryEvaluatePercentageRules<T>(ICollection<RolloutPercentageItem> rolloutPercentageItems, string key, User user, EvaluateLogger<T> evaluateLog, out EvaluateResult<RolloutPercentageItem> result)
         {
             if (rolloutPercentageItems is { Count: > 0 })
             {
                 var hashCandidate = key + user.Identifier;
 
-                hasher ??= Hasher.Create();
-                var hashValue = hasher.Value.Hash(hashCandidate).Substring(0, 7);
+                var hashValue = hashCandidate.Hash().Substring(0, 7);
 
                 var hashScale = int.Parse(hashValue, NumberStyles.HexNumber) % 100;
                 evaluateLog.Log($"Applying the % option that matches the User's pseudo-random '{hashScale}' (this value is sticky and consistent across all SDKs):");
@@ -152,8 +141,7 @@ namespace ConfigCat.Client.Evaluation
             return false;
         }
 
-        private static bool TryEvaluateRules<T>(ICollection<RolloutRule> rules, User user, EvaluateLogger<T> logger,
-            ref Hasher? hasher, out EvaluateResult<RolloutRule> result)
+        private static bool TryEvaluateRules<T>(ICollection<RolloutRule> rules, User user, EvaluateLogger<T> logger, out EvaluateResult<RolloutRule> result)
         {
             if (rules is { Count: > 0 })
             {
@@ -269,11 +257,10 @@ namespace ConfigCat.Client.Evaluation
 
                             break;
                         case Comparator.SensitiveOneOf:
-                            hasher ??= Hasher.Create();
                             if (rule.ComparisonValue
                                 .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                                 .Select(t => t.Trim())
-                                .Contains(hasher.Value.Hash(comparisonAttributeValue)))
+                                .Contains(comparisonAttributeValue.Hash()))
                             {
                                 logger.Log(l + "MATCH, applying rule");
 
@@ -284,11 +271,10 @@ namespace ConfigCat.Client.Evaluation
 
                             break;
                         case Comparator.SensitiveNotOneOf:
-                            hasher ??= Hasher.Create();
                             if (!rule.ComparisonValue
                                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                                .Select(t => t.Trim())
-                               .Contains(hasher.Value.Hash(comparisonAttributeValue)))
+                               .Contains(comparisonAttributeValue.Hash()))
                             {
                                 logger.Log(l + "MATCH, applying rule");
 
@@ -405,7 +391,7 @@ namespace ConfigCat.Client.Evaluation
 
             return false;
         }
-
+ 
         private readonly struct EvaluateResult<TRule>
         {
             public EvaluateResult(JsonValue value, string variationId, TRule matchedRule)

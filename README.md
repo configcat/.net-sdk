@@ -1,10 +1,9 @@
 # ConfigCat SDK for .NET
 
-### Supported frameworks:
-- .NET Core
-- .NET Framework
-- Xamarin
-- .NET Standard
+### Supported runtimes:
+- .NET 5+
+- .NET Framework 4.5+
+- Other runtimes which implement .NET Standard 2.0+ like .NET Core 2.0+, Xamarin.Android 8.0+, Xamarin.iOS 10.14+, etc. (For more details, please refer to [this table](https://learn.microsoft.com/en-us/dotnet/standard/net-standard?tabs=net-standard-2-0).)
 
 https://configcat.com
 
@@ -41,10 +40,12 @@ using ConfigCat.Client;
 
 ### 4. Create a **ConfigCat** client instance:
 ```c#
-var client = new ConfigCatClient("#YOUR-SDK-KEY#");
+var client = ConfigCatClient.Get("#YOUR-SDK-KEY#");
 ```
 
 > We strongly recommend using the *ConfigCat Client* as a Singleton object in your application.
+> You can acquire singleton client instances for your SDK keys using the `ConfigCatClient.Get(sdkKey: <sdkKey>)` static factory method.
+(However, please keep in mind that subsequent calls to `ConfigCatClient.Get()` with the *same SDK Key* return a *shared* client instance, which was set up by the first call.)
 
 ### 5. Get your setting value:
 ```c#
@@ -64,7 +65,8 @@ else
 ``` c#
 client.Dispose();
 ```
-> To ensure graceful shutdown of the client you should invoke ```.Dispose()``` method. (Client implements [IDisposable](https://msdn.microsoft.com/en-us/library/system.idisposable(v=vs.110).aspx) interface)
+> To ensure graceful shutdown of the client you should invoke ```.Dispose()``` method. (Client implements [IDisposable](https://msdn.microsoft.com/en-us/library/system.idisposable(v=vs.110).aspx) interface.)
+> Alternatively, you can also close all open clients at once using the `ConfigCatClient.DisposeAll()` method.
 
 ## Getting user specific setting values with Targeting
 Using this feature, you will be able to get different setting values for different users in your application by passing a `User Object` to the `GetValue()` function.

@@ -1,3 +1,17 @@
+### 7.0.0
+- Deprecate `ConfigCatClient` constructors in favor of the new static factory method `Get`,
+  which provides single client instances per SDK key.
+- Add convenience method `DisposeAll` for disposing all open clients at once.
+- Implement default user feature.
+- Implement offline mode feature.
+- Improve LazyLoad and AutoPoll refresh logic by taking the cache timestamp into account
+  to fetch the config only if cached config is unavailable or stale.
+- Add new evaluation methods `GetValueDetail`/`GetValueDetails`,
+  which provide more detailed information about the evaluation result.
+- Add hooks (events), which provide notifications of the client's actions.  
+- Additional minor code quality and performance improvements.
+- Update samples to .NET 6.
+
 ### 6.5.3
 - Use logger wrapper everywhere internally. #39
 - Improved evaluation logging. #38
@@ -116,7 +130,12 @@
 - Addressing global data handling and processing trends via Data Governance feature. Customers can control the geographic location where their config JSONs get published to. [See the docs](https://configcat.com/docs/advanced/data-governance/).
 We are introducing a new DataGovernance initialization parameter. Set this parameter to be in sync with the Data Governance preference on the [Dashboard](https://app.configcat.com/organization/data-governance).
        
-#### Breaking change:
+#### Breaking changes:
+### 7.0.0
+- [API] Add new methods to the `IConfigCatClient` interface.
+- [API] Change `ProjectConfig` to reference type with value equality (record).
+- [Behavior] Slightly changes the behavior of ProjectConfig.TimeStamp (only updated when communication with the CDN servers succeeds, regardless of the returned status code.)
+### 6.0.0
 - Custom cache implementations should implement the new cache interface using key parameter in the get/set methods.
 ### 5.3.0
 - VariationID, bugfix ([#11](https://github.com/configcat/.net-sdk/issues/11))

@@ -10,7 +10,7 @@ namespace ConfigCat.Client.Evaluation
         public static T Evaluate<T>(this IRolloutEvaluator evaluator, Setting setting, string key, T defaultValue, User user,
             ProjectConfig remoteConfig, out EvaluationDetails<T> evaluationDetails)
         {
-            evaluationDetails = (EvaluationDetails<T>)evaluator.Evaluate(setting, key, defaultValue?.ToString(), user, remoteConfig, static (_, value) => EvaluationDetails.Create<T>(value));
+            evaluationDetails = (EvaluationDetails<T>)evaluator.Evaluate(setting, key, defaultValue?.ToString(), user, remoteConfig, static (settingType, value) => EvaluationDetails.Create<T>(settingType, value));
             return evaluationDetails.Value;
         }
 

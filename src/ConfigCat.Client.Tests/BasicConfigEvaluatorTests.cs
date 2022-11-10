@@ -1,6 +1,11 @@
 ﻿using ConfigCat.Client.Evaluation;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace ConfigCat.Client.Tests
 {
@@ -47,6 +52,73 @@ namespace ConfigCat.Client.Tests
             }, null, this.logger, out _);
 
             Assert.AreEqual(3.1415, actual);
+        }
+
+        private delegate object EvaluateDelegate(IRolloutEvaluator evaluator, IDictionary<string, Setting> settings, string key, object defaultValue, User user,
+            ProjectConfig remoteConfig, ILogger logger, out EvaluationDetails<object> evaluationDetails);
+
+        private static readonly MethodInfo evaluateMethodDefinition = new EvaluateDelegate(RolloutEvaluatorExtensions.Evaluate).Method.GetGenericMethodDefinition();
+
+        [DataRow("stringDefaultCat", "", "Cat", typeof(string))]
+        [DataRow("stringDefaultCat", "", "Cat", typeof(object))]
+        [DataRow("boolDefaultTrue", false, true, typeof(bool))]
+        [DataRow("boolDefaultTrue", false, true, typeof(bool?))]
+        [DataRow("boolDefaultTrue", false, true, typeof(object))]
+        [DataRow("integerDefaultOne", 0, 1, typeof(int))]
+        [DataRow("integerDefaultOne", 0, 1, typeof(int?))]
+        [DataRow("integerDefaultOne", 0L, 1L, typeof(long))]
+        [DataRow("integerDefaultOne", 0L, 1L, typeof(long?))]
+        [DataRow("integerDefaultOne", 0, 1, typeof(object))]
+        [DataRow("doubleDefaultPi", 0.0, 3.1415, typeof(double))]
+        [DataRow("doubleDefaultPi", 0.0, 3.1415, typeof(double?))]
+        [DataRow("doubleDefaultPi", 0.0, 3.1415, typeof(object))]
+        [DataTestMethod]
+        public void GetValue_WithCompatibleDefaultValue_ShouldSucceed(string key, object defaultValue, object expectedValue, Type settingClrType)
+        {
+            var args = new object[]
+            {
+                this.configEvaluator,
+                this.config,
+                key,
+                defaultValue,
+                null,
+                null,
+                this.logger,
+                null
+            };
+
+            var actualValue = evaluateMethodDefinition.MakeGenericMethod(settingClrType).Invoke(null, args);
+            var evaluationDetails = (EvaluationDetails)args.Last();
+
+            Assert.AreEqual(expectedValue, actualValue);
+            Assert.AreEqual(expectedValue, evaluationDetails.Value);
+        }
+
+        [DataRow("stringDefaultCat", 0.0, typeof(double?))]
+        [DataRow("boolDefaultTrue", "false", typeof(string))]
+        [DataRow("integerDefaultOne", "0", typeof(string))]
+        [DataRow("doubleDefaultPi", 0, typeof(int))]
+        [DataTestMethod]
+        public void GetValue_WithIncompatibleDefaultValueType_ShouldThrowWithImprovedErrorMessage(string key, object defaultValue, Type settingClrType)
+        {
+            var args = new object[]
+            {
+                this.configEvaluator,
+                this.config,
+                key,
+                defaultValue,
+                null,
+                null,
+                this.logger,
+                null
+            };
+
+            var ex = Assert.ThrowsException<InvalidOperationException>(() =>
+            {
+                try { evaluateMethodDefinition.MakeGenericMethod(settingClrType).Invoke(null, args); }
+                catch (TargetInvocationException ex) { throw ex.InnerException; }
+            });
+            StringAssert.Contains(ex.Message, $"Setting's type was {this.config[key].SettingType} but the default value's type was {settingClrType}.");
         }
     }
 }

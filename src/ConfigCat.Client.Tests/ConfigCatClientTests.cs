@@ -706,7 +706,7 @@ namespace ConfigCat.Client.Tests
             configServiceMock.Setup(m => m.GetConfigAsync()).ReturnsAsync(ProjectConfig.Empty);
             var o = new SettingsWithPreferences();
             configDeserializerMock
-                .Setup(m => m.TryDeserialize(It.IsAny<string>(), out o))
+                .Setup(m => m.TryDeserialize(It.IsAny<string>(), It.IsAny<string>(), out o))
                 .Throws<Exception>();
 
             IConfigCatClient instance = new ConfigCatClient(
@@ -734,7 +734,7 @@ namespace ConfigCat.Client.Tests
             configServiceMock.Setup(m => m.GetConfigAsync()).ReturnsAsync(ProjectConfig.Empty);
             var o = new SettingsWithPreferences();
             configDeserializerMock
-                .Setup(m => m.TryDeserialize(It.IsAny<string>(), out o))
+                .Setup(m => m.TryDeserialize(It.IsAny<string>(), It.IsAny<string>(), out o))
                 .Returns(false);
 
             IConfigCatClient instance = new ConfigCatClient(
@@ -762,7 +762,7 @@ namespace ConfigCat.Client.Tests
             configServiceMock.Setup(m => m.GetConfig()).Returns(ProjectConfig.Empty);
             var o = new SettingsWithPreferences();
             configDeserializerMock
-                .Setup(m => m.TryDeserialize(It.IsAny<string>(), out o))
+                .Setup(m => m.TryDeserialize(It.IsAny<string>(), It.IsAny<string>(), out o))
                 .Returns(false);
 
             IConfigCatClient instance = new ConfigCatClient(
@@ -849,7 +849,7 @@ namespace ConfigCat.Client.Tests
             configServiceMock.Setup(m => m.GetConfigAsync()).ReturnsAsync(ProjectConfig.Empty);
             var o = new SettingsWithPreferences();
             configDeserializerMock
-                .Setup(m => m.TryDeserialize(It.IsAny<string>(), out o))
+                .Setup(m => m.TryDeserialize(It.IsAny<string>(), It.IsAny<string>(), out o))
                 .Returns(false);
 
             IConfigCatClient instance = new ConfigCatClient(
@@ -877,7 +877,7 @@ namespace ConfigCat.Client.Tests
             configServiceMock.Setup(m => m.GetConfigAsync()).ReturnsAsync(ProjectConfig.Empty);
             var o = new SettingsWithPreferences();
             configDeserializerMock
-                .Setup(m => m.TryDeserialize(It.IsAny<string>(), out o))
+                .Setup(m => m.TryDeserialize(It.IsAny<string>(), It.IsAny<string>(), out o))
                 .Returns(false);
 
             IConfigCatClient instance = new ConfigCatClient(

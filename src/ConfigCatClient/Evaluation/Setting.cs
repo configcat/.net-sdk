@@ -58,7 +58,7 @@ namespace ConfigCat.Client.Evaluation
 #else
         [JsonPropertyName("t")]
 #endif
-        public SettingType SettingType { get; set; }
+        public SettingType SettingType { get; set; } = SettingType.Unknown;
 
 #if USE_NEWTONSOFT_JSON
         [JsonProperty(PropertyName = "p")]
@@ -87,7 +87,8 @@ namespace ConfigCat.Client.Evaluation
         Boolean = 0,
         String = 1,
         Int = 2,
-        Double = 3
+        Double = 3,
+        Unknown = byte.MaxValue,
     }
 
     internal enum RedirectMode : byte

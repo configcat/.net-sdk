@@ -8,8 +8,16 @@ namespace System
     {
         public static string Hash(this string text)
         {
-            using var hash = SHA1.Create();
-            var hashedBytes = hash.ComputeHash(Encoding.UTF8.GetBytes(text));
+            byte[] hashedBytes;
+            var textBytes = Encoding.UTF8.GetBytes(text);
+#if NET5_0_OR_GREATER
+            hashedBytes = SHA1.HashData(textBytes);
+#else
+            using (var hash = SHA1.Create())
+            {
+                hashedBytes = hash.ComputeHash(textBytes);
+            }
+#endif
 
             return hashedBytes.ToHexString();
         }

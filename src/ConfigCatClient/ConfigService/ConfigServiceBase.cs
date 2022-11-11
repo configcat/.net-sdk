@@ -196,8 +196,7 @@ namespace ConfigCat.Client.ConfigService
                 }
                 else if (this.status == Status.Disposed)
                 {
-                    logAction = static logger => logger.DisposedWarning(nameof(SetOnline) + "()");
-                    return;
+                    logAction = static logger => logger.DisposedWarning(nameof(SetOnline));
                 }
             }
 
@@ -223,7 +222,7 @@ namespace ConfigCat.Client.ConfigService
                 }
                 else if (this.status == Status.Disposed)
                 {
-                    logAction = static logger => logger.DisposedWarning(nameof(SetOffline) + "()");
+                    logAction = static logger => logger.DisposedWarning(nameof(SetOffline));
                 }
             }
 

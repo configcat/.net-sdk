@@ -14,7 +14,7 @@
 
         public static void DisposedWarning(this ILogger logger, string methodName)
         {
-            logger.Warning($"Client has already been disposed, thus {methodName} has no effect.");
+            logger.Warning($"Client has already been disposed, thus {methodName}() has no effect.");
         }
     }
 }

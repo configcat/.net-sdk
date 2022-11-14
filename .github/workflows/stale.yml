@@ -1,0 +1,12 @@
+name: Mark stale issues
+
+on:
+  schedule:
+  - cron: '0 1 * * *'
+
+  workflow_dispatch:
+
+jobs:
+  stale:
+    uses: configcat/.github/.github/workflows/stale.yml@master
+    secrets: inherit

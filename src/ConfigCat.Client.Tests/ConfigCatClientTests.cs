@@ -1255,7 +1255,7 @@ namespace ConfigCat.Client.Tests
 
             // Assert
 
-            Assert.AreEqual(1, ConfigCatClient.Instances.Count);
+            Assert.AreEqual(1, ConfigCatClient.Instances.GetAliveCount());
             Assert.AreSame(client1, client2);
             Assert.IsFalse(warnings1.Any(msg => msg.Contains("configuration action is being ignored")));
 
@@ -1279,11 +1279,11 @@ namespace ConfigCat.Client.Tests
 
             // Act
 
-            var instanceCount1 = ConfigCatClient.Instances.Count;
+            var instanceCount1 = ConfigCatClient.Instances.GetAliveCount();
 
             client1.Dispose();
 
-            var instanceCount2 = ConfigCatClient.Instances.Count;
+            var instanceCount2 = ConfigCatClient.Instances.GetAliveCount();
 
             // Assert
 
@@ -1301,23 +1301,23 @@ namespace ConfigCat.Client.Tests
 
             // Act
 
-            var instanceCount1 = ConfigCatClient.Instances.Count;
+            var instanceCount1 = ConfigCatClient.Instances.GetAliveCount();
 
             client1.Dispose();
 
-            var instanceCount2 = ConfigCatClient.Instances.Count;
+            var instanceCount2 = ConfigCatClient.Instances.GetAliveCount();
 
             var client2 = ConfigCatClient.Get("test", options => options.PollingMode = PollingModes.ManualPoll);
 
-            var instanceCount3 = ConfigCatClient.Instances.Count;
+            var instanceCount3 = ConfigCatClient.Instances.GetAliveCount();
 
             client1.Dispose();
 
-            var instanceCount4 = ConfigCatClient.Instances.Count;
+            var instanceCount4 = ConfigCatClient.Instances.GetAliveCount();
 
             client2.Dispose();
 
-            var instanceCount5 = ConfigCatClient.Instances.Count;
+            var instanceCount5 = ConfigCatClient.Instances.GetAliveCount();
 
             // Assert
 
@@ -1341,11 +1341,11 @@ namespace ConfigCat.Client.Tests
 
             int instanceCount1;
 
-            instanceCount1 = ConfigCatClient.Instances.Count;
+            instanceCount1 = ConfigCatClient.Instances.GetAliveCount();
 
             ConfigCatClient.DisposeAll();
 
-            var instanceCount2 = ConfigCatClient.Instances.Count;
+            var instanceCount2 = ConfigCatClient.Instances.GetAliveCount();
 
             // Assert
 
@@ -1369,7 +1369,7 @@ namespace ConfigCat.Client.Tests
                 var client1 = ConfigCatClient.Get("test1", options => options.PollingMode = PollingModes.AutoPoll(maxInitWaitTime: TimeSpan.Zero));
                 var client2 = ConfigCatClient.Get("test2", options => options.PollingMode = PollingModes.ManualPoll);
 
-                instanceCount = ConfigCatClient.Instances.Count;
+                instanceCount = ConfigCatClient.Instances.GetAliveCount();
             }
 
             // Act
@@ -1379,7 +1379,7 @@ namespace ConfigCat.Client.Tests
             GC.Collect();
             GC.WaitForPendingFinalizers();
 
-            var instanceCount2 = ConfigCatClient.Instances.Count;
+            var instanceCount2 = ConfigCatClient.Instances.GetAliveCount();
 
             // Assert
 

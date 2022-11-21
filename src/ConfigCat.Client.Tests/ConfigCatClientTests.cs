@@ -733,9 +733,8 @@ namespace ConfigCat.Client.Tests
             // Arrange
 
             configServiceMock.Setup(m => m.GetConfigAsync()).ReturnsAsync(ProjectConfig.Empty);
-            var o = new SettingsWithPreferences();
             configDeserializerMock
-                .Setup(m => m.TryDeserialize(It.IsAny<string>(), It.IsAny<string>(), out o))
+                .Setup(m => m.TryDeserialize(It.IsAny<string>(), It.IsAny<string>(), out It.Ref<SettingsWithPreferences>.IsAny))
                 .Returns(false);
 
             IConfigCatClient instance = new ConfigCatClient(
@@ -752,7 +751,7 @@ namespace ConfigCat.Client.Tests
 
             Assert.IsNotNull(actualKeys);
             Assert.AreEqual(0, actualKeys.Count());
-            loggerMock.Verify(m => m.Warning(It.IsAny<string>()), Times.Once);
+            loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
         }
 
         [TestMethod]
@@ -761,9 +760,8 @@ namespace ConfigCat.Client.Tests
             // Arrange
 
             configServiceMock.Setup(m => m.GetConfig()).Returns(ProjectConfig.Empty);
-            var o = new SettingsWithPreferences();
             configDeserializerMock
-                .Setup(m => m.TryDeserialize(It.IsAny<string>(), It.IsAny<string>(), out o))
+                .Setup(m => m.TryDeserialize(It.IsAny<string>(), It.IsAny<string>(), out It.Ref<SettingsWithPreferences>.IsAny))
                 .Returns(false);
 
             IConfigCatClient instance = new ConfigCatClient(
@@ -780,7 +778,7 @@ namespace ConfigCat.Client.Tests
 
             Assert.IsNotNull(actualKeys);
             Assert.AreEqual(0, actualKeys.Count());
-            loggerMock.Verify(m => m.Warning(It.IsAny<string>()), Times.Once);
+            loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
         }
 
         [TestMethod]
@@ -842,7 +840,7 @@ namespace ConfigCat.Client.Tests
         }
 
         [TestMethod]
-        public void GetVariationId_DeserializeFailed_ShouldReturnsWithEmptyArray()
+        public void GetAllVariationId_DeserializeFailed_ShouldReturnsWithEmptyArray()
         {
             // Arrange
 
@@ -867,11 +865,11 @@ namespace ConfigCat.Client.Tests
 
             Assert.IsNotNull(actual);
             Assert.AreEqual(0, actual.Count());
-            loggerMock.Verify(m => m.Warning(It.IsAny<string>()), Times.Once);
+            loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
         }
 
         [TestMethod]
-        public async Task GetVariationIdAsync_DeserializeFailed_ShouldReturnsWithEmptyArray()
+        public async Task GetAllVariationIdAsync_DeserializeFailed_ShouldReturnsWithEmptyArray()
         {
             // Arrange
 
@@ -895,7 +893,7 @@ namespace ConfigCat.Client.Tests
 
             Assert.IsNotNull(actual);
             Assert.AreEqual(0, actual.Count());
-            loggerMock.Verify(m => m.Warning(It.IsAny<string>()), Times.Once);
+            loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
         }
 
         [TestMethod]

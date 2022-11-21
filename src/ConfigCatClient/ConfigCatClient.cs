@@ -696,7 +696,7 @@ namespace ConfigCat.Client
             {
                 var config = this.configService.GetConfig();
                 if (!this.configDeserializer.TryDeserialize(config.JsonString, config.HttpETag, out var deserialized))
-                    return new SettingsWithRemoteConfig(new Dictionary<string, Setting>(), config);
+                    return new SettingsWithRemoteConfig(null, config);
 
                 return new SettingsWithRemoteConfig(deserialized.Settings, config);
             }
@@ -729,7 +729,7 @@ namespace ConfigCat.Client
             {
                 var config = await this.configService.GetConfigAsync().ConfigureAwait(false);
                 if (!this.configDeserializer.TryDeserialize(config.JsonString, config.HttpETag, out var deserialized))
-                    return new SettingsWithRemoteConfig(new Dictionary<string, Setting>(), config);
+                    return new SettingsWithRemoteConfig(null, config);
 
                 return new SettingsWithRemoteConfig(deserialized.Settings, config);
             }

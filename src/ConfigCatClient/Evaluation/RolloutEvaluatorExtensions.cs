@@ -19,7 +19,7 @@ namespace ConfigCat.Client.Evaluation
         {
             string errorMessage;
 
-            if (settings.Count == 0)
+            if (settings is null)
             {
                 errorMessage = $"Config JSON is not present. Returning the {nameof(defaultValue)} that you specified in the source code: '{defaultValue}'.";
                 logger.Error(errorMessage);
@@ -99,7 +99,7 @@ namespace ConfigCat.Client.Evaluation
         {
             string errorMessage;
 
-            if (settings.Count == 0)
+            if (settings is null)
             {
                 errorMessage = $"Config JSON is not present. Returning the {nameof(defaultVariationId)} defined in the app source code: '{defaultVariationId}'.";
                 logger.Error(errorMessage);
@@ -166,9 +166,9 @@ namespace ConfigCat.Client.Evaluation
 
         internal static bool CheckSettingsAvailable(IDictionary<string, Setting> settings, ILogger logger)
         {
-            if (settings.Count == 0)
+            if (settings is null)
             {
-                logger.Warning("Config JSON is not present.");
+                logger.Error("Config JSON is not present.");
                 return false;
             }
 

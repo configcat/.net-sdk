@@ -9,6 +9,7 @@ using ConfigCat.Client.Cache;
 using ConfigCat.Client.Configuration;
 using ConfigCat.Client.Override;
 using System.Threading;
+using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client
 {
@@ -392,7 +393,8 @@ namespace ConfigCat.Client
             catch (Exception ex)
             {
                 this.log.Error($"Error occured in '{nameof(GetAllValues)}' method.", ex);
-                return new Dictionary<string, object>();
+                evaluationDetailsArray ??= ArrayUtils.EmptyArray<EvaluationDetails>();
+                result = new Dictionary<string, object>();
             }
 
             foreach (var evaluationDetails in evaluationDetailsArray)
@@ -417,7 +419,8 @@ namespace ConfigCat.Client
             catch (Exception ex)
             {
                 this.log.Error($"Error occured in '{nameof(GetAllValuesAsync)}' method.", ex);
-                return new Dictionary<string, object>();
+                evaluationDetailsArray ??= ArrayUtils.EmptyArray<EvaluationDetails>();
+                result = new Dictionary<string, object>();
             }
 
             foreach (var evaluationDetails in evaluationDetailsArray)
@@ -606,7 +609,7 @@ namespace ConfigCat.Client
         /// <inheritdoc />
         public IEnumerable<string> GetAllVariationId(User user = null)
         {
-            IList<string> result;
+            IEnumerable<string> result;
             EvaluationDetails[] evaluationDetailsArray = null;
             user ??= this.defaultUser;
             try
@@ -617,7 +620,8 @@ namespace ConfigCat.Client
             catch (Exception ex)
             {
                 this.log.Error($"Error occured in '{nameof(GetAllVariationId)}' method.", ex);
-                return Enumerable.Empty<string>();
+                evaluationDetailsArray ??= ArrayUtils.EmptyArray<EvaluationDetails>();
+                result = Enumerable.Empty<string>();
             }
 
             foreach (var evaluationDetails in evaluationDetailsArray)
@@ -631,7 +635,7 @@ namespace ConfigCat.Client
         /// <inheritdoc />
         public async Task<IEnumerable<string>> GetAllVariationIdAsync(User user = null)
         {
-            IList<string> result;
+            IEnumerable<string> result;
             EvaluationDetails[] evaluationDetailsArray = null;
             user ??= this.defaultUser;
             try
@@ -642,7 +646,8 @@ namespace ConfigCat.Client
             catch (Exception ex)
             {
                 this.log.Error($"Error occured in '{nameof(GetAllVariationIdAsync)}' method.", ex);
-                return Enumerable.Empty<string>();
+                evaluationDetailsArray ??= ArrayUtils.EmptyArray<EvaluationDetails>();
+                result = Enumerable.Empty<string>();
             }
 
             foreach (var evaluationDetails in evaluationDetailsArray)

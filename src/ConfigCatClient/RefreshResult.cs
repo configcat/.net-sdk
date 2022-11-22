@@ -25,6 +25,13 @@ namespace ConfigCat.Client
             return new RefreshResult(errorMessage ?? throw new ArgumentNullException(nameof(errorMessage)), errorException);
         }
 
+        internal static RefreshResult From(FetchResult fetchResult)
+        {
+            return !fetchResult.IsFailure
+                ? Success()
+                : Failure(fetchResult.ErrorMessage, fetchResult.ErrorException);
+        }
+
         private RefreshResult(string errorMessage, Exception errorException)
         {
             ErrorMessage = errorMessage;

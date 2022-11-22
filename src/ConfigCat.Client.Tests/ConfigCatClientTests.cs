@@ -352,7 +352,7 @@ namespace ConfigCat.Client.Tests
             var configJsonFilePath = Path.Combine("data", "sample_variationid_v5.json");
 
             var client = CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock,
-                onFetch: _ => new ProjectConfig { JsonString = File.ReadAllText(configJsonFilePath), HttpETag = "12345", TimeStamp = DateTime.UtcNow },
+                onFetch: _ => FetchResult.Success(new ProjectConfig { JsonString = File.ReadAllText(configJsonFilePath), HttpETag = "12345", TimeStamp = DateTime.UtcNow }),
                 configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
                 {
                     return new ManualPollConfigService(fetcherMock.Object, cacheParams, loggerWrapper);
@@ -397,7 +397,7 @@ namespace ConfigCat.Client.Tests
             var timeStamp = DateTime.UtcNow;
 
             var client = CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock,
-                onFetch: _ => new ProjectConfig { JsonString = File.ReadAllText(configJsonFilePath), HttpETag = "12345", TimeStamp = timeStamp },
+                onFetch: _ => FetchResult.Success(new ProjectConfig { JsonString = File.ReadAllText(configJsonFilePath), HttpETag = "12345", TimeStamp = timeStamp }),
                 configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
                 {
                     return new ManualPollConfigService(fetcherMock.Object, cacheParams, loggerWrapper);
@@ -449,7 +449,7 @@ namespace ConfigCat.Client.Tests
             var timeStamp = DateTime.UtcNow;
 
             var client = CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock,
-                onFetch: _ => new ProjectConfig { JsonString = File.ReadAllText(configJsonFilePath), HttpETag = "12345", TimeStamp = timeStamp },
+                onFetch: _ => FetchResult.Success(new ProjectConfig { JsonString = File.ReadAllText(configJsonFilePath), HttpETag = "12345", TimeStamp = timeStamp }),
                 configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
                 {
                     return new ManualPollConfigService(fetcherMock.Object, cacheParams, loggerWrapper);
@@ -503,7 +503,7 @@ namespace ConfigCat.Client.Tests
             var timeStamp = DateTime.UtcNow;
 
             var client = CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock,
-                onFetch: _ => new ProjectConfig { JsonString = File.ReadAllText(configJsonFilePath), HttpETag = "12345", TimeStamp = timeStamp },
+                onFetch: _ => FetchResult.Success(new ProjectConfig { JsonString = File.ReadAllText(configJsonFilePath), HttpETag = "12345", TimeStamp = timeStamp }),
                 configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
                 {
                     return new ManualPollConfigService(fetcherMock.Object, cacheParams, loggerWrapper);
@@ -605,7 +605,7 @@ namespace ConfigCat.Client.Tests
                 .Throws(new ApplicationException(errorMessage));
 
             var client = CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock,
-                onFetch: _ => new ProjectConfig { JsonString = File.ReadAllText(configJsonFilePath), HttpETag = "12345", TimeStamp = timeStamp },
+                onFetch: _ => FetchResult.Success(new ProjectConfig { JsonString = File.ReadAllText(configJsonFilePath), HttpETag = "12345", TimeStamp = timeStamp }),
                 configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
                 {
                     return new ManualPollConfigService(fetcherMock.Object, cacheParams, loggerWrapper);
@@ -1390,7 +1390,7 @@ namespace ConfigCat.Client.Tests
         private static IConfigCatClient CreateClientWithMockedFetcher(string cacheKey,
             Mock<ILogger> loggerMock,
             Mock<IConfigFetcher> fetcherMock,
-            Func<ProjectConfig, ProjectConfig> onFetch,
+            Func<ProjectConfig, FetchResult> onFetch,
             Func<IConfigFetcher, CacheParameters, LoggerWrapper, IConfigService> configServiceFactory,
             out IConfigService configService,
             out IConfigCatCache configCache)
@@ -1403,7 +1403,7 @@ namespace ConfigCat.Client.Tests
         private static IConfigCatClient CreateClientWithMockedFetcher(string cacheKey,
             Mock<ILogger> loggerMock,
             Mock<IConfigFetcher> fetcherMock,
-            Func<ProjectConfig, ProjectConfig> onFetch,
+            Func<ProjectConfig, FetchResult> onFetch,
             Func<IConfigFetcher, CacheParameters, LoggerWrapper, IConfigService> configServiceFactory,
             Func<LoggerWrapper, IRolloutEvaluator> evaluatorFactory,
             Hooks hooks,
@@ -1463,7 +1463,7 @@ namespace ConfigCat.Client.Tests
             };
 
             var client = CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock,
-                onFetch: cfg => new ProjectConfig { JsonString = "{}", HttpETag = (++httpETag).ToString(CultureInfo.InvariantCulture), TimeStamp = DateTime.UtcNow },
+                onFetch: cfg => FetchResult.Success(new ProjectConfig { JsonString = "{}", HttpETag = (++httpETag).ToString(CultureInfo.InvariantCulture), TimeStamp = DateTime.UtcNow }),
                 configServiceFactory, out var configService, out _);
 
             var expectedFetchCount = 0;
@@ -1590,7 +1590,7 @@ namespace ConfigCat.Client.Tests
             };
 
             var client = CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock,
-                onFetch: cfg => new ProjectConfig { JsonString = "{}", HttpETag = (++httpETag).ToString(CultureInfo.InvariantCulture), TimeStamp = DateTime.UtcNow },
+                onFetch: cfg => FetchResult.Success(new ProjectConfig { JsonString = "{}", HttpETag = (++httpETag).ToString(CultureInfo.InvariantCulture), TimeStamp = DateTime.UtcNow }),
                 configServiceFactory, out var configService, out var configCache);
 
             var expectedFetchCount = 0;
@@ -1717,7 +1717,7 @@ namespace ConfigCat.Client.Tests
             var onFetch = (ProjectConfig latestConfig) =>
             {
                 loggerWrapper.Error(errorMessage, errorException);
-                return latestConfig;
+                return FetchResult.Failure(latestConfig, errorMessage: errorMessage, errorException: errorException);
             };
             fetcherMock.Setup(m => m.FetchAsync(It.IsAny<ProjectConfig>())).ReturnsAsync(onFetch);
 
@@ -1751,7 +1751,7 @@ namespace ConfigCat.Client.Tests
             // 3. Fetch succeeds
             var config = new ProjectConfig { JsonString = File.ReadAllText(configJsonFilePath), HttpETag = "12345", TimeStamp = DateTime.UtcNow };
 
-            onFetch = _ => config;
+            onFetch = _ => FetchResult.Success(config);
             fetcherMock.Reset();
             fetcherMock.Setup(m => m.FetchAsync(It.IsAny<ProjectConfig>())).ReturnsAsync(onFetch);
 

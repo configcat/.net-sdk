@@ -65,7 +65,10 @@ namespace ConfigCat.Client.Tests
 
             // Assert
 
-            Assert.AreEqual(lastConfig, actual);
+            Assert.IsTrue(actual.IsFailure);
+            Assert.IsNotNull(actual.ErrorMessage);
+            Assert.IsNull(actual.ErrorException);
+            Assert.AreEqual(lastConfig, actual.Config);
         }
 
         [TestMethod]
@@ -73,7 +76,8 @@ namespace ConfigCat.Client.Tests
         {
             // Arrange
 
-            var myHandler = new ExceptionThrowerHttpClientHandler(new WebException());
+            var exception = new WebException();
+            var myHandler = new ExceptionThrowerHttpClientHandler(exception);
 
             var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), myHandler, Mock.Of<IConfigDeserializer>(), false,
                 TimeSpan.FromSeconds(30));
@@ -86,7 +90,10 @@ namespace ConfigCat.Client.Tests
 
             // Assert
 
-            Assert.AreEqual(lastConfig, actual);
+            Assert.IsTrue(actual.IsFailure);
+            Assert.IsNotNull(actual.ErrorMessage);
+            Assert.AreSame(exception, actual.ErrorException);
+            Assert.AreEqual(lastConfig, actual.Config);
         }
     }
 }

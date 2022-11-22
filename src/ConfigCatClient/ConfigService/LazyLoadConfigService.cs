@@ -33,7 +33,8 @@ namespace ConfigCat.Client.ConfigService
 
                     if (!IsOffline)
                     {
-                        return RefreshConfigCore(config);
+                        var configWithFetchResult = RefreshConfigCore(config);
+                        return configWithFetchResult.Item1;
                     }
                 }
 
@@ -57,7 +58,8 @@ namespace ConfigCat.Client.ConfigService
 
                 if (!IsOffline)
                 {
-                    return await RefreshConfigCoreAsync(config).ConfigureAwait(false);
+                    var configWithFetchResult = await RefreshConfigCoreAsync(config).ConfigureAwait(false);
+                    return configWithFetchResult.Item1;
                 }
             }
 

@@ -46,7 +46,7 @@ namespace ConfigCat.Client.Tests
 
             this.fetcherMock
                 .Setup(m => m.FetchAsync(cachedPc))
-                .Returns(Task.FromResult(fetchedPc))
+                .ReturnsAsync(FetchResult.Success(fetchedPc))
                 .Verifiable();
 
             using var service = new LazyLoadConfigService(
@@ -112,7 +112,7 @@ namespace ConfigCat.Client.Tests
 
             this.fetcherMock
                 .Setup(m => m.FetchAsync(cachedPc))
-                .Returns(Task.FromResult(fetchedPc))
+                .ReturnsAsync(FetchResult.Success(fetchedPc))
                 .Callback(() => Assert.AreEqual(2, callOrder++))
                 .Verifiable();
 
@@ -154,7 +154,7 @@ namespace ConfigCat.Client.Tests
 
             this.fetcherMock
                 .Setup(m => m.FetchAsync(cachedPc))
-                .Returns(Task.FromResult(fetchedPc));
+                .ReturnsAsync(FetchResult.Success(fetchedPc));
 
             this.cacheMock
                 .Setup(m => m.SetAsync(It.IsAny<string>(), fetchedPc))
@@ -191,7 +191,7 @@ namespace ConfigCat.Client.Tests
 
             this.fetcherMock
                 .Setup(m => m.FetchAsync(localPc))
-                .Returns(Task.FromResult(fetchedPc));
+                .ReturnsAsync(FetchResult.Success(fetchedPc));
 
             this.cacheMock
                 .Setup(m => m.SetAsync(It.IsAny<string>(), fetchedPc))
@@ -229,7 +229,7 @@ namespace ConfigCat.Client.Tests
 
             this.fetcherMock
                 .Setup(m => m.FetchAsync(cachedPc))
-                .Returns(Task.FromResult(fetchedPc));
+                .ReturnsAsync(FetchResult.Success(fetchedPc));
 
             this.cacheMock
                 .Setup(m => m.SetAsync(It.IsAny<string>(), fetchedPc))
@@ -267,7 +267,7 @@ namespace ConfigCat.Client.Tests
 
             this.fetcherMock
                 .Setup(m => m.FetchAsync(cachedPc))
-                .Returns(Task.FromResult(fetchedPc));
+                .ReturnsAsync(FetchResult.Success(fetchedPc));
 
             this.cacheMock
                 .Setup(m => m.SetAsync(It.IsAny<string>(), fetchedPc))
@@ -309,7 +309,7 @@ namespace ConfigCat.Client.Tests
 
             this.fetcherMock
                 .Setup(m => m.FetchAsync(cachedPc))
-                .Returns(Task.FromResult(fetchedPc));
+                .ReturnsAsync(FetchResult.Success(fetchedPc));
 
             this.cacheMock
                 .Setup(m => m.SetAsync(It.IsAny<string>(), fetchedPc))
@@ -355,7 +355,7 @@ namespace ConfigCat.Client.Tests
             this.fetcherMock
                 .Setup(m => m.FetchAsync(cachedPc))
                 .Callback(() => Interlocked.Increment(ref counter))
-                .Returns(Task.FromResult(cachedPc));
+                .ReturnsAsync(FetchResult.Success(cachedPc));
 
             var config = PollingModes.AutoPoll(TimeSpan.FromSeconds(0.2d), TimeSpan.FromSeconds(0));
             using var service = new AutoPollConfigService(config,
@@ -392,7 +392,7 @@ namespace ConfigCat.Client.Tests
             this.fetcherMock
                 .Setup(m => m.FetchAsync(cachedPc))
                 .Callback(() => Interlocked.Increment(ref counter))
-                .Returns(Task.FromResult(cachedPc));
+                .ReturnsAsync(FetchResult.Success(cachedPc));
 
             var config = PollingModes.AutoPoll(TimeSpan.FromSeconds(0.2d), TimeSpan.FromSeconds(0));
             using var service = new AutoPollConfigService(config,
@@ -464,7 +464,7 @@ namespace ConfigCat.Client.Tests
 
             this.fetcherMock
                 .Setup(m => m.FetchAsync(cachedPc))
-                .Returns(Task.FromResult(fetchedPc))
+                .ReturnsAsync(FetchResult.Success(fetchedPc))
                 .Callback(() => Assert.AreEqual(2, callOrder++));
 
             this.cacheMock
@@ -506,7 +506,7 @@ namespace ConfigCat.Client.Tests
 
             this.fetcherMock
                 .Setup(m => m.FetchAsync(cachedPc))
-                .Returns(Task.FromResult(fetchedPc));
+                .ReturnsAsync(FetchResult.Success(fetchedPc));
 
             this.cacheMock
                 .Setup(m => m.SetAsync(It.IsAny<string>(), fetchedPc))
@@ -537,7 +537,7 @@ namespace ConfigCat.Client.Tests
             var configFetcherMock = new Mock<IConfigFetcher>();
             configFetcherMock
                 .Setup(m => m.FetchAsync(It.IsAny<ProjectConfig>()))
-                .Returns(Task.FromResult(ProjectConfig.Empty));
+                .ReturnsAsync(FetchResult.NotModified(ProjectConfig.Empty));
 
             var configFetcherMockDispose = configFetcherMock.As<IDisposable>();
 
@@ -577,7 +577,7 @@ namespace ConfigCat.Client.Tests
             var configFetcherMock = new Mock<IConfigFetcher>();
             configFetcherMock
                 .Setup(m => m.FetchAsync(It.IsAny<ProjectConfig>()))
-                .Returns(Task.FromResult(ProjectConfig.Empty));
+                .ReturnsAsync(FetchResult.NotModified(ProjectConfig.Empty));
 
             var configServiceMock = new Mock<ConfigServiceBase>(
                 MockBehavior.Loose,
@@ -620,7 +620,7 @@ namespace ConfigCat.Client.Tests
             var cache = new InMemoryConfigCache();
             cache.Set(null, cachedPc);
 
-            this.fetcherMock.Setup(m => m.FetchAsync(cachedPc)).ReturnsAsync(fetchedPc);
+            this.fetcherMock.Setup(m => m.FetchAsync(cachedPc)).ReturnsAsync(FetchResult.Success(fetchedPc));
 
             var config = PollingModes.AutoPoll(pollInterval, maxInitWaitTime);
             var service = new AutoPollConfigService(config,
@@ -680,7 +680,7 @@ namespace ConfigCat.Client.Tests
             var cache = new InMemoryConfigCache();
             cache.Set(null, cachedPc with { TimeStamp = cachedPc.TimeStamp - pollInterval });
 
-            this.fetcherMock.Setup(m => m.FetchAsync(cachedPc)).ReturnsAsync(fetchedPc);
+            this.fetcherMock.Setup(m => m.FetchAsync(cachedPc)).ReturnsAsync(FetchResult.Success(fetchedPc));
 
             var config = PollingModes.AutoPoll(pollInterval, maxInitWaitTime);
             var service = new AutoPollConfigService(config,
@@ -733,7 +733,7 @@ namespace ConfigCat.Client.Tests
             var cachedPc = this.cachedPc with { TimeStamp = DateTime.UtcNow - pollInterval - pollInterval };
             cache.Set(null, cachedPc);
 
-            this.fetcherMock.Setup(m => m.FetchAsync(cachedPc)).ReturnsAsync(cachedPc);
+            this.fetcherMock.Setup(m => m.FetchAsync(cachedPc)).ReturnsAsync(FetchResult.Success(cachedPc));
 
             var config = PollingModes.AutoPoll(pollInterval, maxInitWaitTime);
             var service = new AutoPollConfigService(config,
@@ -786,11 +786,11 @@ namespace ConfigCat.Client.Tests
 
             if (isAsync)
             {
-                this.fetcherMock.Setup(m => m.FetchAsync(cachedPc)).ReturnsAsync(fetchedPc);
+                this.fetcherMock.Setup(m => m.FetchAsync(cachedPc)).ReturnsAsync(FetchResult.Success(fetchedPc));
             }
             else
             {
-                this.fetcherMock.Setup(m => m.Fetch(cachedPc)).Returns(fetchedPc);
+                this.fetcherMock.Setup(m => m.Fetch(cachedPc)).Returns(FetchResult.Success(fetchedPc));
             }
 
             var config = PollingModes.LazyLoad(cacheTimeToLive);
@@ -842,11 +842,11 @@ namespace ConfigCat.Client.Tests
 
             if (isAsync)
             {
-                this.fetcherMock.Setup(m => m.FetchAsync(cachedPc)).ReturnsAsync(fetchedPc);
+                this.fetcherMock.Setup(m => m.FetchAsync(cachedPc)).ReturnsAsync(FetchResult.Success(fetchedPc));
             }
             else 
             {
-                this.fetcherMock.Setup(m => m.Fetch(cachedPc)).Returns(fetchedPc);
+                this.fetcherMock.Setup(m => m.Fetch(cachedPc)).Returns(FetchResult.Success(fetchedPc));
             }
 
             var config = PollingModes.LazyLoad(cacheTimeToLive);

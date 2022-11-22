@@ -3,6 +3,12 @@ using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
 using ConfigCat.Client.Utils;
 
+#if NET45
+using ConfigWithFetchResult = System.Tuple<ConfigCat.Client.ProjectConfig, ConfigCat.Client.FetchResult>;
+#else
+using ConfigWithFetchResult = System.ValueTuple<ConfigCat.Client.ProjectConfig, ConfigCat.Client.FetchResult>;
+#endif
+
 namespace ConfigCat.Client.ConfigService
 {
     internal abstract class ConfigServiceBase : IDisposable
@@ -75,8 +81,8 @@ namespace ConfigCat.Client.ConfigService
                 if (!IsOffline)
                 {
                     var latestConfig = cache.Get(this.CacheKey);
-                    RefreshConfigCore(latestConfig);
-                    return RefreshResult.Success();
+                    var configWithFetchResult = RefreshConfigCore(latestConfig);
+                    return RefreshResult.From(configWithFetchResult.Item2);
                 }
                 else
                 {
@@ -89,9 +95,10 @@ namespace ConfigCat.Client.ConfigService
             return Syncer.Sync(this.RefreshConfigAsync);
         }
 
-        protected ProjectConfig RefreshConfigCore(ProjectConfig latestConfig)
+        protected ConfigWithFetchResult RefreshConfigCore(ProjectConfig latestConfig)
         {
-            var newConfig = this.ConfigFetcher.Fetch(latestConfig);
+            var fetchResult = this.ConfigFetcher.Fetch(latestConfig);
+            var newConfig = fetchResult.Config;
 
             var configContentHasChanged = !latestConfig.Equals(newConfig);
             if ((configContentHasChanged || newConfig.TimeStamp > latestConfig.TimeStamp) && !newConfig.Equals(ProjectConfig.Empty))
@@ -106,10 +113,10 @@ namespace ConfigCat.Client.ConfigService
                     OnConfigChanged(newConfig);
                 }
 
-                return newConfig;
+                return new ConfigWithFetchResult(newConfig, fetchResult);
             }
 
-            return latestConfig;
+            return new ConfigWithFetchResult(latestConfig, fetchResult);
         }
 
         public virtual async Task<RefreshResult> RefreshConfigAsync()
@@ -117,8 +124,8 @@ namespace ConfigCat.Client.ConfigService
             if (!IsOffline)
             {
                 var latestConfig = await this.ConfigCache.GetAsync(this.CacheKey).ConfigureAwait(false);
-                await RefreshConfigCoreAsync(latestConfig).ConfigureAwait(false);
-                return RefreshResult.Success();
+                var configWithFetchResult = await RefreshConfigCoreAsync(latestConfig).ConfigureAwait(false);
+                return RefreshResult.From(configWithFetchResult.Item2);
             }
             else
             {
@@ -127,9 +134,10 @@ namespace ConfigCat.Client.ConfigService
             }
         }
 
-        protected async Task<ProjectConfig> RefreshConfigCoreAsync(ProjectConfig latestConfig)
+        protected async Task<ConfigWithFetchResult> RefreshConfigCoreAsync(ProjectConfig latestConfig)
         {
-            var newConfig = await this.ConfigFetcher.FetchAsync(latestConfig).ConfigureAwait(false);
+            var fetchResult = await this.ConfigFetcher.FetchAsync(latestConfig).ConfigureAwait(false);
+            var newConfig = fetchResult.Config;
 
             var configContentHasChanged = !latestConfig.Equals(newConfig);
             if ((configContentHasChanged || newConfig.TimeStamp > latestConfig.TimeStamp) && !newConfig.Equals(ProjectConfig.Empty))
@@ -143,10 +151,10 @@ namespace ConfigCat.Client.ConfigService
                     OnConfigChanged(newConfig);
                 }
 
-                return newConfig;
+                return new ConfigWithFetchResult(newConfig, fetchResult);
             }
 
-            return latestConfig;
+            return new ConfigWithFetchResult(latestConfig, fetchResult);
         }
 
         protected virtual void OnConfigUpdated(ProjectConfig newConfig) { }

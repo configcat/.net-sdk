@@ -9,9 +9,9 @@ namespace ConfigCat.Client.ConfigService
 
         Task<ProjectConfig> GetConfigAsync();
 
-        Task RefreshConfigAsync();
+        Task<RefreshResult> RefreshConfigAsync();
 
-        void RefreshConfig();
+        RefreshResult RefreshConfig();
 
         bool IsOffline { get; }
 

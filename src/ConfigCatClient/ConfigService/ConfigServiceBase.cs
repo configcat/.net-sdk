@@ -15,7 +15,7 @@ namespace ConfigCat.Client.ConfigService
         }
 
         private Status status;
-        private readonly object syncObj = new object();
+        private readonly object syncObj = new();
 
         protected readonly IConfigFetcher ConfigFetcher;
 
@@ -67,7 +67,7 @@ namespace ConfigCat.Client.ConfigService
             Dispose(true);
         }
 
-        public virtual void RefreshConfig()
+        public virtual RefreshResult RefreshConfig()
         {
             // check for the new cache interface until we remove the old IConfigCache.
             if (this.ConfigCache is IConfigCatCache cache)
@@ -76,17 +76,17 @@ namespace ConfigCat.Client.ConfigService
                 {
                     var latestConfig = cache.Get(this.CacheKey);
                     RefreshConfigCore(latestConfig);
+                    return RefreshResult.Success();
                 }
                 else
                 {
                     this.Log.OfflineModeWarning();
+                    return RefreshResult.Failure("Client is in offline mode, it can't initiate HTTP calls.");
                 }
-
-                return;
             }
 
             // worst scenario, fallback to sync over async, delete when we enforce IConfigCatCache.
-            Syncer.Sync(this.RefreshConfigAsync);
+            return Syncer.Sync(this.RefreshConfigAsync);
         }
 
         protected ProjectConfig RefreshConfigCore(ProjectConfig latestConfig)
@@ -112,16 +112,18 @@ namespace ConfigCat.Client.ConfigService
             return latestConfig;
         }
 
-        public virtual async Task RefreshConfigAsync()
+        public virtual async Task<RefreshResult> RefreshConfigAsync()
         {
             if (!IsOffline)
             {
                 var latestConfig = await this.ConfigCache.GetAsync(this.CacheKey).ConfigureAwait(false);
                 await RefreshConfigCoreAsync(latestConfig).ConfigureAwait(false);
+                return RefreshResult.Success();
             }
             else
             {
                 this.Log.OfflineModeWarning();
+                return RefreshResult.Failure("Client is in offline mode, it can't initiate HTTP calls.");
             }
         }
 

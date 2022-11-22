@@ -1,5 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 namespace ConfigCat.Client.ConfigService
 {
@@ -18,9 +17,9 @@ namespace ConfigCat.Client.ConfigService
 
         public Task<ProjectConfig> GetConfigAsync() => Task.FromResult(ProjectConfig.Empty);
 
-        public void RefreshConfig() { /* do nothing */ }
+        public RefreshResult RefreshConfig() { return RefreshResult.Failure($"Client is configured to use the {nameof(OverrideBehaviour.LocalOnly)} override behavior, which prevents making HTTP requests."); }
 
-        public Task RefreshConfigAsync() => Task.FromResult(0);
+        public Task<RefreshResult> RefreshConfigAsync() => Task.FromResult(RefreshConfig());
 
         public bool IsOffline => true;
 
@@ -28,7 +27,7 @@ namespace ConfigCat.Client.ConfigService
 
         public void SetOnline() 
         {
-            this.log.Warning($"Client is configured to use Local/Offline mode, thus {nameof(SetOnline)}() has no effect.");
+            this.log.Warning($"Client is configured to use the {nameof(OverrideBehaviour.LocalOnly)} override behavior, thus {nameof(SetOnline)}() has no effect.");
         }
     }
 }

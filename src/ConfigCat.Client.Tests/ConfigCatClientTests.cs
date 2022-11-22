@@ -13,6 +13,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using ConfigCat.Client.Utils;
 using System.Net.Http;
+using System.Data.Common;
 
 [assembly: Parallelize(Scope = Microsoft.VisualStudio.TestTools.UnitTesting.ExecutionScope.MethodLevel, Workers = 0)]
 
@@ -964,7 +965,7 @@ namespace ConfigCat.Client.Tests
         {
             // Arrange
 
-            configServiceMock.Setup(m => m.RefreshConfigAsync()).Returns(Task.FromResult(0));
+            configServiceMock.Setup(m => m.RefreshConfigAsync()).ReturnsAsync(RefreshResult.Success());
 
             IConfigCatClient instance = new ConfigCatClient(
                 configServiceMock.Object,
@@ -974,11 +975,15 @@ namespace ConfigCat.Client.Tests
 
             // Act
 
-            await instance.ForceRefreshAsync();
+            var result = await instance.ForceRefreshAsync();
 
             // Assert
 
             configServiceMock.Verify(m => m.RefreshConfigAsync(), Times.Once);
+
+            Assert.IsTrue(result.IsSuccess);
+            Assert.IsNull(result.ErrorMessage);
+            Assert.IsNull(result.ErrorException);
         }
 
         [TestMethod]
@@ -986,7 +991,7 @@ namespace ConfigCat.Client.Tests
         {
             // Arrange
 
-            configServiceMock.Setup(m => m.RefreshConfig());
+            configServiceMock.Setup(m => m.RefreshConfig()).Returns(RefreshResult.Success());
 
             IConfigCatClient instance = new ConfigCatClient(
                 configServiceMock.Object,
@@ -996,11 +1001,15 @@ namespace ConfigCat.Client.Tests
 
             // Act
 
-            instance.ForceRefresh();
+            var result = instance.ForceRefresh();
 
             // Assert
 
             configServiceMock.Verify(m => m.RefreshConfig(), Times.Once);
+
+            Assert.IsTrue(result.IsSuccess);
+            Assert.IsNull(result.ErrorMessage);
+            Assert.IsNull(result.ErrorException);
         }
 
         [TestMethod]
@@ -1008,7 +1017,7 @@ namespace ConfigCat.Client.Tests
         {
             // Arrange
 
-            configServiceMock.Setup(m => m.RefreshConfigAsync()).Returns(Task.FromResult(0));
+            configServiceMock.Setup(m => m.RefreshConfigAsync()).ReturnsAsync(RefreshResult.Success());
 
             IConfigCatClient instance = new ConfigCatClient(
                 configServiceMock.Object,
@@ -1018,56 +1027,15 @@ namespace ConfigCat.Client.Tests
 
             // Act
 
-            await instance.ForceRefreshAsync();
+            var result = await instance.ForceRefreshAsync();
 
             // Assert
 
             configServiceMock.Verify(m => m.RefreshConfigAsync(), Times.Once);
-        }
 
-
-        [TestMethod]
-        public async Task ForceRefresh_ConfigServiceThrowException_ShouldNotReThrowTheExceptionAndLogsError()
-        {
-            // Arrange
-
-            configServiceMock.Setup(m => m.RefreshConfigAsync()).Throws<Exception>();
-
-            IConfigCatClient instance = new ConfigCatClient(
-                configServiceMock.Object,
-                loggerMock.Object,
-                evaluatorMock.Object,
-                configDeserializerMock.Object);
-
-            // Act
-
-            await instance.ForceRefreshAsync();
-
-            // Assert
-
-            loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
-        }
-
-        [TestMethod]
-        public void ForceRefresh_ConfigServiceThrowException_ShouldNotReThrowTheExceptionAndLogsError_Sync()
-        {
-            // Arrange
-
-            configServiceMock.Setup(m => m.RefreshConfig()).Throws<Exception>();
-
-            IConfigCatClient instance = new ConfigCatClient(
-                configServiceMock.Object,
-                loggerMock.Object,
-                evaluatorMock.Object,
-                configDeserializerMock.Object);
-
-            // Act
-
-            instance.ForceRefresh();
-
-            // Assert
-
-            loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
+            Assert.IsTrue(result.IsSuccess);
+            Assert.IsNull(result.ErrorMessage);
+            Assert.IsNull(result.ErrorException);
         }
 
         [TestMethod]
@@ -1075,7 +1043,9 @@ namespace ConfigCat.Client.Tests
         {
             // Arrange
 
-            configServiceMock.Setup(m => m.RefreshConfigAsync()).Throws<Exception>();
+            var exception = new Exception();
+            
+            configServiceMock.Setup(m => m.RefreshConfigAsync()).Throws(exception);
 
             IConfigCatClient instance = new ConfigCatClient(
                 configServiceMock.Object,
@@ -1085,11 +1055,43 @@ namespace ConfigCat.Client.Tests
 
             // Act
 
-            await instance.ForceRefreshAsync();
+            var result = await instance.ForceRefreshAsync();
 
             // Assert
 
             loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
+
+            Assert.IsFalse(result.IsSuccess);
+            Assert.AreEqual(exception.Message, result.ErrorMessage);
+            Assert.AreSame(exception, result.ErrorException);
+        }
+
+        [TestMethod]
+        public void ForceRefresh_ConfigServiceThrowException_ShouldNotReThrowTheExceptionAndLogsError()
+        {
+            // Arrange
+
+            var exception = new Exception();
+
+            configServiceMock.Setup(m => m.RefreshConfig()).Throws(exception);
+
+            IConfigCatClient instance = new ConfigCatClient(
+                configServiceMock.Object,
+                loggerMock.Object,
+                evaluatorMock.Object,
+                configDeserializerMock.Object);
+
+            // Act
+
+            var result = instance.ForceRefresh();
+
+            // Assert
+
+            loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
+
+            Assert.IsFalse(result.IsSuccess);
+            Assert.AreEqual(exception.Message, result.ErrorMessage);
+            Assert.AreSame(exception, result.ErrorException);
         }
 
         private static IConfigCatClient CreateClientFromLocalFile(string fileName, User defaultUser = null)
@@ -1430,162 +1432,42 @@ namespace ConfigCat.Client.Tests
             return int.TryParse(etag, NumberStyles.None, CultureInfo.InvariantCulture, out var value) ? value : 0;
         }
 
-        [TestMethod]
-        public async Task OfflineMode_AutoPolling_OfflineToOnlineTransition()
+        [DataRow(nameof(AutoPoll))]
+        [DataRow(nameof(LazyLoad))]
+        [DataRow(nameof(ManualPoll))]
+        [DataTestMethod]
+        public async Task OfflineMode_OfflineToOnlineTransition(string pollingMode)
         {
             const string cacheKey = "123";
             int httpETag = 0;
-            
-            var client = CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock,
-                onFetch: cfg => new ProjectConfig { JsonString = "{}", HttpETag = (++httpETag).ToString(CultureInfo.InvariantCulture), TimeStamp = DateTime.UtcNow },
-                configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
+
+            Func<IConfigFetcher, CacheParameters, LoggerWrapper, IConfigService> configServiceFactory = pollingMode switch
+            {
+                nameof(AutoPoll) => (fetcher, cacheParams, loggerWrapper) =>
                 {
                     // Make sure that config is fetched only once (Task.Delay won't accept a larger interval than int.MaxValue msecs...)
                     var pollingMode = PollingModes.AutoPoll(pollInterval: TimeSpan.FromMilliseconds(int.MaxValue));
                     return new AutoPollConfigService(pollingMode, fetcherMock.Object, cacheParams, loggerWrapper, isOffline: true);
                 },
-                out var configService, out _);
-
-            using (client)
-            {
-                // 1. Checks that client is initialized to offline mode
-                Assert.IsTrue(client.IsOffline);
-                Assert.AreEqual(default, configService.GetConfig().HttpETag);
-                Assert.AreEqual(default, (await configService.GetConfigAsync()).HttpETag);
-
-                // 2. Checks that repeated calls to SetOffline() have no effect
-                client.SetOffline();
-
-                Assert.IsTrue(client.IsOffline);
-                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Never);
-                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Never);
-
-                // 3. Checks that SetOnline() does enable HTTP calls
-                client.SetOnline();
-
-                Assert.IsTrue(((AutoPollConfigService)configService).WaitForInitialization());
-                Assert.IsFalse(client.IsOffline);
-                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Never);
-                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Once);
-
-                var etag1 = ParseETagAsInt32(configService.GetConfig().HttpETag);
-                Assert.AreNotEqual(0, etag1);
-                Assert.AreEqual(etag1, ParseETagAsInt32((await configService.GetConfigAsync()).HttpETag));
-
-                // 4. Checks that ForceRefresh() initiates a HTTP call in online mode
-                client.ForceRefresh();
-
-                Assert.IsFalse(client.IsOffline);
-                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Once);
-                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Once);
-
-                var etag2 = ParseETagAsInt32(configService.GetConfig().HttpETag);
-                Assert.IsTrue(etag2 > etag1);
-                Assert.AreEqual(etag2, ParseETagAsInt32((await configService.GetConfigAsync()).HttpETag));
-
-                // 5. Checks that ForceRefreshAsync() initiates a HTTP call in online mode
-                await client.ForceRefreshAsync();
-
-                Assert.IsFalse(client.IsOffline);
-                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Once);
-                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Exactly(2));
-
-                var etag3 = ParseETagAsInt32(configService.GetConfig().HttpETag);
-                Assert.IsTrue(etag3 > etag2);
-                Assert.AreEqual(etag3, ParseETagAsInt32((await configService.GetConfigAsync()).HttpETag));
-            }
-
-            // 6. Checks that SetOnline() has no effect after client gets disposed
-            client.SetOnline();
-            Assert.IsTrue(client.IsOffline);
-        }
-
-        [TestMethod]
-        public async Task OfflineMode_AutoPolling_OnlineToOfflineTransition()
-        {
-            const string cacheKey = "123";
-            int httpETag = 0;
-
-            var client = CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock,
-                onFetch: cfg => new ProjectConfig { JsonString = "{}", HttpETag = (++httpETag).ToString(CultureInfo.InvariantCulture), TimeStamp = DateTime.UtcNow },
-                configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
-                {
-                    // Make sure that config is fetched only once (Task.Delay won't accept a larger interval than int.MaxValue msecs...)
-                    var pollingMode = PollingModes.AutoPoll(pollInterval: TimeSpan.FromMilliseconds(int.MaxValue));
-                    return new AutoPollConfigService(pollingMode, fetcherMock.Object, cacheParams, loggerWrapper, isOffline: false);
-                },
-                out var configService, out _);
-
-            using (client)
-            {
-                // 1. Checks that client is initialized to online mode
-                Assert.IsFalse(client.IsOffline);
-                Assert.IsTrue(((AutoPollConfigService)configService).WaitForInitialization());
-                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Never);
-                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Once);
-
-                var etag1 = ParseETagAsInt32(configService.GetConfig().HttpETag);
-                Assert.AreNotEqual(0, etag1);
-                Assert.AreEqual(etag1, ParseETagAsInt32((await configService.GetConfigAsync()).HttpETag));
-
-                // 2. Checks that repeated calls to SetOnline() have no effect 
-                client.SetOnline();
-
-                Assert.IsFalse(client.IsOffline);
-                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Never);
-                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Once);
-
-                // 3. Checks that SetOffline() does disable HTTP calls
-                client.SetOffline();
-
-                Assert.IsTrue(client.IsOffline);
-                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Never);
-                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Once);
-
-                Assert.AreEqual(etag1, ParseETagAsInt32(configService.GetConfig().HttpETag));
-                Assert.AreEqual(etag1, ParseETagAsInt32((await configService.GetConfigAsync()).HttpETag));
-
-                // 4. Checks that ForceRefresh() does not initiate a HTTP call in offline mode
-                client.ForceRefresh();
-
-                Assert.IsTrue(client.IsOffline);
-                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Never);
-                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Once);
-
-                Assert.AreEqual(etag1, ParseETagAsInt32(configService.GetConfig().HttpETag));
-                Assert.AreEqual(etag1, ParseETagAsInt32((await configService.GetConfigAsync()).HttpETag));
-
-                // 5. Checks that ForceRefreshAsync() does not initiate a HTTP call in offline mode
-                await client.ForceRefreshAsync();
-
-                Assert.IsTrue(client.IsOffline);
-                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Never);
-                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Once);
-
-                Assert.AreEqual(etag1, ParseETagAsInt32(configService.GetConfig().HttpETag));
-                Assert.AreEqual(etag1, ParseETagAsInt32((await configService.GetConfigAsync()).HttpETag));
-            }
-
-            // 6. Checks that SetOnline() has no effect after client gets disposed
-            client.SetOnline();
-            Assert.IsTrue(client.IsOffline);
-        }
-
-        [TestMethod]
-        public async Task OfflineMode_LazyLoading_OfflineToOnlineTransition()
-        {
-            const string cacheKey = "123";
-            int httpETag = 0;
-
-            var client = CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock,
-                onFetch: cfg => new ProjectConfig { JsonString = "{}", HttpETag = (++httpETag).ToString(CultureInfo.InvariantCulture), TimeStamp = DateTime.UtcNow },
-                configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
+                nameof(LazyLoad) => (fetcher, cacheParams, loggerWrapper) =>
                 {
                     // Make sure that config is fetched only once (Task.Delay won't accept a larger interval than int.MaxValue msecs...)
                     var pollingMode = PollingModes.LazyLoad(cacheTimeToLive: TimeSpan.FromMilliseconds(int.MaxValue));
                     return new LazyLoadConfigService(fetcherMock.Object, cacheParams, loggerWrapper, pollingMode.CacheTimeToLive, isOffline: true);
                 },
-                out var configService, out _);
+                nameof(ManualPoll) => (fetcher, cacheParams, loggerWrapper) =>
+                {
+                    return new ManualPollConfigService(fetcherMock.Object, cacheParams, loggerWrapper, isOffline: true);
+                },
+                _ => throw new ArgumentOutOfRangeException(nameof(pollingMode), pollingMode, null)
+            };
+
+            var client = CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock,
+                onFetch: cfg => new ProjectConfig { JsonString = "{}", HttpETag = (++httpETag).ToString(CultureInfo.InvariantCulture), TimeStamp = DateTime.UtcNow },
+                configServiceFactory, out var configService, out _);
+
+            var expectedFetchCount = 0;
+            var expectedFetchAsyncCount = 0;
 
             using (client)
             {
@@ -1598,44 +1480,78 @@ namespace ConfigCat.Client.Tests
                 client.SetOffline();
 
                 Assert.IsTrue(client.IsOffline);
-                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Never);
-                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Never);
+                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
+                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchAsyncCount));
 
                 // 3. Checks that SetOnline() does enable HTTP calls
                 client.SetOnline();
 
+                if (pollingMode == nameof(AutoPoll))
+                {
+                    Assert.IsTrue(((AutoPollConfigService)configService).WaitForInitialization());
+                    expectedFetchAsyncCount++;
+                }
+
                 Assert.IsFalse(client.IsOffline);
-                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Never);
-                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Never);
+                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
+                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchAsyncCount));
 
                 var etag1 = ParseETagAsInt32(configService.GetConfig().HttpETag);
-                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Once);
-                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Never);
+                if (pollingMode == nameof(LazyLoad))
+                {
+                    expectedFetchCount++;
+                }
+                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
+                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchAsyncCount));
 
-                Assert.AreNotEqual(0, etag1);
+                if (pollingMode == nameof(ManualPoll))
+                {
+                    Assert.AreEqual(0, etag1);
+                }
+                else
+                {
+                    Assert.AreNotEqual(0, etag1);
+                }
                 Assert.AreEqual(etag1, ParseETagAsInt32((await configService.GetConfigAsync()).HttpETag));
 
                 // 4. Checks that ForceRefresh() initiates a HTTP call in online mode
-                client.ForceRefresh();
+                var refreshResult = client.ForceRefresh();
+                expectedFetchCount++;
 
                 Assert.IsFalse(client.IsOffline);
-                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(2));
-                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Never);
+                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
+                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchAsyncCount));
 
                 var etag2 = ParseETagAsInt32(configService.GetConfig().HttpETag);
-                Assert.IsTrue(etag2 > etag1);
+                if (pollingMode == nameof(ManualPoll))
+                {
+                    Assert.AreNotEqual(etag2, etag1);
+                }
+                else
+                {
+                    Assert.IsTrue(etag2 > etag1);
+                }
                 Assert.AreEqual(etag2, ParseETagAsInt32((await configService.GetConfigAsync()).HttpETag));
 
+                Assert.IsTrue(refreshResult.IsSuccess);
+                Assert.IsNull(refreshResult.ErrorMessage);
+                Assert.IsNull(refreshResult.ErrorException);
+
                 // 5. Checks that ForceRefreshAsync() initiates a HTTP call in online mode
-                await client.ForceRefreshAsync();
+                refreshResult = await client.ForceRefreshAsync();
+                expectedFetchAsyncCount++;
 
                 Assert.IsFalse(client.IsOffline);
-                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(2));
-                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Once);
+                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
+                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchAsyncCount));
 
                 var etag3 = ParseETagAsInt32(configService.GetConfig().HttpETag);
                 Assert.IsTrue(etag3 > etag2);
                 Assert.AreEqual(etag3, ParseETagAsInt32((await configService.GetConfigAsync()).HttpETag));
+
+                Assert.IsTrue(refreshResult.IsSuccess);
+                Assert.IsNull(refreshResult.ErrorMessage);
+                Assert.IsNull(refreshResult.ErrorException);
             }
 
             // 6. Checks that SetOnline() has no effect after client gets disposed
@@ -1643,221 +1559,130 @@ namespace ConfigCat.Client.Tests
             Assert.IsTrue(client.IsOffline);
         }
 
-        [TestMethod]
-        public async Task OfflineMode_LazyLoading_OnlineToOfflineTransition()
+        [DataRow(nameof(AutoPoll))]
+        [DataRow(nameof(LazyLoad))]
+        [DataRow(nameof(ManualPoll))]
+        [DataTestMethod]
+        public async Task OfflineMode_OnlineToOfflineTransition(string pollingMode)
         {
             const string cacheKey = "123";
             int httpETag = 0;
 
-            var client = CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock,
-                onFetch: cfg => new ProjectConfig { JsonString = "{}", HttpETag = (++httpETag).ToString(CultureInfo.InvariantCulture), TimeStamp = DateTime.UtcNow },
-                configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
+            Func<IConfigFetcher, CacheParameters, LoggerWrapper, IConfigService> configServiceFactory = pollingMode switch
+            {
+                nameof(AutoPoll) => (fetcher, cacheParams, loggerWrapper) =>
+                {
+                    // Make sure that config is fetched only once (Task.Delay won't accept a larger interval than int.MaxValue msecs...)
+                    var pollingMode = PollingModes.AutoPoll(pollInterval: TimeSpan.FromMilliseconds(int.MaxValue));
+                    return new AutoPollConfigService(pollingMode, fetcherMock.Object, cacheParams, loggerWrapper, isOffline: false);
+                },
+                nameof(LazyLoad) => (fetcher, cacheParams, loggerWrapper) =>
                 {
                     // Make sure that config is fetched only once (Task.Delay won't accept a larger interval than int.MaxValue msecs...)
                     var pollingMode = PollingModes.LazyLoad(cacheTimeToLive: TimeSpan.FromMilliseconds(int.MaxValue));
                     return new LazyLoadConfigService(fetcherMock.Object, cacheParams, loggerWrapper, pollingMode.CacheTimeToLive, isOffline: false);
                 },
-                out var configService, out var configCache);
-
-            using (client)
-            {
-                // 1. Checks that client is initialized to online mode
-                Assert.IsFalse(client.IsOffline);
-                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Never);
-                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Never);
-
-                var etag1 = ParseETagAsInt32((await configService.GetConfigAsync()).HttpETag);
-                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Never);
-                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Once);
-
-                Assert.AreNotEqual(default, etag1);
-                Assert.AreEqual(etag1, ParseETagAsInt32((await configService.GetConfigAsync()).HttpETag));
-
-                // 2. Checks that repeated calls to SetOnline() have no effect 
-                client.SetOnline();
-
-                Assert.IsFalse(client.IsOffline);
-                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Never);
-                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Once);
-
-                // 3. Checks that SetOffline() does disable HTTP calls
-                client.SetOffline();
-
-                Assert.IsTrue(client.IsOffline);
-                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Never);
-                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Once);
-
-                // We make sure manually that the cached config is expired for the next GetConfig() call
-                var cachedConfig = configCache.Get(cacheKey);
-                cachedConfig = new ProjectConfig(
-                    cachedConfig.JsonString,
-                    cachedConfig.TimeStamp - TimeSpan.FromMilliseconds(int.MaxValue * 2.0),
-                    cachedConfig.HttpETag);
-                configCache.Set(cacheKey, cachedConfig);
-
-                Assert.AreEqual(etag1, ParseETagAsInt32(configService.GetConfig().HttpETag));
-                Assert.AreEqual(etag1, ParseETagAsInt32((await configService.GetConfigAsync()).HttpETag));
-
-                // 4. Checks that ForceRefresh() does not initiate a HTTP call in offline mode
-                client.ForceRefresh();
-
-                Assert.IsTrue(client.IsOffline);
-                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Never);
-                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Once);
-
-                Assert.AreEqual(etag1, ParseETagAsInt32(configService.GetConfig().HttpETag));
-                Assert.AreEqual(etag1, ParseETagAsInt32((await configService.GetConfigAsync()).HttpETag));
-
-                // 5. Checks that ForceRefreshAsync() does not initiate a HTTP call in offline mode
-                await client.ForceRefreshAsync();
-
-                Assert.IsTrue(client.IsOffline);
-                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Never);
-                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Once);
-
-                Assert.AreEqual(etag1, ParseETagAsInt32(configService.GetConfig().HttpETag));
-                Assert.AreEqual(etag1, ParseETagAsInt32((await configService.GetConfigAsync()).HttpETag));
-            }
-
-            // 6. Checks that SetOnline() has no effect after client gets disposed
-            client.SetOnline();
-            Assert.IsTrue(client.IsOffline);
-        }
-
-        [TestMethod]
-        public async Task OfflineMode_ManualPolling_OfflineToOnlineTransition()
-        {
-            const string cacheKey = "123";
-            int httpETag = 0;
-
-            var client = CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock,
-                onFetch: cfg => new ProjectConfig { JsonString = "{}", HttpETag = (++httpETag).ToString(CultureInfo.InvariantCulture), TimeStamp = DateTime.UtcNow },
-                configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
-                {
-                    return new ManualPollConfigService(fetcherMock.Object, cacheParams, loggerWrapper, isOffline: true);
-                },
-                out var configService, out _);
-
-            using (client)
-            {
-                // 1. Checks that client is initialized to offline mode
-                Assert.IsTrue(client.IsOffline);
-                Assert.AreEqual(default, configService.GetConfig().HttpETag);
-                Assert.AreEqual(default, (await configService.GetConfigAsync()).HttpETag);
-
-                // 2. Checks that repeated calls to SetOffline() have no effect
-                client.SetOffline();
-
-                Assert.IsTrue(client.IsOffline);
-                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Never);
-                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Never);
-
-                // 3. Checks that SetOnline() does enable HTTP calls
-                client.SetOnline();
-
-                Assert.IsFalse(client.IsOffline);
-                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Never);
-                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Never);
-
-                var etag1 = ParseETagAsInt32(configService.GetConfig().HttpETag);
-                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Never);
-                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Never);
-
-                Assert.AreEqual(0, etag1);
-                Assert.AreEqual(etag1, ParseETagAsInt32((await configService.GetConfigAsync()).HttpETag));
-
-                // 4. Checks that ForceRefresh() initiates a HTTP call in online mode
-                client.ForceRefresh();
-
-                Assert.IsFalse(client.IsOffline);
-                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Once);
-                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Never);
-
-                var etag2 = ParseETagAsInt32(configService.GetConfig().HttpETag);
-                Assert.AreNotEqual(etag2, etag1);
-                Assert.AreEqual(etag2, ParseETagAsInt32((await configService.GetConfigAsync()).HttpETag));
-
-                // 5. Checks that ForceRefreshAsync() initiates a HTTP call in online mode
-                await client.ForceRefreshAsync();
-
-                Assert.IsFalse(client.IsOffline);
-                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Once);
-                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Once);
-
-                var etag3 = ParseETagAsInt32(configService.GetConfig().HttpETag);
-                Assert.IsTrue(etag3 > etag2);
-                Assert.AreEqual(etag3, ParseETagAsInt32((await configService.GetConfigAsync()).HttpETag));
-            }
-
-            // 6. Checks that SetOnline() has no effect after client gets disposed
-            client.SetOnline();
-            Assert.IsTrue(client.IsOffline);
-        }
-
-        [TestMethod]
-        public async Task OfflineMode_ManualPolling_OnlineToOfflineTransition()
-        {
-            const string cacheKey = "123";
-            int httpETag = 0;
-
-            var client = CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock,
-                onFetch: cfg => new ProjectConfig { JsonString = "{}", HttpETag = (++httpETag).ToString(CultureInfo.InvariantCulture), TimeStamp = DateTime.UtcNow },
-                configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
+                nameof(ManualPoll) => (fetcher, cacheParams, loggerWrapper) =>
                 {
                     return new ManualPollConfigService(fetcherMock.Object, cacheParams, loggerWrapper, isOffline: false);
                 },
-                out var configService, out var configCache);
+                _ => throw new ArgumentOutOfRangeException(nameof(pollingMode), pollingMode, null)
+            };
+
+            var client = CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock,
+                onFetch: cfg => new ProjectConfig { JsonString = "{}", HttpETag = (++httpETag).ToString(CultureInfo.InvariantCulture), TimeStamp = DateTime.UtcNow },
+                configServiceFactory, out var configService, out var configCache);
+
+            var expectedFetchCount = 0;
+            var expectedFetchAsyncCount = 0;
 
             using (client)
             {
                 // 1. Checks that client is initialized to online mode
                 Assert.IsFalse(client.IsOffline);
-                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Never);
-                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Never);
+
+                if (pollingMode == nameof(AutoPoll))
+                {
+                    Assert.IsTrue(((AutoPollConfigService)configService).WaitForInitialization());
+                    expectedFetchAsyncCount++;
+                }
+
+                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
+                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchAsyncCount));
 
                 var etag1 = ParseETagAsInt32(configService.GetConfig().HttpETag);
-                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Never);
-                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Never);
+                if (pollingMode == nameof(LazyLoad))
+                {
+                    expectedFetchCount++;
+                }
+                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
+                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchAsyncCount));
 
-                Assert.AreEqual(0, etag1);
+                if (pollingMode == nameof(ManualPoll))
+                {
+                    Assert.AreEqual(0, etag1);
+                }
+                else
+                {
+                    Assert.AreNotEqual(0, etag1);
+                }
                 Assert.AreEqual(etag1, ParseETagAsInt32((await configService.GetConfigAsync()).HttpETag));
 
                 // 2. Checks that repeated calls to SetOnline() have no effect 
                 client.SetOnline();
 
                 Assert.IsFalse(client.IsOffline);
-                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Never);
-                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Never);
+                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
+                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchAsyncCount));
 
                 // 3. Checks that SetOffline() does disable HTTP calls
                 client.SetOffline();
 
                 Assert.IsTrue(client.IsOffline);
-                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Never);
-                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Never);
+                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
+                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchAsyncCount));
+
+                if (pollingMode == nameof(LazyLoad))
+                {
+                    // We make sure manually that the cached config is expired for the next GetConfig() call
+                    var cachedConfig = configCache.Get(cacheKey);
+                    cachedConfig = new ProjectConfig(
+                        cachedConfig.JsonString,
+                        cachedConfig.TimeStamp - TimeSpan.FromMilliseconds(int.MaxValue * 2.0),
+                        cachedConfig.HttpETag);
+                    configCache.Set(cacheKey, cachedConfig);
+                }
 
                 Assert.AreEqual(etag1, ParseETagAsInt32(configService.GetConfig().HttpETag));
                 Assert.AreEqual(etag1, ParseETagAsInt32((await configService.GetConfigAsync()).HttpETag));
 
                 // 4. Checks that ForceRefresh() does not initiate a HTTP call in offline mode
-                client.ForceRefresh();
+                var refreshResult = client.ForceRefresh();
 
                 Assert.IsTrue(client.IsOffline);
-                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Never);
-                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Never);
+                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
+                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchAsyncCount));
 
                 Assert.AreEqual(etag1, ParseETagAsInt32(configService.GetConfig().HttpETag));
                 Assert.AreEqual(etag1, ParseETagAsInt32((await configService.GetConfigAsync()).HttpETag));
+
+                Assert.IsFalse(refreshResult.IsSuccess);
+                StringAssert.Contains(refreshResult.ErrorMessage, "offline mode");
+                Assert.IsNull(refreshResult.ErrorException);
 
                 // 5. Checks that ForceRefreshAsync() does not initiate a HTTP call in offline mode
-                await client.ForceRefreshAsync();
+                refreshResult = await client.ForceRefreshAsync();
 
                 Assert.IsTrue(client.IsOffline);
-                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Never);
-                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Never);
+                fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
+                fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchAsyncCount));
 
                 Assert.AreEqual(etag1, ParseETagAsInt32(configService.GetConfig().HttpETag));
                 Assert.AreEqual(etag1, ParseETagAsInt32((await configService.GetConfigAsync()).HttpETag));
+
+                Assert.IsFalse(refreshResult.IsSuccess);
+                StringAssert.Contains(refreshResult.ErrorMessage, "offline mode");
+                Assert.IsNull(refreshResult.ErrorException);
             }
 
             // 6. Checks that SetOnline() has no effect after client gets disposed
@@ -2089,9 +1914,9 @@ namespace ConfigCat.Client.Tests
                 return Task.FromResult(ProjectConfig.Empty);
             }
 
-            public override Task RefreshConfigAsync()
+            public override Task<RefreshResult> RefreshConfigAsync()
             {
-                return Task.FromResult(0);
+                return Task.FromResult(RefreshConfig());
             }
 
             public ProjectConfig GetConfig()
@@ -2099,8 +1924,10 @@ namespace ConfigCat.Client.Tests
                 return ProjectConfig.Empty;
             }
 
-            public override void RefreshConfig()
-            { }
+            public override RefreshResult RefreshConfig()
+            {
+                return RefreshResult.Success();
+            }
         }
     }
 }

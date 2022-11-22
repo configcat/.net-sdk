@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
@@ -272,6 +273,62 @@ namespace ConfigCat.Client.Tests
             Assert.AreEqual(5, await client.GetValueAsync("intSetting", 0));
             Assert.AreEqual(3.14, await client.GetValueAsync("doubleSetting", 0.0));
             Assert.AreEqual("test", await client.GetValueAsync("stringSetting", string.Empty));
+        }
+
+        [TestMethod]
+        public void LocalOnly()
+        {
+            var dict = new Dictionary<string, object>
+            {
+                {"fakeKey", true},
+                {"nonexisting", true},
+            };
+
+#pragma warning disable CS0618 // Type or member is obsolete
+            using var client = new ConfigCatClient(options =>
+            {
+                options.SdkKey = "localhost";
+                options.FlagOverrides = FlagOverrides.LocalDictionary(dict, OverrideBehaviour.LocalOnly);
+                options.PollingMode = PollingModes.ManualPoll;
+            });
+#pragma warning restore CS0618 // Type or member is obsolete
+
+            var refreshResult = client.ForceRefresh();
+
+            Assert.IsTrue(client.GetValue("fakeKey", false));
+            Assert.IsTrue(client.GetValue("nonexisting", false));
+
+            Assert.IsFalse(refreshResult.IsSuccess);
+            StringAssert.Contains(refreshResult.ErrorMessage, nameof(OverrideBehaviour.LocalOnly));
+            Assert.IsNull(refreshResult.ErrorException);
+        }
+
+        [TestMethod]
+        public async Task LocalOnly_Async()
+        {
+            var dict = new Dictionary<string, object>
+            {
+                {"fakeKey", true},
+                {"nonexisting", true},
+            };
+
+#pragma warning disable CS0618 // Type or member is obsolete
+            using var client = new ConfigCatClient(options =>
+            {
+                options.SdkKey = "localhost";
+                options.FlagOverrides = FlagOverrides.LocalDictionary(dict, OverrideBehaviour.LocalOnly);
+                options.PollingMode = PollingModes.ManualPoll;
+            });
+#pragma warning restore CS0618 // Type or member is obsolete
+
+            var refreshResult = await client.ForceRefreshAsync();
+
+            Assert.IsTrue(client.GetValue("fakeKey", false));
+            Assert.IsTrue(client.GetValue("nonexisting", false));
+
+            Assert.IsFalse(refreshResult.IsSuccess);
+            StringAssert.Contains(refreshResult.ErrorMessage, nameof(OverrideBehaviour.LocalOnly));
+            Assert.IsNull(refreshResult.ErrorException);
         }
 
         [TestMethod]

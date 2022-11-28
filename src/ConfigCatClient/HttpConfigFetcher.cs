@@ -28,6 +28,7 @@ namespace ConfigCat.Client
         private readonly TimeSpan timeout;
         private readonly CancellationTokenSource cancellationTokenSource = new();
         private HttpClient httpClient;
+        private Task<FetchResult> pendingFetch;
 
         private Uri requestUri;
 
@@ -60,7 +61,23 @@ namespace ConfigCat.Client
 
         public Task<FetchResult> FetchAsync(ProjectConfig lastConfig)
         {
-            return FetchInternalAsync(lastConfig, isAsync: true).AsTask();
+            lock (lck)
+            {
+                return this.pendingFetch ??= Task.Run(async () =>
+                {
+                    try
+                    {
+                        return await FetchInternalAsync(lastConfig, isAsync: true).ConfigureAwait(false);
+                    }
+                    finally
+                    {
+                        lock (lck)
+                        {
+                            this.pendingFetch = null;
+                        }
+                    }
+                });
+            }
         }
 
         private async ValueTask<FetchResult> FetchInternalAsync(ProjectConfig lastConfig, bool isAsync)

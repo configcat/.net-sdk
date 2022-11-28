@@ -52,6 +52,8 @@ namespace ConfigCat.Client
 #endif
         }
 
+        internal bool IsEmpty => HttpETag is null && JsonString is null;
+
         /// <summary>
         /// Creates an instance of <see cref="ProjectConfig"/>.
         /// </summary>
@@ -70,8 +72,27 @@ namespace ConfigCat.Client
             HttpETag = httpETag;
         }
 
+        internal static bool ContentEquals(string httpETag1, string jsonString1, string httpETag2, string jsonString2)
+        {
+            // NOTE: When both ETags are available, we don't need to check the JSON content
+            // (because of how HTTP ETags work - see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag).
+            // However we can't use this logic for implementing the standard Equals method,
+            // because then we couldn't implement GetHashCode according to the specification
+            // ("Two objects that are equal return hash codes that are equal." -
+            // see https://learn.microsoft.com/en-us/dotnet/api/system.object.gethashcode#remarks).
+
+            return httpETag1 is not null && httpETag2 is not null
+                ? httpETag1 == httpETag2
+                : jsonString1 == jsonString2;
+        }
+
+        internal static bool ContentEquals(ProjectConfig config1, ProjectConfig config2)
+        {
+            return ContentEquals(config1.HttpETag, config1.JsonString, config2.HttpETag, config2.JsonString);
+        }
+
         /// <summary>
-        /// Determines whether this instance and another specified ProjectConfig struct have the same value.
+        /// Determines whether this instance and another specified ProjectConfig record have the same value.
         /// </summary>
         /// <param name="other">The ProjectConfig to compare to this instance.</param>
         /// <returns>
@@ -96,7 +117,7 @@ namespace ConfigCat.Client
 
         internal bool IsExpired(TimeSpan expiration, out bool isEmpty)
         {
-            isEmpty = Equals(Empty);
+            isEmpty = IsEmpty;
             return isEmpty || TimeStamp + expiration < DateTime.UtcNow;
         }
     }

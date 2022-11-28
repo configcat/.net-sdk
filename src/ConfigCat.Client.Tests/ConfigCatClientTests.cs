@@ -13,9 +13,6 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using ConfigCat.Client.Utils;
 using System.Net.Http;
-using System.Data.Common;
-
-[assembly: Parallelize(Scope = Microsoft.VisualStudio.TestTools.UnitTesting.ExecutionScope.MethodLevel, Workers = 0)]
 
 #pragma warning disable CS0618 // Type or member is obsolete
 namespace ConfigCat.Client.Tests

@@ -614,6 +614,7 @@ namespace ConfigCat.Client
         }
 
         /// <inheritdoc />
+        [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the GetValueDetails() method instead.")]
         public string GetVariationId(string key, string defaultVariationId, User user = null)
         {
             string variationId;
@@ -638,6 +639,7 @@ namespace ConfigCat.Client
         }
 
         /// <inheritdoc />
+        [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the GetValueDetailsAsync() method instead.")]
         public async Task<string> GetVariationIdAsync(string key, string defaultVariationId, User user = null)
         {
             string variationId;
@@ -662,6 +664,7 @@ namespace ConfigCat.Client
         }
 
         /// <inheritdoc />
+        [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the GetAllValueDetails() method instead.")]
         public IEnumerable<string> GetAllVariationId(User user = null)
         {
             IEnumerable<string> result;
@@ -693,6 +696,7 @@ namespace ConfigCat.Client
         }
 
         /// <inheritdoc />
+        [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the GetAllValueDetailsAsync() method instead.")]
         public async Task<IEnumerable<string>> GetAllVariationIdAsync(User user = null)
         {
             IEnumerable<string> result;

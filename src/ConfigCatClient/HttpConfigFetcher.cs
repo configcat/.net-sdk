@@ -106,35 +106,41 @@ namespace ConfigCat.Client
 
                 var response = responseWithBody.Item1;
 
-                if (response is { IsSuccessStatusCode: true })
+                switch (response.StatusCode)
                 {
-                    return FetchResult.Success(new ProjectConfig
-                    {
-                        HttpETag = response.Headers.ETag?.Tag,
-                        JsonString = responseWithBody.Item2,
-                        TimeStamp = DateTime.UtcNow
-                    });
-                }
-                else
-                {
-                    switch (response.StatusCode)
-                    {
-                        case HttpStatusCode.NotModified:
-                            return FetchResult.NotModified(lastConfig with { TimeStamp = DateTime.UtcNow });
-                        case HttpStatusCode.NotFound:
-                            errorMessage = "Double-check your SDK Key at https://app.configcat.com/sdkkey";
-                            this.log.Error(errorMessage);
-                            break;
-                        default:
-                            errorMessage = $"Unexpected HTTP response: {(int)response.StatusCode} {response.StatusCode} \"{response.ReasonPhrase}\"";
-                            this.log.Error(errorMessage);
-                            this.ReInitializeHttpClient();
-                            break;
-                    }
+                    case HttpStatusCode.OK:
+                        if (responseWithBody.Item2 is null)
+                        {
+                            return FetchResult.Failure(lastConfig, "Fetch was successful but HTTP response was invalid");
+                        }
 
-                    // We update the timestamp even if a status code other than 304 NotModified is returned
-                    // for extra protection against flooding.
-                    return FetchResult.Failure(lastConfig with { TimeStamp = DateTime.UtcNow }, errorMessage);
+                        return FetchResult.Success(new ProjectConfig
+                        {
+                            HttpETag = response.Headers.ETag?.Tag,
+                            JsonString = responseWithBody.Item2,
+                            TimeStamp = DateTime.UtcNow
+                        });
+
+                    case HttpStatusCode.NotModified:
+                        if (lastConfig.IsEmpty)
+                        {
+                            return FetchResult.Failure(lastConfig, $"HTTP response {(int)response.StatusCode} {response.ReasonPhrase} was received when no config is cached locally");
+                        }
+
+                        return FetchResult.NotModified(lastConfig with { TimeStamp = DateTime.UtcNow });
+
+                    case HttpStatusCode.NotFound:
+                        errorMessage = "Double-check your SDK Key at https://app.configcat.com/sdkkey";
+                        this.log.Error(errorMessage);
+
+                        // We update the timestamp for extra protection against flooding.
+                        return FetchResult.Failure(lastConfig with { TimeStamp = DateTime.UtcNow }, errorMessage);
+
+                    default:
+                        errorMessage = $"Unexpected HTTP response was received: {(int)response.StatusCode} {response.ReasonPhrase}";
+                        this.log.Error(errorMessage);
+                        this.ReInitializeHttpClient();
+                        return FetchResult.Failure(lastConfig, errorMessage);
                 }
             }
             catch (OperationCanceledException) when (this.cancellationTokenSource.IsCancellationRequested)
@@ -154,7 +160,7 @@ namespace ConfigCat.Client
             }
             catch (Exception ex)
             {
-                errorMessage = $"Error occured during fetching.";
+                errorMessage = $"Unexpected error occured during fetching.";
                 errorException = ex;
             }
 
@@ -184,7 +190,7 @@ namespace ConfigCat.Client
                 response = await this.httpClient.SendAsync(request, this.cancellationTokenSource.Token).ConfigureAwait(false);
 #endif
 
-                if (response.IsSuccessStatusCode)
+                if (response.StatusCode == HttpStatusCode.OK)
                 {
 #if NET5_0_OR_GREATER
                     var responseBody = isAsync

@@ -27,7 +27,7 @@ namespace ConfigCat.Client
         }
 
         /// <summary>
-        /// Time of <see cref="ProjectConfig"/>'s successful download
+        /// Time of <see cref="ProjectConfig"/>'s last successful download (regardless of whether the config has changed or not)
         /// </summary>
         public DateTime TimeStamp
         {

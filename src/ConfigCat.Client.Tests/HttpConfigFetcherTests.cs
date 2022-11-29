@@ -79,7 +79,7 @@ namespace ConfigCat.Client.Tests
             var exception = new WebException();
             var myHandler = new ExceptionThrowerHttpClientHandler(exception);
 
-            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), myHandler, Mock.Of<IConfigDeserializer>(), false,
+            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), myHandler, new ConfigDeserializer(), false,
                 TimeSpan.FromSeconds(30));
 
             var lastConfig = new ProjectConfig("{ }", DateTime.UtcNow, "\"ETAG\"");
@@ -103,7 +103,7 @@ namespace ConfigCat.Client.Tests
 
             var myHandler = new FakeHttpClientHandler(HttpStatusCode.OK, "{ }", TimeSpan.FromSeconds(1));
 
-            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), myHandler, Mock.Of<IConfigDeserializer>(), false, TimeSpan.FromSeconds(30));
+            var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), myHandler, new ConfigDeserializer(), false, TimeSpan.FromSeconds(30));
 
             var lastConfig = new ProjectConfig("{ }", DateTime.UtcNow, "\"ETAG\"");
 

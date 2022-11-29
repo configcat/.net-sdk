@@ -81,6 +81,20 @@ namespace ConfigCat.Client
         Task<IDictionary<string, object>> GetAllValuesAsync(User user = null);
 
         /// <summary>
+        /// Returns the values along with evaluation details of all feature flags and settings synchronously.
+        /// </summary>
+        /// <param name="user">The user object for variation evaluation.</param>
+        /// <returns>The key-value collection.</returns>
+        IReadOnlyList<EvaluationDetails> GetAllValueDetails(User user = null);
+
+        /// <summary>
+        /// Returns the values along with evaluation details of all feature flags and settings asynchronously.
+        /// </summary>
+        /// <param name="user">The user object for variation evaluation.</param>
+        /// <returns>The key-value collection.</returns>
+        Task<IReadOnlyList<EvaluationDetails>> GetAllValueDetailsAsync(User user = null);
+
+        /// <summary>
         /// Refreshes the configuration.
         /// </summary>
         RefreshResult ForceRefresh();

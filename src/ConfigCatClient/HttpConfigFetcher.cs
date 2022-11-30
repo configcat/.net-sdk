@@ -150,7 +150,7 @@ namespace ConfigCat.Client
             }
             catch (OperationCanceledException ex) when (!this.cancellationTokenSource.IsCancellationRequested)
             {
-                errorMessage = $"Http timeout {this.timeout} reached.";
+                errorMessage = $"Request timed out. Timeout value: {this.timeout}";
                 errorException = ex;
             }
             catch (HttpRequestException ex) when (ex.InnerException is WebException { Status: WebExceptionStatus.SecureChannelFailure })
@@ -160,7 +160,7 @@ namespace ConfigCat.Client
             }
             catch (Exception ex)
             {
-                errorMessage = $"Unexpected error occured during fetching.";
+                errorMessage = $"Unexpected error occurred during fetching.";
                 errorException = ex;
             }
 

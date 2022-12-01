@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -6,6 +7,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Evaluation;
 using ConfigCat.Client.Utils;
+
+#if NET45
+using ResponseWithBody = System.Tuple<System.Net.Http.HttpResponseMessage, string>;
+#else
+using ResponseWithBody = System.ValueTuple<System.Net.Http.HttpResponseMessage, string>;
+#endif
 
 namespace ConfigCat.Client
 {
@@ -37,110 +44,112 @@ namespace ConfigCat.Client
             ReInitializeHttpClient();
         }
 
-        public ProjectConfig Fetch(ProjectConfig lastConfig)
+        public FetchResult Fetch(ProjectConfig lastConfig)
         {
 #if NET5_0_OR_GREATER
-            var valueTask = FetchInternalAsync(lastConfig, false);
-#if DEBUG
-            DebugUtils.Verify(valueTask.IsCompleted);
-#endif
+            var valueTask = FetchInternalAsync(lastConfig, isAsync: false);
+            Debug.Assert(valueTask.IsCompleted);
+
             // The value task holds the sync result, it's safe to call GetAwaiter().GetResult()
             return valueTask.GetAwaiter().GetResult();
 #else
             // we can't synchronize HttpClient, so we have to go sync over async.
-            return Syncer.Sync(() => FetchInternalAsync(lastConfig, true).AsTask());
+            return Syncer.Sync(() => FetchInternalAsync(lastConfig, isAsync: true).AsTask());
 #endif
         }
 
-        public Task<ProjectConfig> FetchAsync(ProjectConfig lastConfig)
+        public Task<FetchResult> FetchAsync(ProjectConfig lastConfig)
         {
-            return FetchInternalAsync(lastConfig, true).AsTask();
+            return FetchInternalAsync(lastConfig, isAsync: true).AsTask();
         }
 
-        private async ValueTask<ProjectConfig> FetchInternalAsync(ProjectConfig lastConfig, bool isAsync)
+        private async ValueTask<FetchResult> FetchInternalAsync(ProjectConfig lastConfig, bool isAsync)
         {
+            string errorMessage;
+            Exception errorException;
             try
             {
+                ResponseWithBody responseWithBody;
 #if NET5_0_OR_GREATER
-                Tuple<HttpResponseMessage, string> fetchResult;
                 if (isAsync)
                 {
-                    fetchResult = await FetchRequest(lastConfig, this.requestUri, true).ConfigureAwait(false);
+                    responseWithBody = await FetchRequest(lastConfig, this.requestUri, isAsync: true).ConfigureAwait(false);
                 }
                 else
                 {
-                    var valueTask = FetchRequest(lastConfig, this.requestUri, false);
-#if DEBUG
-                    DebugUtils.Verify(valueTask.IsCompleted);
-#endif
+                    var valueTask = FetchRequest(lastConfig, this.requestUri, isAsync: false);
+                    Debug.Assert(valueTask.IsCompleted);
+
                     // The value task holds the sync result, it's safe to call GetAwaiter().GetResult()
-                    fetchResult = valueTask.GetAwaiter().GetResult();
+                    responseWithBody = valueTask.GetAwaiter().GetResult();
                 }
 #else
-                var fetchResult = await FetchRequest(lastConfig, this.requestUri, true)
-                    .ConfigureAwait(false);
+                responseWithBody = await FetchRequest(lastConfig, this.requestUri, isAsync: true).ConfigureAwait(false);
 #endif
 
-                var response = fetchResult.Item1;
+                var response = responseWithBody.Item1;
 
                 if (response is { IsSuccessStatusCode: true })
                 {
-                    return new ProjectConfig
+                    return FetchResult.Success(new ProjectConfig
                     {
                         HttpETag = response.Headers.ETag?.Tag,
-                        JsonString = fetchResult.Item2,
+                        JsonString = responseWithBody.Item2,
                         TimeStamp = DateTime.UtcNow
-                    };
+                    });
                 }
                 else
                 {
                     switch (response.StatusCode)
                     {
                         case HttpStatusCode.NotModified:
-                            break;
+                            return FetchResult.NotModified(lastConfig with { TimeStamp = DateTime.UtcNow });
                         case HttpStatusCode.NotFound:
-                            this.log.Error("Double-check your SDK Key at https://app.configcat.com/sdkkey");
+                            errorMessage = "Double-check your SDK Key at https://app.configcat.com/sdkkey";
+                            this.log.Error(errorMessage);
                             break;
                         default:
+                            errorMessage = $"Unexpected HTTP response: {(int)response.StatusCode} {response.StatusCode} \"{response.ReasonPhrase}\"";
+                            this.log.Error(errorMessage);
                             this.ReInitializeHttpClient();
                             break;
                     }
 
                     // We update the timestamp even if a status code other than 304 NotModified is returned
                     // for extra protection against flooding.
-                    return lastConfig with
-                    {
-                        TimeStamp = DateTime.UtcNow
-                    };
+                    return FetchResult.Failure(lastConfig with { TimeStamp = DateTime.UtcNow }, errorMessage);
                 }
             }
             catch (OperationCanceledException) when (this.cancellationTokenSource.IsCancellationRequested)
             {
                 /* do nothing on dispose cancel */
+                return FetchResult.NotModified(lastConfig);
             }
-            catch (OperationCanceledException) when (!this.cancellationTokenSource.IsCancellationRequested)
+            catch (OperationCanceledException ex) when (!this.cancellationTokenSource.IsCancellationRequested)
             {
-                this.log.Error($"Http timeout {this.timeout} reached.");
-                this.ReInitializeHttpClient();
+                errorMessage = $"Http timeout {this.timeout} reached.";
+                errorException = ex;
             }
             catch (HttpRequestException ex) when (ex.InnerException is WebException { Status: WebExceptionStatus.SecureChannelFailure })
             {
-                this.log.Error($"Secure connection could not be established. Please make sure that your application is enabled to use TLS 1.2+. For more information see https://stackoverflow.com/a/58195987/8656352.", ex);
-                this.ReInitializeHttpClient();
+                errorMessage = $"Secure connection could not be established. Please make sure that your application is enabled to use TLS 1.2+. For more information see https://stackoverflow.com/a/58195987/8656352.";
+                errorException = ex;
             }
             catch (Exception ex)
             {
-                this.log.Error($"Error occured during fetching.", ex);
-                this.ReInitializeHttpClient();
+                errorMessage = $"Error occured during fetching.";
+                errorException = ex;
             }
 
-            return lastConfig;
+            this.log.Error(errorMessage);
+            this.ReInitializeHttpClient();
+            return FetchResult.Failure(lastConfig, errorMessage, errorException);
         }
 
-        private async ValueTask<Tuple<HttpResponseMessage, string>> FetchRequest(ProjectConfig lastConfig,
+        private async ValueTask<ResponseWithBody> FetchRequest(ProjectConfig lastConfig,
             Uri requestUri, bool isAsync, sbyte maxExecutionCount = 3)
         {
-            do
+            for (; ; maxExecutionCount--)
             {
                 var request = new HttpRequestMessage { Method = HttpMethod.Get, RequestUri = requestUri };
 
@@ -171,7 +180,7 @@ namespace ConfigCat.Client
                     var httpETag = response.Headers.ETag?.Tag;
 
                     if (!this.deserializer.TryDeserialize(responseBody, httpETag, out var body))
-                        return Tuple.Create<HttpResponseMessage, string>(response, null);
+                        return new ResponseWithBody(response, null);
 
                     if (body?.Preferences != null)
                     {
@@ -179,21 +188,21 @@ namespace ConfigCat.Client
 
                         if (newBaseUrl == null || requestUri.Host == new Uri(newBaseUrl).Host)
                         {
-                            return Tuple.Create(response, responseBody);
+                            return new ResponseWithBody(response, responseBody);
                         }
 
                         RedirectMode redirect = body.Preferences.RedirectMode;
 
                         if (isCustomUri && redirect != RedirectMode.Force)
                         {
-                            return Tuple.Create(response, responseBody);
+                            return new ResponseWithBody(response, responseBody);
                         }
 
                         UpdateRequestUri(new Uri(newBaseUrl));
 
                         if (redirect == RedirectMode.No)
                         {
-                            return Tuple.Create(response, responseBody);
+                            return new ResponseWithBody(response, responseBody);
                         }
 
                         if (redirect == RedirectMode.Should)
@@ -208,20 +217,18 @@ namespace ConfigCat.Client
                         if (maxExecutionCount <= 1)
                         {
                             log.Error("Redirect loop during config.json fetch. Please contact support@configcat.com.");
-                            return Tuple.Create(response, responseBody);
+                            return new ResponseWithBody(response, responseBody);
                         }
 
                         requestUri = ReplaceUri(request.RequestUri, new Uri(newBaseUrl));
                         continue;
                     }
 
-                    return Tuple.Create(response, responseBody);
+                    return new ResponseWithBody(response, responseBody);
                 }
 
-                return Tuple.Create<HttpResponseMessage, string>(response, null);
-            } while (--maxExecutionCount > 0);
-
-            return Tuple.Create<HttpResponseMessage, string>(null, null);
+                return new ResponseWithBody(response, null);
+            }
         }
 
         private void UpdateRequestUri(Uri newUri)

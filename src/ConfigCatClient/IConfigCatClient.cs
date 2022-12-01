@@ -83,12 +83,12 @@ namespace ConfigCat.Client
         /// <summary>
         /// Refreshes the configuration.
         /// </summary>
-        void ForceRefresh();
+        RefreshResult ForceRefresh();
 
         /// <summary>
         /// Refreshes the configuration asynchronously.
         /// </summary>
-        Task ForceRefreshAsync();
+        Task<RefreshResult> ForceRefreshAsync();
 
         /// <summary>
         /// Returns the Variation ID (analytics) for a feature flag or setting by the given key.

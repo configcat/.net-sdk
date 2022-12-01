@@ -429,28 +429,30 @@ namespace ConfigCat.Client
         }
 
         /// <inheritdoc />
-        public void ForceRefresh()
+        public RefreshResult ForceRefresh()
         {
             try
             {
-                this.configService.RefreshConfig();
+                return this.configService.RefreshConfig();
             }
             catch (Exception ex)
             {
                 this.log.Error($"Error occured in '{nameof(ForceRefresh)}' method.", ex);
+                return RefreshResult.Failure(ex.Message, ex);
             }
         }
 
         /// <inheritdoc />
-        public async Task ForceRefreshAsync()
+        public async Task<RefreshResult> ForceRefreshAsync()
         {
             try
             {
-                await this.configService.RefreshConfigAsync().ConfigureAwait(false);
+                return await this.configService.RefreshConfigAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
             {
                 this.log.Error($"Error occured in '{nameof(ForceRefreshAsync)}' method.", ex);
+                return RefreshResult.Failure(ex.Message, ex);
             }
         }
 

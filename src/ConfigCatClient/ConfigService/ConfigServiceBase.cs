@@ -3,6 +3,12 @@ using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
 using ConfigCat.Client.Utils;
 
+#if NET45
+using ConfigWithFetchResult = System.Tuple<ConfigCat.Client.ProjectConfig, ConfigCat.Client.FetchResult>;
+#else
+using ConfigWithFetchResult = System.ValueTuple<ConfigCat.Client.ProjectConfig, ConfigCat.Client.FetchResult>;
+#endif
+
 namespace ConfigCat.Client.ConfigService
 {
     internal abstract class ConfigServiceBase : IDisposable
@@ -15,7 +21,7 @@ namespace ConfigCat.Client.ConfigService
         }
 
         private Status status;
-        private readonly object syncObj = new object();
+        private readonly object syncObj = new();
 
         protected readonly IConfigFetcher ConfigFetcher;
 
@@ -67,7 +73,7 @@ namespace ConfigCat.Client.ConfigService
             Dispose(true);
         }
 
-        public virtual void RefreshConfig()
+        public virtual RefreshResult RefreshConfig()
         {
             // check for the new cache interface until we remove the old IConfigCache.
             if (this.ConfigCache is IConfigCatCache cache)
@@ -75,23 +81,24 @@ namespace ConfigCat.Client.ConfigService
                 if (!IsOffline)
                 {
                     var latestConfig = cache.Get(this.CacheKey);
-                    RefreshConfigCore(latestConfig);
+                    var configWithFetchResult = RefreshConfigCore(latestConfig);
+                    return RefreshResult.From(configWithFetchResult.Item2);
                 }
                 else
                 {
                     this.Log.OfflineModeWarning();
+                    return RefreshResult.Failure("Client is in offline mode, it can't initiate HTTP calls.");
                 }
-
-                return;
             }
 
             // worst scenario, fallback to sync over async, delete when we enforce IConfigCatCache.
-            Syncer.Sync(this.RefreshConfigAsync);
+            return Syncer.Sync(this.RefreshConfigAsync);
         }
 
-        protected ProjectConfig RefreshConfigCore(ProjectConfig latestConfig)
+        protected ConfigWithFetchResult RefreshConfigCore(ProjectConfig latestConfig)
         {
-            var newConfig = this.ConfigFetcher.Fetch(latestConfig);
+            var fetchResult = this.ConfigFetcher.Fetch(latestConfig);
+            var newConfig = fetchResult.Config;
 
             var configContentHasChanged = !latestConfig.Equals(newConfig);
             if ((configContentHasChanged || newConfig.TimeStamp > latestConfig.TimeStamp) && !newConfig.Equals(ProjectConfig.Empty))
@@ -106,28 +113,31 @@ namespace ConfigCat.Client.ConfigService
                     OnConfigChanged(newConfig);
                 }
 
-                return newConfig;
+                return new ConfigWithFetchResult(newConfig, fetchResult);
             }
 
-            return latestConfig;
+            return new ConfigWithFetchResult(latestConfig, fetchResult);
         }
 
-        public virtual async Task RefreshConfigAsync()
+        public virtual async Task<RefreshResult> RefreshConfigAsync()
         {
             if (!IsOffline)
             {
                 var latestConfig = await this.ConfigCache.GetAsync(this.CacheKey).ConfigureAwait(false);
-                await RefreshConfigCoreAsync(latestConfig).ConfigureAwait(false);
+                var configWithFetchResult = await RefreshConfigCoreAsync(latestConfig).ConfigureAwait(false);
+                return RefreshResult.From(configWithFetchResult.Item2);
             }
             else
             {
                 this.Log.OfflineModeWarning();
+                return RefreshResult.Failure("Client is in offline mode, it can't initiate HTTP calls.");
             }
         }
 
-        protected async Task<ProjectConfig> RefreshConfigCoreAsync(ProjectConfig latestConfig)
+        protected async Task<ConfigWithFetchResult> RefreshConfigCoreAsync(ProjectConfig latestConfig)
         {
-            var newConfig = await this.ConfigFetcher.FetchAsync(latestConfig).ConfigureAwait(false);
+            var fetchResult = await this.ConfigFetcher.FetchAsync(latestConfig).ConfigureAwait(false);
+            var newConfig = fetchResult.Config;
 
             var configContentHasChanged = !latestConfig.Equals(newConfig);
             if ((configContentHasChanged || newConfig.TimeStamp > latestConfig.TimeStamp) && !newConfig.Equals(ProjectConfig.Empty))
@@ -141,10 +151,10 @@ namespace ConfigCat.Client.ConfigService
                     OnConfigChanged(newConfig);
                 }
 
-                return newConfig;
+                return new ConfigWithFetchResult(newConfig, fetchResult);
             }
 
-            return latestConfig;
+            return new ConfigWithFetchResult(latestConfig, fetchResult);
         }
 
         protected virtual void OnConfigUpdated(ProjectConfig newConfig) { }

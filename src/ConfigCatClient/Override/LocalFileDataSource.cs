@@ -1,6 +1,7 @@
 ﻿using ConfigCat.Client.Evaluation;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -33,7 +34,9 @@ namespace ConfigCat.Client.Override
             this.logger = logger;
 
             // method executes synchronously, GetAwaiter().GetResult() is just for preventing compiler warnings
-            this.ReloadFileAsync(isAsync: false).GetAwaiter().GetResult();
+            var reloadFileTask = this.ReloadFileAsync(isAsync: false);
+            Debug.Assert(reloadFileTask.IsCompleted);
+            reloadFileTask.GetAwaiter().GetResult();
 
             if (autoReload)
             {

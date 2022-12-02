@@ -331,6 +331,89 @@ namespace ConfigCat.Client.Tests
             }
         }
 
+        [DataRow(ClientCreationStrategy.Singleton)]
+        [DataRow(ClientCreationStrategy.Constructor)]
+        [DataRow(ClientCreationStrategy.Builder)]
+        [DataTestMethod]
+        public void GetAllValueDetails(ClientCreationStrategy creationStrategy)
+        {
+            static void Configure(ConfigCatClientOptions options)
+            {
+                options.PollingMode = PollingModes.ManualPoll;
+                options.Logger = consoleLogger;
+                options.HttpClientHandler = sharedHandler;
+            }
+
+            using IConfigCatClient client = creationStrategy switch
+            {
+                ClientCreationStrategy.Singleton => ConfigCatClient.Get(SDKKEY, Configure),
+                ClientCreationStrategy.Constructor => new ConfigCatClient(options => { Configure(options); options.SdkKey = SDKKEY; }),
+                ClientCreationStrategy.Builder => ConfigCatClientBuilder
+                    .Initialize(SDKKEY)
+                    .WithLogger(consoleLogger)
+                    .WithManualPoll()
+                    .WithHttpClientHandler(sharedHandler)
+                    .Create(),
+                _ => throw new ArgumentOutOfRangeException(nameof(creationStrategy))
+            };
+
+            client.ForceRefresh();
+
+            var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
+            client.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
+
+            var detailsList = client.GetAllValueDetails();
+
+            Assert.AreEqual(16, detailsList.Count);
+            var details = detailsList.FirstOrDefault(details => details.Key == "stringDefaultCat");
+            Assert.IsNotNull(details);
+            Assert.AreEqual("Cat", details.Value);
+            Assert.IsFalse(details.IsDefaultValue);
+
+            CollectionAssert.AreEqual(detailsList.ToArray(), flagEvaluatedEvents.Select(e => e.EvaluationDetails).ToArray());
+        }
+
+        [DataRow(ClientCreationStrategy.Singleton)]
+        [DataRow(ClientCreationStrategy.Constructor)]
+        [DataRow(ClientCreationStrategy.Builder)]
+        [DataTestMethod]
+        public async Task GetAllValueDetailsAsync(ClientCreationStrategy creationStrategy)
+        {
+            static void Configure(ConfigCatClientOptions options)
+            {
+                options.PollingMode = PollingModes.ManualPoll;
+                options.Logger = consoleLogger;
+                options.HttpClientHandler = sharedHandler;
+            }
+
+            using IConfigCatClient client = creationStrategy switch
+            {
+                ClientCreationStrategy.Singleton => ConfigCatClient.Get(SDKKEY, Configure),
+                ClientCreationStrategy.Constructor => new ConfigCatClient(options => { Configure(options); options.SdkKey = SDKKEY; }),
+                ClientCreationStrategy.Builder => ConfigCatClientBuilder
+                    .Initialize(SDKKEY)
+                    .WithLogger(consoleLogger)
+                    .WithManualPoll()
+                    .WithHttpClientHandler(sharedHandler)
+                    .Create(),
+                _ => throw new ArgumentOutOfRangeException(nameof(creationStrategy))
+            };
+
+            var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
+            client.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
+
+            await client.ForceRefreshAsync();
+            var detailsList = await client.GetAllValueDetailsAsync();
+
+            Assert.AreEqual(16, detailsList.Count);
+            var details = detailsList.FirstOrDefault(details => details.Key == "stringDefaultCat");
+            Assert.IsNotNull(details);
+            Assert.AreEqual("Cat", details.Value);
+            Assert.IsFalse(details.IsDefaultValue);
+
+            CollectionAssert.AreEqual(detailsList.ToArray(), flagEvaluatedEvents.Select(e => e.EvaluationDetails).ToArray());
+        }
+
         private static void GetValueAndAssert(IConfigCatClient client, string key, string defaultValue, string expectedValue)
         {
             var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();

@@ -129,6 +129,7 @@ namespace ConfigCat.Client
 
                         return FetchResult.NotModified(lastConfig with { TimeStamp = DateTime.UtcNow });
 
+                    case HttpStatusCode.Forbidden:
                     case HttpStatusCode.NotFound:
                         errorMessage = "Double-check your SDK Key at https://app.configcat.com/sdkkey";
                         this.log.Error(errorMessage);

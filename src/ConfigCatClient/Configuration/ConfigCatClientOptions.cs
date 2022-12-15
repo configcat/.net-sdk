@@ -47,13 +47,6 @@ namespace ConfigCat.Client.Configuration
             remove { Hooks.Error -= value; }
         }
 
-        /// <inheritdoc/>
-        public event EventHandler BeforeClientDispose
-        {
-            add { Hooks.BeforeClientDispose += value; }
-            remove { Hooks.BeforeClientDispose -= value; }
-        }
-
         internal override void Validate()
         {
             PollingMode.Validate();

@@ -1695,14 +1695,12 @@ namespace ConfigCat.Client.Tests
             var configChangedEvents = new List<ConfigChangedEventArgs>();
             var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
             var errorEvents = new List<ConfigCatClientErrorEventArgs>();
-            var beforeClientDisposeEventCount = 0;
 
             var hooks = new Hooks();
             hooks.ClientReady += (s, e) => clientReadyEventCount++;
             hooks.ConfigChanged += (s, e) => configChangedEvents.Add(e);
             hooks.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
             hooks.Error += (s, e) => errorEvents.Add(e);
-            hooks.BeforeClientDispose += (s, e) => beforeClientDisposeEventCount++;
 
             var loggerWrapper = new LoggerWrapper(loggerMock.Object, hooks);
 
@@ -1733,7 +1731,6 @@ namespace ConfigCat.Client.Tests
             Assert.AreEqual(0, configChangedEvents.Count);
             Assert.AreEqual(0, flagEvaluatedEvents.Count);
             Assert.AreEqual(0, errorEvents.Count);
-            Assert.AreEqual(0, beforeClientDisposeEventCount);
 
             // 2. Fetch fails
             await client.ForceRefreshAsync();
@@ -1773,7 +1770,6 @@ namespace ConfigCat.Client.Tests
             Assert.AreEqual(1, configChangedEvents.Count);
             Assert.AreEqual(evaluationDetails.Count, flagEvaluatedEvents.Count);
             Assert.AreEqual(1, errorEvents.Count);
-            Assert.AreEqual(1, beforeClientDisposeEventCount);
         }
 
         [DataRow(false)]
@@ -1786,13 +1782,11 @@ namespace ConfigCat.Client.Tests
             var configChangedEvents = new List<ConfigChangedEventArgs>();
             var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
             var errorEvents = new List<ConfigCatClientErrorEventArgs>();
-            var beforeClientDisposeCallCount = 0;
 
             EventHandler handleClientReady = (s, e) => clientReadyCallCount++;
             EventHandler<ConfigChangedEventArgs> handleConfigChanged = (s, e) => configChangedEvents.Add(e);
             EventHandler<FlagEvaluatedEventArgs> handleFlagEvaluated = (s, e) => flagEvaluatedEvents.Add(e);
             EventHandler<ConfigCatClientErrorEventArgs> handleError = (s, e) => errorEvents.Add(e);
-            EventHandler handleBeforeClientDispose = (s, e) => beforeClientDisposeCallCount++;
 
             void Subscribe(IProvidesHooks hooks)
             {
@@ -1800,7 +1794,6 @@ namespace ConfigCat.Client.Tests
                 hooks.ConfigChanged += handleConfigChanged;
                 hooks.FlagEvaluated += handleFlagEvaluated;
                 hooks.Error += handleError;
-                hooks.BeforeClientDispose += handleBeforeClientDispose;
             }
 
             void Unsubscribe(IProvidesHooks hooks)
@@ -1809,7 +1802,6 @@ namespace ConfigCat.Client.Tests
                 hooks.ConfigChanged -= handleConfigChanged;
                 hooks.FlagEvaluated -= handleFlagEvaluated;
                 hooks.Error -= handleError;
-                hooks.BeforeClientDispose -= handleBeforeClientDispose;
             }
 
             // 1. Client gets created
@@ -1838,7 +1830,6 @@ namespace ConfigCat.Client.Tests
             Assert.AreEqual(0, configChangedEvents.Count);
             Assert.AreEqual(0, flagEvaluatedEvents.Count);
             Assert.AreEqual(0, errorEvents.Count);
-            Assert.AreEqual(0, beforeClientDisposeCallCount);
 
             // 2. Fetch succeeds
             await client.ForceRefreshAsync();
@@ -1886,7 +1877,6 @@ namespace ConfigCat.Client.Tests
             Assert.AreEqual(2, configChangedEvents.Count);
             Assert.AreEqual(evaluationDetails.Count * 2, flagEvaluatedEvents.Count);
             Assert.AreEqual(2, errorEvents.Count);
-            Assert.AreEqual(2, beforeClientDisposeCallCount);
         }
 
         internal class FakeConfigService : ConfigServiceBase, IConfigService

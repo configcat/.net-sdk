@@ -18,18 +18,13 @@ namespace ConfigCat.Client
 
         public Hooks() : this(new ActualEventHandlers()) { }
 
-        public virtual bool TryDisconnect(out Action<IConfigCatClient> raiseBeforeClientDispose)
+        public virtual bool TryDisconnect()
         {
             // Replacing the current EventHandlers object (eventHandlers) with a special instance of EventHandlers (DisconnectedEventHandlers) achieves multiple things:
             // 1. determines whether the hooks instance has already been disconnected or not,
             // 2. removes implicit references to subscriber objects (so this instance won't keep them alive under any circumstances),
             // 3. makes sure that future subscriptions are ignored from this point on.
             var originalEventHandlers = Interlocked.Exchange(ref this.eventHandlers, DisconnectedEventHandlers);
-
-            var beforeClientDispose = originalEventHandlers.BeforeClientDispose;
-            raiseBeforeClientDispose = beforeClientDispose is not null
-                ? sender => beforeClientDispose(sender, EventArgs.Empty)
-                : null;
 
             return !ReferenceEquals(originalEventHandlers, DisconnectedEventHandlers);
         }
@@ -117,13 +112,6 @@ namespace ConfigCat.Client
             }
         }
 
-        /// <inheritdoc/>
-        public event EventHandler BeforeClientDispose
-        {
-            add { this.eventHandlers.BeforeClientDispose += value; }
-            remove { this.eventHandlers.BeforeClientDispose -= value; }
-        }
-
         protected class EventHandlers
         {
             private static void Noop(Delegate eventHandler) { /* This method is for keeping SonarQube happy. */ }
@@ -132,7 +120,6 @@ namespace ConfigCat.Client
             public virtual EventHandler<FlagEvaluatedEventArgs> FlagEvaluated { get => null; set => Noop(value); }
             public virtual EventHandler<ConfigChangedEventArgs> ConfigChanged { get => null; set => Noop(value); }
             public virtual EventHandler<ConfigCatClientErrorEventArgs> Error { get => null; set => Noop(value); }
-            public virtual EventHandler BeforeClientDispose { get => null; set => Noop(value); }
         }
 
         private sealed class ActualEventHandlers : EventHandlers
@@ -141,7 +128,6 @@ namespace ConfigCat.Client
             public override EventHandler<FlagEvaluatedEventArgs> FlagEvaluated { get; set; }
             public override EventHandler<ConfigChangedEventArgs> ConfigChanged { get; set; }
             public override EventHandler<ConfigCatClientErrorEventArgs> Error { get; set; }
-            public override EventHandler BeforeClientDispose { get; set; }
         }
     }
 }

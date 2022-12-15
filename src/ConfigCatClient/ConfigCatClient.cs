@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
 using ConfigCat.Client.Configuration;
 using ConfigCat.Client.Override;
-using System.Threading;
 using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client
@@ -474,47 +473,32 @@ namespace ConfigCat.Client
 
         private void Dispose(bool disposing)
         {
+            // NOTE: hooks may be null (e.g. if already collected) when this method is called by the finalizer
+            this.hooks?.TryDisconnect();
+
             if (disposing)
             {
-                try
+                if (this.configService is IDisposable disposable)
                 {
-                    if (this.hooks.TryDisconnect(out var raiseBeforeClientDispose))
-                    {
-                        raiseBeforeClientDispose?.Invoke(this);
-                    }
+                    disposable.Dispose();
                 }
-                finally
-                {
-                    if (this.configService is IDisposable disposable)
-                    {
-                        disposable.Dispose();
-                    }
 
-                    this.overrideDataSource?.Dispose();
-                }
+                this.overrideDataSource?.Dispose();
             }
             else
             {
-                try
+                // Execution gets here when consumer forgets to dispose the client instance.
+                // In this case we need to make sure that background work is stopped,
+                // otherwise it would go on endlessly, that is, we'd end up with a memory leak.
+                var autoPollConfigService = this.configService as AutoPollConfigService;
+                var localFileDataSource = this.overrideDataSource as LocalFileDataSource;
+                if (autoPollConfigService is not null || localFileDataSource is not null)
                 {
-                    // NOTE: hooks may be null (e.g. if already collected) when this method is called by the finalizer
-                    this.hooks?.TryDisconnect(out _);
-                }
-                finally
-                {
-                    // Execution gets here when consumer forgets to dispose the client instance.
-                    // In this case we need to make sure that background work is stopped,
-                    // otherwise it would go on endlessly, that is, we'd end up with a memory leak.
-                    var autoPollConfigService = this.configService as AutoPollConfigService;
-                    var localFileDataSource = this.overrideDataSource as LocalFileDataSource;
-                    if (autoPollConfigService is not null || localFileDataSource is not null)
+                    Task.Run(() =>
                     {
-                        Task.Run(() =>
-                        {
-                            autoPollConfigService?.StopScheduler();
-                            localFileDataSource?.StopWatch();
-                        });
-                    }
+                        autoPollConfigService?.StopScheduler();
+                        localFileDataSource?.StopWatch();
+                    });
                 }
             }
         }
@@ -819,13 +803,6 @@ namespace ConfigCat.Client
         {
             add { this.hooks.Error += value; }
             remove { this.hooks.Error -= value; }
-        }
-
-        /// <inheritdoc/>
-        public event EventHandler BeforeClientDispose
-        {
-            add { this.hooks.BeforeClientDispose += value; }
-            remove { this.hooks.BeforeClientDispose -= value; }
         }
 
         private readonly struct SettingsWithRemoteConfig

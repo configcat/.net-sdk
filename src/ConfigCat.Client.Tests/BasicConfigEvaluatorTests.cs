@@ -19,7 +19,7 @@ namespace ConfigCat.Client.Tests
         [TestMethod]
         public void GetValue_WithSimpleKey_ShouldReturnCat()
         {
-            string actual = configEvaluator.Evaluate(config, "stringDefaultCat", string.Empty, user: null, null, this.logger, out _);
+            string actual = configEvaluator.Evaluate(config, "stringDefaultCat", string.Empty, user: null, null, this.logger).Value;
 
             Assert.AreNotEqual(string.Empty, actual);
             Assert.AreEqual("Cat", actual);
@@ -28,7 +28,7 @@ namespace ConfigCat.Client.Tests
         [TestMethod]
         public void GetValue_WithNonExistingKey_ShouldReturnDefaultValue()
         {
-            string actual = configEvaluator.Evaluate(config, "NotExistsKey", "NotExistsValue", user: null, null, this.logger, out _);
+            string actual = configEvaluator.Evaluate(config, "NotExistsKey", "NotExistsValue", user: null, null, this.logger).Value;
 
             Assert.AreEqual("NotExistsValue", actual);
         }
@@ -36,7 +36,7 @@ namespace ConfigCat.Client.Tests
         [TestMethod]
         public void GetValue_WithEmptyProjectConfig_ShouldReturnDefaultValue()
         {
-            string actual = configEvaluator.Evaluate(new Dictionary<string, Setting>(), "stringDefaultCat", "Default", user: null, null, this.logger, out _);
+            string actual = configEvaluator.Evaluate(new Dictionary<string, Setting>(), "stringDefaultCat", "Default", user: null, null, this.logger).Value;
 
             Assert.AreEqual("Default", actual);
         }
@@ -49,13 +49,13 @@ namespace ConfigCat.Client.Tests
                 Email = "c@configcat.com",
                 Country = "United Kingdom",
                 Custom = new Dictionary<string, string> { { "Custom1", "admin" } }
-            }, null, this.logger, out _);
+            }, null, this.logger).Value;
 
             Assert.AreEqual(3.1415, actual);
         }
 
-        private delegate object EvaluateDelegate(IRolloutEvaluator evaluator, IDictionary<string, Setting> settings, string key, object defaultValue, User user,
-            ProjectConfig remoteConfig, ILogger logger, out EvaluationDetails<object> evaluationDetails);
+        private delegate EvaluationDetails<object> EvaluateDelegate(IRolloutEvaluator evaluator, IDictionary<string, Setting> settings, string key, object defaultValue, User user,
+            ProjectConfig remoteConfig, ILogger logger);
 
         private static readonly MethodInfo evaluateMethodDefinition = new EvaluateDelegate(RolloutEvaluatorExtensions.Evaluate).Method.GetGenericMethodDefinition();
 
@@ -84,13 +84,10 @@ namespace ConfigCat.Client.Tests
                 null,
                 null,
                 this.logger,
-                null
             };
 
-            var actualValue = evaluateMethodDefinition.MakeGenericMethod(settingClrType).Invoke(null, args);
-            var evaluationDetails = (EvaluationDetails)args.Last();
+            var evaluationDetails = (EvaluationDetails)evaluateMethodDefinition.MakeGenericMethod(settingClrType).Invoke(null, args);
 
-            Assert.AreEqual(expectedValue, actualValue);
             Assert.AreEqual(expectedValue, evaluationDetails.Value);
         }
 
@@ -110,7 +107,6 @@ namespace ConfigCat.Client.Tests
                 null,
                 null,
                 this.logger,
-                null
             };
 
             var ex = Assert.ThrowsException<InvalidOperationException>(() =>

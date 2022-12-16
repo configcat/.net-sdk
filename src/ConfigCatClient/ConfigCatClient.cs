@@ -9,6 +9,7 @@ using ConfigCat.Client.Cache;
 using ConfigCat.Client.Configuration;
 using ConfigCat.Client.Override;
 using ConfigCat.Client.Utils;
+using System.Runtime.InteropServices;
 
 namespace ConfigCat.Client
 {
@@ -259,7 +260,8 @@ namespace ConfigCat.Client
             {
                 typeof(T).EnsureSupportedSettingClrType();
                 settings = this.GetSettings();
-                value = this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, this.log, out evaluationDetails);
+                evaluationDetails = this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, this.log);
+                value = evaluationDetails.Value;
             }
             catch (Exception ex)
             {
@@ -283,7 +285,8 @@ namespace ConfigCat.Client
             {
                 typeof(T).EnsureSupportedSettingClrType();
                 settings = await this.GetSettingsAsync().ConfigureAwait(false);
-                value = this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, this.log, out evaluationDetails);
+                evaluationDetails = this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, this.log);
+                value = evaluationDetails.Value;
             }
             catch (Exception ex)
             {
@@ -306,7 +309,7 @@ namespace ConfigCat.Client
             {
                 typeof(T).EnsureSupportedSettingClrType();
                 settings = this.GetSettings();
-                this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, this.log, out evaluationDetails);
+                evaluationDetails = this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, this.log);
             }
             catch (Exception ex)
             {
@@ -328,7 +331,7 @@ namespace ConfigCat.Client
             {
                 typeof(T).EnsureSupportedSettingClrType();
                 settings = await this.GetSettingsAsync().ConfigureAwait(false);
-                this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, this.log, out evaluationDetails);
+                evaluationDetails = this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, this.log);
             }
             catch (Exception ex)
             {
@@ -387,7 +390,12 @@ namespace ConfigCat.Client
             try
             {
                 var settings = this.GetSettings();
-                result = this.configEvaluator.EvaluateAll(settings.Value, user, settings.RemoteConfig, this.log, out evaluationDetailsArray);
+                evaluationDetailsArray = this.configEvaluator.EvaluateAll(settings.Value, user, settings.RemoteConfig, this.log, out var exceptions);
+                if (exceptions is { Count: > 0 })
+                {
+                    throw new AggregateException(exceptions);
+                }
+                result = evaluationDetailsArray.ToDictionary(details => details.Key, details => details.Value);
             }
             catch (Exception ex)
             {
@@ -413,7 +421,12 @@ namespace ConfigCat.Client
             try
             {
                 var settings = await this.GetSettingsAsync().ConfigureAwait(false);
-                result = this.configEvaluator.EvaluateAll(settings.Value, user, settings.RemoteConfig, this.log, out evaluationDetailsArray);
+                evaluationDetailsArray = this.configEvaluator.EvaluateAll(settings.Value, user, settings.RemoteConfig, this.log, out var exceptions);
+                if (exceptions is { Count: > 0 })
+                {
+                    throw new AggregateException(exceptions);
+                }
+                result = evaluationDetailsArray.ToDictionary(details => details.Key, details => details.Value);
             }
             catch (Exception ex)
             {
@@ -428,6 +441,62 @@ namespace ConfigCat.Client
             }
 
             return result;
+        }
+
+        /// <inheritdoc />
+        public IReadOnlyList<EvaluationDetails> GetAllValueDetails(User user = null)
+        {
+            EvaluationDetails[] evaluationDetailsArray = null;
+            user ??= this.defaultUser;
+            try
+            {
+                var settings = this.GetSettings();
+                evaluationDetailsArray = this.configEvaluator.EvaluateAll(settings.Value, user, settings.RemoteConfig, this.log, out var exceptions);
+                if (exceptions is { Count: > 0 })
+                {
+                    throw new AggregateException(exceptions);
+                }
+            }
+            catch (Exception ex)
+            {
+                this.log.Error($"Error occured in '{nameof(GetAllValueDetails)}' method.", ex);
+                evaluationDetailsArray ??= ArrayUtils.EmptyArray<EvaluationDetails>();
+            }
+
+            foreach (var evaluationDetails in evaluationDetailsArray)
+            {
+                this.hooks.RaiseFlagEvaluated(evaluationDetails);
+            }
+
+            return evaluationDetailsArray;
+        }
+
+        /// <inheritdoc />
+        public async Task<IReadOnlyList<EvaluationDetails>> GetAllValueDetailsAsync(User user = null)
+        {
+            EvaluationDetails[] evaluationDetailsArray = null;
+            user ??= this.defaultUser;
+            try
+            {
+                var settings = await this.GetSettingsAsync().ConfigureAwait(false);
+                evaluationDetailsArray = this.configEvaluator.EvaluateAll(settings.Value, user, settings.RemoteConfig, this.log, out var exceptions);
+                if (exceptions is { Count: > 0 })
+                {
+                    throw new AggregateException(exceptions);
+                }
+            }
+            catch (Exception ex)
+            {
+                this.log.Error($"Error occured in '{nameof(GetAllValueDetailsAsync)}' method.", ex);
+                evaluationDetailsArray ??= ArrayUtils.EmptyArray<EvaluationDetails>();
+            }
+
+            foreach (var evaluationDetails in evaluationDetailsArray)
+            {
+                this.hooks.RaiseFlagEvaluated(evaluationDetails);
+            }
+
+            return evaluationDetailsArray;
         }
 
         /// <inheritdoc />
@@ -545,6 +614,7 @@ namespace ConfigCat.Client
         }
 
         /// <inheritdoc />
+        [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the GetValueDetails() method instead.")]
         public string GetVariationId(string key, string defaultVariationId, User user = null)
         {
             string variationId;
@@ -554,7 +624,8 @@ namespace ConfigCat.Client
             try
             {
                 settings = this.GetSettings();
-                variationId = this.configEvaluator.EvaluateVariationId(settings.Value, key, defaultVariationId, user, settings.RemoteConfig, this.log, out evaluationDetails);
+                evaluationDetails = this.configEvaluator.EvaluateVariationId(settings.Value, key, defaultVariationId, user, settings.RemoteConfig, this.log);
+                variationId = evaluationDetails.VariationId;
             }
             catch (Exception ex)
             {
@@ -568,6 +639,7 @@ namespace ConfigCat.Client
         }
 
         /// <inheritdoc />
+        [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the GetValueDetailsAsync() method instead.")]
         public async Task<string> GetVariationIdAsync(string key, string defaultVariationId, User user = null)
         {
             string variationId;
@@ -577,7 +649,8 @@ namespace ConfigCat.Client
             try
             {
                 settings = await this.GetSettingsAsync().ConfigureAwait(false);
-                variationId = this.configEvaluator.EvaluateVariationId(settings.Value, key, defaultVariationId, user, settings.RemoteConfig, this.log, out evaluationDetails);
+                evaluationDetails = this.configEvaluator.EvaluateVariationId(settings.Value, key, defaultVariationId, user, settings.RemoteConfig, this.log);
+                variationId = evaluationDetails.VariationId;
             }
             catch (Exception ex)
             {
@@ -591,6 +664,7 @@ namespace ConfigCat.Client
         }
 
         /// <inheritdoc />
+        [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the GetAllValueDetails() method instead.")]
         public IEnumerable<string> GetAllVariationId(User user = null)
         {
             IEnumerable<string> result;
@@ -599,7 +673,12 @@ namespace ConfigCat.Client
             try
             {
                 var settings = this.GetSettings();
-                result = this.configEvaluator.EvaluateAllVariationIds(settings.Value, user, settings.RemoteConfig, this.log, out evaluationDetailsArray);
+                evaluationDetailsArray = this.configEvaluator.EvaluateAllVariationIds(settings.Value, user, settings.RemoteConfig, this.log, out var exceptions);
+                if (exceptions is { Count: > 0 })
+                {
+                    throw new AggregateException(exceptions);
+                }
+                result = evaluationDetailsArray.Select(details => details.VariationId).Where(variationId => variationId is not null).ToArray();
             }
             catch (Exception ex)
             {
@@ -617,6 +696,7 @@ namespace ConfigCat.Client
         }
 
         /// <inheritdoc />
+        [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the GetAllValueDetailsAsync() method instead.")]
         public async Task<IEnumerable<string>> GetAllVariationIdAsync(User user = null)
         {
             IEnumerable<string> result;
@@ -625,7 +705,12 @@ namespace ConfigCat.Client
             try
             {
                 var settings = await this.GetSettingsAsync().ConfigureAwait(false);
-                result = this.configEvaluator.EvaluateAllVariationIds(settings.Value, user, settings.RemoteConfig, this.log, out evaluationDetailsArray);
+                evaluationDetailsArray = this.configEvaluator.EvaluateAllVariationIds(settings.Value, user, settings.RemoteConfig, this.log, out var exceptions);
+                if (exceptions is { Count: > 0 })
+                {
+                    throw new AggregateException(exceptions);
+                }
+                result = evaluationDetailsArray.Select(details => details.VariationId).Where(variationId => variationId is not null).ToArray();
             }
             catch (Exception ex)
             {

@@ -81,6 +81,20 @@ namespace ConfigCat.Client
         Task<IDictionary<string, object>> GetAllValuesAsync(User user = null);
 
         /// <summary>
+        /// Returns the values along with evaluation details of all feature flags and settings synchronously.
+        /// </summary>
+        /// <param name="user">The user object for variation evaluation.</param>
+        /// <returns>The key-value collection.</returns>
+        IReadOnlyList<EvaluationDetails> GetAllValueDetails(User user = null);
+
+        /// <summary>
+        /// Returns the values along with evaluation details of all feature flags and settings asynchronously.
+        /// </summary>
+        /// <param name="user">The user object for variation evaluation.</param>
+        /// <returns>The key-value collection.</returns>
+        Task<IReadOnlyList<EvaluationDetails>> GetAllValueDetailsAsync(User user = null);
+
+        /// <summary>
         /// Refreshes the configuration.
         /// </summary>
         RefreshResult ForceRefresh();
@@ -97,6 +111,7 @@ namespace ConfigCat.Client
         /// <param name="defaultVariationId">In case of failure return this value.</param>
         /// <param name="user">The user object for variation evaluation.</param>
         /// <returns>Variation ID.</returns>
+        [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the GetValueDetails() method instead.")]
         string GetVariationId(string key, string defaultVariationId, User user = null);
 
         /// <summary>
@@ -106,6 +121,7 @@ namespace ConfigCat.Client
         /// <param name="defaultVariationId">In case of failure return this value.</param>
         /// <param name="user">The user object for variation evaluation.</param>
         /// <returns>Variation ID.</returns>
+        [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the GetValueDetailsAsync() method instead.")]
         Task<string> GetVariationIdAsync(string key, string defaultVariationId, User user = null);
 
         /// <summary>
@@ -113,6 +129,7 @@ namespace ConfigCat.Client
         /// </summary>
         /// <param name="user">The user object for variation evaluation.</param>
         /// <returns>Collection of all Variation IDs.</returns>
+        [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the GetAllValueDetails() method instead.")]
         IEnumerable<string> GetAllVariationId(User user = null);
 
         /// <summary>
@@ -120,6 +137,7 @@ namespace ConfigCat.Client
         /// </summary>
         /// <param name="user">The user object for variation evaluation.</param>
         /// <returns>Collection of all Variation IDs.</returns>
+        [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the GetAllValueDetailsAsync() method instead.")]
         Task<IEnumerable<string>> GetAllVariationIdAsync(User user = null);
 
         /// <summary>

@@ -648,6 +648,224 @@ namespace ConfigCat.Client.Tests
             Assert.AreSame(actual, flagEvaluatedEvents[0].EvaluationDetails);
         }
 
+        [DataRow(false)]
+        [DataRow(true)]
+        [DataTestMethod]
+        public async Task GetAllValueDetails_ShouldReturnCorrectEvaluationDetails(bool isAsync)
+        {
+            // Arrange
+
+            const string cacheKey = "123";
+            var configJsonFilePath = Path.Combine("data", "sample_variationid_v5.json");
+            var timeStamp = DateTime.UtcNow;
+
+            var client = CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock,
+                onFetch: _ => FetchResult.Success(new ProjectConfig { JsonString = File.ReadAllText(configJsonFilePath), HttpETag = "12345", TimeStamp = timeStamp }),
+                configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
+                {
+                    return new ManualPollConfigService(fetcherMock.Object, cacheParams, loggerWrapper);
+                },
+                evaluatorFactory: loggerWrapper => new RolloutEvaluator(loggerWrapper), new Hooks(),
+                out var configService, out _);
+
+            if (isAsync)
+            {
+                await client.ForceRefreshAsync();
+            }
+            else
+            {
+                client.ForceRefresh();
+            }
+
+            var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
+            client.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
+
+            var user = new User("a@configcat.com") { Email = "a@configcat.com" };
+
+            // Act
+
+            var actual = isAsync
+                ? await client.GetAllValueDetailsAsync(user)
+                : client.GetAllValueDetails(user);
+
+            // Assert
+
+            var expected = new[]
+            {
+                new { Key = "boolean", Value = (object)true, VariationId = "67787ae4" },
+                new { Key = "text", Value = (object)"true", VariationId = "9bdc6a1f" },
+                new { Key = "whole", Value = (object)1, VariationId = "ab30533b" },
+                new { Key = "decimal", Value = (object)-2147483647.2147484, VariationId = "8f9559cf" },
+            };
+
+            foreach (var expectedItem in expected)
+            {
+                var actualDetails = actual.FirstOrDefault(details => details.Key == expectedItem.Key);
+
+                Assert.IsNotNull(actualDetails);
+                Assert.AreEqual(expectedItem.Value, actualDetails.Value);
+                Assert.IsFalse(actualDetails.IsDefaultValue);
+                Assert.AreEqual(expectedItem.VariationId, actualDetails.VariationId);
+                Assert.AreEqual(timeStamp, actualDetails.FetchTime);
+                Assert.AreSame(user, actualDetails.User);
+                Assert.IsNull(actualDetails.ErrorMessage);
+                Assert.IsNull(actualDetails.ErrorException);
+                Assert.IsNotNull(actualDetails.MatchedEvaluationRule);
+                Assert.IsNull(actualDetails.MatchedEvaluationPercentageRule);
+
+                var flagEvaluatedDetails = flagEvaluatedEvents.Select(e => e.EvaluationDetails).FirstOrDefault(details => details.Key == expectedItem.Key);
+
+                Assert.IsNotNull(flagEvaluatedDetails);
+                Assert.AreSame(actualDetails, flagEvaluatedDetails);
+            }
+        }
+
+        [DataRow(false)]
+        [DataRow(true)]
+        [DataTestMethod]
+        public async Task GetAllValueDetails_DeserializeFailed_ShouldReturnWithEmptyArray(bool isAsync)
+        {
+            // Arrange
+
+            configServiceMock.Setup(m => m.GetConfig()).Returns(ProjectConfig.Empty);
+            configServiceMock.Setup(m => m.GetConfigAsync()).ReturnsAsync(ProjectConfig.Empty);
+            var o = new SettingsWithPreferences();
+            configDeserializerMock
+                .Setup(m => m.TryDeserialize(It.IsAny<string>(), It.IsAny<string>(), out o))
+                .Returns(false);
+
+            using IConfigCatClient client = new ConfigCatClient(configServiceMock.Object, loggerMock.Object, evaluatorMock.Object, configDeserializerMock.Object, new Hooks());
+
+            var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
+            client.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
+
+            // Act
+
+            var actual = isAsync
+                ? await client.GetAllValueDetailsAsync()
+                : client.GetAllValueDetails();
+
+            // Assert
+
+            Assert.IsNotNull(actual);
+            Assert.AreEqual(0, actual.Count);
+            Assert.AreEqual(0, flagEvaluatedEvents.Count);
+            loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
+        }
+
+        [DataRow(false)]
+        [DataRow(true)]
+        [DataTestMethod]
+        public async Task GetAllValueDetails_ConfigServiceThrowException_ShouldReturnEmptyEnumerable(bool isAsync)
+        {
+            // Arrange
+
+            configServiceMock
+                .Setup(m => m.GetConfigAsync())
+                .Throws<Exception>();
+
+            using IConfigCatClient client = new ConfigCatClient(configServiceMock.Object, loggerMock.Object, evaluatorMock.Object, configDeserializerMock.Object, new Hooks());
+
+            var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
+            client.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
+
+            // Act
+
+            var actual = isAsync
+                ? await client.GetAllValueDetailsAsync()
+                : client.GetAllValueDetails();
+
+            // Assert
+
+            Assert.IsNotNull(actual);
+            Assert.AreEqual(0, actual.Count);
+            Assert.AreEqual(0, flagEvaluatedEvents.Count);
+        }
+
+        [DataRow(false)]
+        [DataRow(true)]
+        [DataTestMethod]
+        public async Task GetAllValueDetails_EvaluateServiceThrowException_ShouldReturnDefaultValue(bool isAsync)
+        {
+            // Arrange
+
+            const string errorMessage = "Error";
+
+            const string cacheKey = "123";
+            var configJsonFilePath = Path.Combine("data", "sample_variationid_v5.json");
+            var timeStamp = DateTime.UtcNow;
+
+            evaluatorMock
+                .Setup(m => m.Evaluate(It.IsAny<Setting>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ProjectConfig>(), It.IsNotNull<EvaluationDetailsFactory>()))
+                .Throws(new ApplicationException(errorMessage));
+
+            var client = CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock,
+                onFetch: _ => FetchResult.Success(new ProjectConfig { JsonString = File.ReadAllText(configJsonFilePath), HttpETag = "12345", TimeStamp = timeStamp }),
+                configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
+                {
+                    return new ManualPollConfigService(fetcherMock.Object, cacheParams, loggerWrapper);
+                },
+                evaluatorFactory: _ => evaluatorMock.Object, new Hooks(),
+                out var configService, out _);
+
+            if (isAsync)
+            {
+                await client.ForceRefreshAsync();
+            }
+            else
+            {
+                client.ForceRefresh();
+            }
+
+            var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
+            var errorEvents = new List<ConfigCatClientErrorEventArgs>();
+            client.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
+            client.Error += (s, e) => errorEvents.Add(e);
+
+            var user = new User("a@example.com") { Email = "a@example.com" };
+
+            // Act
+
+            var actual = isAsync
+                ? await client.GetAllValueDetailsAsync(user)
+                : client.GetAllValueDetails(user);
+
+            // Assert
+
+            foreach (var key in new[] { "boolean", "text", "whole", "decimal" })
+            {
+                var actualDetails = actual.FirstOrDefault(details => details.Key == key);
+
+                Assert.IsNotNull(actualDetails);
+                Assert.AreEqual(key, actualDetails.Key);
+                Assert.IsNull(actualDetails.Value);
+                Assert.IsTrue(actualDetails.IsDefaultValue);
+                Assert.IsNull(actualDetails.VariationId);
+                Assert.AreEqual(timeStamp, actualDetails.FetchTime);
+                Assert.AreSame(user, actualDetails.User);
+                Assert.AreEqual(errorMessage, actualDetails?.ErrorMessage);
+                Assert.IsInstanceOfType(actualDetails.ErrorException, typeof(ApplicationException));
+                Assert.IsNull(actualDetails.MatchedEvaluationRule);
+                Assert.IsNull(actualDetails.MatchedEvaluationPercentageRule);
+
+                var flagEvaluatedDetails = flagEvaluatedEvents.Select(e => e.EvaluationDetails).FirstOrDefault(details => details.Key == key);
+
+                Assert.IsNotNull(flagEvaluatedDetails);
+                Assert.AreSame(actualDetails, flagEvaluatedDetails);
+            }
+
+            Assert.AreEqual(1, errorEvents.Count);
+            var errorEventArgs = errorEvents[0];
+            StringAssert.Contains(errorEventArgs.Message, isAsync ? nameof(IConfigCatClient.GetAllValueDetailsAsync) : nameof(IConfigCatClient.GetAllValueDetails));
+            Assert.IsInstanceOfType(errorEventArgs.Exception, typeof(AggregateException));
+            var actualException = (AggregateException)errorEventArgs.Exception;
+            Assert.AreEqual(actual.Count, actualException.InnerExceptions.Count);
+            foreach (var ex in actualException.InnerExceptions)
+            {
+                Assert.IsInstanceOfType(ex, typeof(ApplicationException));
+            }
+        }
+
         [TestMethod]
         public async Task GetAllKeys_ConfigServiceThrowException_ShouldReturnsWithEmptyArray()
         {

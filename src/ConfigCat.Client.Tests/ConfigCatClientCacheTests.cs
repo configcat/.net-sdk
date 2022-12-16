@@ -34,8 +34,8 @@ namespace ConfigCat.Client.Tests
 
             // Assert
 
-            Assert.AreEqual(1, cache.Count);
-            Assert.AreEqual(1, cache.instances.Count);
+            Assert.AreEqual(1, cache.GetAliveCount(out var cacheSize));
+            Assert.AreEqual(1, cacheSize);
 
             Assert.IsNotNull(client1);
             Assert.IsFalse(instanceAlreadyCreated1);
@@ -81,8 +81,8 @@ namespace ConfigCat.Client.Tests
 
             // Assert
 
-            Assert.AreEqual(1, cache.Count);
-            Assert.AreEqual(1, cache.instances.Count);
+            Assert.AreEqual(1, cache.GetAliveCount(out var cacheSize));
+            Assert.AreEqual(1, cacheSize);
 
             Assert.IsFalse(client1.TryGetTarget(out _));
             Assert.IsFalse(instanceAlreadyCreated1);
@@ -117,8 +117,8 @@ namespace ConfigCat.Client.Tests
             // Assert
 
             Assert.IsTrue(success);
-            Assert.AreEqual(0, cache.Count);
-            Assert.AreEqual(0, cache.instances.Count);
+            Assert.AreEqual(0, cache.GetAliveCount(out var cacheSize));
+            Assert.AreEqual(0, cacheSize);
 
             Assert.IsNotNull(client1);
             Assert.IsFalse(instanceAlreadyCreated1);
@@ -160,8 +160,8 @@ namespace ConfigCat.Client.Tests
             // Assert
 
             Assert.IsFalse(success);
-            Assert.AreEqual(0, cache.Count);
-            Assert.AreEqual(0, cache.instances.Count);
+            Assert.AreEqual(0, cache.GetAliveCount(out var cacheSize));
+            Assert.AreEqual(0, cacheSize);
 
             Assert.IsFalse(client1.TryGetTarget(out _));
             Assert.IsFalse(instanceAlreadyCreated1);
@@ -183,8 +183,8 @@ namespace ConfigCat.Client.Tests
             // Assert
 
             Assert.IsFalse(success);
-            Assert.AreEqual(0, cache.Count);
-            Assert.AreEqual(0, cache.instances.Count);
+            Assert.AreEqual(0, cache.GetAliveCount(out var cacheSize));
+            Assert.AreEqual(0, cacheSize);
         }
 
         [TestMethod]
@@ -217,7 +217,7 @@ namespace ConfigCat.Client.Tests
             WeakReference<ConfigCatClient> CreateClient(string sdkKey, ConfigCatClientOptions options, out bool instanceAlreadyCreated1, out int cacheCount)
             {
                 var client = cache.GetOrCreate(sdkKey, options, out instanceAlreadyCreated1);
-                cacheCount = cache.Count;
+                cacheCount = cache.GetAliveCount();
                 return new WeakReference<ConfigCatClient>(client);
             }
 
@@ -235,8 +235,8 @@ namespace ConfigCat.Client.Tests
             // Assert
 
             Assert.AreEqual(2, cacheCountBefore);
-            Assert.AreEqual(0, cache.Count);
-            Assert.AreEqual(0, cache.instances.Count);
+            Assert.AreEqual(0, cache.GetAliveCount(out var cacheSize));
+            Assert.AreEqual(0, cacheSize);
 
             Assert.IsNotNull(client1);
             Assert.IsFalse(instanceAlreadyCreated1);

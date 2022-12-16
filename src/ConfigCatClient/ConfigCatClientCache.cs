@@ -9,18 +9,6 @@ namespace ConfigCat.Client
     {
         internal readonly Dictionary<string, WeakReference<ConfigCatClient>> instances = new();
 
-        // For testing purposes only
-        public int Count
-        {
-            get
-            {
-                lock (instances)
-                {
-                    return instances.Values.Count(weakRef => weakRef.TryGetTarget(out _));
-                }
-            }
-        }
-
         public ConfigCatClient GetOrCreate(string sdkKey, ConfigCatClientOptions configuration, out bool instanceAlreadyCreated)
         {
             lock (instances)

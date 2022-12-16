@@ -26,10 +26,5 @@ namespace ConfigCat.Client
         /// Occurs in the case of a failure in the client.
         /// </summary>
         event EventHandler<ConfigCatClientErrorEventArgs> Error;
-
-        /// <summary>
-        /// Occurs before the client is closed by <see cref="IDisposable.Dispose"/>.
-        /// </summary>
-        event EventHandler BeforeClientDispose;
     }
 }

@@ -100,8 +100,8 @@ namespace ConfigCat.Client.ConfigService
             var fetchResult = this.ConfigFetcher.Fetch(latestConfig);
             var newConfig = fetchResult.Config;
 
-            var configContentHasChanged = !latestConfig.Equals(newConfig);
-            if ((configContentHasChanged || newConfig.TimeStamp > latestConfig.TimeStamp) && !newConfig.Equals(ProjectConfig.Empty))
+            var configContentHasChanged = !ProjectConfig.ContentEquals(latestConfig, newConfig);
+            if ((configContentHasChanged || newConfig.TimeStamp > latestConfig.TimeStamp) && !newConfig.IsEmpty)
             {
                 // TODO: This cast can be removed when we delete the obsolete IConfigCache interface.
                 ((IConfigCatCache)this.ConfigCache).Set(this.CacheKey, newConfig);
@@ -139,8 +139,8 @@ namespace ConfigCat.Client.ConfigService
             var fetchResult = await this.ConfigFetcher.FetchAsync(latestConfig).ConfigureAwait(false);
             var newConfig = fetchResult.Config;
 
-            var configContentHasChanged = !latestConfig.Equals(newConfig);
-            if ((configContentHasChanged || newConfig.TimeStamp > latestConfig.TimeStamp) && !newConfig.Equals(ProjectConfig.Empty))
+            var configContentHasChanged = !ProjectConfig.ContentEquals(latestConfig, newConfig);
+            if ((configContentHasChanged || newConfig.TimeStamp > latestConfig.TimeStamp) && !newConfig.IsEmpty)
             {
                 await this.ConfigCache.SetAsync(this.CacheKey, newConfig).ConfigureAwait(false);
 
@@ -196,8 +196,7 @@ namespace ConfigCat.Client.ConfigService
                 }
                 else if (this.status == Status.Disposed)
                 {
-                    logAction = static logger => logger.DisposedWarning(nameof(SetOnline) + "()");
-                    return;
+                    logAction = static logger => logger.DisposedWarning(nameof(SetOnline));
                 }
             }
 
@@ -223,7 +222,7 @@ namespace ConfigCat.Client.ConfigService
                 }
                 else if (this.status == Status.Disposed)
                 {
-                    logAction = static logger => logger.DisposedWarning(nameof(SetOffline) + "()");
+                    logAction = static logger => logger.DisposedWarning(nameof(SetOffline));
                 }
             }
 

@@ -8,9 +8,8 @@ namespace ConfigCat.Client
 
         private NullHooks() : base(new EventHandlers()) { }
 
-        public override bool TryDisconnect(out Action<IConfigCatClient> raiseBeforeClientDispose)
+        public override bool TryDisconnect()
         {
-            raiseBeforeClientDispose = default;
             return false;
         }
 

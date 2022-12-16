@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
 using ConfigCat.Client.Configuration;
 using ConfigCat.Client.Override;
-using System.Threading;
+using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client
 {
@@ -392,7 +392,8 @@ namespace ConfigCat.Client
             catch (Exception ex)
             {
                 this.log.Error($"Error occured in '{nameof(GetAllValues)}' method.", ex);
-                return new Dictionary<string, object>();
+                evaluationDetailsArray ??= ArrayUtils.EmptyArray<EvaluationDetails>();
+                result = new Dictionary<string, object>();
             }
 
             foreach (var evaluationDetails in evaluationDetailsArray)
@@ -417,7 +418,8 @@ namespace ConfigCat.Client
             catch (Exception ex)
             {
                 this.log.Error($"Error occured in '{nameof(GetAllValuesAsync)}' method.", ex);
-                return new Dictionary<string, object>();
+                evaluationDetailsArray ??= ArrayUtils.EmptyArray<EvaluationDetails>();
+                result = new Dictionary<string, object>();
             }
 
             foreach (var evaluationDetails in evaluationDetailsArray)
@@ -471,47 +473,32 @@ namespace ConfigCat.Client
 
         private void Dispose(bool disposing)
         {
+            // NOTE: hooks may be null (e.g. if already collected) when this method is called by the finalizer
+            this.hooks?.TryDisconnect();
+
             if (disposing)
             {
-                try
+                if (this.configService is IDisposable disposable)
                 {
-                    if (this.hooks.TryDisconnect(out var raiseBeforeClientDispose))
-                    {
-                        raiseBeforeClientDispose?.Invoke(this);
-                    }
+                    disposable.Dispose();
                 }
-                finally
-                {
-                    if (this.configService is IDisposable disposable)
-                    {
-                        disposable.Dispose();
-                    }
 
-                    this.overrideDataSource?.Dispose();
-                }
+                this.overrideDataSource?.Dispose();
             }
             else
             {
-                try
+                // Execution gets here when consumer forgets to dispose the client instance.
+                // In this case we need to make sure that background work is stopped,
+                // otherwise it would go on endlessly, that is, we'd end up with a memory leak.
+                var autoPollConfigService = this.configService as AutoPollConfigService;
+                var localFileDataSource = this.overrideDataSource as LocalFileDataSource;
+                if (autoPollConfigService is not null || localFileDataSource is not null)
                 {
-                    // NOTE: hooks may be null (e.g. if already collected) when this method is called by the finalizer
-                    this.hooks?.TryDisconnect(out _);
-                }
-                finally
-                {
-                    // Execution gets here when consumer forgets to dispose the client instance.
-                    // In this case we need to make sure that background work is stopped,
-                    // otherwise it would go on endlessly, that is, we'd end up with a memory leak.
-                    var autoPollConfigService = this.configService as AutoPollConfigService;
-                    var localFileDataSource = this.overrideDataSource as LocalFileDataSource;
-                    if (autoPollConfigService is not null || localFileDataSource is not null)
+                    Task.Run(() =>
                     {
-                        Task.Run(() =>
-                        {
-                            autoPollConfigService?.StopScheduler();
-                            localFileDataSource?.StopWatch();
-                        });
-                    }
+                        autoPollConfigService?.StopScheduler();
+                        localFileDataSource?.StopWatch();
+                    });
                 }
             }
         }
@@ -606,7 +593,7 @@ namespace ConfigCat.Client
         /// <inheritdoc />
         public IEnumerable<string> GetAllVariationId(User user = null)
         {
-            IList<string> result;
+            IEnumerable<string> result;
             EvaluationDetails[] evaluationDetailsArray = null;
             user ??= this.defaultUser;
             try
@@ -617,7 +604,8 @@ namespace ConfigCat.Client
             catch (Exception ex)
             {
                 this.log.Error($"Error occured in '{nameof(GetAllVariationId)}' method.", ex);
-                return Enumerable.Empty<string>();
+                evaluationDetailsArray ??= ArrayUtils.EmptyArray<EvaluationDetails>();
+                result = Enumerable.Empty<string>();
             }
 
             foreach (var evaluationDetails in evaluationDetailsArray)
@@ -631,7 +619,7 @@ namespace ConfigCat.Client
         /// <inheritdoc />
         public async Task<IEnumerable<string>> GetAllVariationIdAsync(User user = null)
         {
-            IList<string> result;
+            IEnumerable<string> result;
             EvaluationDetails[] evaluationDetailsArray = null;
             user ??= this.defaultUser;
             try
@@ -642,7 +630,8 @@ namespace ConfigCat.Client
             catch (Exception ex)
             {
                 this.log.Error($"Error occured in '{nameof(GetAllVariationIdAsync)}' method.", ex);
-                return Enumerable.Empty<string>();
+                evaluationDetailsArray ??= ArrayUtils.EmptyArray<EvaluationDetails>();
+                result = Enumerable.Empty<string>();
             }
 
             foreach (var evaluationDetails in evaluationDetailsArray)
@@ -691,7 +680,7 @@ namespace ConfigCat.Client
             {
                 var config = this.configService.GetConfig();
                 if (!this.configDeserializer.TryDeserialize(config.JsonString, config.HttpETag, out var deserialized))
-                    return new SettingsWithRemoteConfig(new Dictionary<string, Setting>(), config);
+                    return new SettingsWithRemoteConfig(null, config);
 
                 return new SettingsWithRemoteConfig(deserialized.Settings, config);
             }
@@ -724,7 +713,7 @@ namespace ConfigCat.Client
             {
                 var config = await this.configService.GetConfigAsync().ConfigureAwait(false);
                 if (!this.configDeserializer.TryDeserialize(config.JsonString, config.HttpETag, out var deserialized))
-                    return new SettingsWithRemoteConfig(new Dictionary<string, Setting>(), config);
+                    return new SettingsWithRemoteConfig(null, config);
 
                 return new SettingsWithRemoteConfig(deserialized.Settings, config);
             }
@@ -814,13 +803,6 @@ namespace ConfigCat.Client
         {
             add { this.hooks.Error += value; }
             remove { this.hooks.Error -= value; }
-        }
-
-        /// <inheritdoc/>
-        public event EventHandler BeforeClientDispose
-        {
-            add { this.hooks.BeforeClientDispose += value; }
-            remove { this.hooks.BeforeClientDispose -= value; }
         }
 
         private readonly struct SettingsWithRemoteConfig

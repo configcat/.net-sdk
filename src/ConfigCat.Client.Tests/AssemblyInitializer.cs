@@ -1,6 +1,8 @@
 ﻿using System.Net;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+[assembly: Parallelize(Scope = ExecutionScope.MethodLevel, Workers = 0)]
+
 namespace ConfigCat.Client.Tests
 {
     [TestClass]

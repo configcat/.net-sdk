@@ -13,9 +13,6 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using ConfigCat.Client.Utils;
 using System.Net.Http;
-using System.Data.Common;
-
-[assembly: Parallelize(Scope = Microsoft.VisualStudio.TestTools.UnitTesting.ExecutionScope.MethodLevel, Workers = 0)]
 
 #pragma warning disable CS0618 // Type or member is obsolete
 namespace ConfigCat.Client.Tests
@@ -733,9 +730,8 @@ namespace ConfigCat.Client.Tests
             // Arrange
 
             configServiceMock.Setup(m => m.GetConfigAsync()).ReturnsAsync(ProjectConfig.Empty);
-            var o = new SettingsWithPreferences();
             configDeserializerMock
-                .Setup(m => m.TryDeserialize(It.IsAny<string>(), It.IsAny<string>(), out o))
+                .Setup(m => m.TryDeserialize(It.IsAny<string>(), It.IsAny<string>(), out It.Ref<SettingsWithPreferences>.IsAny))
                 .Returns(false);
 
             IConfigCatClient instance = new ConfigCatClient(
@@ -752,7 +748,7 @@ namespace ConfigCat.Client.Tests
 
             Assert.IsNotNull(actualKeys);
             Assert.AreEqual(0, actualKeys.Count());
-            loggerMock.Verify(m => m.Warning(It.IsAny<string>()), Times.Once);
+            loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
         }
 
         [TestMethod]
@@ -761,9 +757,8 @@ namespace ConfigCat.Client.Tests
             // Arrange
 
             configServiceMock.Setup(m => m.GetConfig()).Returns(ProjectConfig.Empty);
-            var o = new SettingsWithPreferences();
             configDeserializerMock
-                .Setup(m => m.TryDeserialize(It.IsAny<string>(), It.IsAny<string>(), out o))
+                .Setup(m => m.TryDeserialize(It.IsAny<string>(), It.IsAny<string>(), out It.Ref<SettingsWithPreferences>.IsAny))
                 .Returns(false);
 
             IConfigCatClient instance = new ConfigCatClient(
@@ -780,7 +775,7 @@ namespace ConfigCat.Client.Tests
 
             Assert.IsNotNull(actualKeys);
             Assert.AreEqual(0, actualKeys.Count());
-            loggerMock.Verify(m => m.Warning(It.IsAny<string>()), Times.Once);
+            loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
         }
 
         [TestMethod]
@@ -842,7 +837,7 @@ namespace ConfigCat.Client.Tests
         }
 
         [TestMethod]
-        public void GetVariationId_DeserializeFailed_ShouldReturnsWithEmptyArray()
+        public void GetAllVariationId_DeserializeFailed_ShouldReturnsWithEmptyArray()
         {
             // Arrange
 
@@ -867,11 +862,11 @@ namespace ConfigCat.Client.Tests
 
             Assert.IsNotNull(actual);
             Assert.AreEqual(0, actual.Count());
-            loggerMock.Verify(m => m.Warning(It.IsAny<string>()), Times.Once);
+            loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
         }
 
         [TestMethod]
-        public async Task GetVariationIdAsync_DeserializeFailed_ShouldReturnsWithEmptyArray()
+        public async Task GetAllVariationIdAsync_DeserializeFailed_ShouldReturnsWithEmptyArray()
         {
             // Arrange
 
@@ -895,7 +890,7 @@ namespace ConfigCat.Client.Tests
 
             Assert.IsNotNull(actual);
             Assert.AreEqual(0, actual.Count());
-            loggerMock.Verify(m => m.Warning(It.IsAny<string>()), Times.Once);
+            loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
         }
 
         [TestMethod]
@@ -1255,7 +1250,7 @@ namespace ConfigCat.Client.Tests
 
             // Assert
 
-            Assert.AreEqual(1, ConfigCatClient.Instances.Count);
+            Assert.AreEqual(1, ConfigCatClient.Instances.GetAliveCount());
             Assert.AreSame(client1, client2);
             Assert.IsFalse(warnings1.Any(msg => msg.Contains("configuration action is being ignored")));
 
@@ -1279,11 +1274,11 @@ namespace ConfigCat.Client.Tests
 
             // Act
 
-            var instanceCount1 = ConfigCatClient.Instances.Count;
+            var instanceCount1 = ConfigCatClient.Instances.GetAliveCount();
 
             client1.Dispose();
 
-            var instanceCount2 = ConfigCatClient.Instances.Count;
+            var instanceCount2 = ConfigCatClient.Instances.GetAliveCount();
 
             // Assert
 
@@ -1301,23 +1296,23 @@ namespace ConfigCat.Client.Tests
 
             // Act
 
-            var instanceCount1 = ConfigCatClient.Instances.Count;
+            var instanceCount1 = ConfigCatClient.Instances.GetAliveCount();
 
             client1.Dispose();
 
-            var instanceCount2 = ConfigCatClient.Instances.Count;
+            var instanceCount2 = ConfigCatClient.Instances.GetAliveCount();
 
             var client2 = ConfigCatClient.Get("test", options => options.PollingMode = PollingModes.ManualPoll);
 
-            var instanceCount3 = ConfigCatClient.Instances.Count;
+            var instanceCount3 = ConfigCatClient.Instances.GetAliveCount();
 
             client1.Dispose();
 
-            var instanceCount4 = ConfigCatClient.Instances.Count;
+            var instanceCount4 = ConfigCatClient.Instances.GetAliveCount();
 
             client2.Dispose();
 
-            var instanceCount5 = ConfigCatClient.Instances.Count;
+            var instanceCount5 = ConfigCatClient.Instances.GetAliveCount();
 
             // Assert
 
@@ -1341,11 +1336,11 @@ namespace ConfigCat.Client.Tests
 
             int instanceCount1;
 
-            instanceCount1 = ConfigCatClient.Instances.Count;
+            instanceCount1 = ConfigCatClient.Instances.GetAliveCount();
 
             ConfigCatClient.DisposeAll();
 
-            var instanceCount2 = ConfigCatClient.Instances.Count;
+            var instanceCount2 = ConfigCatClient.Instances.GetAliveCount();
 
             // Assert
 
@@ -1369,7 +1364,7 @@ namespace ConfigCat.Client.Tests
                 var client1 = ConfigCatClient.Get("test1", options => options.PollingMode = PollingModes.AutoPoll(maxInitWaitTime: TimeSpan.Zero));
                 var client2 = ConfigCatClient.Get("test2", options => options.PollingMode = PollingModes.ManualPoll);
 
-                instanceCount = ConfigCatClient.Instances.Count;
+                instanceCount = ConfigCatClient.Instances.GetAliveCount();
             }
 
             // Act
@@ -1379,7 +1374,7 @@ namespace ConfigCat.Client.Tests
             GC.Collect();
             GC.WaitForPendingFinalizers();
 
-            var instanceCount2 = ConfigCatClient.Instances.Count;
+            var instanceCount2 = ConfigCatClient.Instances.GetAliveCount();
 
             // Assert
 
@@ -1700,14 +1695,12 @@ namespace ConfigCat.Client.Tests
             var configChangedEvents = new List<ConfigChangedEventArgs>();
             var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
             var errorEvents = new List<ConfigCatClientErrorEventArgs>();
-            var beforeClientDisposeEventCount = 0;
 
             var hooks = new Hooks();
             hooks.ClientReady += (s, e) => clientReadyEventCount++;
             hooks.ConfigChanged += (s, e) => configChangedEvents.Add(e);
             hooks.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
             hooks.Error += (s, e) => errorEvents.Add(e);
-            hooks.BeforeClientDispose += (s, e) => beforeClientDisposeEventCount++;
 
             var loggerWrapper = new LoggerWrapper(loggerMock.Object, hooks);
 
@@ -1738,7 +1731,6 @@ namespace ConfigCat.Client.Tests
             Assert.AreEqual(0, configChangedEvents.Count);
             Assert.AreEqual(0, flagEvaluatedEvents.Count);
             Assert.AreEqual(0, errorEvents.Count);
-            Assert.AreEqual(0, beforeClientDisposeEventCount);
 
             // 2. Fetch fails
             await client.ForceRefreshAsync();
@@ -1778,7 +1770,6 @@ namespace ConfigCat.Client.Tests
             Assert.AreEqual(1, configChangedEvents.Count);
             Assert.AreEqual(evaluationDetails.Count, flagEvaluatedEvents.Count);
             Assert.AreEqual(1, errorEvents.Count);
-            Assert.AreEqual(1, beforeClientDisposeEventCount);
         }
 
         [DataRow(false)]
@@ -1791,13 +1782,11 @@ namespace ConfigCat.Client.Tests
             var configChangedEvents = new List<ConfigChangedEventArgs>();
             var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
             var errorEvents = new List<ConfigCatClientErrorEventArgs>();
-            var beforeClientDisposeCallCount = 0;
 
             EventHandler handleClientReady = (s, e) => clientReadyCallCount++;
             EventHandler<ConfigChangedEventArgs> handleConfigChanged = (s, e) => configChangedEvents.Add(e);
             EventHandler<FlagEvaluatedEventArgs> handleFlagEvaluated = (s, e) => flagEvaluatedEvents.Add(e);
             EventHandler<ConfigCatClientErrorEventArgs> handleError = (s, e) => errorEvents.Add(e);
-            EventHandler handleBeforeClientDispose = (s, e) => beforeClientDisposeCallCount++;
 
             void Subscribe(IProvidesHooks hooks)
             {
@@ -1805,7 +1794,6 @@ namespace ConfigCat.Client.Tests
                 hooks.ConfigChanged += handleConfigChanged;
                 hooks.FlagEvaluated += handleFlagEvaluated;
                 hooks.Error += handleError;
-                hooks.BeforeClientDispose += handleBeforeClientDispose;
             }
 
             void Unsubscribe(IProvidesHooks hooks)
@@ -1814,7 +1802,6 @@ namespace ConfigCat.Client.Tests
                 hooks.ConfigChanged -= handleConfigChanged;
                 hooks.FlagEvaluated -= handleFlagEvaluated;
                 hooks.Error -= handleError;
-                hooks.BeforeClientDispose -= handleBeforeClientDispose;
             }
 
             // 1. Client gets created
@@ -1843,7 +1830,6 @@ namespace ConfigCat.Client.Tests
             Assert.AreEqual(0, configChangedEvents.Count);
             Assert.AreEqual(0, flagEvaluatedEvents.Count);
             Assert.AreEqual(0, errorEvents.Count);
-            Assert.AreEqual(0, beforeClientDisposeCallCount);
 
             // 2. Fetch succeeds
             await client.ForceRefreshAsync();
@@ -1891,7 +1877,6 @@ namespace ConfigCat.Client.Tests
             Assert.AreEqual(2, configChangedEvents.Count);
             Assert.AreEqual(evaluationDetails.Count * 2, flagEvaluatedEvents.Count);
             Assert.AreEqual(2, errorEvents.Count);
-            Assert.AreEqual(2, beforeClientDisposeCallCount);
         }
 
         internal class FakeConfigService : ConfigServiceBase, IConfigService

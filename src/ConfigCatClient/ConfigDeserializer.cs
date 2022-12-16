@@ -17,9 +17,7 @@ namespace ConfigCat.Client
                 return false;
             }
 
-            var configContentHasChanged = this.lastHttpETag is not null && httpETag is not null
-                ? this.lastHttpETag != httpETag
-                : this.lastConfig != config;
+            var configContentHasChanged = !ProjectConfig.ContentEquals(this.lastHttpETag, this.lastConfig, httpETag, config);
 
             if (!configContentHasChanged)
             {

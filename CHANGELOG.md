@@ -1,3 +1,14 @@
+### 7.1.0
+
+- Add new evaluation methods `GetAllValueDetails`/`GetAllValueDetailsAsync`.
+- Fix logging in `ConfigServiceBase.SetOnline`.
+- Correct behavior of `GetAllXXX` methods so `FlagEvaluated` event is also raised in case of error.
+- Correct reporting of "Config JSON is not present" errors and log them with error level also in the case of `GetAllXXX` methods.
+- Change implementation of `HttpConfigFetcher.FetchAsync` to execute only one fetch operation at a time.
+- Make `ProjectConfig` equality comparison consistent with other SDKs (treats `ProjectConfig` instances with the same ETag equal regardless of actual content).
+- Make HTTP response handling consistent with other SDKs.
+- Make `HttpConfigFetcher`-related error message consistent with other SDKs.
+
 ### 7.0.0
 - Deprecate `ConfigCatClient` constructors in favor of the new static factory method `Get`,
   which provides single client instances per SDK key.
@@ -6,7 +17,7 @@
 - Implement offline mode feature.
 - Improve LazyLoad and AutoPoll refresh logic by taking the cache timestamp into account
   to fetch the config only if cached config is unavailable or stale.
-- Add new evaluation methods `GetValueDetail`/`GetValueDetails`,
+- Add new evaluation methods `GetValueDetail`/`GetValueDetailsAsync`,
   which provide more detailed information about the evaluation result.
 - Add hooks (events), which provide notifications of the client's actions.  
 - Additional minor code quality and performance improvements.
@@ -131,6 +142,8 @@
 We are introducing a new DataGovernance initialization parameter. Set this parameter to be in sync with the Data Governance preference on the [Dashboard](https://app.configcat.com/organization/data-governance).
        
 #### Breaking changes:
+### 7.1.0
+- [API] Remove `BeforeClientDispose` hook
 ### 7.0.0
 - [API] Add new methods to the `IConfigCatClient` interface.
 - [API] Change `ProjectConfig` to reference type with value equality (record).

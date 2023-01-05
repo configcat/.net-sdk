@@ -24,7 +24,9 @@ internal sealed class LoggerWrapper : ILogger
         return (byte)targetTrace <= (byte)LogLevel;
     }
 
-    /// <inheritdoc />
+    #region Deprecated methods
+
+    [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the Log() method instead.")]
     public void Debug(string message)
     {
         if (TargetLogEnabled(LogLevel.Debug))
@@ -33,7 +35,7 @@ internal sealed class LoggerWrapper : ILogger
         }
     }
 
-    /// <inheritdoc />
+    [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the Log() method instead.")]
     public void Information(string message)
     {
         if (TargetLogEnabled(LogLevel.Info))
@@ -42,7 +44,7 @@ internal sealed class LoggerWrapper : ILogger
         }
     }
 
-    /// <inheritdoc />
+    [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the Log() method instead.")]
     public void Warning(string message)
     {
         if (TargetLogEnabled(LogLevel.Warning))
@@ -51,8 +53,10 @@ internal sealed class LoggerWrapper : ILogger
         }
     }
 
+    [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the Log() method instead.")]
     public void Error(string message) => Error(message, exception: null);
 
+    [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the Log() method instead.")]
     public void Error(string message, Exception exception)
     {
         if (TargetLogEnabled(LogLevel.Error))
@@ -65,5 +69,21 @@ internal sealed class LoggerWrapper : ILogger
         }
 
         this.hooks.RaiseError(message, exception);
+    }
+
+    #endregion
+
+    /// <inheritdoc />
+    public void Log(LogLevel level, LogEventId eventId, ref FormattableLogMessage message, Exception exception = null)
+    {
+        if (TargetLogEnabled(level))
+        {
+            this.logger.Log(level, eventId, ref message, exception);
+        }
+
+        if (level == LogLevel.Error)
+        {
+            this.hooks.RaiseError(message.InvariantFormattedMessage, exception);
+        }
     }
 }

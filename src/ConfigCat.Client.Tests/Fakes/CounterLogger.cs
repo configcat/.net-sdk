@@ -1,3 +1,5 @@
+using System;
+
 namespace ConfigCat.Client.Tests;
 
 internal sealed class CounterLogger : ILogger
@@ -13,29 +15,20 @@ internal sealed class CounterLogger : ILogger
         LogLevel = logLevel;
     }
 
-    public void Debug(string message)
-    {
-        LogMessage(message);
-    }
+    #region Deprecated methods
 
-    public void Error(string message)
-    {
-        LogMessage(message);
-    }
+    public void Debug(string message) => this.Log(LogLevel.Debug, eventId: default, message);
 
-    public void Information(string message)
-    {
-        LogMessage(message);
-    }
+    public void Information(string message) => this.Log(LogLevel.Info, eventId: default, message);
 
-    public void Warning(string message)
-    {
-        LogMessage(message);
-    }
+    public void Warning(string message) => this.Log(LogLevel.Warning, eventId: default, message);
 
-    private void LogMessage(string _)
+    public void Error(string message) => this.Log(LogLevel.Error, eventId: default, message);
+
+    #endregion
+
+    public void Log(LogLevel level, LogEventId eventId, ref FormattableLogMessage message, Exception exception = null)
     {
         this.LogMessageInvokeCount++;
     }
 }
-

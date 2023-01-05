@@ -24,33 +24,38 @@ public class ConsoleLogger : ILogger
         LogLevel = logLevel;
     }
 
-    /// <inheritdoc />
-    public void Debug(string message)
-    {
-        PrintMessage(LogLevel.Debug, message);
-    }
+    #region Deprecated methods
 
     /// <inheritdoc />
-    public void Error(string message)
-    {
-        PrintMessage(LogLevel.Error, message);
-    }
+    public void Debug(string message) => this.Log(LogLevel.Debug, eventId: default, message);
 
     /// <inheritdoc />
-    public void Information(string message)
-    {
-        PrintMessage(LogLevel.Info, message);
-    }
+    public void Information(string message) => this.Log(LogLevel.Info, eventId: default, message);
 
     /// <inheritdoc />
-    public void Warning(string message)
-    {
-        PrintMessage(LogLevel.Warning, message);
-    }
+    public void Warning(string message) => this.Log(LogLevel.Warning, eventId: default, message);
 
-    private static void PrintMessage(LogLevel logLevel, string message)
+    /// <inheritdoc />
+    public void Error(string message) => this.Log(LogLevel.Error, eventId: default, message);
+
+    #endregion
+
+    /// <inheritdoc />
+    public void Log(LogLevel level, LogEventId eventId, ref FormattableLogMessage message, Exception exception = null)
     {
-        var logLevelPadded = logLevel.ToString().ToUpper().PadRight(7);
-        Console.WriteLine($"ConfigCat.{logLevelPadded} {message}");
+        var levelString = level switch
+        {
+            LogLevel.Debug => "DEBUG",
+            LogLevel.Info => "INFO",
+            LogLevel.Warning => "WARNING",
+            LogLevel.Error => "ERROR",
+            _ => level.ToString().ToUpper()
+        };
+
+        var exceptionString = exception is not null ? Environment.NewLine + exception : string.Empty;
+
+        // NOTE: levelString.PadRight(7) is intentionally not simplifed to {levelString,-7} because in that case
+        // the string interpolation would be translated to a string.Format call instead of the more performant string.Concat call.
+        Console.WriteLine($"ConfigCat.{levelString.PadRight(7)} {message.InvariantFormattedMessage}{exceptionString}");
     }
 }

@@ -12,10 +12,10 @@ public class LoggerTests
 
         var logger = new LoggerWrapper(l);
 
-        logger.Debug(null);
-        logger.Information(null);
-        logger.Warning(null);
-        logger.Error(null);
+        logger.Log(LogLevel.Debug, default, "");
+        logger.Log(LogLevel.Info, default, "");
+        logger.Log(LogLevel.Warning, default, "");
+        logger.Log(LogLevel.Error, default, "");
 
         Assert.AreEqual(4, l.LogMessageInvokeCount);
     }
@@ -27,9 +27,9 @@ public class LoggerTests
 
         var logger = new LoggerWrapper(l);
 
-        logger.Information(null);
-        logger.Warning(null);
-        logger.Error(null);
+        logger.Log(LogLevel.Info, default, "");
+        logger.Log(LogLevel.Warning, default, "");
+        logger.Log(LogLevel.Error, default, "");
 
         Assert.AreEqual(3, l.LogMessageInvokeCount);
     }
@@ -41,7 +41,7 @@ public class LoggerTests
 
         var logger = new LoggerWrapper(l);
 
-        logger.Debug(null);
+        logger.Log(LogLevel.Debug, default, "");
 
         Assert.AreEqual(0, l.LogMessageInvokeCount);
     }
@@ -53,8 +53,8 @@ public class LoggerTests
 
         var logger = new LoggerWrapper(l);
 
-        logger.Warning(null);
-        logger.Error(null);
+        logger.Log(LogLevel.Warning, default, "");
+        logger.Log(LogLevel.Error, default, "");
 
         Assert.AreEqual(2, l.LogMessageInvokeCount);
     }
@@ -66,8 +66,8 @@ public class LoggerTests
 
         var logger = new LoggerWrapper(l);
 
-        logger.Debug(null);
-        logger.Information(null);
+        logger.Log(LogLevel.Debug, default, "");
+        logger.Log(LogLevel.Info, default, "");
 
         Assert.AreEqual(0, l.LogMessageInvokeCount);
     }
@@ -79,7 +79,7 @@ public class LoggerTests
 
         var logger = new LoggerWrapper(l);
 
-        logger.Error(null);
+        logger.Log(LogLevel.Error, default, "");
 
         Assert.AreEqual(1, l.LogMessageInvokeCount);
     }
@@ -91,9 +91,9 @@ public class LoggerTests
 
         var logger = new LoggerWrapper(l);
 
-        logger.Debug(null);
-        logger.Information(null);
-        logger.Warning(null);
+        logger.Log(LogLevel.Debug, default, "");
+        logger.Log(LogLevel.Info, default, "");
+        logger.Log(LogLevel.Warning, default, "");
 
         Assert.AreEqual(0, l.LogMessageInvokeCount);
     }
@@ -105,10 +105,10 @@ public class LoggerTests
 
         var logger = new LoggerWrapper(l);
 
-        logger.Debug(null);
-        logger.Information(null);
-        logger.Warning(null);
-        logger.Error(null);
+        logger.Log(LogLevel.Debug, default, "");
+        logger.Log(LogLevel.Info, default, "");
+        logger.Log(LogLevel.Warning, default, "");
+        logger.Log(LogLevel.Error, default, "");
 
         Assert.AreEqual(0, l.LogMessageInvokeCount);
     }

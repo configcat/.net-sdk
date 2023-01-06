@@ -291,5 +291,6 @@ __pycache__/
 coverage.xml
 .DS_Store
 .vscode
+/format-report.json
 src/.idea
 /samples/ASP.NETCore/WebApplication/wwwroot/lib/

@@ -8,7 +8,7 @@ using var client = ConfigCatClient.Get("PKDVCLf-Hq-h-kCzMp-L7Q/HhOWfwVtZ0mb30i9w
 client.LogLevel = LogLevel.Info;
 
 // Creating a user object to identify the user (optional)
-User user = new User("<SOME USERID>")
+var user = new User("<SOME USERID>")
 {
     Country = "US",
     Email = "configcat@example.com",

@@ -1,26 +1,25 @@
-﻿using System;
+using System;
 
-namespace ConfigCat.Client
+namespace ConfigCat.Client;
+
+/// <summary>
+/// LazyLoad configuration settings object for <see cref="ConfigCatClient"/>
+/// </summary>
+[Obsolete("This class is obsolete and will be removed from the public API in a future major version. Please use the 'ConfigCatClient.Get(sdkKey, options => { options.PollingMode = PollingModes.LazyLoad(); })' format.")]
+public class LazyLoadConfiguration : ConfigurationBase
 {
     /// <summary>
-    /// LazyLoad configuration settings object for <see cref="ConfigCatClient"/>
+    /// Cache time to live value in seconds, minimum value is 1. (Default value is 60.)     
     /// </summary>
-    [Obsolete("This class is obsolete and will be removed from the public API in a future major version. Please use the 'ConfigCatClient.Get(sdkKey, options => { options.PollingMode = PollingModes.LazyLoad(); })' format.")]
-    public class LazyLoadConfiguration : ConfigurationBase
+    public uint CacheTimeToLiveSeconds { get; set; } = 60;
+
+    internal override void Validate()
     {
-        /// <summary>
-        /// Cache time to live value in seconds, minimum value is 1. (Default value is 60.)     
-        /// </summary>
-        public uint CacheTimeToLiveSeconds { get; set; } = 60;
+        base.Validate();
 
-        internal override void Validate()
+        if (CacheTimeToLiveSeconds < 1)
         {
-            base.Validate();
-
-            if (this.CacheTimeToLiveSeconds < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(this.CacheTimeToLiveSeconds), "Value must be greater than or equal to 1 seconds.");
-            }
+            throw new ArgumentOutOfRangeException(nameof(CacheTimeToLiveSeconds), "Value must be greater than or equal to 1 seconds.");
         }
     }
 }

@@ -1,17 +1,16 @@
-﻿namespace ConfigCat.Client
+namespace ConfigCat.Client;
+
+/// <summary>
+/// Control the location of the config.json files containing your feature flags and settings within the ConfigCat CDN.
+/// </summary>
+public enum DataGovernance : byte
 {
     /// <summary>
-    /// Control the location of the config.json files containing your feature flags and settings within the ConfigCat CDN.
+    /// Select this if your feature flags are published to all global CDN nodes.
     /// </summary>
-    public enum DataGovernance : byte
-    {
-        /// <summary>
-        /// Select this if your feature flags are published to all global CDN nodes.
-        /// </summary>
-        Global = 0,
-        /// <summary>
-        /// Select this if your feature flags are published to CDN nodes only in the EU.
-        /// </summary>
-        EuOnly = 1
-    }
+    Global = 0,
+    /// <summary>
+    /// Select this if your feature flags are published to CDN nodes only in the EU.
+    /// </summary>
+    EuOnly = 1
 }

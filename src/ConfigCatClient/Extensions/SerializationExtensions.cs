@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 #if USE_NEWTONSOFT_JSON
 using Newtonsoft.Json;
 using System.IO;
@@ -7,45 +7,43 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 #endif
 
-namespace System
+namespace System;
+
+internal static class SerializationExtensions
 {
-    internal static class SerializationExtensions
+#if USE_NEWTONSOFT_JSON
+    private static readonly JsonSerializer Serializer = JsonSerializer.Create();
+#endif
+
+    public static T Deserialize<T>(this string json)
     {
-
 #if USE_NEWTONSOFT_JSON
-        private static readonly JsonSerializer Serializer = JsonSerializer.Create();
-#endif
-
-        public static T Deserialize<T>(this string json)
-        {
-#if USE_NEWTONSOFT_JSON
-            using var stringReader = new StringReader(json);
-            using var reader = new JsonTextReader(stringReader);
-            return Serializer.Deserialize<T>(reader);
+        using var stringReader = new StringReader(json);
+        using var reader = new JsonTextReader(stringReader);
+        return Serializer.Deserialize<T>(reader);
 #else
-            return JsonSerializer.Deserialize<T>(json);
+        return JsonSerializer.Deserialize<T>(json);
 #endif
-        }
+    }
 
-        public static T DeserializeOrDefault<T>(this string json)
+    public static T DeserializeOrDefault<T>(this string json)
+    {
+        try
         {
-            try
-            {
-                return json.Deserialize<T>();
-            }
-            catch
-            {
-                return default;
-            }
+            return json.Deserialize<T>();
         }
-
-        public static string Serialize<T>(this T objectToSerialize)
+        catch
         {
+            return default;
+        }
+    }
+
+    public static string Serialize<T>(this T objectToSerialize)
+    {
 #if USE_NEWTONSOFT_JSON
-            return JsonConvert.SerializeObject(objectToSerialize);
+        return JsonConvert.SerializeObject(objectToSerialize);
 #else
-            return JsonSerializer.Serialize(objectToSerialize);
+        return JsonSerializer.Serialize(objectToSerialize);
 #endif
-        }
     }
 }

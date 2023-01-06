@@ -1,21 +1,20 @@
-﻿using System.Linq;
+using System.Linq;
 
-namespace ConfigCat.Client
+namespace ConfigCat.Client;
+
+internal static class ConfigCatClientCacheExtensions
 {
-    internal static class ConfigCatClientCacheExtensions
+    public static int GetAliveCount(this ConfigCatClientCache cache)
     {
-        public static int GetAliveCount(this ConfigCatClientCache cache)
-        {
-            return cache.GetAliveCount(out _);
-        }
+        return cache.GetAliveCount(out _);
+    }
 
-        public static int GetAliveCount(this ConfigCatClientCache cache, out int cacheSize)
+    public static int GetAliveCount(this ConfigCatClientCache cache, out int cacheSize)
+    {
+        lock (cache.instances)
         {
-            lock (cache.instances)
-            {
-                cacheSize = cache.instances.Count;
-                return cache.instances.Values.Count(weakRef => weakRef.TryGetTarget(out _));
-            }
+            cacheSize = cache.instances.Count;
+            return cache.instances.Values.Count(weakRef => weakRef.TryGetTarget(out _));
         }
     }
 }

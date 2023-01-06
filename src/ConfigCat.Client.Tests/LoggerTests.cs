@@ -1,118 +1,116 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace ConfigCat.Client.Tests
+namespace ConfigCat.Client.Tests;
+
+[TestClass]
+public class LoggerTests
 {
-    [TestClass]
-    public class LoggerTests
+    [TestMethod]
+    public void LoggerBase_LoglevelIsDebug_ShouldInvokeErrorOrWarnOrInfoOrDebug()
     {
-        [TestMethod]
-        public void LoggerBase_LoglevelIsDebug_ShouldInvokeErrorOrWarnOrInfoOrDebug()
-        {
-            var l = new CounterLogger(LogLevel.Debug);
-        
-            var logger = new LoggerWrapper(l);
+        var l = new CounterLogger(LogLevel.Debug);
 
-            logger.Debug(null);
-            logger.Information(null);
-            logger.Warning(null);
-            logger.Error(null);
+        var logger = new LoggerWrapper(l);
 
-            Assert.AreEqual(4, l.LogMessageInvokeCount);
-        }
+        logger.Debug(null);
+        logger.Information(null);
+        logger.Warning(null);
+        logger.Error(null);
 
-        [TestMethod]
-        public void LoggerBase_LoglevelIsInfo_ShouldInvokeOnlyErrorAndWarnAndInfo()
-        {
-            var l = new CounterLogger(LogLevel.Info);
+        Assert.AreEqual(4, l.LogMessageInvokeCount);
+    }
 
-            var logger = new LoggerWrapper(l);
+    [TestMethod]
+    public void LoggerBase_LoglevelIsInfo_ShouldInvokeOnlyErrorAndWarnAndInfo()
+    {
+        var l = new CounterLogger(LogLevel.Info);
 
-            logger.Information(null);
-            logger.Warning(null);
-            logger.Error(null);
+        var logger = new LoggerWrapper(l);
 
-            Assert.AreEqual(3, l.LogMessageInvokeCount);
-        }
+        logger.Information(null);
+        logger.Warning(null);
+        logger.Error(null);
 
-        [TestMethod]
-        public void LoggerBase_LoglevelIsInfo_ShouldNotInvokeDebug()
-        {
-            var l = new CounterLogger(LogLevel.Info);
+        Assert.AreEqual(3, l.LogMessageInvokeCount);
+    }
 
-            var logger = new LoggerWrapper(l);
+    [TestMethod]
+    public void LoggerBase_LoglevelIsInfo_ShouldNotInvokeDebug()
+    {
+        var l = new CounterLogger(LogLevel.Info);
 
-            logger.Debug(null);
+        var logger = new LoggerWrapper(l);
 
-            Assert.AreEqual(0, l.LogMessageInvokeCount);
-        }
+        logger.Debug(null);
 
-        [TestMethod]
-        public void LoggerBase_LoglevelIsWarn_ShouldInvokeOnlyErrorAndWarnAndInfo()
-        {
-            var l = new CounterLogger(LogLevel.Warning);
+        Assert.AreEqual(0, l.LogMessageInvokeCount);
+    }
 
-            var logger = new LoggerWrapper(l);
+    [TestMethod]
+    public void LoggerBase_LoglevelIsWarn_ShouldInvokeOnlyErrorAndWarnAndInfo()
+    {
+        var l = new CounterLogger(LogLevel.Warning);
 
-            logger.Warning(null);
-            logger.Error(null);
+        var logger = new LoggerWrapper(l);
 
-            Assert.AreEqual(2, l.LogMessageInvokeCount);
-        }
+        logger.Warning(null);
+        logger.Error(null);
 
-        [TestMethod]
-        public void LoggerBase_LoglevelIsWarn_ShouldNotInvokeDebugOrInfo()
-        {
-            var l = new CounterLogger(LogLevel.Warning);
+        Assert.AreEqual(2, l.LogMessageInvokeCount);
+    }
 
-            var logger = new LoggerWrapper(l);
+    [TestMethod]
+    public void LoggerBase_LoglevelIsWarn_ShouldNotInvokeDebugOrInfo()
+    {
+        var l = new CounterLogger(LogLevel.Warning);
 
-            logger.Debug(null);
-            logger.Information(null);
+        var logger = new LoggerWrapper(l);
 
-            Assert.AreEqual(0, l.LogMessageInvokeCount);
-        }
+        logger.Debug(null);
+        logger.Information(null);
 
-        [TestMethod]
-        public void LoggerBase_LoglevelIsError_ShouldInvokeOnlyError()
-        {
-            var l = new CounterLogger(LogLevel.Error);
+        Assert.AreEqual(0, l.LogMessageInvokeCount);
+    }
 
-            var logger = new LoggerWrapper(l);
+    [TestMethod]
+    public void LoggerBase_LoglevelIsError_ShouldInvokeOnlyError()
+    {
+        var l = new CounterLogger(LogLevel.Error);
 
-            logger.Error(null);
+        var logger = new LoggerWrapper(l);
 
-            Assert.AreEqual(1, l.LogMessageInvokeCount);
-        }
+        logger.Error(null);
 
-        [TestMethod]
-        public void LoggerBase_LoglevelIsError_ShouldNotInvokeDebugOrInfoOrWarn()
-        {
-            var l = new CounterLogger(LogLevel.Error);
+        Assert.AreEqual(1, l.LogMessageInvokeCount);
+    }
 
-            var logger = new LoggerWrapper(l);
+    [TestMethod]
+    public void LoggerBase_LoglevelIsError_ShouldNotInvokeDebugOrInfoOrWarn()
+    {
+        var l = new CounterLogger(LogLevel.Error);
 
-            logger.Debug(null);
-            logger.Information(null);
-            logger.Warning(null);
+        var logger = new LoggerWrapper(l);
 
-            Assert.AreEqual(0, l.LogMessageInvokeCount);
-        }
+        logger.Debug(null);
+        logger.Information(null);
+        logger.Warning(null);
 
-        [TestMethod]
-        public void LoggerBase_LoglevelIsOff_ShouldNotInvokeAnyLogMessage()
-        {
-            var l = new CounterLogger(LogLevel.Off);
+        Assert.AreEqual(0, l.LogMessageInvokeCount);
+    }
 
-            var logger = new LoggerWrapper(l);
+    [TestMethod]
+    public void LoggerBase_LoglevelIsOff_ShouldNotInvokeAnyLogMessage()
+    {
+        var l = new CounterLogger(LogLevel.Off);
 
-            logger.Debug(null);
-            logger.Information(null);
-            logger.Warning(null);
-            logger.Error(null);
+        var logger = new LoggerWrapper(l);
 
-            Assert.AreEqual(0, l.LogMessageInvokeCount);
-        }
+        logger.Debug(null);
+        logger.Information(null);
+        logger.Warning(null);
+        logger.Error(null);
+
+        Assert.AreEqual(0, l.LogMessageInvokeCount);
     }
 }
-
 

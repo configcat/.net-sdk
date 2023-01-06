@@ -1,158 +1,157 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Threading;
-using Moq;
-using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
-using System.Net.Http;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 
 #pragma warning disable CS0618 // Type or member is obsolete
-namespace ConfigCat.Client.Tests
+namespace ConfigCat.Client.Tests;
+
+[TestClass]
+public class SynchronizationContextDeadlockTests
 {
-    [TestClass]
-    public class SynchronizationContextDeadlockTests
+    private const string SDKKEY = "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A";
+    private static readonly HttpClientHandler SharedHandler = new();
+
+    private readonly Mock<SynchronizationContext> syncContextMock;
+
+    private static SynchronizationContext SynchronizationContextBackup;
+
+    public SynchronizationContextDeadlockTests()
     {
-        private const string SDKKEY = "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A";
-        private static readonly HttpClientHandler sharedHandler = new HttpClientHandler();
+        SynchronizationContextBackup = SynchronizationContext.Current;
 
-        private readonly Mock<SynchronizationContext> syncContextMock;
-
-        private static SynchronizationContext synchronizationContextBackup;
-
-        public SynchronizationContextDeadlockTests()
+        this.syncContextMock = new Mock<SynchronizationContext>
         {
-            synchronizationContextBackup = SynchronizationContext.Current;
-
-            syncContextMock = new Mock<SynchronizationContext>
-            {
-                CallBase = true
-            };
-
-            SynchronizationContext.SetSynchronizationContext(syncContextMock.Object);
-        }
-
-        [ClassCleanup]
-        public static void ClassCleanup()
-        {
-            SynchronizationContext.SetSynchronizationContext(synchronizationContextBackup);
-        }
-
-        [TestInitialize]
-        public void TestInitialize()
-        {
-            syncContextMock.Reset();
-        }
-
-        [DataRow(true)]
-        [DataRow(false)]
-        [DataTestMethod]
-        public void AutoPollDeadLockCheck(bool useNewCreateApi)
-        {
-            var client = useNewCreateApi
-                ? new ConfigCatClient(options =>
-                {
-                    options.SdkKey = SDKKEY;
-                    options.Logger = new ConsoleLogger(LogLevel.Off);
-                    options.HttpClientHandler = sharedHandler;
-                })
-                : new ConfigCatClient(new AutoPollConfiguration
-                {
-                    SdkKey = SDKKEY,
-                    Logger = new ConsoleLogger(LogLevel.Off),
-                    HttpClientHandler = sharedHandler,
-                });
-
-            ClientDeadlockCheck(client);
-        }
-
-        [DataRow(true)]
-        [DataRow(false)]
-        [DataTestMethod]
-        public void ManualPollDeadLockCheck(bool useNewCreateApi)
-        {
-            var client = useNewCreateApi
-                ? new ConfigCatClient(options =>
-                {
-                    options.SdkKey = SDKKEY;
-                    options.Logger = new ConsoleLogger(LogLevel.Off);
-                    options.HttpClientHandler = sharedHandler;
-                })
-                : new ConfigCatClient(new ManualPollConfiguration
-                {
-                    SdkKey = SDKKEY,
-                    Logger = new ConsoleLogger(LogLevel.Off),
-                    HttpClientHandler = sharedHandler,
-                });
-
-            ClientDeadlockCheck(client);
-        }
-
-        [DataRow(true)]
-        [DataRow(false)]
-        [DataTestMethod]
-        public void LazyLoadDeadLockCheck(bool useNewCreateApi)
-        {
-            var client = useNewCreateApi
-                ? new ConfigCatClient(options =>
-                {
-                    options.SdkKey = SDKKEY;
-                    options.Logger = new ConsoleLogger(LogLevel.Off);
-                    options.HttpClientHandler = sharedHandler;
-                })
-                : new ConfigCatClient(new LazyLoadConfiguration
-                {
-                    SdkKey = SDKKEY,
-                    Logger = new ConsoleLogger(LogLevel.Off),
-                    HttpClientHandler = sharedHandler,
-                });
-
-            ClientDeadlockCheck(client);
-        }
-
-        private static readonly Dictionary<string, object[]> SpecificMethodParams = new Dictionary<string, object[]>
-        {
-            ["SetDefaultUser"] = new object[] { new User("id") }
+            CallBase = true
         };
 
-        private void ClientDeadlockCheck(IConfigCatClient client)
-        {
-            var methods = typeof(IConfigCatClient).GetMethods()
-                .Where(x => !x.IsSpecialName)
-                .OrderBy(o => o.Name);
+        SynchronizationContext.SetSynchronizationContext(this.syncContextMock.Object);
+    }
 
-            foreach (var m in methods)
+    [ClassCleanup]
+    public static void ClassCleanup()
+    {
+        SynchronizationContext.SetSynchronizationContext(SynchronizationContextBackup);
+    }
+
+    [TestInitialize]
+    public void TestInitialize()
+    {
+        this.syncContextMock.Reset();
+    }
+
+    [DataRow(true)]
+    [DataRow(false)]
+    [DataTestMethod]
+    public void AutoPollDeadLockCheck(bool useNewCreateApi)
+    {
+        var client = useNewCreateApi
+            ? new ConfigCatClient(options =>
             {
-                if (!SpecificMethodParams.TryGetValue(m.Name, out var parameters))
-                {
-                    parameters = Enumerable.Repeat<object>(null, m.GetParameters().Length).ToArray();
-                }
+                options.SdkKey = SDKKEY;
+                options.Logger = new ConsoleLogger(LogLevel.Off);
+                options.HttpClientHandler = SharedHandler;
+            })
+            : new ConfigCatClient(new AutoPollConfiguration
+            {
+                SdkKey = SDKKEY,
+                Logger = new ConsoleLogger(LogLevel.Off),
+                HttpClientHandler = SharedHandler,
+            });
 
-                MethodInfo mi = m;
+        ClientDeadlockCheck(client);
+    }
 
-                if (m.IsGenericMethod)
-                {
-                    mi = m.MakeGenericMethod(typeof(string));
-                }
+    [DataRow(true)]
+    [DataRow(false)]
+    [DataTestMethod]
+    public void ManualPollDeadLockCheck(bool useNewCreateApi)
+    {
+        var client = useNewCreateApi
+            ? new ConfigCatClient(options =>
+            {
+                options.SdkKey = SDKKEY;
+                options.Logger = new ConsoleLogger(LogLevel.Off);
+                options.HttpClientHandler = SharedHandler;
+            })
+            : new ConfigCatClient(new ManualPollConfiguration
+            {
+                SdkKey = SDKKEY,
+                Logger = new ConsoleLogger(LogLevel.Off),
+                HttpClientHandler = SharedHandler,
+            });
 
-                Console.WriteLine($"Invoke '{mi.Name}' method");
+        ClientDeadlockCheck(client);
+    }
 
-                if (mi.ReturnType.IsSubclassOf(typeof(Task)))
-                {
-                    var task = (Task)mi.Invoke(client, parameters);
+    [DataRow(true)]
+    [DataRow(false)]
+    [DataTestMethod]
+    public void LazyLoadDeadLockCheck(bool useNewCreateApi)
+    {
+        var client = useNewCreateApi
+            ? new ConfigCatClient(options =>
+            {
+                options.SdkKey = SDKKEY;
+                options.Logger = new ConsoleLogger(LogLevel.Off);
+                options.HttpClientHandler = SharedHandler;
+            })
+            : new ConfigCatClient(new LazyLoadConfiguration
+            {
+                SdkKey = SDKKEY,
+                Logger = new ConsoleLogger(LogLevel.Off),
+                HttpClientHandler = SharedHandler,
+            });
 
-                    task.ConfigureAwait(false);
-                    task.Wait();
-                }
-                else
-                {
-                    mi.Invoke(client, parameters);
-                }
+        ClientDeadlockCheck(client);
+    }
 
-                syncContextMock.Verify(x => x.Post(It.IsAny<SendOrPostCallback>(), It.IsAny<object>()), Times.Never, $"Method: {mi.Name}");
-                syncContextMock.Verify(x => x.Send(It.IsAny<SendOrPostCallback>(), It.IsAny<object>()), Times.Never, $"Method: {mi.Name}");
+    private static readonly Dictionary<string, object[]> SpecificMethodParams = new()
+    {
+        ["SetDefaultUser"] = new object[] { new User("id") }
+    };
+
+    private void ClientDeadlockCheck(IConfigCatClient client)
+    {
+        var methods = typeof(IConfigCatClient).GetMethods()
+            .Where(x => !x.IsSpecialName)
+            .OrderBy(o => o.Name);
+
+        foreach (var m in methods)
+        {
+            if (!SpecificMethodParams.TryGetValue(m.Name, out var parameters))
+            {
+                parameters = Enumerable.Repeat<object>(null, m.GetParameters().Length).ToArray();
             }
+
+            MethodInfo mi = m;
+
+            if (m.IsGenericMethod)
+            {
+                mi = m.MakeGenericMethod(typeof(string));
+            }
+
+            Console.WriteLine($"Invoke '{mi.Name}' method");
+
+            if (mi.ReturnType.IsSubclassOf(typeof(Task)))
+            {
+                var task = (Task)mi.Invoke(client, parameters);
+
+                task.ConfigureAwait(false);
+                task.Wait();
+            }
+            else
+            {
+                mi.Invoke(client, parameters);
+            }
+
+            this.syncContextMock.Verify(x => x.Post(It.IsAny<SendOrPostCallback>(), It.IsAny<object>()), Times.Never, $"Method: {mi.Name}");
+            this.syncContextMock.Verify(x => x.Send(It.IsAny<SendOrPostCallback>(), It.IsAny<object>()), Times.Never, $"Method: {mi.Name}");
         }
     }
 }

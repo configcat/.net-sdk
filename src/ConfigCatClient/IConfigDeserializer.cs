@@ -1,9 +1,8 @@
-﻿using ConfigCat.Client.Evaluation;
+using ConfigCat.Client.Evaluation;
 
-namespace ConfigCat.Client
+namespace ConfigCat.Client;
+
+internal interface IConfigDeserializer
 {
-    internal interface IConfigDeserializer
-    {
-        bool TryDeserialize(string config, string httpETag, out SettingsWithPreferences settings);
-    }
+    bool TryDeserialize(string config, string httpETag, out SettingsWithPreferences settings);
 }

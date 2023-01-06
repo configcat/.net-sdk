@@ -1,113 +1,112 @@
-﻿using ConfigCat.Client.Evaluation;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using ConfigCat.Client.Evaluation;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace ConfigCat.Client.Tests
+namespace ConfigCat.Client.Tests;
+
+public abstract class ConfigEvaluatorTestsBase
 {
-    public abstract class ConfigEvaluatorTestsBase
+    protected readonly ILogger Logger = new ConsoleLogger(LogLevel.Debug);
+
+    private protected readonly IDictionary<string, Setting> config;
+
+    internal readonly IRolloutEvaluator configEvaluator;
+
+    protected abstract string SampleJsonFileName { get; }
+
+    protected abstract string MatrixResultFileName { get; }
+
+    public ConfigEvaluatorTestsBase()
     {
-        protected readonly ILogger logger = new ConsoleLogger(LogLevel.Debug);
+        this.configEvaluator = new RolloutEvaluator(new LoggerWrapper(this.Logger));
 
-        private protected readonly IDictionary<string, Setting> config;
+        this.config = GetSampleJson().Deserialize<SettingsWithPreferences>().Settings;
+    }
 
-        internal readonly IRolloutEvaluator configEvaluator;
+    protected virtual void AssertValue(string keyName, string expected, User user)
+    {
+        var k = keyName.ToLowerInvariant();
 
-        protected abstract string SampleJsonFileName { get; }
-
-        protected abstract string MatrixResultFileName { get; }
-
-        public ConfigEvaluatorTestsBase()
+        if (k.StartsWith("bool"))
         {
-            this.configEvaluator = new RolloutEvaluator(new LoggerWrapper(logger));
+            var actual = this.configEvaluator.Evaluate(this.config, keyName, false, user, null, this.Logger).Value;
 
-            this.config = this.GetSampleJson().Deserialize<SettingsWithPreferences>().Settings;
+            Assert.AreEqual(bool.Parse(expected), actual, $"keyName: {keyName} | userId: {user?.Identifier}");
         }
-
-        protected virtual void AssertValue(string keyName, string expected, User user)
+        else if (k.StartsWith("double"))
         {
-            var k = keyName.ToLowerInvariant();
+            var actual = this.configEvaluator.Evaluate(this.config, keyName, double.NaN, user, null, this.Logger).Value;
 
-            if (k.StartsWith("bool"))
-            {
-                var actual = configEvaluator.Evaluate(config, keyName, false, user, null, logger).Value;
-
-                Assert.AreEqual(bool.Parse(expected), actual, $"keyName: {keyName} | userId: {user?.Identifier}");
-            }
-            else if (k.StartsWith("double"))
-            {
-                var actual = configEvaluator.Evaluate(config, keyName, double.NaN, user, null, logger).Value;
-
-                Assert.AreEqual(double.Parse(expected, CultureInfo.InvariantCulture), actual, $"keyName: {keyName} | userId: {user?.Identifier}");
-            }
-            else if (k.StartsWith("integer"))
-            {
-                var actual = configEvaluator.Evaluate(config, keyName, int.MinValue, user, null, logger).Value;
-
-                Assert.AreEqual(int.Parse(expected), actual, $"keyName: {keyName} | userId: {user?.Identifier}");
-            }
-            else
-            {
-                var actual = configEvaluator.Evaluate(config, keyName, string.Empty, user, null, logger).Value;
-
-                Assert.AreEqual(expected, actual, $"keyName: {keyName} | userId: {user?.Identifier}");
-            }
+            Assert.AreEqual(double.Parse(expected, CultureInfo.InvariantCulture), actual, $"keyName: {keyName} | userId: {user?.Identifier}");
         }
-
-        protected string GetSampleJson()
+        else if (k.StartsWith("integer"))
         {
-            using Stream stream = File.OpenRead(Path.Combine("data", this.SampleJsonFileName));
-            using StreamReader reader = new(stream);
-            return reader.ReadToEnd();
+            var actual = this.configEvaluator.Evaluate(this.config, keyName, int.MinValue, user, null, this.Logger).Value;
+
+            Assert.AreEqual(int.Parse(expected), actual, $"keyName: {keyName} | userId: {user?.Identifier}");
         }
-
-        public async Task MatrixTest(Action<string, string, User> assertation)
+        else
         {
-            using Stream stream = File.OpenRead(Path.Combine("data", this.MatrixResultFileName));
-            using StreamReader reader = new(stream);
-            var header = await reader.ReadLineAsync();
+            var actual = this.configEvaluator.Evaluate(this.config, keyName, string.Empty, user, null, this.Logger).Value;
 
-            var columns = header.Split(new[] { ';' }).ToList();
+            Assert.AreEqual(expected, actual, $"keyName: {keyName} | userId: {user?.Identifier}");
+        }
+    }
 
-            while (!reader.EndOfStream)
+    protected string GetSampleJson()
+    {
+        using Stream stream = File.OpenRead(Path.Combine("data", SampleJsonFileName));
+        using StreamReader reader = new(stream);
+        return reader.ReadToEnd();
+    }
+
+    public async Task MatrixTest(Action<string, string, User> assertation)
+    {
+        using Stream stream = File.OpenRead(Path.Combine("data", MatrixResultFileName));
+        using StreamReader reader = new(stream);
+        var header = await reader.ReadLineAsync();
+
+        var columns = header.Split(new[] { ';' }).ToList();
+
+        while (!reader.EndOfStream)
+        {
+            var rawline = await reader.ReadLineAsync();
+
+            if (string.IsNullOrEmpty(rawline))
             {
-                var rawline = await reader.ReadLineAsync();
+                continue;
+            }
 
-                if (string.IsNullOrEmpty(rawline))
+            var row = rawline.Split(new[] { ';' });
+
+            User u = null;
+
+            if (row[0] != "##null##")
+            {
+                u = new User(row[0])
                 {
-                    continue;
-                }
+                    Email = row[1] == "##null##" ? null : row[1],
+                    Country = row[2] == "##null##" ? null : row[2],
+                    Custom = row[3] == "##null##" ? null : new Dictionary<string, string> { { columns[3], row[3] } }
+                };
+            }
 
-                var row = rawline.Split(new[] { ';' });
-
-                User u = null;
-
-                if (row[0] != "##null##")
-                {
-                    u = new User(row[0])
-                    {
-                        Email = row[1] == "##null##" ? null : row[1],
-                        Country = row[2] == "##null##" ? null : row[2],
-                        Custom = row[3] == "##null##" ? null : new Dictionary<string, string> { { columns[3], row[3] } }
-                    };
-                }
-
-                for (int i = 4; i < columns.Count; i++)
-                {
-                    assertation(columns[i], row[i], u);
-                }
+            for (var i = 4; i < columns.Count; i++)
+            {
+                assertation(columns[i], row[i], u);
             }
         }
+    }
 
-        [TestCategory("MatrixTests")]
-        [TestMethod]
-        public async Task Run_MatrixTests()
-        {
-            await MatrixTest(AssertValue);
-        }       
+    [TestCategory("MatrixTests")]
+    [TestMethod]
+    public async Task Run_MatrixTests()
+    {
+        await MatrixTest(AssertValue);
     }
 }

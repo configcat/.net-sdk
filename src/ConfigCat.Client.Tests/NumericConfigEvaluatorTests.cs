@@ -1,12 +1,11 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace ConfigCat.Client.Tests
+namespace ConfigCat.Client.Tests;
+
+[TestClass]
+public class NumericConfigEvaluatorTests : ConfigEvaluatorTestsBase
 {
-    [TestClass]
-    public class NumericConfigEvaluatorTests : ConfigEvaluatorTestsBase
-    {
-        protected override string SampleJsonFileName => "sample_number_v5.json";
+    protected override string SampleJsonFileName => "sample_number_v5.json";
 
-        protected override string MatrixResultFileName => "testmatrix_number.csv";
-    }
+    protected override string MatrixResultFileName => "testmatrix_number.csv";
 }

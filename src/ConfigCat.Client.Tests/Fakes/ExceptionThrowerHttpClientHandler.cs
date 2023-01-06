@@ -1,31 +1,30 @@
-﻿using System;
+using System;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ConfigCat.Client.Tests
+namespace ConfigCat.Client.Tests;
+
+internal sealed class ExceptionThrowerHttpClientHandler : HttpClientHandler
 {
-    internal sealed class ExceptionThrowerHttpClientHandler : HttpClientHandler
+    private readonly Exception exception;
+    private readonly TimeSpan? delay;
+
+    public byte SendInvokeCount { get; private set; } = 0;
+
+    public ExceptionThrowerHttpClientHandler(Exception ex = null, TimeSpan? delay = null)
     {
-        private readonly Exception exception;
-        private readonly TimeSpan? delay;
+        this.exception = ex ?? new NotImplementedException();
+        this.delay = delay;
+    }
 
-        public byte SendInvokeCount { get; private set; } = 0;
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        if (this.delay != null)
+            await Task.Delay(this.delay.Value, cancellationToken);
 
-        public ExceptionThrowerHttpClientHandler(Exception ex = null, TimeSpan? delay = null)
-        {
-            this.exception = ex ?? new NotImplementedException();
-            this.delay = delay;
-        }
+        SendInvokeCount++;
 
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            if (delay != null)
-                await Task.Delay(delay.Value, cancellationToken);
-
-            SendInvokeCount++;
-
-            throw exception;
-        }
+        throw this.exception;
     }
 }

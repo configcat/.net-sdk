@@ -63,7 +63,7 @@ public sealed class ConfigCatClient : IConfigCatClient
     public ConfigCatClient(AutoPollConfiguration configuration)
         : this(options =>
         {
-            if (configuration == null)
+            if (configuration is null)
             {
                 throw new ArgumentNullException(nameof(configuration));
             }
@@ -85,7 +85,7 @@ public sealed class ConfigCatClient : IConfigCatClient
     public ConfigCatClient(LazyLoadConfiguration configuration)
         : this(options =>
         {
-            if (configuration == null)
+            if (configuration is null)
             {
                 throw new ArgumentNullException(nameof(configuration));
             }
@@ -105,7 +105,7 @@ public sealed class ConfigCatClient : IConfigCatClient
     public ConfigCatClient(ManualPollConfiguration configuration)
         : this(options =>
         {
-            if (configuration == null)
+            if (configuration is null)
             {
                 throw new ArgumentNullException(nameof(configuration));
             }
@@ -143,7 +143,7 @@ public sealed class ConfigCatClient : IConfigCatClient
             CacheKey = GetCacheKey(sdkKey)
         };
 
-        if (configuration.FlagOverrides != null)
+        if (configuration.FlagOverrides is not null)
         {
             this.overrideDataSource = configuration.FlagOverrides.BuildDataSource(this.log);
             this.overrideBehaviour = configuration.FlagOverrides.OverrideBehaviour;
@@ -151,7 +151,7 @@ public sealed class ConfigCatClient : IConfigCatClient
 
         this.defaultUser = configuration.DefaultUser;
 
-        this.configService = this.overrideBehaviour == null || this.overrideBehaviour != OverrideBehaviour.LocalOnly
+        this.configService = this.overrideBehaviour is null || this.overrideBehaviour != OverrideBehaviour.LocalOnly
             ? DetermineConfigService(configuration.PollingMode,
                 new HttpConfigFetcher(configuration.CreateUri(sdkKey),
                         $"{configuration.PollingMode.Identifier}-{Version}",
@@ -217,7 +217,7 @@ public sealed class ConfigCatClient : IConfigCatClient
     /// <exception cref="ArgumentNullException">When the <paramref name="configurationAction"/> is null.</exception>
     public static IConfigCatClient Get(string sdkKey, Action<ConfigCatClientOptions> configurationAction = null)
     {
-        if (sdkKey == null)
+        if (sdkKey is null)
         {
             throw new ArgumentNullException(nameof(sdkKey));
         }
@@ -739,7 +739,7 @@ public sealed class ConfigCatClient : IConfigCatClient
 
     private SettingsWithRemoteConfig GetSettings()
     {
-        if (this.overrideBehaviour != null)
+        if (this.overrideBehaviour is not null)
         {
             IDictionary<string, Setting> local;
             SettingsWithRemoteConfig remote;
@@ -772,7 +772,7 @@ public sealed class ConfigCatClient : IConfigCatClient
 
     private async Task<SettingsWithRemoteConfig> GetSettingsAsync()
     {
-        if (this.overrideBehaviour != null)
+        if (this.overrideBehaviour is not null)
         {
             IDictionary<string, Setting> local;
             SettingsWithRemoteConfig remote;

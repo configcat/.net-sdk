@@ -28,7 +28,7 @@ internal class FakeHttpClientHandler : HttpClientHandler
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        if (this.delay != null)
+        if (this.delay is not null)
             await Task.Delay(this.delay.Value, cancellationToken);
 
         SendInvokeCount++;
@@ -38,7 +38,7 @@ internal class FakeHttpClientHandler : HttpClientHandler
         var response = new HttpResponseMessage
         {
             StatusCode = this.httpStatusCode,
-            Content = this.responseContent != null ? new StringContent(this.responseContent) : null,
+            Content = this.responseContent is not null ? new StringContent(this.responseContent) : null,
         };
 
         return response;
@@ -47,7 +47,7 @@ internal class FakeHttpClientHandler : HttpClientHandler
 #if NET5_0_OR_GREATER
     protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        if (this.delay != null)
+        if (this.delay is not null)
             Task.Delay(this.delay.Value, cancellationToken).Wait(cancellationToken);
 
         SendInvokeCount++;
@@ -57,7 +57,7 @@ internal class FakeHttpClientHandler : HttpClientHandler
         return new HttpResponseMessage
         {
             StatusCode = this.httpStatusCode,
-            Content = this.responseContent != null ? new StringContent(this.responseContent) : null,
+            Content = this.responseContent is not null ? new StringContent(this.responseContent) : null,
         };
     }
 #endif

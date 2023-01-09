@@ -177,7 +177,7 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
         {
             var request = new HttpRequestMessage { Method = HttpMethod.Get, RequestUri = requestUri };
 
-            if (lastConfig.HttpETag != null)
+            if (lastConfig.HttpETag is not null)
             {
                 request.Headers.IfNoneMatch.Add(new EntityTagHeaderValue(lastConfig.HttpETag));
             }
@@ -206,11 +206,11 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                 if (!this.deserializer.TryDeserialize(responseBody, httpETag, out var body))
                     return new ResponseWithBody(response, null);
 
-                if (body?.Preferences != null)
+                if (body?.Preferences is not null)
                 {
                     var newBaseUrl = body.Preferences.Url;
 
-                    if (newBaseUrl == null || requestUri.Host == new Uri(newBaseUrl).Host)
+                    if (newBaseUrl is null || requestUri.Host == new Uri(newBaseUrl).Host)
                     {
                         return new ResponseWithBody(response, responseBody);
                     }
@@ -278,7 +278,7 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
 
     private void ReInitializeHttpClientLogic()
     {
-        if (this.httpClientHandler == null)
+        if (this.httpClientHandler is null)
         {
             this.httpClient = new HttpClient(new HttpClientHandler
             {

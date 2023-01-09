@@ -31,7 +31,7 @@ internal class Hooks : IProvidesHooks
 
     private bool TryGetSender(out IConfigCatClient client)
     {
-        if (this.clientWeakRef == null)
+        if (this.clientWeakRef is null)
         {
             client = null;
             return true;

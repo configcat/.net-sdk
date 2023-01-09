@@ -36,10 +36,10 @@ public class FlagOverrides
 
     internal IOverrideDataSource BuildDataSource(LoggerWrapper logger)
     {
-        if (this.dictionary != null)
+        if (this.dictionary is not null)
             return new LocalDictionaryDataSource(this.dictionary);
 
-        if (this.filePath != null)
+        if (this.filePath is not null)
             return new LocalFileDataSource(this.filePath, this.autoReload, logger);
 
         throw new InvalidOperationException("Could not determine the right override data source.");

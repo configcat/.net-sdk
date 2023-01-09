@@ -20,7 +20,7 @@ internal sealed class ExceptionThrowerHttpClientHandler : HttpClientHandler
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        if (this.delay != null)
+        if (this.delay is not null)
             await Task.Delay(this.delay.Value, cancellationToken);
 
         SendInvokeCount++;

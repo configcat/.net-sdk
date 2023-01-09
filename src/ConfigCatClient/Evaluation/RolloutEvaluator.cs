@@ -46,7 +46,7 @@ internal class RolloutEvaluator : IRolloutEvaluator
 
         try
         {
-            if (user != null)
+            if (user is not null)
             {
                 // evaluate comparison-based rules
 

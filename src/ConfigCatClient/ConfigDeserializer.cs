@@ -11,7 +11,7 @@ internal class ConfigDeserializer : IConfigDeserializer
 
     public bool TryDeserialize(string config, string httpETag, out SettingsWithPreferences settings)
     {
-        if (config == null)
+        if (config is null)
         {
             settings = null;
             return false;

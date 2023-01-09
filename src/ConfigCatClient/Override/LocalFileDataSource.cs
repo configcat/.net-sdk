@@ -104,7 +104,7 @@ internal sealed class LocalFileDataSource : IOverrideDataSource
                 {
                     var content = File.ReadAllText(this.fullPath);
                     var simplified = content.DeserializeOrDefault<SimplifiedConfig>();
-                    if (simplified?.Entries != null)
+                    if (simplified?.Entries is not null)
                     {
                         this.overrideValues = simplified.Entries.ToDictionary(kv => kv.Key, kv => kv.Value.ToSetting());
                         return;

@@ -77,7 +77,7 @@ public abstract class ConfigurationBase
         }
 #pragma warning restore CS0618 // Type or member is obsolete
 
-        if (Logger == null)
+        if (Logger is null)
         {
             throw new ArgumentNullException(nameof(Logger));
         }

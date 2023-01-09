@@ -29,16 +29,16 @@ internal abstract class ConfigServiceBase : IDisposable
     protected readonly IConfigCache ConfigCache; // Backward compatibility, it'll be changed to IConfigCatCache later.
 #pragma warning restore CS0618 // Type or member is obsolete
 
-    protected readonly LoggerWrapper Log;
+    protected readonly LoggerWrapper Logger;
     protected readonly string CacheKey;
     protected readonly Hooks Hooks;
 
-    protected ConfigServiceBase(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper log, bool isOffline, Hooks hooks)
+    protected ConfigServiceBase(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline, Hooks hooks)
     {
         this.ConfigFetcher = configFetcher;
         this.ConfigCache = cacheParameters.ConfigCache;
         this.CacheKey = cacheParameters.CacheKey;
-        this.Log = log;
+        this.Logger = logger;
         this.Hooks = hooks ?? NullHooks.Instance;
         this.status = isOffline ? Status.Offline : Status.Online;
     }
@@ -86,7 +86,7 @@ internal abstract class ConfigServiceBase : IDisposable
             }
             else
             {
-                this.Log.OfflineModeWarning();
+                this.Logger.OfflineModeWarning();
                 return RefreshResult.Failure("Client is in offline mode, it can't initiate HTTP calls.");
             }
         }
@@ -129,7 +129,7 @@ internal abstract class ConfigServiceBase : IDisposable
         }
         else
         {
-            this.Log.OfflineModeWarning();
+            this.Logger.OfflineModeWarning();
             return RefreshResult.Failure("Client is in offline mode, it can't initiate HTTP calls.");
         }
     }
@@ -161,7 +161,7 @@ internal abstract class ConfigServiceBase : IDisposable
 
     protected virtual void OnConfigChanged(ProjectConfig newConfig)
     {
-        this.Log.Debug("config changed");
+        this.Logger.Debug("config changed");
 
         this.Hooks.RaiseConfigChanged(newConfig);
     }
@@ -200,7 +200,7 @@ internal abstract class ConfigServiceBase : IDisposable
             }
         }
 
-        logAction?.Invoke(this.Log);
+        logAction?.Invoke(this.Logger);
     }
 
     /// <remarks>
@@ -226,7 +226,7 @@ internal abstract class ConfigServiceBase : IDisposable
             }
         }
 
-        logAction?.Invoke(this.Log);
+        logAction?.Invoke(this.Logger);
     }
 
     protected TResult Synchronize<TState, TResult>(Func<TState, TResult> func, TState state)

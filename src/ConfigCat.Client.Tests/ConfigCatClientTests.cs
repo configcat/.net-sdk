@@ -2100,8 +2100,8 @@ public class ConfigCatClientTests
     {
         public byte DisposeCount { get; private set; }
 
-        public FakeConfigService(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper log)
-            : base(configFetcher, cacheParameters, log, isOffline: false, hooks: null)
+        public FakeConfigService(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger)
+            : base(configFetcher, cacheParameters, logger, isOffline: false, hooks: null)
         {
         }
 

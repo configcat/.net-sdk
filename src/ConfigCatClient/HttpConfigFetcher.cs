@@ -18,9 +18,9 @@ namespace ConfigCat.Client;
 
 internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
 {
-    private readonly object lck = new();
+    private readonly object syncObj = new();
     private readonly string productVersion;
-    private readonly LoggerWrapper log;
+    private readonly LoggerWrapper logger;
 
     private readonly HttpClientHandler httpClientHandler;
     private readonly IConfigDeserializer deserializer;
@@ -37,7 +37,7 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
     {
         this.requestUri = requestUri;
         this.productVersion = productVersion;
-        this.log = logger;
+        this.logger = logger;
         this.httpClientHandler = httpClientHandler;
         this.deserializer = deserializer;
         this.isCustomUri = isCustomUri;
@@ -61,7 +61,7 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
 
     public Task<FetchResult> FetchAsync(ProjectConfig lastConfig)
     {
-        lock (this.lck)
+        lock (this.syncObj)
         {
             return this.pendingFetch ??= Task.Run(async () =>
             {
@@ -71,7 +71,7 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                 }
                 finally
                 {
-                    lock (this.lck)
+                    lock (this.syncObj)
                     {
                         this.pendingFetch = null;
                     }
@@ -132,14 +132,14 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                 case HttpStatusCode.Forbidden:
                 case HttpStatusCode.NotFound:
                     errorMessage = "Double-check your SDK Key at https://app.configcat.com/sdkkey";
-                    this.log.Error(errorMessage);
+                    this.logger.Error(errorMessage);
 
                     // We update the timestamp for extra protection against flooding.
                     return FetchResult.Failure(lastConfig with { TimeStamp = DateTime.UtcNow }, errorMessage);
 
                 default:
                     errorMessage = $"Unexpected HTTP response was received: {(int)response.StatusCode} {response.ReasonPhrase}";
-                    this.log.Error(errorMessage);
+                    this.logger.Error(errorMessage);
                     ReInitializeHttpClient();
                     return FetchResult.Failure(lastConfig, errorMessage);
             }
@@ -165,7 +165,7 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
             errorException = ex;
         }
 
-        this.log.Error(errorMessage);
+        this.logger.Error(errorMessage);
         ReInitializeHttpClient();
         return FetchResult.Failure(lastConfig, errorMessage, errorException);
     }
@@ -231,7 +231,7 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
 
                     if (redirect == RedirectMode.Should)
                     {
-                        this.log.Warning(
+                        this.logger.Warning(
                             "Your dataGovernance parameter at ConfigCatClient initialization is not in sync " +
                             "with your preferences on the ConfigCat Dashboard: " +
                             "https://app.configcat.com/organization/data-governance. " +
@@ -240,7 +240,7 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
 
                     if (maxExecutionCount <= 1)
                     {
-                        this.log.Error("Redirect loop during config.json fetch. Please contact support@configcat.com.");
+                        this.logger.Error("Redirect loop during config.json fetch. Please contact support@configcat.com.");
                         return new ResponseWithBody(response, responseBody);
                     }
 
@@ -257,7 +257,7 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
 
     private void UpdateRequestUri(Uri newUri)
     {
-        lock (this.lck)
+        lock (this.syncObj)
         {
             this.requestUri = ReplaceUri(this.requestUri, newUri);
         }
@@ -270,7 +270,7 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
 
     private void ReInitializeHttpClient()
     {
-        lock (this.lck)
+        lock (this.syncObj)
         {
             ReInitializeHttpClientLogic();
         }

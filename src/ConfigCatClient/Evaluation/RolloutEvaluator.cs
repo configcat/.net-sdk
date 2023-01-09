@@ -14,11 +14,11 @@ namespace ConfigCat.Client.Evaluation;
 
 internal class RolloutEvaluator : IRolloutEvaluator
 {
-    private readonly LoggerWrapper log;
+    private readonly LoggerWrapper logger;
 
     public RolloutEvaluator(LoggerWrapper logger)
     {
-        this.log = logger;
+        this.logger = logger;
     }
 
     public EvaluationDetails Evaluate(Setting setting, string key, string logDefaultValue, User user,
@@ -86,7 +86,7 @@ internal class RolloutEvaluator : IRolloutEvaluator
             }
             else if (setting.RolloutRules.Any() || setting.RolloutPercentageItems.Any())
             {
-                this.log.Warning($"Cannot evaluate targeting rules and % options for '{key}' (UserObject missing). You should pass a UserObject to GetValue() or GetValueAsync() in order to make targeting work properly. Read more: https://configcat.com/docs/advanced/user-object");
+                this.logger.Warning($"Cannot evaluate targeting rules and % options for '{key}' (UserObject missing). You should pass a UserObject to GetValue() or GetValueAsync() in order to make targeting work properly. Read more: https://configcat.com/docs/advanced/user-object");
             }
 
             // regular evaluate
@@ -105,7 +105,7 @@ internal class RolloutEvaluator : IRolloutEvaluator
         }
         finally
         {
-            this.log.Information($"{evaluateLog}");
+            this.logger.Information($"{evaluateLog}");
         }
     }
 

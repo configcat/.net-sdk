@@ -4,11 +4,11 @@ namespace ConfigCat.Client.ConfigService;
 
 internal sealed class NullConfigService : IConfigService
 {
-    private readonly LoggerWrapper log;
+    private readonly LoggerWrapper logger;
 
-    public NullConfigService(LoggerWrapper log, Hooks hooks = null)
+    public NullConfigService(LoggerWrapper logger, Hooks hooks = null)
     {
-        this.log = log;
+        this.logger = logger;
 
         hooks?.RaiseClientReady();
     }
@@ -27,6 +27,6 @@ internal sealed class NullConfigService : IConfigService
 
     public void SetOnline()
     {
-        this.log.Warning($"Client is configured to use the {nameof(OverrideBehaviour.LocalOnly)} override behavior, thus {nameof(SetOnline)}() has no effect.");
+        this.logger.Warning($"Client is configured to use the {nameof(OverrideBehaviour.LocalOnly)} override behavior, thus {nameof(SetOnline)}() has no effect.");
     }
 }

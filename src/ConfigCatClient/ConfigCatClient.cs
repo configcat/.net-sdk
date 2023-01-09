@@ -20,7 +20,7 @@ public sealed class ConfigCatClient : IConfigCatClient
     private readonly string sdkKey;
     // TODO: Remove this field when we delete the obsolete client constructors.
     private readonly bool isUncached;
-    private readonly LoggerWrapper log;
+    private readonly LoggerWrapper logger;
     private readonly IRolloutEvaluator configEvaluator;
     private readonly IConfigService configService;
     private readonly IConfigDeserializer configDeserializer;
@@ -39,8 +39,8 @@ public sealed class ConfigCatClient : IConfigCatClient
     /// <inheritdoc />
     public LogLevel LogLevel
     {
-        get => this.log.LogLevel;
-        set => this.log.LogLevel = value;
+        get => this.logger.LogLevel;
+        set => this.logger.LogLevel = value;
     }
 
     /// <summary>
@@ -133,9 +133,9 @@ public sealed class ConfigCatClient : IConfigCatClient
         this.hooks = configuration.Hooks;
         this.hooks.SetSender(this);
 
-        this.log = new LoggerWrapper(configuration.Logger, this.hooks);
+        this.logger = new LoggerWrapper(configuration.Logger, this.hooks);
         this.configDeserializer = new ConfigDeserializer();
-        this.configEvaluator = new RolloutEvaluator(this.log);
+        this.configEvaluator = new RolloutEvaluator(this.logger);
 
         var cacheParameters = new CacheParameters
         {
@@ -145,7 +145,7 @@ public sealed class ConfigCatClient : IConfigCatClient
 
         if (configuration.FlagOverrides is not null)
         {
-            this.overrideDataSource = configuration.FlagOverrides.BuildDataSource(this.log);
+            this.overrideDataSource = configuration.FlagOverrides.BuildDataSource(this.logger);
             this.overrideBehaviour = configuration.FlagOverrides.OverrideBehaviour;
         }
 
@@ -155,16 +155,16 @@ public sealed class ConfigCatClient : IConfigCatClient
             ? DetermineConfigService(configuration.PollingMode,
                 new HttpConfigFetcher(configuration.CreateUri(sdkKey),
                         $"{configuration.PollingMode.Identifier}-{Version}",
-                        this.log,
+                        this.logger,
                         configuration.HttpClientHandler,
                         this.configDeserializer,
                         configuration.IsCustomBaseUrl,
                         configuration.HttpTimeout),
                     cacheParameters,
-                    this.log,
+                    this.logger,
                     configuration.Offline,
                     this.hooks)
-            : new NullConfigService(this.log, this.hooks);
+            : new NullConfigService(this.logger, this.hooks);
     }
 
     /// <summary>
@@ -185,7 +185,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
 
         this.configService = configService;
-        this.log = new LoggerWrapper(logger, this.hooks);
+        this.logger = new LoggerWrapper(logger, this.hooks);
         this.configEvaluator = evaluator;
         this.configDeserializer = configDeserializer;
     }
@@ -242,7 +242,7 @@ public sealed class ConfigCatClient : IConfigCatClient
 
         if (instanceAlreadyCreated && configurationAction is not null)
         {
-            instance.log.Warning(message: $"Client for SDK key '{sdkKey}' is already created and will be reused; configuration action is being ignored.");
+            instance.logger.Warning(message: $"Client for SDK key '{sdkKey}' is already created and will be reused; configuration action is being ignored.");
         }
 
         return instance;
@@ -259,12 +259,12 @@ public sealed class ConfigCatClient : IConfigCatClient
         {
             typeof(T).EnsureSupportedSettingClrType();
             settings = GetSettings();
-            evaluationDetails = this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, this.log);
+            evaluationDetails = this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, this.logger);
             value = evaluationDetails.Value;
         }
         catch (Exception ex)
         {
-            this.log.Error($"Error occured in '{nameof(GetValue)}' method.", ex);
+            this.logger.Error($"Error occured in '{nameof(GetValue)}' method.", ex);
             evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user, ex.Message, ex);
             value = defaultValue;
         }
@@ -284,12 +284,12 @@ public sealed class ConfigCatClient : IConfigCatClient
         {
             typeof(T).EnsureSupportedSettingClrType();
             settings = await GetSettingsAsync().ConfigureAwait(false);
-            evaluationDetails = this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, this.log);
+            evaluationDetails = this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, this.logger);
             value = evaluationDetails.Value;
         }
         catch (Exception ex)
         {
-            this.log.Error($"Error occured in '{nameof(GetValueAsync)}' method.", ex);
+            this.logger.Error($"Error occured in '{nameof(GetValueAsync)}' method.", ex);
             evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user, ex.Message, ex);
             value = defaultValue;
         }
@@ -308,11 +308,11 @@ public sealed class ConfigCatClient : IConfigCatClient
         {
             typeof(T).EnsureSupportedSettingClrType();
             settings = GetSettings();
-            evaluationDetails = this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, this.log);
+            evaluationDetails = this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, this.logger);
         }
         catch (Exception ex)
         {
-            this.log.Error($"Error occured in '{nameof(GetValueDetails)}' method.", ex);
+            this.logger.Error($"Error occured in '{nameof(GetValueDetails)}' method.", ex);
             evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user, ex.Message, ex);
         }
 
@@ -330,11 +330,11 @@ public sealed class ConfigCatClient : IConfigCatClient
         {
             typeof(T).EnsureSupportedSettingClrType();
             settings = await GetSettingsAsync().ConfigureAwait(false);
-            evaluationDetails = this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, this.log);
+            evaluationDetails = this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, this.logger);
         }
         catch (Exception ex)
         {
-            this.log.Error($"Error occured in '{nameof(GetValueDetailsAsync)}' method.", ex);
+            this.logger.Error($"Error occured in '{nameof(GetValueDetailsAsync)}' method.", ex);
             evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user, ex.Message, ex);
         }
 
@@ -348,7 +348,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         try
         {
             var settings = GetSettings();
-            if (!RolloutEvaluatorExtensions.CheckSettingsAvailable(settings.Value, this.log))
+            if (!RolloutEvaluatorExtensions.CheckSettingsAvailable(settings.Value, this.logger))
             {
                 return Enumerable.Empty<string>();
             }
@@ -356,7 +356,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
         catch (Exception ex)
         {
-            this.log.Error($"Error occured in '{nameof(GetAllKeys)}' method.", ex);
+            this.logger.Error($"Error occured in '{nameof(GetAllKeys)}' method.", ex);
             return Enumerable.Empty<string>();
         }
     }
@@ -367,7 +367,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         try
         {
             var settings = await GetSettingsAsync().ConfigureAwait(false);
-            if (!RolloutEvaluatorExtensions.CheckSettingsAvailable(settings.Value, this.log))
+            if (!RolloutEvaluatorExtensions.CheckSettingsAvailable(settings.Value, this.logger))
             {
                 return Enumerable.Empty<string>();
             }
@@ -375,7 +375,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
         catch (Exception ex)
         {
-            this.log.Error($"Error occured in '{nameof(GetAllKeysAsync)}' method.", ex);
+            this.logger.Error($"Error occured in '{nameof(GetAllKeysAsync)}' method.", ex);
             return Enumerable.Empty<string>();
         }
     }
@@ -389,7 +389,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         try
         {
             var settings = GetSettings();
-            evaluationDetailsArray = this.configEvaluator.EvaluateAll(settings.Value, user, settings.RemoteConfig, this.log, out var exceptions);
+            evaluationDetailsArray = this.configEvaluator.EvaluateAll(settings.Value, user, settings.RemoteConfig, this.logger, out var exceptions);
             if (exceptions is { Count: > 0 })
             {
                 throw new AggregateException(exceptions);
@@ -398,7 +398,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
         catch (Exception ex)
         {
-            this.log.Error($"Error occured in '{nameof(GetAllValues)}' method.", ex);
+            this.logger.Error($"Error occured in '{nameof(GetAllValues)}' method.", ex);
             evaluationDetailsArray ??= ArrayUtils.EmptyArray<EvaluationDetails>();
             result = new Dictionary<string, object>();
         }
@@ -420,7 +420,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         try
         {
             var settings = await GetSettingsAsync().ConfigureAwait(false);
-            evaluationDetailsArray = this.configEvaluator.EvaluateAll(settings.Value, user, settings.RemoteConfig, this.log, out var exceptions);
+            evaluationDetailsArray = this.configEvaluator.EvaluateAll(settings.Value, user, settings.RemoteConfig, this.logger, out var exceptions);
             if (exceptions is { Count: > 0 })
             {
                 throw new AggregateException(exceptions);
@@ -429,7 +429,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
         catch (Exception ex)
         {
-            this.log.Error($"Error occured in '{nameof(GetAllValuesAsync)}' method.", ex);
+            this.logger.Error($"Error occured in '{nameof(GetAllValuesAsync)}' method.", ex);
             evaluationDetailsArray ??= ArrayUtils.EmptyArray<EvaluationDetails>();
             result = new Dictionary<string, object>();
         }
@@ -450,7 +450,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         try
         {
             var settings = GetSettings();
-            evaluationDetailsArray = this.configEvaluator.EvaluateAll(settings.Value, user, settings.RemoteConfig, this.log, out var exceptions);
+            evaluationDetailsArray = this.configEvaluator.EvaluateAll(settings.Value, user, settings.RemoteConfig, this.logger, out var exceptions);
             if (exceptions is { Count: > 0 })
             {
                 throw new AggregateException(exceptions);
@@ -458,7 +458,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
         catch (Exception ex)
         {
-            this.log.Error($"Error occured in '{nameof(GetAllValueDetails)}' method.", ex);
+            this.logger.Error($"Error occured in '{nameof(GetAllValueDetails)}' method.", ex);
             evaluationDetailsArray ??= ArrayUtils.EmptyArray<EvaluationDetails>();
         }
 
@@ -478,7 +478,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         try
         {
             var settings = await GetSettingsAsync().ConfigureAwait(false);
-            evaluationDetailsArray = this.configEvaluator.EvaluateAll(settings.Value, user, settings.RemoteConfig, this.log, out var exceptions);
+            evaluationDetailsArray = this.configEvaluator.EvaluateAll(settings.Value, user, settings.RemoteConfig, this.logger, out var exceptions);
             if (exceptions is { Count: > 0 })
             {
                 throw new AggregateException(exceptions);
@@ -486,7 +486,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
         catch (Exception ex)
         {
-            this.log.Error($"Error occured in '{nameof(GetAllValueDetailsAsync)}' method.", ex);
+            this.logger.Error($"Error occured in '{nameof(GetAllValueDetailsAsync)}' method.", ex);
             evaluationDetailsArray ??= ArrayUtils.EmptyArray<EvaluationDetails>();
         }
 
@@ -507,7 +507,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
         catch (Exception ex)
         {
-            this.log.Error($"Error occured in '{nameof(ForceRefresh)}' method.", ex);
+            this.logger.Error($"Error occured in '{nameof(ForceRefresh)}' method.", ex);
             return RefreshResult.Failure(ex.Message, ex);
         }
     }
@@ -521,7 +521,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
         catch (Exception ex)
         {
-            this.log.Error($"Error occured in '{nameof(ForceRefreshAsync)}' method.", ex);
+            this.logger.Error($"Error occured in '{nameof(ForceRefreshAsync)}' method.", ex);
             return RefreshResult.Failure(ex.Message, ex);
         }
     }
@@ -623,12 +623,12 @@ public sealed class ConfigCatClient : IConfigCatClient
         try
         {
             settings = GetSettings();
-            evaluationDetails = this.configEvaluator.EvaluateVariationId(settings.Value, key, defaultVariationId, user, settings.RemoteConfig, this.log);
+            evaluationDetails = this.configEvaluator.EvaluateVariationId(settings.Value, key, defaultVariationId, user, settings.RemoteConfig, this.logger);
             variationId = evaluationDetails.VariationId;
         }
         catch (Exception ex)
         {
-            this.log.Error($"Error occured in '{nameof(GetVariationId)}' method.", ex);
+            this.logger.Error($"Error occured in '{nameof(GetVariationId)}' method.", ex);
             evaluationDetails = EvaluationDetails.FromDefaultVariationId(key, defaultVariationId, fetchTime: settings.RemoteConfig?.TimeStamp, user, ex.Message, ex);
             variationId = defaultVariationId;
         }
@@ -648,12 +648,12 @@ public sealed class ConfigCatClient : IConfigCatClient
         try
         {
             settings = await GetSettingsAsync().ConfigureAwait(false);
-            evaluationDetails = this.configEvaluator.EvaluateVariationId(settings.Value, key, defaultVariationId, user, settings.RemoteConfig, this.log);
+            evaluationDetails = this.configEvaluator.EvaluateVariationId(settings.Value, key, defaultVariationId, user, settings.RemoteConfig, this.logger);
             variationId = evaluationDetails.VariationId;
         }
         catch (Exception ex)
         {
-            this.log.Error($"Error occured in '{nameof(GetVariationIdAsync)}' method.", ex);
+            this.logger.Error($"Error occured in '{nameof(GetVariationIdAsync)}' method.", ex);
             evaluationDetails = EvaluationDetails.FromDefaultVariationId(key, defaultVariationId, fetchTime: settings.RemoteConfig?.TimeStamp, user, ex.Message, ex);
             variationId = defaultVariationId;
         }
@@ -672,7 +672,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         try
         {
             var settings = GetSettings();
-            evaluationDetailsArray = this.configEvaluator.EvaluateAllVariationIds(settings.Value, user, settings.RemoteConfig, this.log, out var exceptions);
+            evaluationDetailsArray = this.configEvaluator.EvaluateAllVariationIds(settings.Value, user, settings.RemoteConfig, this.logger, out var exceptions);
             if (exceptions is { Count: > 0 })
             {
                 throw new AggregateException(exceptions);
@@ -681,7 +681,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
         catch (Exception ex)
         {
-            this.log.Error($"Error occured in '{nameof(GetAllVariationId)}' method.", ex);
+            this.logger.Error($"Error occured in '{nameof(GetAllVariationId)}' method.", ex);
             evaluationDetailsArray ??= ArrayUtils.EmptyArray<EvaluationDetails>();
             result = Enumerable.Empty<string>();
         }
@@ -704,7 +704,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         try
         {
             var settings = await GetSettingsAsync().ConfigureAwait(false);
-            evaluationDetailsArray = this.configEvaluator.EvaluateAllVariationIds(settings.Value, user, settings.RemoteConfig, this.log, out var exceptions);
+            evaluationDetailsArray = this.configEvaluator.EvaluateAllVariationIds(settings.Value, user, settings.RemoteConfig, this.logger, out var exceptions);
             if (exceptions is { Count: > 0 })
             {
                 throw new AggregateException(exceptions);
@@ -713,7 +713,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
         catch (Exception ex)
         {
-            this.log.Error($"Error occured in '{nameof(GetAllVariationIdAsync)}' method.", ex);
+            this.logger.Error($"Error occured in '{nameof(GetAllVariationIdAsync)}' method.", ex);
             evaluationDetailsArray ??= ArrayUtils.EmptyArray<EvaluationDetails>();
             result = Enumerable.Empty<string>();
         }

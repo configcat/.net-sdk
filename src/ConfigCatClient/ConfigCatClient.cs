@@ -17,6 +17,10 @@ namespace ConfigCat.Client;
 /// </summary>
 public sealed class ConfigCatClient : IConfigCatClient
 {
+    private static readonly string Version = typeof(ConfigCatClient).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
+
+    internal static readonly ConfigCatClientCache Instances = new();
+
     private readonly string sdkKey;
     // TODO: Remove this field when we delete the obsolete client constructors.
     private readonly bool isUncached;
@@ -31,10 +35,6 @@ public sealed class ConfigCatClient : IConfigCatClient
     // Volatile guarantees (see https://learn.microsoft.com/en-us/dotnet/api/system.threading.volatile) that such changes become visible to them *eventually*,
     // which is good enough in these cases.
     private volatile User defaultUser;
-
-    private static readonly string Version = typeof(ConfigCatClient).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
-
-    internal static readonly ConfigCatClientCache Instances = new();
 
     /// <inheritdoc />
     public LogLevel LogLevel
@@ -246,6 +246,92 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
 
         return instance;
+    }
+
+    /// <inheritdoc />
+    ~ConfigCatClient()
+    {
+        // Safeguard against situations where user forgets to dispose of the client instance.
+
+        if (!this.isUncached && this.sdkKey is not null)
+        {
+            Instances.Remove(this.sdkKey, instanceToRemove: this);
+        }
+
+        Dispose(disposing: false);
+    }
+
+    private void Dispose(bool disposing)
+    {
+        // NOTE: hooks may be null (e.g. if already collected) when this method is called by the finalizer
+        this.hooks?.TryDisconnect();
+
+        if (disposing)
+        {
+            if (this.configService is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+
+            this.overrideDataSource?.Dispose();
+        }
+        else
+        {
+            // Execution gets here when consumer forgets to dispose the client instance.
+            // In this case we need to make sure that background work is stopped,
+            // otherwise it would go on endlessly, that is, we'd end up with a memory leak.
+            var autoPollConfigService = this.configService as AutoPollConfigService;
+            var localFileDataSource = this.overrideDataSource as LocalFileDataSource;
+            if (autoPollConfigService is not null || localFileDataSource is not null)
+            {
+                Task.Run(() =>
+                {
+                    autoPollConfigService?.StopScheduler();
+                    localFileDataSource?.StopWatch();
+                });
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        if (!this.isUncached)
+        {
+            Instances.Remove(this.sdkKey, instanceToRemove: this);
+        }
+
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Disposes of all existing <see cref="ConfigCatClient"/> instances.
+    /// </summary>
+    /// <exception cref="AggregateException">Potential exceptions thrown by <see cref="Dispose()"/> of the individual clients.</exception>
+    public static void DisposeAll()
+    {
+        Instances.Clear(out var removedInstances);
+
+        List<Exception> exceptions = null;
+        foreach (var instance in removedInstances)
+        {
+            try
+            {
+                instance.Dispose(disposing: true);
+                GC.SuppressFinalize(instance);
+            }
+            catch (Exception ex)
+            {
+                exceptions ??= new List<Exception>();
+                exceptions.Add(ex);
+            }
+        }
+
+        if (exceptions is { Count: > 0 })
+        {
+            throw new AggregateException(exceptions);
+        }
     }
 
     /// <inheritdoc />
@@ -523,92 +609,6 @@ public sealed class ConfigCatClient : IConfigCatClient
         {
             this.logger.Error($"Error occured in '{nameof(ForceRefreshAsync)}' method.", ex);
             return RefreshResult.Failure(ex.Message, ex);
-        }
-    }
-
-    /// <inheritdoc />
-    ~ConfigCatClient()
-    {
-        // Safeguard against situations where user forgets to dispose of the client instance.
-
-        if (!this.isUncached && this.sdkKey is not null)
-        {
-            Instances.Remove(this.sdkKey, instanceToRemove: this);
-        }
-
-        Dispose(disposing: false);
-    }
-
-    private void Dispose(bool disposing)
-    {
-        // NOTE: hooks may be null (e.g. if already collected) when this method is called by the finalizer
-        this.hooks?.TryDisconnect();
-
-        if (disposing)
-        {
-            if (this.configService is IDisposable disposable)
-            {
-                disposable.Dispose();
-            }
-
-            this.overrideDataSource?.Dispose();
-        }
-        else
-        {
-            // Execution gets here when consumer forgets to dispose the client instance.
-            // In this case we need to make sure that background work is stopped,
-            // otherwise it would go on endlessly, that is, we'd end up with a memory leak.
-            var autoPollConfigService = this.configService as AutoPollConfigService;
-            var localFileDataSource = this.overrideDataSource as LocalFileDataSource;
-            if (autoPollConfigService is not null || localFileDataSource is not null)
-            {
-                Task.Run(() =>
-                {
-                    autoPollConfigService?.StopScheduler();
-                    localFileDataSource?.StopWatch();
-                });
-            }
-        }
-    }
-
-    /// <inheritdoc />
-    public void Dispose()
-    {
-        if (!this.isUncached)
-        {
-            Instances.Remove(this.sdkKey, instanceToRemove: this);
-        }
-
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
-    }
-
-    /// <summary>
-    /// Disposes of all existing <see cref="ConfigCatClient"/> instances.
-    /// </summary>
-    /// <exception cref="AggregateException">Potential exceptions thrown by <see cref="Dispose()"/> of the individual clients.</exception>
-    public static void DisposeAll()
-    {
-        Instances.Clear(out var removedInstances);
-
-        List<Exception> exceptions = null;
-        foreach (var instance in removedInstances)
-        {
-            try
-            {
-                instance.Dispose(disposing: true);
-                GC.SuppressFinalize(instance);
-            }
-            catch (Exception ex)
-            {
-                exceptions ??= new List<Exception>();
-                exceptions.Add(ex);
-            }
-        }
-
-        if (exceptions is { Count: > 0 })
-        {
-            throw new AggregateException(exceptions);
         }
     }
 

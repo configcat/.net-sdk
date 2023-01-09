@@ -11,9 +11,10 @@ public class BaseUrlTests
 {
     private const string SDKKEY = "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A";
 
+    private static readonly HttpClientHandler SharedHandler = new();
+
     private readonly Uri workingBaseUrl = new("https://cdn.configcat.com");
     private readonly Uri notWorkingBaseUrl = new("https://thiswillnotwork.configcat.com");
-    private static readonly HttpClientHandler SharedHandler = new();
 
     [DataRow(true)]
     [DataRow(false)]

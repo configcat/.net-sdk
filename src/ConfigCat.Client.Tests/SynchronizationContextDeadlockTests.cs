@@ -15,11 +15,11 @@ namespace ConfigCat.Client.Tests;
 public class SynchronizationContextDeadlockTests
 {
     private const string SDKKEY = "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A";
+
     private static readonly HttpClientHandler SharedHandler = new();
 
-    private readonly Mock<SynchronizationContext> syncContextMock;
-
     private static SynchronizationContext SynchronizationContextBackup;
+    private readonly Mock<SynchronizationContext> syncContextMock;
 
     public SynchronizationContextDeadlockTests()
     {

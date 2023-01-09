@@ -12,7 +12,7 @@ using JsonValue = System.Text.Json.JsonElement;
 
 namespace ConfigCat.Client.Evaluation;
 
-internal class RolloutEvaluator : IRolloutEvaluator
+internal sealed class RolloutEvaluator : IRolloutEvaluator
 {
     private readonly LoggerWrapper logger;
 

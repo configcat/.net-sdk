@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace ConfigCat.Client;
 
-internal class InMemoryConfigCache : IConfigCatCache
+internal sealed class InMemoryConfigCache : IConfigCatCache
 {
     private ProjectConfig projectConfig = ProjectConfig.Empty;
 

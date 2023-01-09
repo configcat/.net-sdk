@@ -3,7 +3,7 @@ using ConfigCat.Client.Evaluation;
 
 namespace ConfigCat.Client;
 
-internal class ConfigDeserializer : IConfigDeserializer
+internal sealed class ConfigDeserializer : IConfigDeserializer
 {
     private SettingsWithPreferences lastDeserializedSettings;
     private string lastConfig;

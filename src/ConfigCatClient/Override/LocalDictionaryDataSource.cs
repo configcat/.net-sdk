@@ -8,17 +8,25 @@ namespace ConfigCat.Client.Override
 {
     internal sealed class LocalDictionaryDataSource : IOverrideDataSource
     {
-        private readonly IDictionary<string, Setting> settings;
+        private readonly IDictionary<string, Setting> initialSettings;
+        private readonly IDictionary<string, object> overrideValues;
+        private readonly bool watchChanges;
 
-        public LocalDictionaryDataSource(IDictionary<string, object> overrideValues)
+        public LocalDictionaryDataSource(IDictionary<string, object> overrideValues, bool watchChanges)
         {
-            this.settings = overrideValues.ToDictionary(kv => kv.Key, kv => kv.Value.ToSetting());
+            this.initialSettings = overrideValues.ToDictionary(kv => kv.Key, kv => kv.Value.ToSetting());
+            this.overrideValues = overrideValues;
+            this.watchChanges = watchChanges;
         }
 
-        public IDictionary<string, Setting> GetOverrides() => this.settings;
+        public IDictionary<string, Setting> GetOverrides() => GetSettingsFromSource();
 
-        public Task<IDictionary<string, Setting>> GetOverridesAsync() => Task.FromResult(this.settings);
+        public Task<IDictionary<string, Setting>> GetOverridesAsync() => Task.FromResult(GetSettingsFromSource());
 
         public void Dispose() { /* no need to dispose anything */ }
+
+        private IDictionary<string, Setting> GetSettingsFromSource() => watchChanges
+            ? overrideValues.ToDictionary(kv => kv.Key, kv => kv.Value.ToSetting())
+            : this.initialSettings;
     }
 }

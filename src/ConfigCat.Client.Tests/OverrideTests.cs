@@ -304,6 +304,54 @@ namespace ConfigCat.Client.Tests
         }
 
         [TestMethod]
+        public void LocalOnly_Watch()
+        {
+            var dict = new Dictionary<string, object>
+            {
+                {"fakeKey", "test1"},
+            };
+
+#pragma warning disable CS0618 // Type or member is obsolete
+            using var client = new ConfigCatClient(options =>
+            {
+                options.SdkKey = "localhost";
+                options.FlagOverrides = FlagOverrides.LocalDictionary(dict, true, OverrideBehaviour.LocalOnly);
+                options.PollingMode = PollingModes.ManualPoll;
+            });
+#pragma warning restore CS0618 // Type or member is obsolete
+
+            Assert.AreEqual("test1", client.GetValue("fakeKey", string.Empty));
+
+            dict["fakeKey"] = "test2";
+
+            Assert.AreEqual("test2", client.GetValue("fakeKey", string.Empty));
+        }
+
+        [TestMethod]
+        public async Task LocalOnly_Async_Watch()
+        {
+            var dict = new Dictionary<string, object>
+            {
+                {"fakeKey", "test1"},
+            };
+
+#pragma warning disable CS0618 // Type or member is obsolete
+            using var client = new ConfigCatClient(options =>
+            {
+                options.SdkKey = "localhost";
+                options.FlagOverrides = FlagOverrides.LocalDictionary(dict, true, OverrideBehaviour.LocalOnly);
+                options.PollingMode = PollingModes.ManualPoll;
+            });
+#pragma warning restore CS0618 // Type or member is obsolete
+
+            Assert.AreEqual("test1", await client.GetValueAsync("fakeKey", string.Empty));
+
+            dict["fakeKey"] = "test2";
+
+            Assert.AreEqual("test2", await client.GetValueAsync("fakeKey", string.Empty));
+        }
+
+        [TestMethod]
         public async Task LocalOnly_Async()
         {
             var dict = new Dictionary<string, object>

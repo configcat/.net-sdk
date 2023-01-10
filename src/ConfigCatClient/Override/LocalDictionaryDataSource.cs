@@ -10,13 +10,14 @@ namespace ConfigCat.Client.Override
     {
         private readonly IDictionary<string, Setting> initialSettings;
         private readonly IDictionary<string, object> overrideValues;
-        private readonly bool watchChanges;
 
         public LocalDictionaryDataSource(IDictionary<string, object> overrideValues, bool watchChanges)
         {
             this.initialSettings = overrideValues.ToDictionary(kv => kv.Key, kv => kv.Value.ToSetting());
-            this.overrideValues = overrideValues;
-            this.watchChanges = watchChanges;
+            if (watchChanges)
+            {
+                this.overrideValues = overrideValues;
+            }
         }
 
         public IDictionary<string, Setting> GetOverrides() => GetSettingsFromSource();
@@ -25,7 +26,7 @@ namespace ConfigCat.Client.Override
 
         public void Dispose() { /* no need to dispose anything */ }
 
-        private IDictionary<string, Setting> GetSettingsFromSource() => watchChanges
+        private IDictionary<string, Setting> GetSettingsFromSource() => overrideValues != null
             ? overrideValues.ToDictionary(kv => kv.Key, kv => kv.Value.ToSetting())
             : this.initialSettings;
     }

@@ -5,6 +5,7 @@
   FlagOverrides LocalDictionary(IDictionary<string, object> dictionary, bool watchChanges, OverrideBehaviour overrideBehaviour)
   ``` 
   Where the `watchChanges` parameter indicates whether the SDK should rebuild the overrides upon each read to keep track of the source dictionary's changes.
+- Fix config fetcher-related error logging to include exception in the log if any.
 
 ### 7.1.0
 

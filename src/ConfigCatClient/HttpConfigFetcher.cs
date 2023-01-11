@@ -165,7 +165,7 @@ namespace ConfigCat.Client
                 errorException = ex;
             }
 
-            this.log.Error(errorMessage);
+            this.log.Error(errorMessage, errorException);
             this.ReInitializeHttpClient();
             return FetchResult.Failure(lastConfig, errorMessage, errorException);
         }

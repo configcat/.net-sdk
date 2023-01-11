@@ -1,15 +1,14 @@
 ﻿using BenchmarkDotNet.Running;
 using System;
 
-namespace ConfigCatClient.Benchmarks
-{
-    class Program
-    {
-        private static void Main(string[] args)
-        {
-            BenchmarkRunner.Run<JsonDeserializationBenchmark>();
+namespace ConfigCatClient.Benchmarks;
 
-            Console.ReadKey();
-        }
+internal class Program
+{
+    private static void Main(string[] args)
+    {
+        BenchmarkRunner.Run<JsonDeserializationBenchmark>();
+
+        Console.ReadKey();
     }
 }

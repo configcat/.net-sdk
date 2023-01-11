@@ -1,169 +1,168 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace ConfigCat.Client
+namespace ConfigCat.Client;
+
+/// <summary>
+/// Provides client definition for <see cref="ConfigCatClient"/>
+/// </summary>
+public interface IConfigCatClient : IProvidesHooks, IDisposable
 {
     /// <summary>
-    /// Provides client definition for <see cref="ConfigCatClient"/>
+    /// Sets or gets the logging level.
     /// </summary>
-    public interface IConfigCatClient : IProvidesHooks, IDisposable
-    {
-        /// <summary>
-        /// Sets or gets the logging level.
-        /// </summary>
-        LogLevel LogLevel { get; set; }
+    LogLevel LogLevel { get; set; }
 
-        /// <summary>
-        /// Returns a value for the key. (Key for programs)
-        /// </summary>
-        /// <typeparam name="T">Setting type</typeparam>
-        /// <param name="key">Key for programs</param>
-        /// <param name="defaultValue">In case of failure return this value</param>
-        /// <param name="user">The user object for variation evaluation</param>
-        /// <returns>The value of the feature flag or setting.</returns>
-        T GetValue<T>(string key, T defaultValue, User user = null);
+    /// <summary>
+    /// Returns a value for the key. (Key for programs)
+    /// </summary>
+    /// <typeparam name="T">Setting type</typeparam>
+    /// <param name="key">Key for programs</param>
+    /// <param name="defaultValue">In case of failure return this value</param>
+    /// <param name="user">The user object for variation evaluation</param>
+    /// <returns>The value of the feature flag or setting.</returns>
+    T GetValue<T>(string key, T defaultValue, User user = null);
 
-        /// <summary>
-        /// Returns a value for the key. (Key for programs)
-        /// </summary>
-        /// <typeparam name="T">Setting type.</typeparam>
-        /// <param name="key">Key for programs.</param>
-        /// <param name="defaultValue">In case of failure return this value.</param>
-        /// <param name="user">The user object for variation evaluation.</param>
-        /// <returns>The task that will evaluate the value of the feature flag or setting.</returns>
-        Task<T> GetValueAsync<T>(string key, T defaultValue, User user = null);
+    /// <summary>
+    /// Returns a value for the key. (Key for programs)
+    /// </summary>
+    /// <typeparam name="T">Setting type.</typeparam>
+    /// <param name="key">Key for programs.</param>
+    /// <param name="defaultValue">In case of failure return this value.</param>
+    /// <param name="user">The user object for variation evaluation.</param>
+    /// <returns>The task that will evaluate the value of the feature flag or setting.</returns>
+    Task<T> GetValueAsync<T>(string key, T defaultValue, User user = null);
 
-        /// <summary>
-        /// Returns the value along with evaluation details of a feature flag or setting by the given key.
-        /// </summary>
-        /// <typeparam name="T">Setting type</typeparam>
-        /// <param name="key">Key for programs</param>
-        /// <param name="defaultValue">In case of failure return this value</param>
-        /// <param name="user">The user object for variation evaluation</param>
-        /// <returns>The value along with the details of evaluation of the feature flag or setting.</returns>
-        EvaluationDetails<T> GetValueDetails<T>(string key, T defaultValue, User user = null);
+    /// <summary>
+    /// Returns the value along with evaluation details of a feature flag or setting by the given key.
+    /// </summary>
+    /// <typeparam name="T">Setting type</typeparam>
+    /// <param name="key">Key for programs</param>
+    /// <param name="defaultValue">In case of failure return this value</param>
+    /// <param name="user">The user object for variation evaluation</param>
+    /// <returns>The value along with the details of evaluation of the feature flag or setting.</returns>
+    EvaluationDetails<T> GetValueDetails<T>(string key, T defaultValue, User user = null);
 
-        /// <summary>
-        /// Returns the value along with evaluation details of a feature flag or setting by the given key.
-        /// </summary>
-        /// <typeparam name="T">Setting type</typeparam>
-        /// <param name="key">Key for programs</param>
-        /// <param name="defaultValue">In case of failure return this value</param>
-        /// <param name="user">The user object for variation evaluation</param>
-        /// <returns>The value along with the details of evaluation of the feature flag or setting.</returns>
-        Task<EvaluationDetails<T>> GetValueDetailsAsync<T>(string key, T defaultValue, User user = null);
+    /// <summary>
+    /// Returns the value along with evaluation details of a feature flag or setting by the given key.
+    /// </summary>
+    /// <typeparam name="T">Setting type</typeparam>
+    /// <param name="key">Key for programs</param>
+    /// <param name="defaultValue">In case of failure return this value</param>
+    /// <param name="user">The user object for variation evaluation</param>
+    /// <returns>The value along with the details of evaluation of the feature flag or setting.</returns>
+    Task<EvaluationDetails<T>> GetValueDetailsAsync<T>(string key, T defaultValue, User user = null);
 
-        /// <summary>
-        /// Returns a collection with all keys.
-        /// </summary>
-        /// <returns>The key collection.</returns>
-        IEnumerable<string> GetAllKeys();
+    /// <summary>
+    /// Returns a collection with all keys.
+    /// </summary>
+    /// <returns>The key collection.</returns>
+    IEnumerable<string> GetAllKeys();
 
-        /// <summary>
-        /// Returns a collection with all keys asynchronously.
-        /// </summary>
-        /// <returns>The key collection.</returns>
-        Task<IEnumerable<string>> GetAllKeysAsync();
+    /// <summary>
+    /// Returns a collection with all keys asynchronously.
+    /// </summary>
+    /// <returns>The key collection.</returns>
+    Task<IEnumerable<string>> GetAllKeysAsync();
 
-        /// <summary>
-        /// Returns the key-value collection of all feature flags and settings synchronously.
-        /// </summary>
-        /// <param name="user">The user object for variation evaluation.</param>
-        /// <returns>The key-value collection.</returns>
-        IDictionary<string, object> GetAllValues(User user = null);
+    /// <summary>
+    /// Returns the key-value collection of all feature flags and settings synchronously.
+    /// </summary>
+    /// <param name="user">The user object for variation evaluation.</param>
+    /// <returns>The key-value collection.</returns>
+    IDictionary<string, object> GetAllValues(User user = null);
 
-        /// <summary>
-        /// Returns the key-value collection of all feature flags and settings asynchronously.
-        /// </summary>
-        /// <param name="user">The user object for variation evaluation.</param>
-        /// <returns>The key-value collection.</returns>
-        Task<IDictionary<string, object>> GetAllValuesAsync(User user = null);
+    /// <summary>
+    /// Returns the key-value collection of all feature flags and settings asynchronously.
+    /// </summary>
+    /// <param name="user">The user object for variation evaluation.</param>
+    /// <returns>The key-value collection.</returns>
+    Task<IDictionary<string, object>> GetAllValuesAsync(User user = null);
 
-        /// <summary>
-        /// Returns the values along with evaluation details of all feature flags and settings synchronously.
-        /// </summary>
-        /// <param name="user">The user object for variation evaluation.</param>
-        /// <returns>The key-value collection.</returns>
-        IReadOnlyList<EvaluationDetails> GetAllValueDetails(User user = null);
+    /// <summary>
+    /// Returns the values along with evaluation details of all feature flags and settings synchronously.
+    /// </summary>
+    /// <param name="user">The user object for variation evaluation.</param>
+    /// <returns>The key-value collection.</returns>
+    IReadOnlyList<EvaluationDetails> GetAllValueDetails(User user = null);
 
-        /// <summary>
-        /// Returns the values along with evaluation details of all feature flags and settings asynchronously.
-        /// </summary>
-        /// <param name="user">The user object for variation evaluation.</param>
-        /// <returns>The key-value collection.</returns>
-        Task<IReadOnlyList<EvaluationDetails>> GetAllValueDetailsAsync(User user = null);
+    /// <summary>
+    /// Returns the values along with evaluation details of all feature flags and settings asynchronously.
+    /// </summary>
+    /// <param name="user">The user object for variation evaluation.</param>
+    /// <returns>The key-value collection.</returns>
+    Task<IReadOnlyList<EvaluationDetails>> GetAllValueDetailsAsync(User user = null);
 
-        /// <summary>
-        /// Refreshes the configuration.
-        /// </summary>
-        RefreshResult ForceRefresh();
+    /// <summary>
+    /// Refreshes the configuration.
+    /// </summary>
+    RefreshResult ForceRefresh();
 
-        /// <summary>
-        /// Refreshes the configuration asynchronously.
-        /// </summary>
-        Task<RefreshResult> ForceRefreshAsync();
+    /// <summary>
+    /// Refreshes the configuration asynchronously.
+    /// </summary>
+    Task<RefreshResult> ForceRefreshAsync();
 
-        /// <summary>
-        /// Returns the Variation ID (analytics) for a feature flag or setting by the given key.
-        /// </summary>
-        /// <param name="key">Key for programs</param>
-        /// <param name="defaultVariationId">In case of failure return this value.</param>
-        /// <param name="user">The user object for variation evaluation.</param>
-        /// <returns>Variation ID.</returns>
-        [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the GetValueDetails() method instead.")]
-        string GetVariationId(string key, string defaultVariationId, User user = null);
+    /// <summary>
+    /// Returns the Variation ID (analytics) for a feature flag or setting by the given key.
+    /// </summary>
+    /// <param name="key">Key for programs</param>
+    /// <param name="defaultVariationId">In case of failure return this value.</param>
+    /// <param name="user">The user object for variation evaluation.</param>
+    /// <returns>Variation ID.</returns>
+    [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the GetValueDetails() method instead.")]
+    string GetVariationId(string key, string defaultVariationId, User user = null);
 
-        /// <summary>
-        /// Returns the Variation ID (analytics) for a feature flag or setting by the given key.
-        /// </summary>
-        /// <param name="key">Key for programs</param>
-        /// <param name="defaultVariationId">In case of failure return this value.</param>
-        /// <param name="user">The user object for variation evaluation.</param>
-        /// <returns>Variation ID.</returns>
-        [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the GetValueDetailsAsync() method instead.")]
-        Task<string> GetVariationIdAsync(string key, string defaultVariationId, User user = null);
+    /// <summary>
+    /// Returns the Variation ID (analytics) for a feature flag or setting by the given key.
+    /// </summary>
+    /// <param name="key">Key for programs</param>
+    /// <param name="defaultVariationId">In case of failure return this value.</param>
+    /// <param name="user">The user object for variation evaluation.</param>
+    /// <returns>Variation ID.</returns>
+    [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the GetValueDetailsAsync() method instead.")]
+    Task<string> GetVariationIdAsync(string key, string defaultVariationId, User user = null);
 
-        /// <summary>
-        /// Returns all Variation IDs (analytics) for each feature flag and setting.
-        /// </summary>
-        /// <param name="user">The user object for variation evaluation.</param>
-        /// <returns>Collection of all Variation IDs.</returns>
-        [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the GetAllValueDetails() method instead.")]
-        IEnumerable<string> GetAllVariationId(User user = null);
+    /// <summary>
+    /// Returns all Variation IDs (analytics) for each feature flag and setting.
+    /// </summary>
+    /// <param name="user">The user object for variation evaluation.</param>
+    /// <returns>Collection of all Variation IDs.</returns>
+    [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the GetAllValueDetails() method instead.")]
+    IEnumerable<string> GetAllVariationId(User user = null);
 
-        /// <summary>
-        /// Returns all Variation IDs (analytics) for each feature flags or settings.
-        /// </summary>
-        /// <param name="user">The user object for variation evaluation.</param>
-        /// <returns>Collection of all Variation IDs.</returns>
-        [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the GetAllValueDetailsAsync() method instead.")]
-        Task<IEnumerable<string>> GetAllVariationIdAsync(User user = null);
+    /// <summary>
+    /// Returns all Variation IDs (analytics) for each feature flags or settings.
+    /// </summary>
+    /// <param name="user">The user object for variation evaluation.</param>
+    /// <returns>Collection of all Variation IDs.</returns>
+    [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the GetAllValueDetailsAsync() method instead.")]
+    Task<IEnumerable<string>> GetAllVariationIdAsync(User user = null);
 
-        /// <summary>
-        /// Sets the default user.
-        /// </summary>
-        /// <param name="user">The default user object for variation evaluation.</param>
-        void SetDefaultUser(User user);
+    /// <summary>
+    /// Sets the default user.
+    /// </summary>
+    /// <param name="user">The default user object for variation evaluation.</param>
+    void SetDefaultUser(User user);
 
-        /// <summary>
-        /// Sets the default user to null.
-        /// </summary>
-        void ClearDefaultUser();
+    /// <summary>
+    /// Sets the default user to null.
+    /// </summary>
+    void ClearDefaultUser();
 
-        /// <summary>
-        /// True when the client is configured not to initiate HTTP requests, otherwise false.
-        /// </summary>
-        bool IsOffline { get; }
+    /// <summary>
+    /// True when the client is configured not to initiate HTTP requests, otherwise false.
+    /// </summary>
+    bool IsOffline { get; }
 
-        /// <summary>
-        /// Configures the client to allow HTTP requests.
-        /// </summary>
-        void SetOnline();
+    /// <summary>
+    /// Configures the client to allow HTTP requests.
+    /// </summary>
+    void SetOnline();
 
-        /// <summary>
-        /// Configures the client to not initiate HTTP requests and work only from its cache.
-        /// </summary>
-        void SetOffline();
-    }
+    /// <summary>
+    /// Configures the client to not initiate HTTP requests and work only from its cache.
+    /// </summary>
+    void SetOffline();
 }

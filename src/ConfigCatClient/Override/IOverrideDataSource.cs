@@ -1,14 +1,13 @@
-﻿using ConfigCat.Client.Evaluation;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using ConfigCat.Client.Evaluation;
 
-namespace ConfigCat.Client.Override
+namespace ConfigCat.Client.Override;
+
+internal interface IOverrideDataSource : IDisposable
 {
-    internal interface IOverrideDataSource : IDisposable
-    {
-        IDictionary<string, Setting> GetOverrides();
+    IDictionary<string, Setting> GetOverrides();
 
-        Task<IDictionary<string, Setting>> GetOverridesAsync();
-    }
+    Task<IDictionary<string, Setting>> GetOverridesAsync();
 }

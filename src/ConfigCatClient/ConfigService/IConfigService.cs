@@ -1,22 +1,21 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 
-namespace ConfigCat.Client.ConfigService
+namespace ConfigCat.Client.ConfigService;
+
+internal interface IConfigService
 {
-    internal interface IConfigService
-    {
-        ProjectConfig GetConfig();
+    ProjectConfig GetConfig();
 
-        Task<ProjectConfig> GetConfigAsync();
+    Task<ProjectConfig> GetConfigAsync();
 
-        Task<RefreshResult> RefreshConfigAsync();
+    Task<RefreshResult> RefreshConfigAsync();
 
-        RefreshResult RefreshConfig();
+    RefreshResult RefreshConfig();
 
-        bool IsOffline { get; }
+    bool IsOffline { get; }
 
-        void SetOnline();
+    void SetOnline();
 
-        void SetOffline();
-    }
+    void SetOffline();
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
 using ConfigCat.Client.Utils;
@@ -9,232 +9,231 @@ using ConfigWithFetchResult = System.Tuple<ConfigCat.Client.ProjectConfig, Confi
 using ConfigWithFetchResult = System.ValueTuple<ConfigCat.Client.ProjectConfig, ConfigCat.Client.FetchResult>;
 #endif
 
-namespace ConfigCat.Client.ConfigService
+namespace ConfigCat.Client.ConfigService;
+
+internal abstract class ConfigServiceBase : IDisposable
 {
-    internal abstract class ConfigServiceBase : IDisposable
+    protected internal enum Status
     {
-        protected internal enum Status
-        {
-            Online,
-            Offline,
-            Disposed,
-        }
+        Online,
+        Offline,
+        Disposed,
+    }
 
-        private Status status;
-        private readonly object syncObj = new();
+    private Status status;
+    private readonly object syncObj = new();
 
-        protected readonly IConfigFetcher ConfigFetcher;
+    protected readonly IConfigFetcher ConfigFetcher;
 
 #pragma warning disable CS0618 // Type or member is obsolete
-        protected readonly IConfigCache ConfigCache; // Backward compatibility, it'll be changed to IConfigCatCache later.
+    protected readonly IConfigCache ConfigCache; // Backward compatibility, it'll be changed to IConfigCatCache later.
 #pragma warning restore CS0618 // Type or member is obsolete
 
-        protected readonly LoggerWrapper Log;
-        protected readonly string CacheKey;
-        protected readonly Hooks Hooks;
+    protected readonly LoggerWrapper Logger;
+    protected readonly string CacheKey;
+    protected readonly Hooks Hooks;
 
-        protected ConfigServiceBase(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper log, bool isOffline, Hooks hooks)
+    protected ConfigServiceBase(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline, Hooks hooks)
+    {
+        this.ConfigFetcher = configFetcher;
+        this.ConfigCache = cacheParameters.ConfigCache;
+        this.CacheKey = cacheParameters.CacheKey;
+        this.Logger = logger;
+        this.Hooks = hooks ?? NullHooks.Instance;
+        this.status = isOffline ? Status.Offline : Status.Online;
+    }
+
+    /// <remarks>
+    /// Note for inheritors. Beware, this method is called within a lock statement.
+    /// </remarks>
+    protected virtual void DisposeSynchronized(bool disposing) { }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing && this.ConfigFetcher is IDisposable disposable)
         {
-            this.ConfigFetcher = configFetcher;
-            this.ConfigCache = cacheParameters.ConfigCache;
-            this.CacheKey = cacheParameters.CacheKey;
-            this.Log = log;
-            this.Hooks = hooks ?? NullHooks.Instance;
-            this.status = isOffline ? Status.Offline : Status.Online;
+            disposable.Dispose();
         }
+    }
 
-        /// <remarks>
-        /// Note for inheritors. Beware, this method is called within a lock statement.
-        /// </remarks>
-        protected virtual void DisposeSynchronized(bool disposing) { }
-
-        protected virtual void Dispose(bool disposing)
+    public void Dispose()
+    {
+        lock (this.syncObj)
         {
-            if (disposing && ConfigFetcher is IDisposable disposable)
+            if (this.status == Status.Disposed)
             {
-                disposable.Dispose();
-            }
-        }
-
-        public void Dispose()
-        {
-            lock (this.syncObj)
-            {
-                if (this.status == Status.Disposed)
-                {
-                    return;
-                }
-
-                this.status = Status.Disposed;
-
-                DisposeSynchronized(true);
+                return;
             }
 
-            Dispose(true);
+            this.status = Status.Disposed;
+
+            DisposeSynchronized(true);
         }
 
-        public virtual RefreshResult RefreshConfig()
-        {
-            // check for the new cache interface until we remove the old IConfigCache.
-            if (this.ConfigCache is IConfigCatCache cache)
-            {
-                if (!IsOffline)
-                {
-                    var latestConfig = cache.Get(this.CacheKey);
-                    var configWithFetchResult = RefreshConfigCore(latestConfig);
-                    return RefreshResult.From(configWithFetchResult.Item2);
-                }
-                else
-                {
-                    this.Log.OfflineModeWarning();
-                    return RefreshResult.Failure("Client is in offline mode, it can't initiate HTTP calls.");
-                }
-            }
+        Dispose(true);
+    }
 
-            // worst scenario, fallback to sync over async, delete when we enforce IConfigCatCache.
-            return Syncer.Sync(this.RefreshConfigAsync);
-        }
-
-        protected ConfigWithFetchResult RefreshConfigCore(ProjectConfig latestConfig)
-        {
-            var fetchResult = this.ConfigFetcher.Fetch(latestConfig);
-            var newConfig = fetchResult.Config;
-
-            var configContentHasChanged = !ProjectConfig.ContentEquals(latestConfig, newConfig);
-            if ((configContentHasChanged || newConfig.TimeStamp > latestConfig.TimeStamp) && !newConfig.IsEmpty)
-            {
-                // TODO: This cast can be removed when we delete the obsolete IConfigCache interface.
-                ((IConfigCatCache)this.ConfigCache).Set(this.CacheKey, newConfig);
-
-                OnConfigUpdated(newConfig);
-
-                if (configContentHasChanged)
-                {
-                    OnConfigChanged(newConfig);
-                }
-
-                return new ConfigWithFetchResult(newConfig, fetchResult);
-            }
-
-            return new ConfigWithFetchResult(latestConfig, fetchResult);
-        }
-
-        public virtual async Task<RefreshResult> RefreshConfigAsync()
+    public virtual RefreshResult RefreshConfig()
+    {
+        // check for the new cache interface until we remove the old IConfigCache.
+        if (this.ConfigCache is IConfigCatCache cache)
         {
             if (!IsOffline)
             {
-                var latestConfig = await this.ConfigCache.GetAsync(this.CacheKey).ConfigureAwait(false);
-                var configWithFetchResult = await RefreshConfigCoreAsync(latestConfig).ConfigureAwait(false);
+                var latestConfig = cache.Get(this.CacheKey);
+                var configWithFetchResult = RefreshConfigCore(latestConfig);
                 return RefreshResult.From(configWithFetchResult.Item2);
             }
             else
             {
-                this.Log.OfflineModeWarning();
+                this.Logger.OfflineModeWarning();
                 return RefreshResult.Failure("Client is in offline mode, it can't initiate HTTP calls.");
             }
         }
 
-        protected async Task<ConfigWithFetchResult> RefreshConfigCoreAsync(ProjectConfig latestConfig)
+        // worst scenario, fallback to sync over async, delete when we enforce IConfigCatCache.
+        return Syncer.Sync(RefreshConfigAsync);
+    }
+
+    protected ConfigWithFetchResult RefreshConfigCore(ProjectConfig latestConfig)
+    {
+        var fetchResult = this.ConfigFetcher.Fetch(latestConfig);
+        var newConfig = fetchResult.Config;
+
+        var configContentHasChanged = !ProjectConfig.ContentEquals(latestConfig, newConfig);
+        if ((configContentHasChanged || newConfig.TimeStamp > latestConfig.TimeStamp) && !newConfig.IsEmpty)
         {
-            var fetchResult = await this.ConfigFetcher.FetchAsync(latestConfig).ConfigureAwait(false);
-            var newConfig = fetchResult.Config;
+            // TODO: This cast can be removed when we delete the obsolete IConfigCache interface.
+            ((IConfigCatCache)this.ConfigCache).Set(this.CacheKey, newConfig);
 
-            var configContentHasChanged = !ProjectConfig.ContentEquals(latestConfig, newConfig);
-            if ((configContentHasChanged || newConfig.TimeStamp > latestConfig.TimeStamp) && !newConfig.IsEmpty)
+            OnConfigUpdated(newConfig);
+
+            if (configContentHasChanged)
             {
-                await this.ConfigCache.SetAsync(this.CacheKey, newConfig).ConfigureAwait(false);
-
-                OnConfigUpdated(newConfig);
-
-                if (configContentHasChanged)
-                {
-                    OnConfigChanged(newConfig);
-                }
-
-                return new ConfigWithFetchResult(newConfig, fetchResult);
+                OnConfigChanged(newConfig);
             }
 
-            return new ConfigWithFetchResult(latestConfig, fetchResult);
+            return new ConfigWithFetchResult(newConfig, fetchResult);
         }
 
-        protected virtual void OnConfigUpdated(ProjectConfig newConfig) { }
+        return new ConfigWithFetchResult(latestConfig, fetchResult);
+    }
 
-        protected virtual void OnConfigChanged(ProjectConfig newConfig)
+    public virtual async Task<RefreshResult> RefreshConfigAsync()
+    {
+        if (!IsOffline)
         {
-            this.Log.Debug("config changed");
-            
-            this.Hooks.RaiseConfigChanged(newConfig);
+            var latestConfig = await this.ConfigCache.GetAsync(this.CacheKey).ConfigureAwait(false);
+            var configWithFetchResult = await RefreshConfigCoreAsync(latestConfig).ConfigureAwait(false);
+            return RefreshResult.From(configWithFetchResult.Item2);
         }
-
-        public bool IsOffline
+        else
         {
-            get
+            this.Logger.OfflineModeWarning();
+            return RefreshResult.Failure("Client is in offline mode, it can't initiate HTTP calls.");
+        }
+    }
+
+    protected async Task<ConfigWithFetchResult> RefreshConfigCoreAsync(ProjectConfig latestConfig)
+    {
+        var fetchResult = await this.ConfigFetcher.FetchAsync(latestConfig).ConfigureAwait(false);
+        var newConfig = fetchResult.Config;
+
+        var configContentHasChanged = !ProjectConfig.ContentEquals(latestConfig, newConfig);
+        if ((configContentHasChanged || newConfig.TimeStamp > latestConfig.TimeStamp) && !newConfig.IsEmpty)
+        {
+            await this.ConfigCache.SetAsync(this.CacheKey, newConfig).ConfigureAwait(false);
+
+            OnConfigUpdated(newConfig);
+
+            if (configContentHasChanged)
             {
-                lock (this.syncObj)
-                {
-                    return this.status != Status.Online;
-                }
-            }
-        }
-
-        /// <remarks>
-        /// Note for inheritors. Beware, this method is called within a lock statement.
-        /// </remarks>
-        protected virtual void SetOnlineCoreSynchronized() { }
-
-        public void SetOnline()
-        {
-            Action<ILogger> logAction = null;
-
-            lock (this.syncObj)
-            {
-                if (this.status == Status.Offline)
-                {
-                    SetOnlineCoreSynchronized();
-                    this.status = Status.Online;
-                    logAction = static logger => logger.StatusChange(Status.Online);
-                }
-                else if (this.status == Status.Disposed)
-                {
-                    logAction = static logger => logger.DisposedWarning(nameof(SetOnline));
-                }
+                OnConfigChanged(newConfig);
             }
 
-            logAction?.Invoke(this.Log);
+            return new ConfigWithFetchResult(newConfig, fetchResult);
         }
 
-        /// <remarks>
-        /// Note for inheritors. Beware, this method is called within a lock statement.
-        /// </remarks>
-        protected virtual void SetOfflineCoreSynchronized() { }
+        return new ConfigWithFetchResult(latestConfig, fetchResult);
+    }
 
-        public void SetOffline()
-        {
-            Action<ILogger> logAction = null;
+    protected virtual void OnConfigUpdated(ProjectConfig newConfig) { }
 
-            lock (this.syncObj)
-            {
-                if (this.status == Status.Online)
-                {
-                    SetOfflineCoreSynchronized();
-                    this.status = Status.Offline;
-                    logAction = static logger => logger.StatusChange(Status.Offline);
-                }
-                else if (this.status == Status.Disposed)
-                {
-                    logAction = static logger => logger.DisposedWarning(nameof(SetOffline));
-                }
-            }
+    protected virtual void OnConfigChanged(ProjectConfig newConfig)
+    {
+        this.Logger.Debug("config changed");
 
-            logAction?.Invoke(this.Log);
-        }
+        this.Hooks.RaiseConfigChanged(newConfig);
+    }
 
-        protected TResult Synchronize<TState, TResult>(Func<TState, TResult> func, TState state)
+    public bool IsOffline
+    {
+        get
         {
             lock (this.syncObj)
             {
-                return func(state);
+                return this.status != Status.Online;
             }
+        }
+    }
+
+    /// <remarks>
+    /// Note for inheritors. Beware, this method is called within a lock statement.
+    /// </remarks>
+    protected virtual void SetOnlineCoreSynchronized() { }
+
+    public void SetOnline()
+    {
+        Action<ILogger> logAction = null;
+
+        lock (this.syncObj)
+        {
+            if (this.status == Status.Offline)
+            {
+                SetOnlineCoreSynchronized();
+                this.status = Status.Online;
+                logAction = static logger => logger.StatusChange(Status.Online);
+            }
+            else if (this.status == Status.Disposed)
+            {
+                logAction = static logger => logger.DisposedWarning(nameof(SetOnline));
+            }
+        }
+
+        logAction?.Invoke(this.Logger);
+    }
+
+    /// <remarks>
+    /// Note for inheritors. Beware, this method is called within a lock statement.
+    /// </remarks>
+    protected virtual void SetOfflineCoreSynchronized() { }
+
+    public void SetOffline()
+    {
+        Action<ILogger> logAction = null;
+
+        lock (this.syncObj)
+        {
+            if (this.status == Status.Online)
+            {
+                SetOfflineCoreSynchronized();
+                this.status = Status.Offline;
+                logAction = static logger => logger.StatusChange(Status.Offline);
+            }
+            else if (this.status == Status.Disposed)
+            {
+                logAction = static logger => logger.DisposedWarning(nameof(SetOffline));
+            }
+        }
+
+        logAction?.Invoke(this.Logger);
+    }
+
+    protected TResult Synchronize<TState, TResult>(Func<TState, TResult> func, TState state)
+    {
+        lock (this.syncObj)
+        {
+            return func(state);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -11,415 +11,413 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Moq.Protected;
 
-namespace ConfigCat.Client.Tests
+namespace ConfigCat.Client.Tests;
+
+[TestClass]
+public class DataGovernanceTests
 {
-    [TestClass]
-    public class DataGovernanceTests
+    private static readonly Uri GlobalCdnUri = ConfigurationBase.BaseUrlGlobal;
+    private static readonly Uri EuOnlyCdnUri = ConfigurationBase.BaseUrlEu;
+    private static readonly Uri CustomCdnUri = new("https://custom-cdn.example.com");
+    private static readonly Uri ForcedCdnUri = new("https://forced-cdn.example.com");
+
+    [DataRow(DataGovernance.Global, "https://cdn-global.configcat.com")]
+    [DataRow(DataGovernance.EuOnly, "https://cdn-eu.configcat.com")]
+    [DataRow(null, "https://cdn-global.configcat.com")]
+    [DataTestMethod]
+    public async Task WithDataGovernanceSetting_ShouldUseProperCdnUrl(DataGovernance dataGovernance, string expectedUrl)
     {
-        private static readonly Uri GlobalCdnUri = ConfigurationBase.BaseUrlGlobal;
-        private static readonly Uri EuOnlyCdnUri = ConfigurationBase.BaseUrlEu;
-        private static readonly Uri CustomCdnUri = new Uri("https://custom-cdn.example.com");
-        private static readonly Uri ForcedCdnUri = new Uri("https://forced-cdn.example.com");
+        // Arrange
 
-        [DataRow(DataGovernance.Global, "https://cdn-global.configcat.com")]
-        [DataRow(DataGovernance.EuOnly, "https://cdn-eu.configcat.com")]
-        [DataRow(null, "https://cdn-global.configcat.com")]
-        [DataTestMethod]
-        public async Task WithDataGovernanceSetting_ShouldUseProperCdnUrl(DataGovernance dataGovernance, string expectedUrl)
+        var sdkKey = "DEMO";
+        var configuration = new ConfigCatClientOptions
         {
-            // Arrange
+            DataGovernance = dataGovernance
+        };
 
-            var sdkKey = "DEMO";
-            var configuration = new ConfigCatClientOptions
+        byte requestCount = 0;
+        var requests = new SortedList<byte, HttpRequestMessage>();
+
+        var handlerMock = new Mock<HttpClientHandler>(MockBehavior.Strict);
+        handlerMock
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>()
+            )
+            .Callback<HttpRequestMessage, CancellationToken>((message, _) =>
             {
-                DataGovernance = dataGovernance
-            };
+                requests.Add(requestCount++, message);
+            })
+            .ReturnsAsync(new HttpResponseMessage()
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent("{\"p\": {\"u\": \"http://example.com\", \"r\": 0}}"),
+            })
+            .Verifiable();
 
-            byte requestCount = 0;
-            var requests = new SortedList<byte, HttpRequestMessage>();
+        IConfigFetcher fetcher = new HttpConfigFetcher(
+            configuration.CreateUri(sdkKey),
+            "DEMO",
+            Mock.Of<ILogger>().AsWrapper(),
+            handlerMock.Object,
+            Mock.Of<IConfigDeserializer>(),
+            configuration.IsCustomBaseUrl,
+            TimeSpan.FromSeconds(30));
 
-            var handlerMock = new Mock<HttpClientHandler>(MockBehavior.Strict);
-            handlerMock
-                .Protected()
-                .Setup<Task<HttpResponseMessage>>(
-                    "SendAsync",
-                    ItExpr.IsAny<HttpRequestMessage>(),
-                    ItExpr.IsAny<CancellationToken>()
-                )
-                .Callback<HttpRequestMessage, CancellationToken>((message, _) =>
-                {
-                    requests.Add(requestCount++, message);
-                })
-                .ReturnsAsync(new HttpResponseMessage()
-                {
-                    StatusCode = HttpStatusCode.OK,
-                    Content = new StringContent("{\"p\": {\"u\": \"http://example.com\", \"r\": 0}}"),
-                })
-                .Verifiable();
+        // Act
 
-            IConfigFetcher fetcher = new HttpConfigFetcher(
-                configuration.CreateUri(sdkKey),
-                "DEMO",
-                Mock.Of<ILogger>().AsWrapper(),
-                handlerMock.Object,
-                Mock.Of<IConfigDeserializer>(),
-                configuration.IsCustomBaseUrl,
-                TimeSpan.FromSeconds(30));
+        await fetcher.FetchAsync(ProjectConfig.Empty);
 
-            // Act
+        // Assert
 
+        handlerMock.VerifyAll();
+        Assert.AreEqual(1, requestCount);
+        Assert.AreEqual(new Uri(expectedUrl).Host, requests[0].RequestUri.Host);
+    }
+
+    [TestMethod]
+    public async Task ClientIsGlobalAndOrgSettingIsGlobal_AllRequestsInvokeGlobalCdn()
+    {
+        // Arrange
+
+        var sdkKey = "SDK-KEY";
+        var fetchConfig = new ConfigCatClientOptions
+        {
+            DataGovernance = DataGovernance.Global
+        };
+
+        var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
+        {
+            { GlobalCdnUri.Host, CreateResponse() }
+        };
+
+        // Act
+
+        var requests = await Fetch(sdkKey, fetchConfig, responsesRegistry, 3);
+
+        // Assert
+
+        Assert.IsTrue(requests.Values.All(message => message.RequestUri.Host == GlobalCdnUri.Host));
+    }
+
+    [TestMethod]
+    public async Task ClientIsEuOnlyAndOrgSettingIsGlobal_FirstRequestInvokesEuAfterAllRequestsInvokeGlobal()
+    {
+        // Arrange
+
+        var sdkKey = "SDK-KEY";
+        var fetchConfig = new ConfigCatClientOptions
+        {
+            DataGovernance = DataGovernance.EuOnly
+        };
+
+        var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
+        {
+            {GlobalCdnUri.Host, CreateResponse()},
+            {EuOnlyCdnUri.Host, CreateResponse()}
+        };
+
+        // Act
+
+        var requests = await Fetch(sdkKey, fetchConfig, responsesRegistry, 3);
+
+        // Assert
+
+        Assert.AreEqual(3, requests.Count);
+        Assert.AreEqual(EuOnlyCdnUri.Host, requests[1].RequestUri.Host);
+        Assert.IsTrue(requests.Values.Skip(1).All(message => message.RequestUri.Host == GlobalCdnUri.Host));
+    }
+
+    [TestMethod]
+    public async Task ClientIsGlobalAndOrgSettingIsEuOnly_FirstRequestInvokesGlobalAndRedirectToEuAfterAllRequestsInvokeEu()
+    {
+        // Arrange
+
+        var sdkKey = "SDK-KEY";
+        var fetchConfig = new ConfigCatClientOptions
+        {
+            DataGovernance = DataGovernance.Global
+        };
+
+        var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
+        {
+            {GlobalCdnUri.Host, CreateResponse(ConfigurationBase.BaseUrlEu, RedirectMode.Should, false)},
+            {EuOnlyCdnUri.Host, CreateResponse(ConfigurationBase.BaseUrlEu, RedirectMode.No, true)}
+        };
+
+        // Act
+
+        var requests = await Fetch(sdkKey, fetchConfig, responsesRegistry, 3);
+
+        // Assert
+
+        Assert.AreEqual(3 + 1, requests.Count);
+        Assert.AreEqual(GlobalCdnUri.Host, requests[1].RequestUri.Host);
+        Assert.AreEqual(EuOnlyCdnUri.Host, requests[2].RequestUri.Host);
+        Assert.IsTrue(requests.Values.Skip(2).All(m => m.RequestUri.Host == EuOnlyCdnUri.Host));
+    }
+
+    [TestMethod]
+    public async Task ClientIsEuOnlyAndOrgSettingIsEuOnly_AllRequestsInvokeEu()
+    {
+        // Arrange
+
+        var sdkKey = "SDK-KEY";
+        var fetchConfig = new ConfigCatClientOptions
+        {
+            DataGovernance = DataGovernance.EuOnly
+        };
+
+        var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
+        {
+            {EuOnlyCdnUri.Host, CreateResponse(ConfigurationBase.BaseUrlEu)}
+        };
+
+        // Act
+
+        var requests = await Fetch(sdkKey, fetchConfig, responsesRegistry, 3);
+
+        // Assert
+
+        Assert.AreEqual(3, requests.Count);
+        Assert.IsTrue(requests.Values.All(m => m.RequestUri.Host == EuOnlyCdnUri.Host));
+    }
+
+    [TestMethod]
+    public async Task ClientIsGlobalAndHasCustomBaseUri_AllRequestInvokeCustomUri()
+    {
+        // Arrange
+
+        var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
+        {
+            {CustomCdnUri.Host, CreateResponse()}
+        };
+
+        string sdkKey = null;
+        var fetchConfig = new ConfigCatClientOptions
+        {
+            DataGovernance = DataGovernance.Global,
+            BaseUrl = CustomCdnUri
+        };
+
+        // Act
+
+        var requests = await Fetch(sdkKey, fetchConfig, responsesRegistry, 3);
+
+        // Assert
+
+        Assert.AreEqual(3, requests.Count);
+        Assert.IsTrue(requests.Values.All(m => m.RequestUri.Host == CustomCdnUri.Host));
+    }
+
+    [TestMethod]
+    public async Task ClientIsEuOnlyAndHasCustomBaseUri_AllRequestInvokeCustomUri()
+    {
+        // Arrange
+
+        var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
+        {
+            {CustomCdnUri.Host, CreateResponse()}
+        };
+
+        string sdkKey = null;
+        var fetchConfig = new ConfigCatClientOptions
+        {
+            DataGovernance = DataGovernance.EuOnly,
+            BaseUrl = CustomCdnUri
+        };
+
+        // Act
+
+        var requests = await Fetch(sdkKey, fetchConfig, responsesRegistry, 3);
+
+        // Assert
+
+        Assert.AreEqual(3, requests.Count);
+        Assert.IsTrue(requests.Values.All(m => m.RequestUri.Host == CustomCdnUri.Host));
+    }
+
+    [TestMethod]
+    public async Task ClientIsGlobalAndOrgIsForced_AllRequestInvokeForcedUri()
+    {
+        // Arrange
+
+        var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
+        {
+            {GlobalCdnUri.Host, CreateResponse(ForcedCdnUri, RedirectMode.Force, false)},
+            {ForcedCdnUri.Host, CreateResponse(ForcedCdnUri, RedirectMode.Force, true)}
+        };
+
+        var fetchConfig = new ConfigCatClientOptions
+        {
+            DataGovernance = DataGovernance.Global
+        };
+
+        // Act
+
+        string sdkKey = null;
+        var requests = await Fetch(sdkKey, fetchConfig, responsesRegistry, 3);
+
+        // Assert
+
+        Assert.AreEqual(3 + 1, requests.Count);
+        Assert.AreEqual(GlobalCdnUri.Host, requests[1].RequestUri.Host);
+        Assert.IsTrue(requests.Values.Skip(1).All(m => m.RequestUri.Host == ForcedCdnUri.Host));
+    }
+
+    [TestMethod]
+    public async Task ClientIsEuOnlyAndOrgIsForced_AllRequestInvokeForcedUri()
+    {
+        // Arrange
+
+        var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
+        {
+            {EuOnlyCdnUri.Host, CreateResponse(ForcedCdnUri, RedirectMode.Force, false)},
+            {ForcedCdnUri.Host, CreateResponse(ForcedCdnUri, RedirectMode.Force, true)}
+        };
+
+        string sdkKey = null;
+        var fetchConfig = new ConfigCatClientOptions
+        {
+            DataGovernance = DataGovernance.EuOnly
+        };
+
+        // Act
+
+        var requests = await Fetch(sdkKey, fetchConfig, responsesRegistry, 3);
+
+        // Assert
+
+        Assert.AreEqual(3 + 1, requests.Count);
+        Assert.AreEqual(EuOnlyCdnUri.Host, requests[1].RequestUri.Host);
+        Assert.IsTrue(requests.Values.Skip(1).All(m => m.RequestUri.Host == ForcedCdnUri.Host));
+    }
+
+    [TestMethod]
+    public async Task ClientIsGlobalAndHasCustomBaseUriAndOrgIsForced_FirstRequestInvokeCustomAndRedirectToForceUriAndAllRequestInvokeForcedUri()
+    {
+        // Arrange
+
+        var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
+        {
+            {CustomCdnUri.Host, CreateResponse(ForcedCdnUri, RedirectMode.Force, false)},
+            {ForcedCdnUri.Host, CreateResponse(ForcedCdnUri, RedirectMode.Force, true)}
+        };
+
+        string sdkKey = null;
+        var fetchConfig = new ConfigCatClientOptions
+        {
+            DataGovernance = DataGovernance.Global,
+            BaseUrl = CustomCdnUri
+        };
+
+        // Act
+
+        var responses = await Fetch(sdkKey, fetchConfig, responsesRegistry, 3);
+
+        // Assert
+
+        Assert.AreEqual(3 + 1, responses.Count);
+        Assert.AreEqual(CustomCdnUri.Host, responses[1].RequestUri.Host);
+        Assert.IsTrue(responses.Values.Skip(1).All(m => m.RequestUri.Host == ForcedCdnUri.Host));
+    }
+
+    [TestMethod]
+    public async Task TestCircuitBreaker_WhenClientIsGlobalRedirectToEuAndRedirectToGlobal_MaximumInvokeCountShouldBeThree()
+    {
+        // Arrange
+
+        var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
+        {
+            {GlobalCdnUri.Host, CreateResponse(EuOnlyCdnUri, RedirectMode.Should, false)},
+            {EuOnlyCdnUri.Host, CreateResponse(GlobalCdnUri, RedirectMode.Should, false)}
+        };
+
+        string sdkKey = null;
+        var fetchConfig = new ConfigCatClientOptions
+        {
+            DataGovernance = DataGovernance.Global
+        };
+
+        // Act
+
+        var requests = await Fetch(sdkKey, fetchConfig, responsesRegistry);
+
+        // Assert
+
+        Assert.AreEqual(3, requests.Count);
+    }
+
+    internal static async Task<SortedList<byte, HttpRequestMessage>> Fetch(
+        string sdkKey,
+        ConfigurationBase fetchConfig,
+        Dictionary<string, SettingsWithPreferences> responsesRegistry,
+        byte fetchInvokeCount = 1)
+    {
+        // Arrange
+
+        byte requestCount = 1;
+        var requests = new SortedList<byte, HttpRequestMessage>();
+
+        var handlerMock = new Mock<HttpClientHandler>(MockBehavior.Strict);
+        handlerMock
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>()
+            )
+            .Callback<HttpRequestMessage, CancellationToken>((message, _) =>
+            {
+                requests.Add(requestCount++, message);
+            })
+            .Returns<HttpRequestMessage, CancellationToken>((message, _) => Task.FromResult(new HttpResponseMessage()
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent(responsesRegistry[message.RequestUri.Host].Serialize())
+            }))
+            .Verifiable();
+
+        IConfigFetcher fetcher = new HttpConfigFetcher(
+            fetchConfig.CreateUri(sdkKey),
+            "DEMO",
+            Mock.Of<ILogger>().AsWrapper(),
+            handlerMock.Object,
+            new ConfigDeserializer(),
+            fetchConfig.IsCustomBaseUrl,
+            TimeSpan.FromSeconds(30));
+
+        // Act
+
+        byte i = 0;
+        do
+        {
             await fetcher.FetchAsync(ProjectConfig.Empty);
+            i++;
+        } while (fetchInvokeCount > i);
 
-            // Assert
+        // Assert
 
-            handlerMock.VerifyAll();
-            Assert.AreEqual(1, requestCount);
-            Assert.AreEqual(new Uri(expectedUrl).Host, requests[0].RequestUri.Host);
-        }
+        return requests;
+    }
 
-        [TestMethod]
-        public async Task ClientIsGlobalAndOrgSettingIsGlobal_AllRequestsInvokeGlobalCdn()
+    private static SettingsWithPreferences CreateResponse(Uri url = null, RedirectMode redirectMode = RedirectMode.No, bool withSettings = true)
+    {
+        return new SettingsWithPreferences
         {
-            // Arrange
-
-            var sdkKey = "SDK-KEY";
-            var fetchConfig = new ConfigCatClientOptions
+            Preferences = new Preferences
             {
-                DataGovernance = DataGovernance.Global
-            };
-
-            var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
-            {
-                { GlobalCdnUri.Host, CreateResponse() }
-            };
-
-            // Act
-
-            var requests = await Fetch(sdkKey, fetchConfig, responsesRegistry, 3);
-
-            // Assert
-
-            Assert.IsTrue(requests.Values.All(message => message.RequestUri.Host == GlobalCdnUri.Host));
-        }
-
-        [TestMethod]
-        public async Task ClientIsEuOnlyAndOrgSettingIsGlobal_FirstRequestInvokesEuAfterAllRequestsInvokeGlobal()
-        {
-            // Arrange
-
-            var sdkKey = "SDK-KEY";
-            var fetchConfig = new ConfigCatClientOptions
-            {
-                DataGovernance = DataGovernance.EuOnly
-            };
-
-            var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
-            {
-                {GlobalCdnUri.Host, CreateResponse()},
-                {EuOnlyCdnUri.Host, CreateResponse()}
-            };
-
-            // Act
-
-            var requests = await Fetch(sdkKey, fetchConfig, responsesRegistry, 3);
-
-            // Assert
-
-            Assert.AreEqual(3, requests.Count);
-            Assert.AreEqual(EuOnlyCdnUri.Host, requests[1].RequestUri.Host);
-            Assert.IsTrue(requests.Values.Skip(1).All(message => message.RequestUri.Host == GlobalCdnUri.Host));
-        }
-
-        [TestMethod]
-        public async Task ClientIsGlobalAndOrgSettingIsEuOnly_FirstRequestInvokesGlobalAndRedirectToEuAfterAllRequestsInvokeEu()
-        {
-            // Arrange
-
-            var sdkKey = "SDK-KEY";
-            var fetchConfig = new ConfigCatClientOptions
-            {
-                DataGovernance = DataGovernance.Global
-            };
-
-            var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
-            {
-                {GlobalCdnUri.Host, CreateResponse(ConfigurationBase.BaseUrlEu, RedirectMode.Should, false)},
-                {EuOnlyCdnUri.Host, CreateResponse(ConfigurationBase.BaseUrlEu, RedirectMode.No, true)}
-            };
-
-            // Act
-
-            var requests = await Fetch(sdkKey, fetchConfig, responsesRegistry, 3);
-
-            // Assert
-
-            Assert.AreEqual(3 + 1, requests.Count);
-            Assert.AreEqual(GlobalCdnUri.Host, requests[1].RequestUri.Host);
-            Assert.AreEqual(EuOnlyCdnUri.Host, requests[2].RequestUri.Host);
-            Assert.IsTrue(requests.Values.Skip(2).All(m => m.RequestUri.Host == EuOnlyCdnUri.Host));
-        }
-
-        [TestMethod]
-        public async Task ClientIsEuOnlyAndOrgSettingIsEuOnly_AllRequestsInvokeEu()
-        {
-            // Arrange
-
-            var sdkKey = "SDK-KEY";
-            var fetchConfig = new ConfigCatClientOptions
-            {
-                DataGovernance = DataGovernance.EuOnly
-            };
-
-            var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
-            {
-                {EuOnlyCdnUri.Host, CreateResponse(ConfigurationBase.BaseUrlEu)}
-            };
-
-            // Act
-
-            var requests = await Fetch(sdkKey, fetchConfig, responsesRegistry, 3);
-
-            // Assert
-
-            Assert.AreEqual(3, requests.Count);
-            Assert.IsTrue(requests.Values.All(m => m.RequestUri.Host == EuOnlyCdnUri.Host));
-        }
-
-        [TestMethod]
-        public async Task ClientIsGlobalAndHasCustomBaseUri_AllRequestInvokeCustomUri()
-        {
-            // Arrange
-
-            var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
-            {
-                {CustomCdnUri.Host, CreateResponse()}
-            };
-
-            string sdkKey = null;
-            var fetchConfig = new ConfigCatClientOptions
-            {
-                DataGovernance = DataGovernance.Global,
-                BaseUrl = CustomCdnUri
-            };
-
-            // Act
-
-            var requests = await Fetch(sdkKey, fetchConfig, responsesRegistry, 3);
-
-            // Assert
-
-            Assert.AreEqual(3, requests.Count);
-            Assert.IsTrue(requests.Values.All(m => m.RequestUri.Host == CustomCdnUri.Host));
-        }
-
-        [TestMethod]
-        public async Task ClientIsEuOnlyAndHasCustomBaseUri_AllRequestInvokeCustomUri()
-        {
-            // Arrange
-
-            var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
-            {
-                {CustomCdnUri.Host, CreateResponse()}
-            };
-
-            string sdkKey = null;
-            var fetchConfig = new ConfigCatClientOptions
-            {
-                DataGovernance = DataGovernance.EuOnly,
-                BaseUrl = CustomCdnUri
-            };
-
-            // Act
-
-            var requests = await Fetch(sdkKey, fetchConfig, responsesRegistry, 3);
-
-            // Assert
-
-            Assert.AreEqual(3, requests.Count);
-            Assert.IsTrue(requests.Values.All(m => m.RequestUri.Host == CustomCdnUri.Host));
-        }
-
-        [TestMethod]
-        public async Task ClientIsGlobalAndOrgIsForced_AllRequestInvokeForcedUri()
-        {
-            // Arrange
-
-            var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
-            {
-                {GlobalCdnUri.Host, CreateResponse(ForcedCdnUri, RedirectMode.Force, false)},
-                {ForcedCdnUri.Host, CreateResponse(ForcedCdnUri, RedirectMode.Force, true)}
-            };
-
-            var fetchConfig = new ConfigCatClientOptions
-            {
-                DataGovernance = DataGovernance.Global
-            };
-
-            // Act
-
-            string sdkKey = null;
-            var requests = await Fetch(sdkKey, fetchConfig, responsesRegistry, 3);
-
-            // Assert
-
-            Assert.AreEqual(3 + 1, requests.Count);
-            Assert.AreEqual(GlobalCdnUri.Host, requests[1].RequestUri.Host);
-            Assert.IsTrue(requests.Values.Skip(1).All(m => m.RequestUri.Host == ForcedCdnUri.Host));
-        }
-
-        [TestMethod]
-        public async Task ClientIsEuOnlyAndOrgIsForced_AllRequestInvokeForcedUri()
-        {
-            // Arrange
-
-            var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
-            {
-                {EuOnlyCdnUri.Host, CreateResponse(ForcedCdnUri, RedirectMode.Force, false)},
-                {ForcedCdnUri.Host, CreateResponse(ForcedCdnUri, RedirectMode.Force, true)}
-            };
-
-            string sdkKey = null;
-            var fetchConfig = new ConfigCatClientOptions
-            {
-                DataGovernance = DataGovernance.EuOnly
-            };
-
-            // Act
-
-            var requests = await Fetch(sdkKey, fetchConfig, responsesRegistry, 3);
-
-            // Assert
-
-            Assert.AreEqual(3 + 1, requests.Count);
-            Assert.AreEqual(EuOnlyCdnUri.Host, requests[1].RequestUri.Host);
-            Assert.IsTrue(requests.Values.Skip(1).All(m => m.RequestUri.Host == ForcedCdnUri.Host));
-        }
-
-        [TestMethod]
-        public async Task ClientIsGlobalAndHasCustomBaseUriAndOrgIsForced_FirstRequestInvokeCustomAndRedirectToForceUriAndAllRequestInvokeForcedUri()
-        {
-            // Arrange
-
-            var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
-            {
-                {CustomCdnUri.Host, CreateResponse(ForcedCdnUri, RedirectMode.Force, false)},
-                {ForcedCdnUri.Host, CreateResponse(ForcedCdnUri, RedirectMode.Force, true)}
-            };
-
-            string sdkKey = null;
-            var fetchConfig = new ConfigCatClientOptions
-            {
-                DataGovernance = DataGovernance.Global,
-                BaseUrl = CustomCdnUri
-            };
-
-            // Act
-
-            var responses = await Fetch(sdkKey, fetchConfig, responsesRegistry, 3);
-
-            // Assert
-
-            Assert.AreEqual(3 + 1, responses.Count);
-            Assert.AreEqual(CustomCdnUri.Host, responses[1].RequestUri.Host);
-            Assert.IsTrue(responses.Values.Skip(1).All(m => m.RequestUri.Host == ForcedCdnUri.Host));
-        }
-
-        [TestMethod]
-        public async Task TestCircuitBreaker_WhenClientIsGlobalRedirectToEuAndRedirectToGlobal_MaximumInvokeCountShouldBeThree()
-        {
-            // Arrange
-
-            var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
-            {
-                {GlobalCdnUri.Host, CreateResponse(EuOnlyCdnUri, RedirectMode.Should, false)},
-                {EuOnlyCdnUri.Host, CreateResponse(GlobalCdnUri, RedirectMode.Should, false)}
-            };
-
-            string sdkKey = null;
-            var fetchConfig = new ConfigCatClientOptions
-            {
-                DataGovernance = DataGovernance.Global
-            };
-
-            // Act
-
-            var requests = await Fetch(sdkKey, fetchConfig, responsesRegistry);
-
-            // Assert
-
-            Assert.AreEqual(3, requests.Count);
-        }
-
-
-        internal static async Task<SortedList<byte, HttpRequestMessage>> Fetch(
-            string sdkKey,
-            ConfigurationBase fetchConfig,
-            Dictionary<string, SettingsWithPreferences> responsesRegistry,
-            byte fetchInvokeCount = 1)
-        {
-            // Arrange
-
-            byte requestCount = 1;
-            var requests = new SortedList<byte, HttpRequestMessage>();
-
-            var handlerMock = new Mock<HttpClientHandler>(MockBehavior.Strict);
-            handlerMock
-                .Protected()
-                .Setup<Task<HttpResponseMessage>>(
-                    "SendAsync",
-                    ItExpr.IsAny<HttpRequestMessage>(),
-                    ItExpr.IsAny<CancellationToken>()
-                )
-                .Callback<HttpRequestMessage, CancellationToken>((message, _) =>
+                Url = (url ?? ConfigurationBase.BaseUrlGlobal).ToString(),
+                RedirectMode = redirectMode
+            },
+            Settings = withSettings
+            ? new Dictionary<string, Setting>
                 {
-                    requests.Add(requestCount++, message);
-                })
-                .Returns<HttpRequestMessage, CancellationToken>((message, _) => Task.FromResult(new HttpResponseMessage()
-                {
-                    StatusCode = HttpStatusCode.OK,
-                    Content = new StringContent(responsesRegistry[message.RequestUri.Host].Serialize())
-                }))
-                .Verifiable();
-
-            IConfigFetcher fetcher = new HttpConfigFetcher(
-                fetchConfig.CreateUri(sdkKey),
-                "DEMO",
-                Mock.Of<ILogger>().AsWrapper(),
-                handlerMock.Object,
-                new ConfigDeserializer(),
-                fetchConfig.IsCustomBaseUrl,
-                TimeSpan.FromSeconds(30));
-
-            // Act
-
-            byte i = 0;
-            do
-            {
-                await fetcher.FetchAsync(ProjectConfig.Empty);
-                i++;
-            } while (fetchInvokeCount > i);
-
-            // Assert
-
-            return requests;
-        }
-
-        private static SettingsWithPreferences CreateResponse(Uri url = null, RedirectMode redirectMode = RedirectMode.No, bool withSettings = true)
-        {
-            return new SettingsWithPreferences
-            {
-                Preferences = new Preferences
-                {
-                    Url = (url ?? ConfigurationBase.BaseUrlGlobal).ToString(),
-                    RedirectMode = redirectMode
-                },
-                Settings = withSettings
-                ? new Dictionary<string, Setting>
-                    {
-                        { "myKey", "foo".ToSetting() }
-                    }
-                : null
-            };
-        }
+                    { "myKey", "foo".ToSetting() }
+                }
+            : null
+        };
     }
 }

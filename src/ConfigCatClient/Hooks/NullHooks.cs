@@ -1,18 +1,17 @@
-﻿using System;
+using System;
 
-namespace ConfigCat.Client
+namespace ConfigCat.Client;
+
+internal sealed class NullHooks : Hooks
 {
-    internal sealed class NullHooks : Hooks
+    public static readonly NullHooks Instance = new();
+
+    private NullHooks() : base(new EventHandlers()) { }
+
+    public override bool TryDisconnect()
     {
-        public static readonly NullHooks Instance = new();
-
-        private NullHooks() : base(new EventHandlers()) { }
-
-        public override bool TryDisconnect()
-        {
-            return false;
-        }
-
-        public override void SetSender(IConfigCatClient client) { /* this is an intentional no-op */ }
+        return false;
     }
+
+    public override void SetSender(IConfigCatClient client) { /* this is an intentional no-op */ }
 }

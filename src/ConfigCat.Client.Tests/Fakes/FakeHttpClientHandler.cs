@@ -1,72 +1,71 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ConfigCat.Client.Tests
+namespace ConfigCat.Client.Tests;
+
+internal class FakeHttpClientHandler : HttpClientHandler
 {
-    internal class FakeHttpClientHandler : HttpClientHandler
+    private readonly HttpStatusCode httpStatusCode;
+    private readonly string responseContent;
+    private readonly TimeSpan? delay;
+
+    public byte SendInvokeCount { get; private set; } = 0;
+
+    public bool Disposed { get; private set; } = false;
+
+    public SortedList<byte, HttpRequestMessage> Requests = new();
+
+    public FakeHttpClientHandler(HttpStatusCode httpStatusCode = HttpStatusCode.NotModified, string responseContent = null, TimeSpan? delay = null)
     {
-        private readonly HttpStatusCode httpStatusCode;
-        private readonly string responseContent;
-        private readonly TimeSpan? delay;
+        this.httpStatusCode = httpStatusCode;
+        this.responseContent = responseContent;
+        this.delay = delay;
+    }
 
-        public byte SendInvokeCount { get; private set; } = 0;
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        if (this.delay is not null)
+            await Task.Delay(this.delay.Value, cancellationToken);
 
-        public bool Disposed { get; private set; } = false;
+        SendInvokeCount++;
 
-        public SortedList<byte, HttpRequestMessage> Requests = new SortedList<byte, HttpRequestMessage>();
+        this.Requests.Add(SendInvokeCount, request);
 
-        public FakeHttpClientHandler(HttpStatusCode httpStatusCode = HttpStatusCode.NotModified, string responseContent = null, TimeSpan? delay = null)
+        var response = new HttpResponseMessage
         {
-            this.httpStatusCode = httpStatusCode;
-            this.responseContent = responseContent;
-            this.delay = delay;
-        }
+            StatusCode = this.httpStatusCode,
+            Content = this.responseContent is not null ? new StringContent(this.responseContent) : null,
+        };
 
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            if (delay != null)
-                await Task.Delay(delay.Value, cancellationToken);
-
-            SendInvokeCount++;
-
-            Requests.Add(SendInvokeCount, request);
-
-            var response = new HttpResponseMessage
-            {
-                StatusCode = this.httpStatusCode,
-                Content = responseContent != null ? new StringContent(responseContent) : null,
-            };
-
-            return response;
-        }
+        return response;
+    }
 
 #if NET5_0_OR_GREATER
-        protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        if (this.delay is not null)
+            Task.Delay(this.delay.Value, cancellationToken).Wait(cancellationToken);
+
+        SendInvokeCount++;
+
+        this.Requests.Add(SendInvokeCount, request);
+
+        return new HttpResponseMessage
         {
-            if (delay != null)
-                Task.Delay(delay.Value, cancellationToken).Wait(cancellationToken);
-
-            SendInvokeCount++;
-
-            Requests.Add(SendInvokeCount, request);
-
-            return new HttpResponseMessage
-            {
-                StatusCode = this.httpStatusCode,
-                Content = responseContent != null ? new StringContent(responseContent) : null,
-            };
-        }
+            StatusCode = this.httpStatusCode,
+            Content = this.responseContent is not null ? new StringContent(this.responseContent) : null,
+        };
+    }
 #endif
 
-        protected override void Dispose(bool disposing)
-        {
-            base.Dispose(disposing);
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
 
-            Disposed = true;
-        }
+        Disposed = true;
     }
 }

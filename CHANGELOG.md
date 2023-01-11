@@ -1,3 +1,11 @@
+### 7.2.0
+
+- Introduced a new local dictionary override factory method:
+  ```csharp
+  FlagOverrides LocalDictionary(IDictionary<string, object> dictionary, bool watchChanges, OverrideBehaviour overrideBehaviour)
+  ``` 
+  Where the `watchChanges` parameter indicates whether the SDK should rebuild the overrides upon each read to keep track of the source dictionary's changes.
+
 ### 7.1.0
 
 - Add new evaluation methods `GetAllValueDetails`/`GetAllValueDetailsAsync`.

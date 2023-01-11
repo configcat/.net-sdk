@@ -165,7 +165,7 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
             errorException = ex;
         }
 
-        this.logger.Error(errorMessage);
+        this.logger.Error(errorMessage, errorException);
         ReInitializeHttpClient();
         return FetchResult.Failure(lastConfig, errorMessage, errorException);
     }

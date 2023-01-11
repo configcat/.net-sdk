@@ -21,9 +21,10 @@ public class FlagOverrides
         OverrideBehaviour = overrideBehaviour;
     }
 
-    private FlagOverrides(IDictionary<string, object> dictionary, OverrideBehaviour overrideBehaviour)
+    private FlagOverrides(IDictionary<string, object> dictionary, bool watchChanges, OverrideBehaviour overrideBehaviour)
     {
         this.dictionary = dictionary;
+        this.autoReload = watchChanges;
         OverrideBehaviour = overrideBehaviour;
     }
 
@@ -37,7 +38,7 @@ public class FlagOverrides
     internal IOverrideDataSource BuildDataSource(LoggerWrapper logger)
     {
         if (this.dictionary is not null)
-            return new LocalDictionaryDataSource(this.dictionary);
+            return new LocalDictionaryDataSource(this.dictionary, this.autoReload);
 
         if (this.filePath is not null)
             return new LocalFileDataSource(this.filePath, this.autoReload, logger);
@@ -53,7 +54,7 @@ public class FlagOverrides
     /// <param name="overrideBehaviour">the override behaviour. It can be used to set preference on whether the local values should override the remote values, or use local values only when a remote value doesn't exist, or use it for local only mode.</param>
     /// <returns>The override descriptor.</returns>
     public static FlagOverrides LocalFile(string filePath, bool autoReload, OverrideBehaviour overrideBehaviour) =>
-        new FlagOverrides(filePath, autoReload, overrideBehaviour);
+        new(filePath, autoReload, overrideBehaviour);
 
     /// <summary>
     /// Creates an override descriptor that uses a dictionary data source.
@@ -62,5 +63,15 @@ public class FlagOverrides
     /// <param name="overrideBehaviour">the override behaviour. It can be used to set preference on whether the local values should override the remote values, or use local values only when a remote value doesn't exist, or use it for local only mode.</param>
     /// <returns>The override descriptor.</returns>
     public static FlagOverrides LocalDictionary(IDictionary<string, object> dictionary, OverrideBehaviour overrideBehaviour) =>
-        new FlagOverrides(dictionary, overrideBehaviour);
+        new(dictionary, false, overrideBehaviour);
+
+    /// <summary>
+    /// Creates an override descriptor that uses a dictionary data source.
+    /// </summary>
+    /// <param name="dictionary">Dictionary that contains the overrides.</param>
+    /// <param name="watchChanges">Indicates whether the SDK should track the input dictionary for changes.</param>
+    /// <param name="overrideBehaviour">the override behaviour. It can be used to set preference on whether the local values should override the remote values, or use local values only when a remote value doesn't exist, or use it for local only mode.</param>
+    /// <returns>The override descriptor.</returns>
+    public static FlagOverrides LocalDictionary(IDictionary<string, object> dictionary, bool watchChanges, OverrideBehaviour overrideBehaviour) =>
+        new(dictionary, watchChanges, overrideBehaviour);
 }

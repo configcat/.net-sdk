@@ -86,8 +86,8 @@ internal abstract class ConfigServiceBase : IDisposable
             }
             else
             {
-                this.Logger.ConfigServiceCantInitiateHttpCalls();
-                return RefreshResult.Failure("Client is in offline mode, it can't initiate HTTP calls.");
+                var logMessage = this.Logger.ConfigServiceCannotInitiateHttpCalls();
+                return RefreshResult.Failure(logMessage.InvariantFormattedMessage);
             }
         }
 
@@ -129,8 +129,8 @@ internal abstract class ConfigServiceBase : IDisposable
         }
         else
         {
-            this.Logger.ConfigServiceCantInitiateHttpCalls();
-            return RefreshResult.Failure("Client is in offline mode, it can't initiate HTTP calls.");
+            var logMessage = this.Logger.ConfigServiceCannotInitiateHttpCalls();
+            return RefreshResult.Failure(logMessage.InvariantFormattedMessage);
         }
     }
 
@@ -196,7 +196,7 @@ internal abstract class ConfigServiceBase : IDisposable
             }
             else if (this.status == Status.Disposed)
             {
-                logAction = static logger => logger.ConfigServiceMethodHasNoEffect(nameof(SetOnline));
+                logAction = static logger => logger.ConfigServiceMethodHasNoEffectDueToDisposedClient(nameof(SetOnline));
             }
         }
 
@@ -222,7 +222,7 @@ internal abstract class ConfigServiceBase : IDisposable
             }
             else if (this.status == Status.Disposed)
             {
-                logAction = static logger => logger.ConfigServiceMethodHasNoEffect(nameof(SetOffline));
+                logAction = static logger => logger.ConfigServiceMethodHasNoEffectDueToDisposedClient(nameof(SetOffline));
             }
         }
 

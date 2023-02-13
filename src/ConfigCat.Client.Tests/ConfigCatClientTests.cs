@@ -1448,7 +1448,9 @@ public class ConfigCatClientTests
 
         var warnings = new List<string>();
 
-        this.loggerMock.Setup(m => m.Warning(It.IsAny<string>())).Callback(warnings.Add);
+        this.loggerMock
+            .Setup(m => m.Log(LogLevel.Warning, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()))
+            .Callback(delegate (LogLevel _, LogEventId _, ref FormattableLogMessage msg, Exception _) { warnings.Add(msg.InvariantFormattedMessage); });
 
         void Configure(ConfigCatClientOptions options)
         {

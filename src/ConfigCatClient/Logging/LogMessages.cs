@@ -84,14 +84,45 @@ internal static partial class LoggerExtensions
 
     #region Common warning messages (3000-3999)
 
-    public static FormattableLogMessage ConfigServiceCantInitiateHttpCalls(this ILogger logger) => logger.Log(
+    public static FormattableLogMessage ClientIsAlreadyCreated(this ILogger logger, string sdkKey) => logger.LogInterpolated(
         LogLevel.Warning, 3000,
+        $"Client for SDK key '{sdkKey}' is already created and will be reused; configuration action is being ignored.",
+        "SDK_KEY");
+
+    public static FormattableLogMessage TargetingIsNotPossible(this ILogger logger, string key) => logger.LogInterpolated(
+        LogLevel.Warning, 3001,
+        $"Cannot evaluate targeting rules and % options for '{key}' (UserObject missing). You should pass a UserObject to GetValue() or GetValueAsync() in order to make targeting work properly. Read more: https://configcat.com/docs/advanced/user-object",
+        "KEY");
+
+    public static FormattableLogMessage DataGovernanceIsOutOfSync(this ILogger logger) => logger.Log(
+        LogLevel.Warning, 3002,
+        "Your dataGovernance parameter at ConfigCatClient initialization is not in sync "
+        + "with your preferences on the ConfigCat Dashboard: "
+        + "https://app.configcat.com/organization/data-governance. "
+        + "Only Organization Admins can access this preference.");
+
+    public static FormattableLogMessage FetchReceived200WithInvalidBody(this ILogger logger) => logger.Log(
+        LogLevel.Warning, 3100,
+        "Fetch was successful but HTTP response was invalid");
+
+    public static FormattableLogMessage FetchReceived304WhenLocalCacheIsEmpty(this ILogger logger, int statusCode, string reasonPhrase) => logger.LogInterpolated(
+        LogLevel.Warning, 3101,
+        $"HTTP response {statusCode} {reasonPhrase} was received when no config is cached locally",
+        "STATUS_CODE", "REASON_PHRASE");
+
+    public static FormattableLogMessage ConfigServiceCannotInitiateHttpCalls(this ILogger logger) => logger.Log(
+        LogLevel.Warning, 3200,
         "Client is in offline mode, it can't initiate HTTP calls.");
 
-    public static FormattableLogMessage ConfigServiceMethodHasNoEffect(this ILogger logger, string methodName) => logger.LogInterpolated(
-        LogLevel.Warning, 3001,
+    public static FormattableLogMessage ConfigServiceMethodHasNoEffectDueToDisposedClient(this ILogger logger, string methodName) => logger.LogInterpolated(
+        LogLevel.Warning, 3201,
         $"Client has already been disposed, thus {methodName}() has no effect.",
         "METHOD_NAME");
+
+    public static FormattableLogMessage ConfigServiceMethodHasNoEffectDueToOverrideBehavior(this ILogger logger, string overrideBehavior, string methodName) => logger.LogInterpolated(
+        LogLevel.Warning, 3202,
+        $"Client is configured to use the {overrideBehavior} override behavior, thus {methodName}() has no effect.",
+        "OVERRIDE_BEHAVIOR", "METHOD_NAME");
 
     #endregion
 

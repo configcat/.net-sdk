@@ -111,7 +111,8 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                 case HttpStatusCode.OK:
                     if (responseWithBody.Item2 is null)
                     {
-                        return FetchResult.Failure(lastConfig, "Fetch was successful but HTTP response was invalid");
+                        logMessage = this.logger.FetchReceived200WithInvalidBody();
+                        return FetchResult.Failure(lastConfig, logMessage.InvariantFormattedMessage);
                     }
 
                     return FetchResult.Success(new ProjectConfig
@@ -124,7 +125,8 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                 case HttpStatusCode.NotModified:
                     if (lastConfig.IsEmpty)
                     {
-                        return FetchResult.Failure(lastConfig, $"HTTP response {(int)response.StatusCode} {response.ReasonPhrase} was received when no config is cached locally");
+                        logMessage = this.logger.FetchReceived304WhenLocalCacheIsEmpty((int)response.StatusCode, response.ReasonPhrase);
+                        return FetchResult.Failure(lastConfig, logMessage.InvariantFormattedMessage);
                     }
 
                     return FetchResult.NotModified(lastConfig with { TimeStamp = DateTime.UtcNow });
@@ -229,11 +231,7 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
 
                     if (redirect == RedirectMode.Should)
                     {
-                        this.logger.Warning(
-                            "Your dataGovernance parameter at ConfigCatClient initialization is not in sync " +
-                            "with your preferences on the ConfigCat Dashboard: " +
-                            "https://app.configcat.com/organization/data-governance. " +
-                            "Only Organization Admins can access this preference.");
+                        this.logger.DataGovernanceIsOutOfSync();
                     }
 
                     if (maxExecutionCount <= 1)

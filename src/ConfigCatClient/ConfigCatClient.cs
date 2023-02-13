@@ -242,7 +242,7 @@ public sealed class ConfigCatClient : IConfigCatClient
 
         if (instanceAlreadyCreated && configurationAction is not null)
         {
-            instance.logger.Warning(message: $"Client for SDK key '{sdkKey}' is already created and will be reused; configuration action is being ignored.");
+            instance.logger.ClientIsAlreadyCreated(sdkKey);
         }
 
         return instance;

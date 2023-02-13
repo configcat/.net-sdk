@@ -55,7 +55,7 @@ internal sealed class LocalFileDataSource : IOverrideDataSource
 
         Task.Run(async () =>
         {
-            this.logger.Information($"Watching {this.fullPath} for changes.");
+            this.logger.LocalFileDataSourceStartsWatchingFile(this.fullPath);
 
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -89,7 +89,7 @@ internal sealed class LocalFileDataSource : IOverrideDataSource
         var lastWriteTime = File.GetLastWriteTimeUtc(this.fullPath);
         if (lastWriteTime > this.fileLastWriteTime)
         {
-            this.logger.Information($"Reload file {this.fullPath}.");
+            this.logger.LocalFileDataSourceReloadsFile(this.fullPath);
             await ReloadFileAsync(isAsync: true, cancellationToken).ConfigureAwait(false);
         }
     }

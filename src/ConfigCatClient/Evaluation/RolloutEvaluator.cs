@@ -105,7 +105,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         }
         finally
         {
-            this.logger.Information($"{evaluateLog}");
+            this.logger.SettingEvaluated(evaluateLog);
         }
     }
 

@@ -1,5 +1,6 @@
 using System;
 using ConfigCat.Client.ConfigService;
+using ConfigCat.Client.Evaluation;
 
 namespace ConfigCat.Client;
 
@@ -132,18 +133,29 @@ internal static partial class LoggerExtensions
 
     #region Common info messages (5000-5999)
 
+    public static FormattableLogMessage SettingEvaluated(this ILogger logger, EvaluateLogger<string> evaluateLog) => logger.LogInterpolated(
+        LogLevel.Info, 5000,
+        $"{evaluateLog}",
+        "EVALUATE_LOG");
+
+    public static FormattableLogMessage ConfigServiceStatusChanged(this ILogger logger, ConfigServiceBase.Status status) => logger.LogInterpolated(
+        LogLevel.Info, 5200,
+        $"Switched to {status.ToString().ToUpperInvariant()} mode.",
+        "MODE");
+
+    public static FormattableLogMessage LocalFileDataSourceStartsWatchingFile(this ILogger logger, string filePath) => logger.LogInterpolated(
+        LogLevel.Info, 5300,
+        $"Watching {filePath} for changes.",
+        "FILE_PATH");
+
+    public static FormattableLogMessage LocalFileDataSourceReloadsFile(this ILogger logger, string filePath) => logger.LogInterpolated(
+        LogLevel.Info, 5301,
+        $"Reload file {filePath}.",
+        "FILE_PATH");
+
     #endregion
 
     #region SDK-specific info messages (6000-6999)
-
-    #endregion
-
-    #region Common debug messages (10000-)
-
-    public static FormattableLogMessage ConfigServiceStatusChange(this ILogger logger, ConfigServiceBase.Status status) => logger.LogInterpolated(
-        LogLevel.Debug, 10000,
-        $"Switched to {status.ToString().ToUpperInvariant()} mode.",
-        "MODE");
 
     #endregion
 }

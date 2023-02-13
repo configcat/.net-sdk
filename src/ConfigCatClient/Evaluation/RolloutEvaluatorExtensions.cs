@@ -16,20 +16,18 @@ internal static class RolloutEvaluatorExtensions
     public static EvaluationDetails<T> Evaluate<T>(this IRolloutEvaluator evaluator, IDictionary<string, Setting> settings, string key, T defaultValue, User user,
         ProjectConfig remoteConfig, ILogger logger)
     {
-        string errorMessage;
+        FormattableLogMessage logMessage;
 
         if (settings is null)
         {
-            errorMessage = $"Config JSON is not present. Returning the {nameof(defaultValue)} that you specified in the source code: '{defaultValue}'.";
-            logger.Error(errorMessage);
-            return EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: remoteConfig?.TimeStamp, user, errorMessage);
+            logMessage = logger.ConfigJsonIsNotPresent(nameof(defaultValue), defaultValue);
+            return EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: remoteConfig?.TimeStamp, user, logMessage.InvariantFormattedMessage);
         }
 
         if (!settings.TryGetValue(key, out var setting))
         {
-            errorMessage = $"Evaluating '{key}' failed (key was not found in config JSON). Returning the {nameof(defaultValue)} that you specified in the source code: '{defaultValue}'. These are the available keys: {KeysToString(settings)}.";
-            logger.Error(errorMessage);
-            return EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: remoteConfig?.TimeStamp, user, errorMessage);
+            logMessage = logger.SettingEvaluationFailedDueToMissingKey(key, nameof(defaultValue), defaultValue, KeysToString(settings));
+            return EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: remoteConfig?.TimeStamp, user, logMessage.InvariantFormattedMessage);
         }
 
         return evaluator.Evaluate(setting, key, defaultValue, user, remoteConfig);
@@ -84,20 +82,18 @@ internal static class RolloutEvaluatorExtensions
     public static EvaluationDetails EvaluateVariationId(this IRolloutEvaluator evaluator, IDictionary<string, Setting> settings, string key, string defaultVariationId, User user,
         ProjectConfig remoteConfig, ILogger logger)
     {
-        string errorMessage;
+        FormattableLogMessage logMessage;
 
         if (settings is null)
         {
-            errorMessage = $"Config JSON is not present. Returning the {nameof(defaultVariationId)} defined in the app source code: '{defaultVariationId}'.";
-            logger.Error(errorMessage);
-            return EvaluationDetails.FromDefaultVariationId(key, defaultVariationId, fetchTime: remoteConfig?.TimeStamp, user, errorMessage);
+            logMessage = logger.ConfigJsonIsNotPresent(nameof(defaultVariationId), defaultVariationId);
+            return EvaluationDetails.FromDefaultVariationId(key, defaultVariationId, fetchTime: remoteConfig?.TimeStamp, user, logMessage.InvariantFormattedMessage);
         }
 
         if (!settings.TryGetValue(key, out var setting))
         {
-            errorMessage = $"Evaluating '{key}' failed (key was not found in config JSON). Returning the {nameof(defaultVariationId)} that you specified in the source code: '{defaultVariationId}'. These are the available keys: {KeysToString(settings)}.";
-            logger.Error(errorMessage);
-            return EvaluationDetails.FromDefaultVariationId(key, defaultVariationId, fetchTime: remoteConfig?.TimeStamp, user, errorMessage);
+            logMessage = logger.SettingEvaluationFailedDueToMissingKey(key, nameof(defaultVariationId), defaultVariationId, KeysToString(settings));
+            return EvaluationDetails.FromDefaultVariationId(key, defaultVariationId, fetchTime: remoteConfig?.TimeStamp, user, logMessage.InvariantFormattedMessage);
         }
 
         return evaluator.EvaluateVariationId(setting, key, defaultVariationId, user, remoteConfig);
@@ -141,7 +137,7 @@ internal static class RolloutEvaluatorExtensions
     {
         if (settings is null)
         {
-            logger.Error("Config JSON is not present.");
+            logger.ConfigJsonIsNotPresent();
             return false;
         }
 

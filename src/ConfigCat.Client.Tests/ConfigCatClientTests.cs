@@ -749,7 +749,7 @@ public class ConfigCatClientTests
         Assert.IsNotNull(actual);
         Assert.AreEqual(0, actual.Count);
         Assert.AreEqual(0, flagEvaluatedEvents.Count);
-        this.loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
+        this.loggerMock.Verify(m => m.Log(LogLevel.Error, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
     }
 
     [DataRow(false)]
@@ -886,7 +886,7 @@ public class ConfigCatClientTests
 
         Assert.IsNotNull(actualKeys);
         Assert.AreEqual(0, actualKeys.Count());
-        this.loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
+        this.loggerMock.Verify(m => m.Log(LogLevel.Error, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
     }
 
     [TestMethod]
@@ -910,7 +910,7 @@ public class ConfigCatClientTests
 
         Assert.IsNotNull(actualKeys);
         Assert.AreEqual(0, actualKeys.Count());
-        this.loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
+        this.loggerMock.Verify(m => m.Log(LogLevel.Error, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
     }
 
     [TestMethod]
@@ -938,7 +938,7 @@ public class ConfigCatClientTests
 
         Assert.IsNotNull(actualKeys);
         Assert.AreEqual(0, actualKeys.Count());
-        this.loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
+        this.loggerMock.Verify(m => m.Log(LogLevel.Error, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
     }
 
     [TestMethod]
@@ -965,7 +965,7 @@ public class ConfigCatClientTests
 
         Assert.IsNotNull(actualKeys);
         Assert.AreEqual(0, actualKeys.Count());
-        this.loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
+        this.loggerMock.Verify(m => m.Log(LogLevel.Error, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
     }
 
     [TestMethod]
@@ -992,7 +992,7 @@ public class ConfigCatClientTests
 
         Assert.IsNotNull(actualKeys);
         Assert.AreEqual(0, actualKeys.Count());
-        this.loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
+        this.loggerMock.Verify(m => m.Log(LogLevel.Error, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
     }
 
     [TestMethod]
@@ -1079,7 +1079,7 @@ public class ConfigCatClientTests
 
         Assert.IsNotNull(actual);
         Assert.AreEqual(0, actual.Count());
-        this.loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
+        this.loggerMock.Verify(m => m.Log(LogLevel.Error, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
     }
 
     [TestMethod]
@@ -1107,7 +1107,7 @@ public class ConfigCatClientTests
 
         Assert.IsNotNull(actual);
         Assert.AreEqual(0, actual.Count());
-        this.loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
+        this.loggerMock.Verify(m => m.Log(LogLevel.Error, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
     }
 
     [TestMethod]
@@ -1271,7 +1271,7 @@ public class ConfigCatClientTests
 
         // Assert
 
-        this.loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
+        this.loggerMock.Verify(m => m.Log(LogLevel.Error, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
 
         Assert.IsFalse(result.IsSuccess);
         Assert.AreEqual(exception.Message, result.ErrorMessage);
@@ -1299,7 +1299,7 @@ public class ConfigCatClientTests
 
         // Assert
 
-        this.loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
+        this.loggerMock.Verify(m => m.Log(LogLevel.Error, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
 
         Assert.IsFalse(result.IsSuccess);
         Assert.AreEqual(exception.Message, result.ErrorMessage);

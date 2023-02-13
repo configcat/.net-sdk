@@ -27,49 +27,19 @@ internal sealed class LoggerWrapper : ILogger
     #region Deprecated methods
 
     [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the Log() method instead.")]
-    public void Debug(string message)
-    {
-        if (TargetLogEnabled(LogLevel.Debug))
-        {
-            this.logger.Debug(message);
-        }
-    }
+    public void Debug(string message) => throw new NotSupportedException();
 
     [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the Log() method instead.")]
-    public void Information(string message)
-    {
-        if (TargetLogEnabled(LogLevel.Info))
-        {
-            this.logger.Information(message);
-        }
-    }
+    public void Information(string message) => throw new NotSupportedException();
 
     [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the Log() method instead.")]
-    public void Warning(string message)
-    {
-        if (TargetLogEnabled(LogLevel.Warning))
-        {
-            this.logger.Warning(message);
-        }
-    }
+    public void Warning(string message) => throw new NotSupportedException();
 
     [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the Log() method instead.")]
-    public void Error(string message) => Error(message, exception: null);
+    public void Error(string message) => throw new NotSupportedException();
 
     [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the Log() method instead.")]
-    public void Error(string message, Exception exception)
-    {
-        if (TargetLogEnabled(LogLevel.Error))
-        {
-            var logMessage = exception is not null
-                ? message + Environment.NewLine + exception
-                : message;
-
-            this.logger.Error(logMessage);
-        }
-
-        this.hooks.RaiseError(message, exception);
-    }
+    public void Error(string message, Exception exception) => throw new NotSupportedException();
 
     #endregion
 

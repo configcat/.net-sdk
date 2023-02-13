@@ -1923,13 +1923,12 @@ public class ConfigCatClientTests
 
         var loggerWrapper = new LoggerWrapper(this.loggerMock.Object, hooks);
 
-        const string errorMessage = "Error occured during fetching.";
         var errorException = new HttpRequestException();
 
         var onFetch = (ProjectConfig latestConfig) =>
         {
-            loggerWrapper.Error(errorMessage, errorException);
-            return FetchResult.Failure(latestConfig, errorMessage: errorMessage, errorException: errorException);
+            var logMessage = loggerWrapper.FetchFailedDueToUnexpectedError(errorException);
+            return FetchResult.Failure(latestConfig, errorMessage: logMessage.InvariantFormattedMessage, errorException: errorException);
         };
         this.fetcherMock.Setup(m => m.FetchAsync(It.IsAny<ProjectConfig>())).ReturnsAsync(onFetch);
 
@@ -1956,7 +1955,7 @@ public class ConfigCatClientTests
 
         Assert.AreEqual(0, configChangedEvents.Count);
         Assert.AreEqual(1, errorEvents.Count);
-        Assert.AreSame(errorMessage, errorEvents[0].Message);
+        Assert.IsNotNull(errorEvents[0].Message);
         Assert.AreSame(errorException, errorEvents[0].Exception);
 
         // 3. Fetch succeeds

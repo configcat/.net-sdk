@@ -161,7 +161,7 @@ internal abstract class ConfigServiceBase : IDisposable
 
     protected virtual void OnConfigChanged(ProjectConfig newConfig)
     {
-        this.Logger.Debug("config changed");
+        this.Logger.Log(LogLevel.Debug, eventId: default, "config changed");
 
         this.Hooks.RaiseConfigChanged(newConfig);
     }
@@ -192,7 +192,7 @@ internal abstract class ConfigServiceBase : IDisposable
             {
                 SetOnlineCoreSynchronized();
                 this.status = Status.Online;
-                logAction = static logger => logger.ConfigServiceStatusChange(Status.Online);
+                logAction = static logger => logger.ConfigServiceStatusChanged(Status.Online);
             }
             else if (this.status == Status.Disposed)
             {
@@ -218,7 +218,7 @@ internal abstract class ConfigServiceBase : IDisposable
             {
                 SetOfflineCoreSynchronized();
                 this.status = Status.Offline;
-                logAction = static logger => logger.ConfigServiceStatusChange(Status.Offline);
+                logAction = static logger => logger.ConfigServiceStatusChanged(Status.Offline);
             }
             else if (this.status == Status.Disposed)
             {

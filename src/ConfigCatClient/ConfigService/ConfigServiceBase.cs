@@ -86,7 +86,7 @@ internal abstract class ConfigServiceBase : IDisposable
             }
             else
             {
-                this.Logger.OfflineModeWarning();
+                this.Logger.ConfigServiceCantInitiateHttpCalls();
                 return RefreshResult.Failure("Client is in offline mode, it can't initiate HTTP calls.");
             }
         }
@@ -129,7 +129,7 @@ internal abstract class ConfigServiceBase : IDisposable
         }
         else
         {
-            this.Logger.OfflineModeWarning();
+            this.Logger.ConfigServiceCantInitiateHttpCalls();
             return RefreshResult.Failure("Client is in offline mode, it can't initiate HTTP calls.");
         }
     }
@@ -192,11 +192,11 @@ internal abstract class ConfigServiceBase : IDisposable
             {
                 SetOnlineCoreSynchronized();
                 this.status = Status.Online;
-                logAction = static logger => logger.StatusChange(Status.Online);
+                logAction = static logger => logger.ConfigServiceStatusChange(Status.Online);
             }
             else if (this.status == Status.Disposed)
             {
-                logAction = static logger => logger.DisposedWarning(nameof(SetOnline));
+                logAction = static logger => logger.ConfigServiceMethodHasNoEffect(nameof(SetOnline));
             }
         }
 
@@ -218,11 +218,11 @@ internal abstract class ConfigServiceBase : IDisposable
             {
                 SetOfflineCoreSynchronized();
                 this.status = Status.Offline;
-                logAction = static logger => logger.StatusChange(Status.Offline);
+                logAction = static logger => logger.ConfigServiceStatusChange(Status.Offline);
             }
             else if (this.status == Status.Disposed)
             {
-                logAction = static logger => logger.DisposedWarning(nameof(SetOffline));
+                logAction = static logger => logger.ConfigServiceMethodHasNoEffect(nameof(SetOffline));
             }
         }
 

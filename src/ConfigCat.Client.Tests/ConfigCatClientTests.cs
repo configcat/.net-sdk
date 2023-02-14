@@ -22,7 +22,7 @@ namespace ConfigCat.Client.Tests;
 public class ConfigCatClientTests
 {
     private readonly Mock<IConfigService> configServiceMock = new();
-    private readonly Mock<ILogger> loggerMock = new();
+    private readonly Mock<IConfigCatLogger> loggerMock = new();
     private readonly Mock<IRolloutEvaluator> evaluatorMock = new();
     private readonly Mock<IConfigDeserializer> configDeserializerMock = new();
     private readonly Mock<IConfigFetcher> fetcherMock = new();
@@ -1155,7 +1155,7 @@ public class ConfigCatClientTests
     {
         // Arrange
 
-        var myMock = new FakeConfigService(Mock.Of<IConfigFetcher>(), new CacheParameters(), Mock.Of<ILogger>().AsWrapper());
+        var myMock = new FakeConfigService(Mock.Of<IConfigFetcher>(), new CacheParameters(), Mock.Of<IConfigCatLogger>().AsWrapper());
 
         IConfigCatClient instance = new ConfigCatClient(
             myMock,
@@ -1602,7 +1602,7 @@ public class ConfigCatClientTests
     }
 
     private static IConfigCatClient CreateClientWithMockedFetcher(string cacheKey,
-        Mock<ILogger> loggerMock,
+        Mock<IConfigCatLogger> loggerMock,
         Mock<IConfigFetcher> fetcherMock,
         Func<ProjectConfig, FetchResult> onFetch,
         Func<IConfigFetcher, CacheParameters, LoggerWrapper, IConfigService> configServiceFactory,
@@ -1615,7 +1615,7 @@ public class ConfigCatClientTests
     }
 
     private static IConfigCatClient CreateClientWithMockedFetcher(string cacheKey,
-        Mock<ILogger> loggerMock,
+        Mock<IConfigCatLogger> loggerMock,
         Mock<IConfigFetcher> fetcherMock,
         Func<ProjectConfig, FetchResult> onFetch,
         Func<IConfigFetcher, CacheParameters, LoggerWrapper, IConfigService> configServiceFactory,

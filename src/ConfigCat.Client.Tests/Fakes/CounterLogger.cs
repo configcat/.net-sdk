@@ -2,7 +2,7 @@ using System;
 
 namespace ConfigCat.Client.Tests;
 
-internal sealed class CounterLogger : ILogger
+internal sealed class CounterLogger : IConfigCatLogger
 {
     public byte LogMessageInvokeCount = 0;
 
@@ -17,13 +17,13 @@ internal sealed class CounterLogger : ILogger
 
     #region Deprecated methods
 
-    public void Debug(string message) => this.Log(LogLevel.Debug, eventId: default, message);
+    void ILogger.Debug(string message) => throw new NotSupportedException();
 
-    public void Information(string message) => this.Log(LogLevel.Info, eventId: default, message);
+    void ILogger.Information(string message) => throw new NotSupportedException();
 
-    public void Warning(string message) => this.Log(LogLevel.Warning, eventId: default, message);
+    void ILogger.Warning(string message) => throw new NotSupportedException();
 
-    public void Error(string message) => this.Log(LogLevel.Error, eventId: default, message);
+    void ILogger.Error(string message) => throw new NotSupportedException();
 
     #endregion
 

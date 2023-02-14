@@ -170,7 +170,7 @@ public sealed class ConfigCatClient : IConfigCatClient
     /// <summary>
     /// For testing purposes only
     /// </summary>        
-    internal ConfigCatClient(IConfigService configService, ILogger logger, IRolloutEvaluator evaluator, IConfigDeserializer configDeserializer, Hooks hooks = null)
+    internal ConfigCatClient(IConfigService configService, IConfigCatLogger logger, IRolloutEvaluator evaluator, IConfigDeserializer configDeserializer, Hooks hooks = null)
     {
         this.isUncached = true;
 

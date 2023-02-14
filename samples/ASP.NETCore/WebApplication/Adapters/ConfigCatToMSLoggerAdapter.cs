@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace WebApplication.Adapters;
 
-public class ConfigCatToMSLoggerAdapter : ConfigCat.Client.ILogger
+public class ConfigCatToMSLoggerAdapter : ConfigCat.Client.IConfigCatLogger
 {
     private readonly ILogger logger;
 

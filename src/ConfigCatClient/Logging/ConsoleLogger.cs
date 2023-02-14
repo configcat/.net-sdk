@@ -5,7 +5,7 @@ namespace ConfigCat.Client;
 /// <summary>
 /// Write log messages into <see cref="Console"/>
 /// </summary>
-public class ConsoleLogger : ILogger
+public class ConsoleLogger : IConfigCatLogger
 {
     /// <inheritdoc />
     public LogLevel LogLevel { get; set; }
@@ -27,15 +27,19 @@ public class ConsoleLogger : ILogger
     #region Deprecated methods
 
     /// <inheritdoc />
+    [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the Log() method instead.")]
     public void Debug(string message) => this.Log(LogLevel.Debug, eventId: default, message);
 
     /// <inheritdoc />
+    [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the Log() method instead.")]
     public void Information(string message) => this.Log(LogLevel.Info, eventId: default, message);
 
     /// <inheritdoc />
+    [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the Log() method instead.")]
     public void Warning(string message) => this.Log(LogLevel.Warning, eventId: default, message);
 
     /// <inheritdoc />
+    [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the Log() method instead.")]
     public void Error(string message) => this.Log(LogLevel.Error, eventId: default, message);
 
     #endregion

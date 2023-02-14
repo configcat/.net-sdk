@@ -11,7 +11,7 @@ namespace ConfigCat.Client.Tests;
 
 public abstract class ConfigEvaluatorTestsBase
 {
-    protected readonly ILogger Logger = new ConsoleLogger(LogLevel.Debug);
+    protected readonly IConfigCatLogger Logger = new ConsoleLogger(LogLevel.Debug);
 
     private protected readonly IDictionary<string, Setting> config;
 

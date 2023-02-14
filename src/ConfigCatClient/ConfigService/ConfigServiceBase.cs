@@ -184,7 +184,7 @@ internal abstract class ConfigServiceBase : IDisposable
 
     public void SetOnline()
     {
-        Action<ILogger> logAction = null;
+        Action<IConfigCatLogger> logAction = null;
 
         lock (this.syncObj)
         {
@@ -210,7 +210,7 @@ internal abstract class ConfigServiceBase : IDisposable
 
     public void SetOffline()
     {
-        Action<ILogger> logAction = null;
+        Action<IConfigCatLogger> logAction = null;
 
         lock (this.syncObj)
         {

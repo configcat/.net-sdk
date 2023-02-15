@@ -146,6 +146,6 @@ internal static class RolloutEvaluatorExtensions
 
     private static string KeysToString(IDictionary<string, Setting> settings)
     {
-        return string.Join(",", settings.Keys.Select(s => $"'{s}'").ToArray());
+        return string.Join(", ", settings.Keys.Select(s => $"'{s}'").ToArray());
     }
 }

@@ -1471,15 +1471,15 @@ public class ConfigCatClientTests
 
         Assert.AreEqual(1, ConfigCatClient.Instances.GetAliveCount());
         Assert.AreSame(client1, client2);
-        Assert.IsFalse(warnings1.Any(msg => msg.Contains("configuration action is being ignored")));
+        Assert.IsFalse(warnings1.Any(msg => msg.Contains("configuration action is ignored")));
 
         if (passConfigureToSecondGet)
         {
-            Assert.IsTrue(warnings2.Any(msg => msg.Contains("configuration action is being ignored")));
+            Assert.IsTrue(warnings2.Any(msg => msg.Contains("configuration action is ignored")));
         }
         else
         {
-            Assert.IsFalse(warnings2.Any(msg => msg.Contains("configuration action is being ignored")));
+            Assert.IsFalse(warnings2.Any(msg => msg.Contains("configuration action is ignored")));
         }
     }
 

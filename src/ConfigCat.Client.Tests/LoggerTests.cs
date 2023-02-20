@@ -12,7 +12,7 @@ public class LoggerTests
     {
         var l = new CounterLogger(LogLevel.Debug);
 
-        var logger = new LoggerWrapper(l);
+        var logger = l.AsWrapper();
 
         logger.Log(LogLevel.Debug, default, "");
         logger.Log(LogLevel.Info, default, "");
@@ -27,7 +27,7 @@ public class LoggerTests
     {
         var l = new CounterLogger(LogLevel.Info);
 
-        var logger = new LoggerWrapper(l);
+        var logger = l.AsWrapper();
 
         logger.Log(LogLevel.Info, default, "");
         logger.Log(LogLevel.Warning, default, "");
@@ -41,7 +41,7 @@ public class LoggerTests
     {
         var l = new CounterLogger(LogLevel.Info);
 
-        var logger = new LoggerWrapper(l);
+        var logger = l.AsWrapper();
 
         logger.Log(LogLevel.Debug, default, "");
 
@@ -53,7 +53,7 @@ public class LoggerTests
     {
         var l = new CounterLogger(LogLevel.Warning);
 
-        var logger = new LoggerWrapper(l);
+        var logger = l.AsWrapper();
 
         logger.Log(LogLevel.Warning, default, "");
         logger.Log(LogLevel.Error, default, "");
@@ -66,7 +66,7 @@ public class LoggerTests
     {
         var l = new CounterLogger(LogLevel.Warning);
 
-        var logger = new LoggerWrapper(l);
+        var logger = l.AsWrapper();
 
         logger.Log(LogLevel.Debug, default, "");
         logger.Log(LogLevel.Info, default, "");
@@ -79,7 +79,7 @@ public class LoggerTests
     {
         var l = new CounterLogger(LogLevel.Error);
 
-        var logger = new LoggerWrapper(l);
+        var logger = l.AsWrapper();
 
         logger.Log(LogLevel.Error, default, "");
 
@@ -91,7 +91,7 @@ public class LoggerTests
     {
         var l = new CounterLogger(LogLevel.Error);
 
-        var logger = new LoggerWrapper(l);
+        var logger = l.AsWrapper();
 
         logger.Log(LogLevel.Debug, default, "");
         logger.Log(LogLevel.Info, default, "");
@@ -105,7 +105,7 @@ public class LoggerTests
     {
         var l = new CounterLogger(LogLevel.Off);
 
-        var logger = new LoggerWrapper(l);
+        var logger = l.AsWrapper();
 
         logger.Log(LogLevel.Debug, default, "");
         logger.Log(LogLevel.Info, default, "");
@@ -133,7 +133,7 @@ public class LoggerTests
         loggerMock.Setup(m => m.Information(Capture.In(infoMessages)));
         loggerMock.Setup(m => m.Debug(Capture.In(debugMessages)));
 
-        var loggerWrapper = new LoggerWrapper(loggerMock.Object);
+        var loggerWrapper = loggerMock.Object.AsWrapper();
 
         loggerWrapper.LogInterpolated(LogLevel.Debug, default, $"{nameof(LogLevel.Debug)} message", "LOG_LEVEL");
         loggerWrapper.LogInterpolated(LogLevel.Info, default, $"{nameof(LogLevel.Info)} message", "LOG_LEVEL");

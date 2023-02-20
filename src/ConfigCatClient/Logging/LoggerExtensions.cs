@@ -4,12 +4,12 @@ namespace ConfigCat.Client;
 
 internal static partial class LoggerExtensions
 {
-    public static FormattableLogMessage Log(this IConfigCatLogger logger, LogLevel level, LogEventId eventId, string message)
+    public static FormattableLogMessage Log(this LoggerWrapper logger, LogLevel level, LogEventId eventId, string message)
     {
         return Log(logger, level, eventId, exception: null, message);
     }
 
-    public static FormattableLogMessage Log(this IConfigCatLogger logger, LogLevel level, LogEventId eventId, Exception exception, string message)
+    public static FormattableLogMessage Log(this LoggerWrapper logger, LogLevel level, LogEventId eventId, Exception exception, string message)
     {
         if (logger is null)
         {
@@ -21,12 +21,12 @@ internal static partial class LoggerExtensions
         return logMessage;
     }
 
-    public static FormattableLogMessage LogFormatted(this IConfigCatLogger logger, LogLevel level, LogEventId eventId, string messageFormat, string[] argNames, object[] argValues)
+    public static FormattableLogMessage LogFormatted(this LoggerWrapper logger, LogLevel level, LogEventId eventId, string messageFormat, string[] argNames, object[] argValues)
     {
         return LogFormatted(logger, level, eventId, exception: null, messageFormat, argNames, argValues);
     }
 
-    public static FormattableLogMessage LogFormatted(this IConfigCatLogger logger, LogLevel level, LogEventId eventId, Exception exception, string messageFormat, string[] argNames, object[] argValues)
+    public static FormattableLogMessage LogFormatted(this LoggerWrapper logger, LogLevel level, LogEventId eventId, Exception exception, string messageFormat, string[] argNames, object[] argValues)
     {
         if (logger is null)
         {
@@ -46,12 +46,12 @@ internal static partial class LoggerExtensions
     // `logger.Log(LogLevel.Error, 1234, "A message with {PARAM}", paramValue)`
     // but then we'd need to manually parse the format string, which is better to avoid to keep our solution simple.)
 
-    public static FormattableLogMessage LogInterpolated(this IConfigCatLogger logger, LogLevel level, LogEventId eventId, FormattableString message, params string[] argNames)
+    public static FormattableLogMessage LogInterpolated(this LoggerWrapper logger, LogLevel level, LogEventId eventId, FormattableString message, params string[] argNames)
     {
         return LogInterpolated(logger, level, eventId, exception: null, message, argNames);
     }
 
-    public static FormattableLogMessage LogInterpolated(this IConfigCatLogger logger, LogLevel level, LogEventId eventId, Exception exception, FormattableString message, params string[] argNames)
+    public static FormattableLogMessage LogInterpolated(this LoggerWrapper logger, LogLevel level, LogEventId eventId, Exception exception, FormattableString message, params string[] argNames)
     {
         if (logger is null)
         {

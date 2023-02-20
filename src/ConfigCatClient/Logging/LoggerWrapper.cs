@@ -5,7 +5,7 @@ namespace ConfigCat.Client;
 internal sealed class LoggerWrapper : IConfigCatLogger
 {
 #pragma warning disable CS0618 // Type or member is obsolete
-    private readonly ILogger logger; // Backward compatibility, it'll be changed to IConfigCatCache later.
+    private readonly ILogger logger; // Backward compatibility, it'll be changed to IConfigCatLogger later.
 #pragma warning restore CS0618 // Type or member is obsolete
     private readonly Hooks hooks;
 

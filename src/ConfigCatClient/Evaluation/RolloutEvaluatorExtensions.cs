@@ -14,7 +14,7 @@ internal static class RolloutEvaluatorExtensions
     }
 
     public static EvaluationDetails<T> Evaluate<T>(this IRolloutEvaluator evaluator, IDictionary<string, Setting> settings, string key, T defaultValue, User user,
-        ProjectConfig remoteConfig, IConfigCatLogger logger)
+        ProjectConfig remoteConfig, LoggerWrapper logger)
     {
         FormattableLogMessage logMessage;
 
@@ -40,7 +40,7 @@ internal static class RolloutEvaluatorExtensions
     }
 
     public static EvaluationDetails[] EvaluateAll(this IRolloutEvaluator evaluator, IDictionary<string, Setting> settings, User user,
-        ProjectConfig remoteConfig, IConfigCatLogger logger, out IReadOnlyList<Exception> exceptions)
+        ProjectConfig remoteConfig, LoggerWrapper logger, out IReadOnlyList<Exception> exceptions)
     {
         if (!CheckSettingsAvailable(settings, logger))
         {
@@ -80,7 +80,7 @@ internal static class RolloutEvaluatorExtensions
     }
 
     public static EvaluationDetails EvaluateVariationId(this IRolloutEvaluator evaluator, IDictionary<string, Setting> settings, string key, string defaultVariationId, User user,
-        ProjectConfig remoteConfig, IConfigCatLogger logger)
+        ProjectConfig remoteConfig, LoggerWrapper logger)
     {
         FormattableLogMessage logMessage;
 
@@ -100,7 +100,7 @@ internal static class RolloutEvaluatorExtensions
     }
 
     public static EvaluationDetails[] EvaluateAllVariationIds(this IRolloutEvaluator evaluator, IDictionary<string, Setting> settings, User user,
-        ProjectConfig remoteConfig, IConfigCatLogger logger, out IReadOnlyList<Exception> exceptions)
+        ProjectConfig remoteConfig, LoggerWrapper logger, out IReadOnlyList<Exception> exceptions)
     {
         if (!CheckSettingsAvailable(settings, logger))
         {
@@ -133,7 +133,7 @@ internal static class RolloutEvaluatorExtensions
         return evaluationDetailsArray;
     }
 
-    internal static bool CheckSettingsAvailable(IDictionary<string, Setting> settings, IConfigCatLogger logger)
+    internal static bool CheckSettingsAvailable(IDictionary<string, Setting> settings, LoggerWrapper logger)
     {
         if (settings is null)
         {

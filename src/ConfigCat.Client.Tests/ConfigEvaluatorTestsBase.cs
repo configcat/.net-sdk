@@ -11,7 +11,9 @@ namespace ConfigCat.Client.Tests;
 
 public abstract class ConfigEvaluatorTestsBase
 {
-    protected readonly IConfigCatLogger Logger = new ConsoleLogger(LogLevel.Debug);
+#pragma warning disable IDE1006 // Naming Styles
+    private protected readonly LoggerWrapper Logger = new ConsoleLogger(LogLevel.Debug).AsWrapper();
+#pragma warning restore IDE1006 // Naming Styles
 
     private protected readonly IDictionary<string, Setting> config;
 
@@ -23,7 +25,7 @@ public abstract class ConfigEvaluatorTestsBase
 
     public ConfigEvaluatorTestsBase()
     {
-        this.configEvaluator = new RolloutEvaluator(new LoggerWrapper(this.Logger));
+        this.configEvaluator = new RolloutEvaluator(this.Logger);
 
         this.config = GetSampleJson().Deserialize<SettingsWithPreferences>().Settings;
     }

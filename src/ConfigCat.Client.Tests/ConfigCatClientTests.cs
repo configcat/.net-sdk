@@ -1627,7 +1627,7 @@ public class ConfigCatClientTests
         fetcherMock.Setup(m => m.Fetch(It.IsAny<ProjectConfig>())).Returns(onFetch);
         fetcherMock.Setup(m => m.FetchAsync(It.IsAny<ProjectConfig>())).ReturnsAsync(onFetch);
 
-        var loggerWrapper = new LoggerWrapper(loggerMock.Object);
+        var loggerWrapper = loggerMock.Object.AsWrapper();
 
         configCache = new InMemoryConfigCache();
 
@@ -1921,7 +1921,7 @@ public class ConfigCatClientTests
         hooks.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
         hooks.Error += (s, e) => errorEvents.Add(e);
 
-        var loggerWrapper = new LoggerWrapper(this.loggerMock.Object, hooks);
+        var loggerWrapper = this.loggerMock.Object.AsWrapper(hooks);
 
         var errorException = new HttpRequestException();
 

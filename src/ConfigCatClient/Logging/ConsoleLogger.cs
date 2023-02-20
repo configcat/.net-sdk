@@ -28,19 +28,35 @@ public class ConsoleLogger : IConfigCatLogger
 
     /// <inheritdoc />
     [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the Log() method instead.")]
-    public void Debug(string message) => this.Log(LogLevel.Debug, eventId: default, message);
+    public void Debug(string message)
+    {
+        var logMessage = new FormattableLogMessage(message);
+        Log(LogLevel.Debug, eventId: default, ref logMessage);
+    }
 
     /// <inheritdoc />
     [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the Log() method instead.")]
-    public void Information(string message) => this.Log(LogLevel.Info, eventId: default, message);
+    public void Information(string message)
+    {
+        var logMessage = new FormattableLogMessage(message);
+        Log(LogLevel.Info, eventId: default, ref logMessage);
+    }
 
     /// <inheritdoc />
     [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the Log() method instead.")]
-    public void Warning(string message) => this.Log(LogLevel.Warning, eventId: default, message);
+    public void Warning(string message)
+    {
+        var logMessage = new FormattableLogMessage(message);
+        Log(LogLevel.Warning, eventId: default, ref logMessage);
+    }
 
     /// <inheritdoc />
     [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the Log() method instead.")]
-    public void Error(string message) => this.Log(LogLevel.Error, eventId: default, message);
+    public void Error(string message)
+    {
+        var logMessage = new FormattableLogMessage(message);
+        Log(LogLevel.Error, eventId: default, ref logMessage);
+    }
 
     #endregion
 

@@ -55,7 +55,7 @@ public class BasicConfigEvaluatorTests : ConfigEvaluatorTestsBase
     }
 
     private delegate EvaluationDetails<object> EvaluateDelegate(IRolloutEvaluator evaluator, IDictionary<string, Setting> settings, string key, object defaultValue, User user,
-        ProjectConfig remoteConfig, IConfigCatLogger logger);
+        ProjectConfig remoteConfig, LoggerWrapper logger);
 
     private static readonly MethodInfo EvaluateMethodDefinition = new EvaluateDelegate(RolloutEvaluatorExtensions.Evaluate).Method.GetGenericMethodDefinition();
 

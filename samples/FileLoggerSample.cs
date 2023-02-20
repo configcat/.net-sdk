@@ -1,65 +1,69 @@
 using System;
+using System.IO;
 using ConfigCat.Client;
 
 namespace SampleApplication
 {
     class Program
     {
-        class MyFileLogger : ILogger
+        class MyFileLogger : IConfigCatLogger
         {
             private readonly string filePath;
-            private static object lck = new object();
+            private static readonly object SyncObj = new object();
 
-            public LogLevel LogLevel { get ; set ; }
+            public LogLevel LogLevel { get; set; }
 
             public MyFileLogger(string filePath, LogLevel logLevel)
             {
                 this.filePath = filePath;
-                this.LogLevel = logLevel;
+                LogLevel = logLevel;
             }
 
-            private void LogMessage(string message)
+            private void AppendMessage(string message)
             {
-                lock (lck) // ensure thread safe
+                lock (SyncObj) // ensure thread safety
                 {
-                    System.IO.File.AppendAllText(this.filePath, message + Environment.NewLine);
+                    File.AppendAllText(this.filePath, message + Environment.NewLine);
                 }
             }
 
-            public void Debug(string message)
-            {
-                LogMessage("DEBUG - " + message);
-            }
+            #region Deprecated methods
 
-            public void Information(string message)
-            {
-                LogMessage("INFO - " + message);
-            }
+            void ILogger.Debug(string message) => throw new NotSupportedException();
 
-            public void Warning(string message)
-            {
-                LogMessage("WARN - " + message);
-            }
+            void ILogger.Information(string message) => throw new NotSupportedException();
 
-            public void Error(string message)
+            void ILogger.Warning(string message) => throw new NotSupportedException();
+
+            void ILogger.Error(string message) => throw new NotSupportedException();
+
+            #endregion
+
+            public void Log(LogLevel level, LogEventId eventId, ref FormattableLogMessage message, Exception? exception = null)
             {
-                LogMessage("ERROR - " + message);
+                var levelString = level switch
+                {
+                    LogLevel.Debug => "DEBUG",
+                    LogLevel.Info => "INFO",
+                    LogLevel.Warning => "WARNING",
+                    LogLevel.Error => "ERROR",
+                    _ => level.ToString().ToUpper()
+                };
+
+                AppendMessage(levelString + " - " + message.InvariantFormattedMessage);
             }
-        }        
+        }
 
         static void Main(string[] args)
         {
-            string filePath = System.IO.Path.Combine(Environment.CurrentDirectory, "configcat.log");
-            LogLevel logLevel = LogLevel.Warning; // I would like to log only WARNING and higher entires (Warnings and Errors).
+            var filePath = Path.Combine(Environment.CurrentDirectory, "configcat.log");
+            var logLevel = LogLevel.Warning; // Log only WARNING and higher entries (warnings and errors).
 
-            var clientConfiguration = new AutoPollConfiguration
+            var client = ConfigCatClient.Get("YOUR-SDK-KEY", options =>
             {
-                SdkKey = "YOUR-SDK-KEY",
-                Logger = new MyFileLogger(filePath, logLevel),
-                PollIntervalSeconds = 5
-            };
-
-            IConfigCatClient client = new ConfigCatClient(clientConfiguration);
+                options.Logger = new MyFileLogger(filePath, logLevel);
+                options.PollingMode = PollingModes.AutoPoll(pollInterval: TimeSpan.FromSeconds(5));
+            });
 
             var feature = client.GetValue("keyNotExists", "N/A");
 

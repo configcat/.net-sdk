@@ -19,22 +19,15 @@ public class ConfigCatToMSLoggerAdapter : ConfigCat.Client.IConfigCatLogger
 
     #region Deprecated methods
 
-    public void Debug(string message) => Log(ConfigCat.Client.LogLevel.Debug, message);
+    void ConfigCat.Client.ILogger.Debug(string message) => throw new NotSupportedException();
 
-    public void Information(string message) => Log(ConfigCat.Client.LogLevel.Info, message);
+    void ConfigCat.Client.ILogger.Information(string message) => throw new NotSupportedException();
 
-    public void Warning(string message) => Log(ConfigCat.Client.LogLevel.Warning, message);
+    void ConfigCat.Client.ILogger.Warning(string message) => throw new NotSupportedException();
 
-    public void Error(string message) => Log(ConfigCat.Client.LogLevel.Error, message);
+    void ConfigCat.Client.ILogger.Error(string message) => throw new NotSupportedException();
 
     #endregion
-
-    // TODO: This should be removed when deprecated logger methods get removed.
-    private void Log(ConfigCat.Client.LogLevel level, string message)
-    {
-        var logMessage = new ConfigCat.Client.FormattableLogMessage(message);
-        Log(level, default, ref logMessage);
-    }
 
     public void Log(ConfigCat.Client.LogLevel level, ConfigCat.Client.LogEventId eventId, ref ConfigCat.Client.FormattableLogMessage message, Exception? exception = null)
     {

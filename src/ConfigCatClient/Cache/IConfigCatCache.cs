@@ -3,8 +3,13 @@ namespace ConfigCat.Client;
 /// <summary>
 /// Defines a cache used by the <see cref="ConfigCatClient"/>.
 /// </summary>
+/// <remarks>
+/// Note for implementers. Until the deprecated <see cref="IConfigCache"/> interface is removed, this interface needs to extend it for backward compatibility.
+/// Later, all of its members will be moved into this interface.
+/// </remarks>
+public interface IConfigCatCache :
 #pragma warning disable CS0618 // Type or member is obsolete
-public interface IConfigCatCache : IConfigCache // Later, this interface will contain all members of IConfigCache. For backward compatibility, it simply inherits them now.
+    IConfigCache
 #pragma warning restore CS0618 // Type or member is obsolete
 {
     /// <summary>

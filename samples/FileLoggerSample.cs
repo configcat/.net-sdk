@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.IO;
 using ConfigCat.Client;
 
@@ -43,14 +44,20 @@ namespace SampleApplication
             {
                 var levelString = level switch
                 {
-                    LogLevel.Debug => "DEBUG",
-                    LogLevel.Info => "INFO",
-                    LogLevel.Warning => "WARNING",
-                    LogLevel.Error => "ERROR",
-                    _ => level.ToString().ToUpper()
+                    LogLevel.Debug   => "DEBUG",
+                    LogLevel.Info    => "INFO ",
+                    LogLevel.Warning => "WARN ",
+                    LogLevel.Error   => "ERROR",
+                    _ => level.ToString().ToUpperInvariant().PadRight(5)
                 };
 
-                AppendMessage(levelString + " - " + message.InvariantFormattedMessage);
+                var timeStampString = DateTime.UtcNow.ToString("O");
+
+                var eventIdString = eventId.Id.ToString(CultureInfo.InvariantCulture);
+
+                var exceptionString = exception is null ? string.Empty : Environment.NewLine + exception;
+
+                AppendMessage($"ConfigCat.{levelString}@{timeStampString} [{eventIdString}] {message.InvariantFormattedMessage}{exceptionString}");
             }
         }
 

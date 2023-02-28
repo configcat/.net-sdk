@@ -62,4 +62,10 @@ internal static partial class LoggerExtensions
         logger.Log(level, eventId, ref logMessage, exception);
         return logMessage;
     }
+
+    /// <summary>
+    /// Shorthand method for
+    /// <code>logger.Log(LogLevel.Debug, default, message);</code>
+    /// </summary>
+    public static FormattableLogMessage LogDebug(this LoggerWrapper logger, string message) => logger.Log(LogLevel.Debug, default, message);
 }

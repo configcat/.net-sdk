@@ -161,7 +161,7 @@ internal abstract class ConfigServiceBase : IDisposable
 
     protected virtual void OnConfigChanged(ProjectConfig newConfig)
     {
-        this.Logger.Log(LogLevel.Debug, eventId: default, "config changed");
+        this.Logger.LogDebug("config changed");
 
         this.Hooks.RaiseConfigChanged(newConfig);
     }

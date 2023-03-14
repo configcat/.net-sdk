@@ -97,7 +97,7 @@ internal static partial class LoggerExtensions
 
     public static FormattableLogMessage DataGovernanceIsOutOfSync(this LoggerWrapper logger) => logger.Log(
         LogLevel.Warning, 3002,
-        "The `dataGovernance` parameter specified in the client initialization is not in sync with the preferences on the ConfigCat Dashboard. Read more: https://configcat.com/docs/advanced/data-governance/");
+        "The `dataGovernance` parameter specified at the client initialization is not in sync with the preferences on the ConfigCat Dashboard. Read more: https://configcat.com/docs/advanced/data-governance/");
 
     public static FormattableLogMessage FetchReceived200WithInvalidBody(this LoggerWrapper logger) => logger.Log(
         LogLevel.Warning, 3100,

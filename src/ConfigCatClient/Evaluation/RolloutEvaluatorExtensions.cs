@@ -40,9 +40,9 @@ internal static class RolloutEvaluatorExtensions
     }
 
     public static EvaluationDetails[] EvaluateAll(this IRolloutEvaluator evaluator, IDictionary<string, Setting> settings, User user,
-        ProjectConfig remoteConfig, LoggerWrapper logger, out IReadOnlyList<Exception> exceptions)
+        ProjectConfig remoteConfig, LoggerWrapper logger, string defaultReturnValue, out IReadOnlyList<Exception> exceptions)
     {
-        if (!CheckSettingsAvailable(settings, logger))
+        if (!CheckSettingsAvailable(settings, logger, defaultReturnValue))
         {
             exceptions = null;
             return ArrayUtils.EmptyArray<EvaluationDetails>();
@@ -100,9 +100,9 @@ internal static class RolloutEvaluatorExtensions
     }
 
     public static EvaluationDetails[] EvaluateAllVariationIds(this IRolloutEvaluator evaluator, IDictionary<string, Setting> settings, User user,
-        ProjectConfig remoteConfig, LoggerWrapper logger, out IReadOnlyList<Exception> exceptions)
+        ProjectConfig remoteConfig, LoggerWrapper logger, string defaultReturnValue, out IReadOnlyList<Exception> exceptions)
     {
-        if (!CheckSettingsAvailable(settings, logger))
+        if (!CheckSettingsAvailable(settings, logger, defaultReturnValue))
         {
             exceptions = null;
             return ArrayUtils.EmptyArray<EvaluationDetails>();
@@ -133,11 +133,11 @@ internal static class RolloutEvaluatorExtensions
         return evaluationDetailsArray;
     }
 
-    internal static bool CheckSettingsAvailable(IDictionary<string, Setting> settings, LoggerWrapper logger)
+    internal static bool CheckSettingsAvailable(IDictionary<string, Setting> settings, LoggerWrapper logger, string defaultReturnValue)
     {
         if (settings is null)
         {
-            logger.ConfigJsonIsNotPresent();
+            logger.ConfigJsonIsNotPresent(defaultReturnValue);
             return false;
         }
 

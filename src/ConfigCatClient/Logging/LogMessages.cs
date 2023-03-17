@@ -8,9 +8,9 @@ internal static partial class LoggerExtensions
 {
     #region Common error messages (1000-1999)
 
-    public static FormattableLogMessage ConfigJsonIsNotPresent(this LoggerWrapper logger) => logger.Log(
+    public static FormattableLogMessage ConfigJsonIsNotPresent(this LoggerWrapper logger, string defaultReturnValue) => logger.Log(
         LogLevel.Error, 1000,
-        "Config JSON is not present.");
+        $"Config JSON is not present. Returning {defaultReturnValue}.");
 
     public static FormattableLogMessage ConfigJsonIsNotPresent(this LoggerWrapper logger, string defaultParamName, object defaultParamValue) => logger.LogInterpolated(
         LogLevel.Error, 1000,
@@ -22,10 +22,16 @@ internal static partial class LoggerExtensions
         $"Failed to evaluate setting '{key}' (the key was not found in config JSON). Returning the `{defaultParamName}` parameter that you specified in your application: '{defaultParamValue}'. Available keys: {availableKeys}.",
         "KEY", "DEFAULT_PARAM_NAME", "DEFAULT_PARAM_VALUE", "AVAILABLE_KEYS");
 
-    public static FormattableLogMessage SettingEvaluationError(this LoggerWrapper logger, string methodName, Exception ex) => logger.LogInterpolated(
+    public static FormattableLogMessage SettingEvaluationError(this LoggerWrapper logger, string methodName, string defaultReturnValue, Exception ex) => logger.LogFormatted(
         LogLevel.Error, 1002, ex,
-        $"Error occurred in the `{methodName}` method.",
-        "METHOD_NAME");
+        $"Error occurred in the `{{0}}` method. Returning {defaultReturnValue}.",
+        new[] { "METHOD_NAME" },
+        new object[] { methodName });
+
+    public static FormattableLogMessage SettingEvaluationError(this LoggerWrapper logger, string methodName, string key, string defaultParamName, object defaultParamValue, Exception ex) => logger.LogInterpolated(
+        LogLevel.Error, 1002, ex,
+        $"Error occurred in the `{methodName}` method while evaluating setting '{key}'. Returning the `{defaultParamName}` parameter that you specified in your application: '{defaultParamValue}'.",
+        "METHOD_NAME", "KEY", "DEFAULT_PARAM_NAME", "DEFAULT_PARAM_VALUE");
 
     public static FormattableLogMessage ForceRefreshError(this LoggerWrapper logger, string methodName, Exception ex) => logger.LogInterpolated(
         LogLevel.Error, 1003, ex,

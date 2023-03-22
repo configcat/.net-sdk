@@ -60,6 +60,15 @@ internal static partial class LoggerExtensions
         LogLevel.Error, 1104,
         "Redirection loop encountered while trying to fetch config JSON. Please contact us at https://configcat.com/support/");
 
+    public static FormattableLogMessage FetchReceived200WithInvalidBody(this LoggerWrapper logger) => logger.Log(
+        LogLevel.Error, 1105,
+        "Fetching config JSON was successful but the HTTP response content was invalid.");
+
+    public static FormattableLogMessage FetchReceived304WhenLocalCacheIsEmpty(this LoggerWrapper logger, int statusCode, string reasonPhrase) => logger.LogInterpolated(
+        LogLevel.Error, 1106,
+        $"Unexpected HTTP response was received when no config JSON is cached locally: {statusCode} {reasonPhrase}",
+        "STATUS_CODE", "REASON_PHRASE");
+
     public static FormattableLogMessage AutoPollConfigServiceErrorDuringPolling(this LoggerWrapper logger, Exception ex) => logger.Log(
         LogLevel.Error, 1200, ex,
         "Error occurred during auto polling.");
@@ -104,15 +113,6 @@ internal static partial class LoggerExtensions
     public static FormattableLogMessage DataGovernanceIsOutOfSync(this LoggerWrapper logger) => logger.Log(
         LogLevel.Warning, 3002,
         "The `dataGovernance` parameter specified at the client initialization is not in sync with the preferences on the ConfigCat Dashboard. Read more: https://configcat.com/docs/advanced/data-governance/");
-
-    public static FormattableLogMessage FetchReceived200WithInvalidBody(this LoggerWrapper logger) => logger.Log(
-        LogLevel.Warning, 3100,
-        "Fetching config JSON was successful but the HTTP response content was invalid.");
-
-    public static FormattableLogMessage FetchReceived304WhenLocalCacheIsEmpty(this LoggerWrapper logger, int statusCode, string reasonPhrase) => logger.LogInterpolated(
-        LogLevel.Warning, 3101,
-        $"Unexpected HTTP response was received when no config JSON is cached locally: {statusCode} {reasonPhrase}",
-        "STATUS_CODE", "REASON_PHRASE");
 
     public static FormattableLogMessage ConfigServiceCannotInitiateHttpCalls(this LoggerWrapper logger) => logger.Log(
         LogLevel.Warning, 3200,

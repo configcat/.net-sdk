@@ -12,10 +12,10 @@ internal static partial class LoggerExtensions
         LogLevel.Error, 1000,
         $"Config JSON is not present. Returning {defaultReturnValue}.");
 
-    public static FormattableLogMessage ConfigJsonIsNotPresent(this LoggerWrapper logger, string defaultParamName, object defaultParamValue) => logger.LogInterpolated(
+    public static FormattableLogMessage ConfigJsonIsNotPresent(this LoggerWrapper logger, string key, string defaultParamName, object defaultParamValue) => logger.LogInterpolated(
         LogLevel.Error, 1000,
-        $"Config JSON is not present. Returning the `{defaultParamName}` parameter that you specified in your application: '{defaultParamValue}'.",
-        "DEFAULT_PARAM_NAME", "DEFAULT_PARAM_VALUE");
+        $"Config JSON is not present when evaluating setting '{key}'. Returning the `{defaultParamName}` parameter that you specified in your application: '{defaultParamValue}'.",
+        "KEY", "DEFAULT_PARAM_NAME", "DEFAULT_PARAM_VALUE");
 
     public static FormattableLogMessage SettingEvaluationFailedDueToMissingKey(this LoggerWrapper logger, string key, string defaultParamName, object defaultParamValue, string availableKeys) => logger.LogInterpolated(
         LogLevel.Error, 1001,

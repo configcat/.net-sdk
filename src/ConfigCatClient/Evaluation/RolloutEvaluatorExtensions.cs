@@ -20,7 +20,7 @@ internal static class RolloutEvaluatorExtensions
 
         if (settings is null)
         {
-            logMessage = logger.ConfigJsonIsNotPresent(nameof(defaultValue), defaultValue);
+            logMessage = logger.ConfigJsonIsNotPresent(key, nameof(defaultValue), defaultValue);
             return EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: remoteConfig?.TimeStamp, user, logMessage.InvariantFormattedMessage);
         }
 
@@ -86,7 +86,7 @@ internal static class RolloutEvaluatorExtensions
 
         if (settings is null)
         {
-            logMessage = logger.ConfigJsonIsNotPresent(nameof(defaultVariationId), defaultVariationId);
+            logMessage = logger.ConfigJsonIsNotPresent(key, nameof(defaultVariationId), defaultVariationId);
             return EvaluationDetails.FromDefaultVariationId(key, defaultVariationId, fetchTime: remoteConfig?.TimeStamp, user, logMessage.InvariantFormattedMessage);
         }
 

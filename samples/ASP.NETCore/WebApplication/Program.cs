@@ -4,9 +4,13 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using WebApplication.Adapters;
 
 var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
+
+// Uncomment the following line for structured logging.
+//builder.Logging.AddJsonConsole(options => options.JsonWriterOptions = new() { Indented = true });
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();

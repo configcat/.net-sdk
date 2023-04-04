@@ -27,6 +27,6 @@ internal sealed class NullConfigService : IConfigService
 
     public void SetOnline()
     {
-        this.logger.Warning($"Client is configured to use the {nameof(OverrideBehaviour.LocalOnly)} override behavior, thus {nameof(SetOnline)}() has no effect.");
+        this.logger.ConfigServiceMethodHasNoEffectDueToOverrideBehavior(nameof(OverrideBehaviour.LocalOnly), nameof(SetOnline));
     }
 }

@@ -22,7 +22,7 @@ namespace ConfigCat.Client.Tests;
 public class ConfigCatClientTests
 {
     private readonly Mock<IConfigService> configServiceMock = new();
-    private readonly Mock<ILogger> loggerMock = new();
+    private readonly Mock<IConfigCatLogger> loggerMock = new();
     private readonly Mock<IRolloutEvaluator> evaluatorMock = new();
     private readonly Mock<IConfigDeserializer> configDeserializerMock = new();
     private readonly Mock<IConfigFetcher> fetcherMock = new();
@@ -749,7 +749,7 @@ public class ConfigCatClientTests
         Assert.IsNotNull(actual);
         Assert.AreEqual(0, actual.Count);
         Assert.AreEqual(0, flagEvaluatedEvents.Count);
-        this.loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
+        this.loggerMock.Verify(m => m.Log(LogLevel.Error, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
     }
 
     [DataRow(false)]
@@ -886,7 +886,7 @@ public class ConfigCatClientTests
 
         Assert.IsNotNull(actualKeys);
         Assert.AreEqual(0, actualKeys.Count());
-        this.loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
+        this.loggerMock.Verify(m => m.Log(LogLevel.Error, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
     }
 
     [TestMethod]
@@ -910,7 +910,7 @@ public class ConfigCatClientTests
 
         Assert.IsNotNull(actualKeys);
         Assert.AreEqual(0, actualKeys.Count());
-        this.loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
+        this.loggerMock.Verify(m => m.Log(LogLevel.Error, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
     }
 
     [TestMethod]
@@ -938,7 +938,7 @@ public class ConfigCatClientTests
 
         Assert.IsNotNull(actualKeys);
         Assert.AreEqual(0, actualKeys.Count());
-        this.loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
+        this.loggerMock.Verify(m => m.Log(LogLevel.Error, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
     }
 
     [TestMethod]
@@ -965,7 +965,7 @@ public class ConfigCatClientTests
 
         Assert.IsNotNull(actualKeys);
         Assert.AreEqual(0, actualKeys.Count());
-        this.loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
+        this.loggerMock.Verify(m => m.Log(LogLevel.Error, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
     }
 
     [TestMethod]
@@ -992,7 +992,7 @@ public class ConfigCatClientTests
 
         Assert.IsNotNull(actualKeys);
         Assert.AreEqual(0, actualKeys.Count());
-        this.loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
+        this.loggerMock.Verify(m => m.Log(LogLevel.Error, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
     }
 
     [TestMethod]
@@ -1079,7 +1079,7 @@ public class ConfigCatClientTests
 
         Assert.IsNotNull(actual);
         Assert.AreEqual(0, actual.Count());
-        this.loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
+        this.loggerMock.Verify(m => m.Log(LogLevel.Error, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
     }
 
     [TestMethod]
@@ -1107,7 +1107,7 @@ public class ConfigCatClientTests
 
         Assert.IsNotNull(actual);
         Assert.AreEqual(0, actual.Count());
-        this.loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
+        this.loggerMock.Verify(m => m.Log(LogLevel.Error, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
     }
 
     [TestMethod]
@@ -1155,7 +1155,7 @@ public class ConfigCatClientTests
     {
         // Arrange
 
-        var myMock = new FakeConfigService(Mock.Of<IConfigFetcher>(), new CacheParameters(), Mock.Of<ILogger>().AsWrapper());
+        var myMock = new FakeConfigService(Mock.Of<IConfigFetcher>(), new CacheParameters(), Mock.Of<IConfigCatLogger>().AsWrapper());
 
         IConfigCatClient instance = new ConfigCatClient(
             myMock,
@@ -1271,7 +1271,7 @@ public class ConfigCatClientTests
 
         // Assert
 
-        this.loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
+        this.loggerMock.Verify(m => m.Log(LogLevel.Error, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
 
         Assert.IsFalse(result.IsSuccess);
         Assert.AreEqual(exception.Message, result.ErrorMessage);
@@ -1299,7 +1299,7 @@ public class ConfigCatClientTests
 
         // Assert
 
-        this.loggerMock.Verify(m => m.Error(It.IsAny<string>()), Times.Once);
+        this.loggerMock.Verify(m => m.Log(LogLevel.Error, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
 
         Assert.IsFalse(result.IsSuccess);
         Assert.AreEqual(exception.Message, result.ErrorMessage);
@@ -1448,7 +1448,9 @@ public class ConfigCatClientTests
 
         var warnings = new List<string>();
 
-        this.loggerMock.Setup(m => m.Warning(It.IsAny<string>())).Callback(warnings.Add);
+        this.loggerMock
+            .Setup(m => m.Log(LogLevel.Warning, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()))
+            .Callback(delegate (LogLevel _, LogEventId _, ref FormattableLogMessage msg, Exception _) { warnings.Add(msg.InvariantFormattedMessage); });
 
         void Configure(ConfigCatClientOptions options)
         {
@@ -1469,15 +1471,15 @@ public class ConfigCatClientTests
 
         Assert.AreEqual(1, ConfigCatClient.Instances.GetAliveCount());
         Assert.AreSame(client1, client2);
-        Assert.IsFalse(warnings1.Any(msg => msg.Contains("configuration action is being ignored")));
+        Assert.IsFalse(warnings1.Any(msg => msg.Contains("configuration action is ignored")));
 
         if (passConfigureToSecondGet)
         {
-            Assert.IsTrue(warnings2.Any(msg => msg.Contains("configuration action is being ignored")));
+            Assert.IsTrue(warnings2.Any(msg => msg.Contains("configuration action is ignored")));
         }
         else
         {
-            Assert.IsFalse(warnings2.Any(msg => msg.Contains("configuration action is being ignored")));
+            Assert.IsFalse(warnings2.Any(msg => msg.Contains("configuration action is ignored")));
         }
     }
 
@@ -1600,7 +1602,7 @@ public class ConfigCatClientTests
     }
 
     private static IConfigCatClient CreateClientWithMockedFetcher(string cacheKey,
-        Mock<ILogger> loggerMock,
+        Mock<IConfigCatLogger> loggerMock,
         Mock<IConfigFetcher> fetcherMock,
         Func<ProjectConfig, FetchResult> onFetch,
         Func<IConfigFetcher, CacheParameters, LoggerWrapper, IConfigService> configServiceFactory,
@@ -1613,7 +1615,7 @@ public class ConfigCatClientTests
     }
 
     private static IConfigCatClient CreateClientWithMockedFetcher(string cacheKey,
-        Mock<ILogger> loggerMock,
+        Mock<IConfigCatLogger> loggerMock,
         Mock<IConfigFetcher> fetcherMock,
         Func<ProjectConfig, FetchResult> onFetch,
         Func<IConfigFetcher, CacheParameters, LoggerWrapper, IConfigService> configServiceFactory,
@@ -1625,7 +1627,7 @@ public class ConfigCatClientTests
         fetcherMock.Setup(m => m.Fetch(It.IsAny<ProjectConfig>())).Returns(onFetch);
         fetcherMock.Setup(m => m.FetchAsync(It.IsAny<ProjectConfig>())).ReturnsAsync(onFetch);
 
-        var loggerWrapper = new LoggerWrapper(loggerMock.Object);
+        var loggerWrapper = loggerMock.Object.AsWrapper();
 
         configCache = new InMemoryConfigCache();
 
@@ -1919,15 +1921,14 @@ public class ConfigCatClientTests
         hooks.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
         hooks.Error += (s, e) => errorEvents.Add(e);
 
-        var loggerWrapper = new LoggerWrapper(this.loggerMock.Object, hooks);
+        var loggerWrapper = this.loggerMock.Object.AsWrapper(hooks);
 
-        const string errorMessage = "Error occured during fetching.";
         var errorException = new HttpRequestException();
 
         var onFetch = (ProjectConfig latestConfig) =>
         {
-            loggerWrapper.Error(errorMessage, errorException);
-            return FetchResult.Failure(latestConfig, errorMessage: errorMessage, errorException: errorException);
+            var logMessage = loggerWrapper.FetchFailedDueToUnexpectedError(errorException);
+            return FetchResult.Failure(latestConfig, errorMessage: logMessage.InvariantFormattedMessage, errorException: errorException);
         };
         this.fetcherMock.Setup(m => m.FetchAsync(It.IsAny<ProjectConfig>())).ReturnsAsync(onFetch);
 
@@ -1954,7 +1955,7 @@ public class ConfigCatClientTests
 
         Assert.AreEqual(0, configChangedEvents.Count);
         Assert.AreEqual(1, errorEvents.Count);
-        Assert.AreSame(errorMessage, errorEvents[0].Message);
+        Assert.IsNotNull(errorEvents[0].Message);
         Assert.AreSame(errorException, errorEvents[0].Exception);
 
         // 3. Fetch succeeds

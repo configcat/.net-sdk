@@ -1,11 +1,12 @@
 using System;
+using System.Globalization;
 
 namespace ConfigCat.Client;
 
 /// <summary>
 /// Write log messages into <see cref="Console"/>
 /// </summary>
-public class ConsoleLogger : ILogger
+public class ConsoleLogger : IConfigCatLogger
 {
     /// <inheritdoc />
     public LogLevel LogLevel { get; set; }
@@ -24,33 +25,60 @@ public class ConsoleLogger : ILogger
         LogLevel = logLevel;
     }
 
+    #region Deprecated methods
+
     /// <inheritdoc />
+    [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the Log() method instead.")]
     public void Debug(string message)
     {
-        PrintMessage(LogLevel.Debug, message);
+        var logMessage = new FormattableLogMessage(message);
+        Log(LogLevel.Debug, eventId: default, ref logMessage);
     }
 
     /// <inheritdoc />
-    public void Error(string message)
-    {
-        PrintMessage(LogLevel.Error, message);
-    }
-
-    /// <inheritdoc />
+    [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the Log() method instead.")]
     public void Information(string message)
     {
-        PrintMessage(LogLevel.Info, message);
+        var logMessage = new FormattableLogMessage(message);
+        Log(LogLevel.Info, eventId: default, ref logMessage);
     }
 
     /// <inheritdoc />
+    [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the Log() method instead.")]
     public void Warning(string message)
     {
-        PrintMessage(LogLevel.Warning, message);
+        var logMessage = new FormattableLogMessage(message);
+        Log(LogLevel.Warning, eventId: default, ref logMessage);
     }
 
-    private static void PrintMessage(LogLevel logLevel, string message)
+    /// <inheritdoc />
+    [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the Log() method instead.")]
+    public void Error(string message)
     {
-        var logLevelPadded = logLevel.ToString().ToUpper().PadRight(7);
-        Console.WriteLine($"ConfigCat.{logLevelPadded} {message}");
+        var logMessage = new FormattableLogMessage(message);
+        Log(LogLevel.Error, eventId: default, ref logMessage);
+    }
+
+    #endregion
+
+    /// <inheritdoc />
+    public void Log(LogLevel level, LogEventId eventId, ref FormattableLogMessage message, Exception exception = null)
+    {
+        var levelString = level switch
+        {
+#pragma warning disable format
+            LogLevel.Debug   => "DEBUG",
+            LogLevel.Info    => "INFO ",
+            LogLevel.Warning => "WARN ",
+            LogLevel.Error   => "ERROR",
+#pragma warning restore format
+            _ => level.ToString().ToUpperInvariant().PadRight(5)
+        };
+
+        var eventIdString = eventId.Id.ToString(CultureInfo.InvariantCulture);
+
+        var exceptionString = exception is null ? string.Empty : Environment.NewLine + exception;
+
+        Console.WriteLine($"ConfigCat.{levelString} [{eventIdString}] {message.InvariantFormattedMessage}{exceptionString}");
     }
 }

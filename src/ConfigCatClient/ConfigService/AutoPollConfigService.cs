@@ -191,7 +191,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
                     }
                     catch (Exception ex) when (ex is not OperationCanceledException)
                     {
-                        this.Logger.Error($"Error occured during polling.", ex);
+                        this.Logger.AutoPollConfigServiceErrorDuringPolling(ex);
                     }
 
                     var realNextTime = scheduledNextTime.Subtract(DateTime.UtcNow);
@@ -206,7 +206,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
                 }
                 catch (Exception ex)
                 {
-                    this.Logger.Error($"Error occured during polling.", ex);
+                    this.Logger.AutoPollConfigServiceErrorDuringPolling(ex);
                 }
 
                 isFirstIteration = false;

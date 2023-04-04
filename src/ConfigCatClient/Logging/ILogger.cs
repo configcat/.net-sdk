@@ -1,8 +1,11 @@
+using System;
+
 namespace ConfigCat.Client;
 
 /// <summary>
 /// Provides logging interface
 /// </summary>
+[Obsolete("This interface is obsolete and will be removed from the public API in a future major version. Please use the IConfigCatLogger interface instead.")]
 public interface ILogger
 {
     /// <summary>

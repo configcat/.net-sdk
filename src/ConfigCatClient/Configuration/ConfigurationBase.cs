@@ -9,12 +9,16 @@ namespace ConfigCat.Client;
 /// </summary>
 public abstract class ConfigurationBase
 {
+#pragma warning disable CS0618 // Type or member is obsolete
     private ILogger logger = new ConsoleLogger(LogLevel.Warning);
+#pragma warning restore CS0618 // Type or member is obsolete
 
     /// <summary>
     /// Logger instance.
     /// </summary>
-    public ILogger Logger
+#pragma warning disable CS0618 // Type or member is obsolete
+    public ILogger Logger // Backward compatibility, it'll be changed to IConfigCatLogger later.
+#pragma warning restore CS0618 // Type or member is obsolete
     {
         get => this.logger;
         set

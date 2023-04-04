@@ -86,8 +86,8 @@ internal abstract class ConfigServiceBase : IDisposable
             }
             else
             {
-                this.Logger.OfflineModeWarning();
-                return RefreshResult.Failure("Client is in offline mode, it can't initiate HTTP calls.");
+                var logMessage = this.Logger.ConfigServiceCannotInitiateHttpCalls();
+                return RefreshResult.Failure(logMessage.InvariantFormattedMessage);
             }
         }
 
@@ -129,8 +129,8 @@ internal abstract class ConfigServiceBase : IDisposable
         }
         else
         {
-            this.Logger.OfflineModeWarning();
-            return RefreshResult.Failure("Client is in offline mode, it can't initiate HTTP calls.");
+            var logMessage = this.Logger.ConfigServiceCannotInitiateHttpCalls();
+            return RefreshResult.Failure(logMessage.InvariantFormattedMessage);
         }
     }
 
@@ -161,7 +161,7 @@ internal abstract class ConfigServiceBase : IDisposable
 
     protected virtual void OnConfigChanged(ProjectConfig newConfig)
     {
-        this.Logger.Debug("config changed");
+        this.Logger.LogDebug("config changed");
 
         this.Hooks.RaiseConfigChanged(newConfig);
     }
@@ -184,7 +184,7 @@ internal abstract class ConfigServiceBase : IDisposable
 
     public void SetOnline()
     {
-        Action<ILogger> logAction = null;
+        Action<LoggerWrapper> logAction = null;
 
         lock (this.syncObj)
         {
@@ -192,11 +192,11 @@ internal abstract class ConfigServiceBase : IDisposable
             {
                 SetOnlineCoreSynchronized();
                 this.status = Status.Online;
-                logAction = static logger => logger.StatusChange(Status.Online);
+                logAction = static logger => logger.ConfigServiceStatusChanged(Status.Online);
             }
             else if (this.status == Status.Disposed)
             {
-                logAction = static logger => logger.DisposedWarning(nameof(SetOnline));
+                logAction = static logger => logger.ConfigServiceMethodHasNoEffectDueToDisposedClient(nameof(SetOnline));
             }
         }
 
@@ -210,7 +210,7 @@ internal abstract class ConfigServiceBase : IDisposable
 
     public void SetOffline()
     {
-        Action<ILogger> logAction = null;
+        Action<LoggerWrapper> logAction = null;
 
         lock (this.syncObj)
         {
@@ -218,11 +218,11 @@ internal abstract class ConfigServiceBase : IDisposable
             {
                 SetOfflineCoreSynchronized();
                 this.status = Status.Offline;
-                logAction = static logger => logger.StatusChange(Status.Offline);
+                logAction = static logger => logger.ConfigServiceStatusChanged(Status.Offline);
             }
             else if (this.status == Status.Disposed)
             {
-                logAction = static logger => logger.DisposedWarning(nameof(SetOffline));
+                logAction = static logger => logger.ConfigServiceMethodHasNoEffectDueToDisposedClient(nameof(SetOffline));
             }
         }
 

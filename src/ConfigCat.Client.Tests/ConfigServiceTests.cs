@@ -17,7 +17,7 @@ public class ConfigServiceTests
 
     private readonly Mock<IConfigFetcher> fetcherMock = new(MockBehavior.Strict);
     private readonly Mock<IConfigCatCache> cacheMock = new(MockBehavior.Strict);
-    private readonly Mock<ILogger> loggerMock = new(MockBehavior.Loose);
+    private readonly Mock<IConfigCatLogger> loggerMock = new(MockBehavior.Loose);
     private readonly ProjectConfig cachedPc = new("CACHED", DateTime.UtcNow.Subtract(DefaultExpire.Add(TimeSpan.FromSeconds(1))), "67890");
     private readonly ProjectConfig fetchedPc = new("FETCHED", DateTime.UtcNow, "12345");
 

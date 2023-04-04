@@ -14,22 +14,20 @@ internal static class RolloutEvaluatorExtensions
     }
 
     public static EvaluationDetails<T> Evaluate<T>(this IRolloutEvaluator evaluator, IDictionary<string, Setting> settings, string key, T defaultValue, User user,
-        ProjectConfig remoteConfig, ILogger logger)
+        ProjectConfig remoteConfig, LoggerWrapper logger)
     {
-        string errorMessage;
+        FormattableLogMessage logMessage;
 
         if (settings is null)
         {
-            errorMessage = $"Config JSON is not present. Returning the {nameof(defaultValue)} that you specified in the source code: '{defaultValue}'.";
-            logger.Error(errorMessage);
-            return EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: remoteConfig?.TimeStamp, user, errorMessage);
+            logMessage = logger.ConfigJsonIsNotPresent(key, nameof(defaultValue), defaultValue);
+            return EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: remoteConfig?.TimeStamp, user, logMessage.InvariantFormattedMessage);
         }
 
         if (!settings.TryGetValue(key, out var setting))
         {
-            errorMessage = $"Evaluating '{key}' failed (key was not found in config JSON). Returning the {nameof(defaultValue)} that you specified in the source code: '{defaultValue}'. These are the available keys: {KeysToString(settings)}.";
-            logger.Error(errorMessage);
-            return EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: remoteConfig?.TimeStamp, user, errorMessage);
+            logMessage = logger.SettingEvaluationFailedDueToMissingKey(key, nameof(defaultValue), defaultValue, KeysToString(settings));
+            return EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: remoteConfig?.TimeStamp, user, logMessage.InvariantFormattedMessage);
         }
 
         return evaluator.Evaluate(setting, key, defaultValue, user, remoteConfig);
@@ -42,9 +40,9 @@ internal static class RolloutEvaluatorExtensions
     }
 
     public static EvaluationDetails[] EvaluateAll(this IRolloutEvaluator evaluator, IDictionary<string, Setting> settings, User user,
-        ProjectConfig remoteConfig, ILogger logger, out IReadOnlyList<Exception> exceptions)
+        ProjectConfig remoteConfig, LoggerWrapper logger, string defaultReturnValue, out IReadOnlyList<Exception> exceptions)
     {
-        if (!CheckSettingsAvailable(settings, logger))
+        if (!CheckSettingsAvailable(settings, logger, defaultReturnValue))
         {
             exceptions = null;
             return ArrayUtils.EmptyArray<EvaluationDetails>();
@@ -82,31 +80,29 @@ internal static class RolloutEvaluatorExtensions
     }
 
     public static EvaluationDetails EvaluateVariationId(this IRolloutEvaluator evaluator, IDictionary<string, Setting> settings, string key, string defaultVariationId, User user,
-        ProjectConfig remoteConfig, ILogger logger)
+        ProjectConfig remoteConfig, LoggerWrapper logger)
     {
-        string errorMessage;
+        FormattableLogMessage logMessage;
 
         if (settings is null)
         {
-            errorMessage = $"Config JSON is not present. Returning the {nameof(defaultVariationId)} defined in the app source code: '{defaultVariationId}'.";
-            logger.Error(errorMessage);
-            return EvaluationDetails.FromDefaultVariationId(key, defaultVariationId, fetchTime: remoteConfig?.TimeStamp, user, errorMessage);
+            logMessage = logger.ConfigJsonIsNotPresent(key, nameof(defaultVariationId), defaultVariationId);
+            return EvaluationDetails.FromDefaultVariationId(key, defaultVariationId, fetchTime: remoteConfig?.TimeStamp, user, logMessage.InvariantFormattedMessage);
         }
 
         if (!settings.TryGetValue(key, out var setting))
         {
-            errorMessage = $"Evaluating '{key}' failed (key was not found in config JSON). Returning the {nameof(defaultVariationId)} that you specified in the source code: '{defaultVariationId}'. These are the available keys: {KeysToString(settings)}.";
-            logger.Error(errorMessage);
-            return EvaluationDetails.FromDefaultVariationId(key, defaultVariationId, fetchTime: remoteConfig?.TimeStamp, user, errorMessage);
+            logMessage = logger.SettingEvaluationFailedDueToMissingKey(key, nameof(defaultVariationId), defaultVariationId, KeysToString(settings));
+            return EvaluationDetails.FromDefaultVariationId(key, defaultVariationId, fetchTime: remoteConfig?.TimeStamp, user, logMessage.InvariantFormattedMessage);
         }
 
         return evaluator.EvaluateVariationId(setting, key, defaultVariationId, user, remoteConfig);
     }
 
     public static EvaluationDetails[] EvaluateAllVariationIds(this IRolloutEvaluator evaluator, IDictionary<string, Setting> settings, User user,
-        ProjectConfig remoteConfig, ILogger logger, out IReadOnlyList<Exception> exceptions)
+        ProjectConfig remoteConfig, LoggerWrapper logger, string defaultReturnValue, out IReadOnlyList<Exception> exceptions)
     {
-        if (!CheckSettingsAvailable(settings, logger))
+        if (!CheckSettingsAvailable(settings, logger, defaultReturnValue))
         {
             exceptions = null;
             return ArrayUtils.EmptyArray<EvaluationDetails>();
@@ -137,11 +133,11 @@ internal static class RolloutEvaluatorExtensions
         return evaluationDetailsArray;
     }
 
-    internal static bool CheckSettingsAvailable(IDictionary<string, Setting> settings, ILogger logger)
+    internal static bool CheckSettingsAvailable(IDictionary<string, Setting> settings, LoggerWrapper logger, string defaultReturnValue)
     {
         if (settings is null)
         {
-            logger.Error("Config JSON is not present.");
+            logger.ConfigJsonIsNotPresent(defaultReturnValue);
             return false;
         }
 
@@ -150,6 +146,6 @@ internal static class RolloutEvaluatorExtensions
 
     private static string KeysToString(IDictionary<string, Setting> settings)
     {
-        return string.Join(",", settings.Keys.Select(s => $"'{s}'").ToArray());
+        return string.Join(", ", settings.Keys.Select(s => $"'{s}'").ToArray());
     }
 }

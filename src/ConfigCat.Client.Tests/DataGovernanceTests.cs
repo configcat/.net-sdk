@@ -60,7 +60,7 @@ public class DataGovernanceTests
         IConfigFetcher fetcher = new HttpConfigFetcher(
             configuration.CreateUri(sdkKey),
             "DEMO",
-            Mock.Of<ILogger>().AsWrapper(),
+            Mock.Of<IConfigCatLogger>().AsWrapper(),
             handlerMock.Object,
             Mock.Of<IConfigDeserializer>(),
             configuration.IsCustomBaseUrl,
@@ -383,7 +383,7 @@ public class DataGovernanceTests
         IConfigFetcher fetcher = new HttpConfigFetcher(
             fetchConfig.CreateUri(sdkKey),
             "DEMO",
-            Mock.Of<ILogger>().AsWrapper(),
+            Mock.Of<IConfigCatLogger>().AsWrapper(),
             handlerMock.Object,
             new ConfigDeserializer(),
             fetchConfig.IsCustomBaseUrl,

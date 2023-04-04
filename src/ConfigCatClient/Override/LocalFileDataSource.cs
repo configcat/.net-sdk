@@ -26,7 +26,7 @@ internal sealed class LocalFileDataSource : IOverrideDataSource
     {
         if (!File.Exists(filePath))
         {
-            logger.Error($"File {filePath} does not exist.");
+            logger.LocalFileDataSourceDoesNotExist(filePath);
             return;
         }
 
@@ -55,7 +55,7 @@ internal sealed class LocalFileDataSource : IOverrideDataSource
 
         Task.Run(async () =>
         {
-            this.logger.Information($"Watching {this.fullPath} for changes.");
+            this.logger.LocalFileDataSourceStartsWatchingFile(this.fullPath);
 
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -67,7 +67,7 @@ internal sealed class LocalFileDataSource : IOverrideDataSource
                     }
                     catch (Exception ex) when (ex is not OperationCanceledException)
                     {
-                        this.logger.Error($"Error occured during watching {this.fullPath} for changes.", ex);
+                        this.logger.LocalFileDataSourceErrorDuringWatching(this.fullPath, ex);
                     }
 
                     await Task.Delay(FILE_POLL_INTERVAL, cancellationToken).ConfigureAwait(false);
@@ -78,7 +78,7 @@ internal sealed class LocalFileDataSource : IOverrideDataSource
                 }
                 catch (Exception ex)
                 {
-                    this.logger.Error($"Error occured during watching {this.fullPath} for changes.", ex);
+                    this.logger.LocalFileDataSourceErrorDuringWatching(this.fullPath, ex);
                 }
             }
         });
@@ -89,7 +89,7 @@ internal sealed class LocalFileDataSource : IOverrideDataSource
         var lastWriteTime = File.GetLastWriteTimeUtc(this.fullPath);
         if (lastWriteTime > this.fileLastWriteTime)
         {
-            this.logger.Information($"Reload file {this.fullPath}.");
+            this.logger.LocalFileDataSourceReloadsFile(this.fullPath);
             await ReloadFileAsync(isAsync: true, cancellationToken).ConfigureAwait(false);
         }
     }
@@ -134,7 +134,7 @@ internal sealed class LocalFileDataSource : IOverrideDataSource
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            this.logger.Error($"Failed to read file {this.fullPath}.", ex);
+            this.logger.LocalFileDataSourceFailedToReadFile(this.fullPath, ex);
         }
 
         this.fileLastWriteTime = File.GetLastWriteTimeUtc(this.fullPath);

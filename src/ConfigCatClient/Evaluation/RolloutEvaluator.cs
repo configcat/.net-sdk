@@ -86,7 +86,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             }
             else if (setting.RolloutRules.Any() || setting.RolloutPercentageItems.Any())
             {
-                this.logger.Warning($"Cannot evaluate targeting rules and % options for '{key}' (UserObject missing). You should pass a UserObject to GetValue() or GetValueAsync() in order to make targeting work properly. Read more: https://configcat.com/docs/advanced/user-object");
+                this.logger.TargetingIsNotPossible(key);
             }
 
             // regular evaluate
@@ -105,7 +105,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         }
         finally
         {
-            this.logger.Information($"{evaluateLog}");
+            this.logger.SettingEvaluated(evaluateLog);
         }
     }
 

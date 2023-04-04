@@ -82,7 +82,7 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
 
     private async ValueTask<FetchResult> FetchInternalAsync(ProjectConfig lastConfig, bool isAsync)
     {
-        string errorMessage;
+        FormattableLogMessage logMessage;
         Exception errorException;
         try
         {
@@ -111,7 +111,8 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                 case HttpStatusCode.OK:
                     if (responseWithBody.Item2 is null)
                     {
-                        return FetchResult.Failure(lastConfig, "Fetch was successful but HTTP response was invalid");
+                        logMessage = this.logger.FetchReceived200WithInvalidBody();
+                        return FetchResult.Failure(lastConfig, logMessage.InvariantFormattedMessage);
                     }
 
                     return FetchResult.Success(new ProjectConfig
@@ -124,24 +125,24 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                 case HttpStatusCode.NotModified:
                     if (lastConfig.IsEmpty)
                     {
-                        return FetchResult.Failure(lastConfig, $"HTTP response {(int)response.StatusCode} {response.ReasonPhrase} was received when no config is cached locally");
+                        logMessage = this.logger.FetchReceived304WhenLocalCacheIsEmpty((int)response.StatusCode, response.ReasonPhrase);
+                        return FetchResult.Failure(lastConfig, logMessage.InvariantFormattedMessage);
                     }
 
                     return FetchResult.NotModified(lastConfig with { TimeStamp = DateTime.UtcNow });
 
                 case HttpStatusCode.Forbidden:
                 case HttpStatusCode.NotFound:
-                    errorMessage = "Double-check your SDK Key at https://app.configcat.com/sdkkey";
-                    this.logger.Error(errorMessage);
+                    logMessage = this.logger.FetchFailedDueToInvalidSdkKey();
 
                     // We update the timestamp for extra protection against flooding.
-                    return FetchResult.Failure(lastConfig with { TimeStamp = DateTime.UtcNow }, errorMessage);
+                    return FetchResult.Failure(lastConfig with { TimeStamp = DateTime.UtcNow }, logMessage.InvariantFormattedMessage);
 
                 default:
-                    errorMessage = $"Unexpected HTTP response was received: {(int)response.StatusCode} {response.ReasonPhrase}";
-                    this.logger.Error(errorMessage);
+                    logMessage = this.logger.FetchFailedDueToUnexpectedHttpResponse((int)response.StatusCode, response.ReasonPhrase);
+
                     ReInitializeHttpClient();
-                    return FetchResult.Failure(lastConfig, errorMessage);
+                    return FetchResult.Failure(lastConfig, logMessage.InvariantFormattedMessage);
             }
         }
         catch (OperationCanceledException) when (this.cancellationTokenSource.IsCancellationRequested)
@@ -151,23 +152,22 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
         }
         catch (OperationCanceledException ex) when (!this.cancellationTokenSource.IsCancellationRequested)
         {
-            errorMessage = $"Request timed out. Timeout value: {this.timeout}";
+            logMessage = this.logger.FetchFailedDueToRequestTimeout(this.timeout, ex);
             errorException = ex;
         }
         catch (HttpRequestException ex) when (ex.InnerException is WebException { Status: WebExceptionStatus.SecureChannelFailure })
         {
-            errorMessage = $"Secure connection could not be established. Please make sure that your application is enabled to use TLS 1.2+. For more information see https://stackoverflow.com/a/58195987/8656352.";
+            logMessage = this.logger.EstablishingSecureConnectionFailed(ex);
             errorException = ex;
         }
         catch (Exception ex)
         {
-            errorMessage = $"Unexpected error occurred during fetching.";
+            logMessage = this.logger.FetchFailedDueToUnexpectedError(ex);
             errorException = ex;
         }
 
-        this.logger.Error(errorMessage, errorException);
         ReInitializeHttpClient();
-        return FetchResult.Failure(lastConfig, errorMessage, errorException);
+        return FetchResult.Failure(lastConfig, logMessage.InvariantFormattedMessage, errorException);
     }
 
     private async ValueTask<ResponseWithBody> FetchRequest(ProjectConfig lastConfig,
@@ -231,16 +231,12 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
 
                     if (redirect == RedirectMode.Should)
                     {
-                        this.logger.Warning(
-                            "Your dataGovernance parameter at ConfigCatClient initialization is not in sync " +
-                            "with your preferences on the ConfigCat Dashboard: " +
-                            "https://app.configcat.com/organization/data-governance. " +
-                            "Only Organization Admins can access this preference.");
+                        this.logger.DataGovernanceIsOutOfSync();
                     }
 
                     if (maxExecutionCount <= 1)
                     {
-                        this.logger.Error("Redirect loop during config.json fetch. Please contact support@configcat.com.");
+                        this.logger.FetchFailedDueToRedirectLoop();
                         return new ResponseWithBody(response, responseBody);
                     }
 

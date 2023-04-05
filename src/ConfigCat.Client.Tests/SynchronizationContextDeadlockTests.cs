@@ -8,10 +8,10 @@ using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 
-#pragma warning disable CS0618 // Type or member is obsolete
 namespace ConfigCat.Client.Tests;
 
 [TestClass]
+[DoNotParallelize]
 public class SynchronizationContextDeadlockTests
 {
     private const string SDKKEY = "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A";
@@ -45,68 +45,38 @@ public class SynchronizationContextDeadlockTests
         this.syncContextMock.Reset();
     }
 
-    [DataRow(true)]
-    [DataRow(false)]
-    [DataTestMethod]
-    public void AutoPollDeadLockCheck(bool useNewCreateApi)
+    [TestMethod]
+    public void AutoPollDeadLockCheck()
     {
-        var client = useNewCreateApi
-            ? new ConfigCatClient(options =>
-            {
-                options.SdkKey = SDKKEY;
-                options.Logger = new ConsoleLogger(LogLevel.Off);
-                options.HttpClientHandler = SharedHandler;
-            })
-            : new ConfigCatClient(new AutoPollConfiguration
-            {
-                SdkKey = SDKKEY,
-                Logger = new ConsoleLogger(LogLevel.Off),
-                HttpClientHandler = SharedHandler,
-            });
+        using var client = ConfigCatClient.Get(SDKKEY, options =>
+        {
+            options.Logger = new ConsoleLogger(LogLevel.Off);
+            options.HttpClientHandler = SharedHandler;
+        });
 
         ClientDeadlockCheck(client);
     }
 
-    [DataRow(true)]
-    [DataRow(false)]
-    [DataTestMethod]
-    public void ManualPollDeadLockCheck(bool useNewCreateApi)
+    [TestMethod]
+    public void ManualPollDeadLockCheck()
     {
-        var client = useNewCreateApi
-            ? new ConfigCatClient(options =>
-            {
-                options.SdkKey = SDKKEY;
-                options.Logger = new ConsoleLogger(LogLevel.Off);
-                options.HttpClientHandler = SharedHandler;
-            })
-            : new ConfigCatClient(new ManualPollConfiguration
-            {
-                SdkKey = SDKKEY,
-                Logger = new ConsoleLogger(LogLevel.Off),
-                HttpClientHandler = SharedHandler,
-            });
+        var client = ConfigCatClient.Get(SDKKEY, options =>
+        {
+            options.Logger = new ConsoleLogger(LogLevel.Off);
+            options.HttpClientHandler = SharedHandler;
+        });
 
         ClientDeadlockCheck(client);
     }
 
-    [DataRow(true)]
-    [DataRow(false)]
-    [DataTestMethod]
-    public void LazyLoadDeadLockCheck(bool useNewCreateApi)
+    [TestMethod]
+    public void LazyLoadDeadLockCheck()
     {
-        var client = useNewCreateApi
-            ? new ConfigCatClient(options =>
-            {
-                options.SdkKey = SDKKEY;
-                options.Logger = new ConsoleLogger(LogLevel.Off);
-                options.HttpClientHandler = SharedHandler;
-            })
-            : new ConfigCatClient(new LazyLoadConfiguration
-            {
-                SdkKey = SDKKEY,
-                Logger = new ConsoleLogger(LogLevel.Off),
-                HttpClientHandler = SharedHandler,
-            });
+        var client = ConfigCatClient.Get(SDKKEY, options =>
+        {
+            options.Logger = new ConsoleLogger(LogLevel.Off);
+            options.HttpClientHandler = SharedHandler;
+        });
 
         ClientDeadlockCheck(client);
     }

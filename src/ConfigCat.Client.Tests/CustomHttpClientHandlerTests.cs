@@ -1,6 +1,5 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-#pragma warning disable CS0618 // Type or member is obsolete
 namespace ConfigCat.Client.Tests;
 
 [TestCategory(TestCategories.Integration)]
@@ -17,26 +16,17 @@ public class CustomHttpClientHandlerTests
         this.httpClientHandler.Reset();
     }
 
-    [DataRow(true)]
-    [DataRow(false)]
-    [DataTestMethod]
-    public void AutoPoll_WithHttpClientHandlerOverride_ShouldReturnCatUseCustomImplementation(bool useNewCreateApi)
+    [TestMethod]
+    public void AutoPoll_WithHttpClientHandlerOverride_ShouldReturnCatUseCustomImplementation()
     {
         // Arrange
 
-        var client = useNewCreateApi
-            ? new ConfigCatClient(options =>
-            {
-                options.SdkKey = SDKKEY;
-                options.HttpClientHandler = this.httpClientHandler;
-                options.PollingMode = PollingModes.AutoPoll();
-                options.DataGovernance = DataGovernance.EuOnly;
-            })
-            : ConfigCatClientBuilder.Initialize(SDKKEY)
-            .WithDataGovernance(DataGovernance.EuOnly)
-            .WithAutoPoll()
-            .WithHttpClientHandler(this.httpClientHandler)
-            .Create();
+        using var client = ConfigCatClient.Get(SDKKEY, options =>
+        {
+            options.HttpClientHandler = this.httpClientHandler;
+            options.PollingMode = PollingModes.AutoPoll();
+            options.DataGovernance = DataGovernance.EuOnly;
+        });
 
         // Act
 
@@ -48,26 +38,17 @@ public class CustomHttpClientHandlerTests
         Assert.IsTrue(this.httpClientHandler.SendAsyncInvokeCount > 0);
     }
 
-    [DataRow(true)]
-    [DataRow(false)]
-    [DataTestMethod]
-    public void ManualPoll_WithHttpClientHandlerOverride_ShouldReturnCatUseCustomImplementation(bool useNewCreateApi)
+    [TestMethod]
+    public void ManualPoll_WithHttpClientHandlerOverride_ShouldReturnCatUseCustomImplementation()
     {
         // Arrange
 
-        var client = useNewCreateApi
-            ? new ConfigCatClient(options =>
-            {
-                options.SdkKey = SDKKEY;
-                options.HttpClientHandler = this.httpClientHandler;
-                options.PollingMode = PollingModes.ManualPoll;
-                options.DataGovernance = DataGovernance.EuOnly;
-            })
-            : ConfigCatClientBuilder.Initialize(SDKKEY)
-            .WithDataGovernance(DataGovernance.EuOnly)
-            .WithManualPoll()
-            .WithHttpClientHandler(this.httpClientHandler)
-            .Create();
+        using var client = ConfigCatClient.Get(SDKKEY, options =>
+        {
+            options.HttpClientHandler = this.httpClientHandler;
+            options.PollingMode = PollingModes.ManualPoll;
+            options.DataGovernance = DataGovernance.EuOnly;
+        });
 
         // Act
 
@@ -80,26 +61,17 @@ public class CustomHttpClientHandlerTests
         Assert.AreEqual(1, this.httpClientHandler.SendAsyncInvokeCount);
     }
 
-    [DataRow(true)]
-    [DataRow(false)]
-    [DataTestMethod]
-    public void LazyLoad_WithHttpClientHandlerOverride_ShouldReturnCatUseCustomImplementation(bool useNewCreateApi)
+    [TestMethod]
+    public void LazyLoad_WithHttpClientHandlerOverride_ShouldReturnCatUseCustomImplementation()
     {
         // Arrange
 
-        var client = useNewCreateApi
-            ? new ConfigCatClient(options =>
-            {
-                options.SdkKey = SDKKEY;
-                options.HttpClientHandler = this.httpClientHandler;
-                options.PollingMode = PollingModes.LazyLoad();
-                options.DataGovernance = DataGovernance.EuOnly;
-            })
-            : ConfigCatClientBuilder.Initialize(SDKKEY)
-            .WithDataGovernance(DataGovernance.EuOnly)
-            .WithLazyLoad()
-            .WithHttpClientHandler(this.httpClientHandler)
-            .Create();
+        using var client = ConfigCatClient.Get(SDKKEY, options =>
+        {
+            options.HttpClientHandler = this.httpClientHandler;
+            options.PollingMode = PollingModes.LazyLoad();
+            options.DataGovernance = DataGovernance.EuOnly;
+        });
 
         // Act
 

@@ -16,8 +16,8 @@ namespace ConfigCat.Client.Tests;
 [TestClass]
 public class DataGovernanceTests
 {
-    private static readonly Uri GlobalCdnUri = ConfigurationBase.BaseUrlGlobal;
-    private static readonly Uri EuOnlyCdnUri = ConfigurationBase.BaseUrlEu;
+    private static readonly Uri GlobalCdnUri = ConfigCatClientOptions.BaseUrlGlobal;
+    private static readonly Uri EuOnlyCdnUri = ConfigCatClientOptions.BaseUrlEu;
     private static readonly Uri CustomCdnUri = new("https://custom-cdn.example.com");
     private static readonly Uri ForcedCdnUri = new("https://forced-cdn.example.com");
 
@@ -143,8 +143,8 @@ public class DataGovernanceTests
 
         var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
         {
-            {GlobalCdnUri.Host, CreateResponse(ConfigurationBase.BaseUrlEu, RedirectMode.Should, false)},
-            {EuOnlyCdnUri.Host, CreateResponse(ConfigurationBase.BaseUrlEu, RedirectMode.No, true)}
+            {GlobalCdnUri.Host, CreateResponse(ConfigCatClientOptions.BaseUrlEu, RedirectMode.Should, false)},
+            {EuOnlyCdnUri.Host, CreateResponse(ConfigCatClientOptions.BaseUrlEu, RedirectMode.No, true)}
         };
 
         // Act
@@ -172,7 +172,7 @@ public class DataGovernanceTests
 
         var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
         {
-            {EuOnlyCdnUri.Host, CreateResponse(ConfigurationBase.BaseUrlEu)}
+            {EuOnlyCdnUri.Host, CreateResponse(ConfigCatClientOptions.BaseUrlEu)}
         };
 
         // Act
@@ -352,7 +352,7 @@ public class DataGovernanceTests
 
     internal static async Task<SortedList<byte, HttpRequestMessage>> Fetch(
         string sdkKey,
-        ConfigurationBase fetchConfig,
+        ConfigCatClientOptions fetchConfig,
         Dictionary<string, SettingsWithPreferences> responsesRegistry,
         byte fetchInvokeCount = 1)
     {
@@ -409,7 +409,7 @@ public class DataGovernanceTests
         {
             Preferences = new Preferences
             {
-                Url = (url ?? ConfigurationBase.BaseUrlGlobal).ToString(),
+                Url = (url ?? ConfigCatClientOptions.BaseUrlGlobal).ToString(),
                 RedirectMode = redirectMode
             },
             Settings = withSettings

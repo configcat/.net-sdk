@@ -290,55 +290,6 @@ public class ConfigServiceTests
     }
 
     [TestMethod]
-    public async Task AutoPollConfigService_RefreshConfigAsync_ConfigChanged_ShouldRaiseEvent()
-    {
-        // Arrange
-
-        var hooks = new Hooks();
-
-        var configChangedEvents = new ConcurrentQueue<ConfigChangedEventArgs>();
-        hooks.ConfigChanged += (s, e) => configChangedEvents.Enqueue(e);
-
-        byte eventChanged = 0;
-
-        this.cacheMock
-            .Setup(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None))
-            .ReturnsAsync(this.cachedPc);
-
-        this.fetcherMock
-            .Setup(m => m.FetchAsync(this.cachedPc))
-            .ReturnsAsync(FetchResult.Success(this.fetchedPc));
-
-        this.cacheMock
-            .Setup(m => m.SetAsync(It.IsAny<string>(), this.fetchedPc))
-            .Returns(Task.FromResult(0));
-
-        var config = PollingModes.AutoPoll(TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(0));
-        using var service = new AutoPollConfigService(config,
-            this.fetcherMock.Object,
-            new CacheParameters { ConfigCache = this.cacheMock.Object },
-            this.loggerMock.Object.AsWrapper(),
-            startTimer: false,
-            hooks: hooks);
-
-#pragma warning disable CS0618 // Type or member is obsolete
-        config.OnConfigurationChanged += (o, s) => { eventChanged++; };
-#pragma warning restore CS0618 // Type or member is obsolete
-
-        // Act
-
-        await service.RefreshConfigAsync();
-
-        // Assert
-
-        Assert.AreEqual(1, eventChanged);
-
-        Assert.IsTrue(configChangedEvents.TryDequeue(out var configChangedEvent));
-        Assert.AreSame(this.fetchedPc, configChangedEvent.NewConfig);
-        Assert.AreEqual(0, configChangedEvents.Count);
-    }
-
-    [TestMethod]
     public async Task AutoPollConfigService_Dispose_ShouldStopTimer()
     {
         // Arrange           

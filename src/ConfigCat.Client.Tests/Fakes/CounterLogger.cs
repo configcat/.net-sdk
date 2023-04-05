@@ -15,18 +15,6 @@ internal sealed class CounterLogger : IConfigCatLogger
         LogLevel = logLevel;
     }
 
-    #region Deprecated methods
-
-    void ILogger.Debug(string message) => throw new NotSupportedException();
-
-    void ILogger.Information(string message) => throw new NotSupportedException();
-
-    void ILogger.Warning(string message) => throw new NotSupportedException();
-
-    void ILogger.Error(string message) => throw new NotSupportedException();
-
-    #endregion
-
     public void Log(LogLevel level, LogEventId eventId, ref FormattableLogMessage message, Exception exception = null)
     {
         this.LogMessageInvokeCount++;

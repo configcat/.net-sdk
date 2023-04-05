@@ -19,9 +19,6 @@ public class ConfigCatClientCacheTests
 
         var options = new ConfigCatClientOptions
         {
-#pragma warning disable CS0618 // Type or member is obsolete
-            SdkKey = sdkKey,
-#pragma warning restore CS0618 // Type or member is obsolete
             PollingMode = PollingModes.ManualPoll,
         };
 
@@ -55,9 +52,6 @@ public class ConfigCatClientCacheTests
 
         var options = new ConfigCatClientOptions
         {
-#pragma warning disable CS0618 // Type or member is obsolete
-            SdkKey = sdkKey,
-#pragma warning restore CS0618 // Type or member is obsolete
             PollingMode = PollingModes.ManualPoll,
         };
 
@@ -100,9 +94,6 @@ public class ConfigCatClientCacheTests
 
         var options = new ConfigCatClientOptions
         {
-#pragma warning disable CS0618 // Type or member is obsolete
-            SdkKey = sdkKey,
-#pragma warning restore CS0618 // Type or member is obsolete
             PollingMode = PollingModes.ManualPoll,
         };
 
@@ -133,9 +124,6 @@ public class ConfigCatClientCacheTests
 
         var options = new ConfigCatClientOptions
         {
-#pragma warning disable CS0618 // Type or member is obsolete
-            SdkKey = sdkKey,
-#pragma warning restore CS0618 // Type or member is obsolete
             PollingMode = PollingModes.ManualPoll,
         };
 
@@ -197,17 +185,11 @@ public class ConfigCatClientCacheTests
 
         var options1 = new ConfigCatClientOptions
         {
-#pragma warning disable CS0618 // Type or member is obsolete
-            SdkKey = sdkKey1,
-#pragma warning restore CS0618 // Type or member is obsolete
             PollingMode = PollingModes.ManualPoll,
         };
 
         var options2 = new ConfigCatClientOptions
         {
-#pragma warning disable CS0618 // Type or member is obsolete
-            SdkKey = sdkKey2,
-#pragma warning restore CS0618 // Type or member is obsolete
             PollingMode = PollingModes.ManualPoll,
         };
 

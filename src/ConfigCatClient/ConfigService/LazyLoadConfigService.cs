@@ -60,6 +60,6 @@ internal sealed class LazyLoadConfigService : ConfigServiceBase, IConfigService
 
     private void OnConfigExpired()
     {
-        this.Logger.LogDebug("config expired");
+        this.Logger.Debug("config expired");
     }
 }

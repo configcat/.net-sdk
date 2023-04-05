@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace ConfigCat.Client;
 
@@ -16,7 +17,7 @@ internal readonly record struct FetchResult
         return new FetchResult(config ?? throw new ArgumentNullException(nameof(config)), NotModifiedToken);
     }
 
-    public static FetchResult Failure(ProjectConfig config, string errorMessage, Exception errorException = null)
+    public static FetchResult Failure(ProjectConfig config, string errorMessage, Exception? errorException = null)
     {
         return new FetchResult(
             config ?? throw new ArgumentNullException(nameof(config)),
@@ -24,9 +25,9 @@ internal readonly record struct FetchResult
             errorException);
     }
 
-    private readonly object errorMessageOrToken;
+    private readonly object? errorMessageOrToken;
 
-    private FetchResult(ProjectConfig config, object errorMessageOrToken, Exception errorException = null)
+    private FetchResult(ProjectConfig config, object? errorMessageOrToken, Exception? errorException = null)
     {
         Config = config;
         this.errorMessageOrToken = errorMessageOrToken;
@@ -35,9 +36,10 @@ internal readonly record struct FetchResult
 
     public bool IsSuccess => this.errorMessageOrToken is null;
     public bool IsNotModified => ReferenceEquals(this.errorMessageOrToken, NotModifiedToken);
+    [MemberNotNullWhen(true, nameof(ErrorMessage))]
     public bool IsFailure => this.errorMessageOrToken is string;
 
     public ProjectConfig Config { get; }
-    public string ErrorMessage => this.errorMessageOrToken as string;
-    public Exception ErrorException { get; }
+    public string? ErrorMessage => this.errorMessageOrToken as string;
+    public Exception? ErrorException { get; }
 }

@@ -10,7 +10,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
 {
     private readonly AutoPoll configuration;
     private readonly CancellationTokenSource initializationCancellationTokenSource = new(); // used for signalling initialization
-    private CancellationTokenSource timerCancellationTokenSource = new(); // used for signalling background work to stop
+    private CancellationTokenSource? timerCancellationTokenSource = new(); // used for signalling background work to stop
 
     internal AutoPollConfigService(
         AutoPoll configuration,
@@ -18,7 +18,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
         CacheParameters cacheParameters,
         LoggerWrapper logger,
         bool isOffline = false,
-        Hooks hooks = null) : this(configuration, configFetcher, cacheParameters, logger, startTimer: true, isOffline, hooks)
+        Hooks? hooks = null) : this(configuration, configFetcher, cacheParameters, logger, startTimer: true, isOffline, hooks)
     { }
 
     // For test purposes only
@@ -29,7 +29,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
         LoggerWrapper logger,
         bool startTimer,
         bool isOffline = false,
-        Hooks hooks = null) : base(configFetcher, cacheParameters, logger, isOffline, hooks)
+        Hooks? hooks = null) : base(configFetcher, cacheParameters, logger, isOffline, hooks)
     {
         this.configuration = configuration;
 
@@ -52,7 +52,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
     protected override void DisposeSynchronized(bool disposing)
     {
         // Background work should stop under all circumstances
-        this.timerCancellationTokenSource.Cancel();
+        this.timerCancellationTokenSource!.Cancel();
 
         if (disposing)
         {
@@ -155,7 +155,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
 
     protected override void SetOfflineCoreSynchronized()
     {
-        this.timerCancellationTokenSource.Cancel();
+        this.timerCancellationTokenSource!.Cancel();
         this.timerCancellationTokenSource.Dispose();
         this.timerCancellationTokenSource = new CancellationTokenSource();
     }

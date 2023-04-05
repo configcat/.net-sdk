@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -25,13 +26,13 @@ internal sealed class InMemoryConfigCache : IConfigCatCache
     /// <inheritdoc />
     public void Set(string key, ProjectConfig config)
     {
-        Interlocked.Exchange(ref this.projectConfig, config);
+        Interlocked.Exchange(ref this.projectConfig, config ?? throw new ArgumentNullException(nameof(config)));
     }
 
     /// <inheritdoc />
     public ProjectConfig Get(string key)
     {
         // NOTE: Volatile.Read(ref this.projectConfig) would probably be sufficient but Interlocked.CompareExchange is the 100% safe way.
-        return Interlocked.CompareExchange(ref this.projectConfig, null, null);
+        return Interlocked.CompareExchange(ref this.projectConfig, null!, null!);
     }
 }

@@ -2,9 +2,11 @@ using System.Collections.Generic;
 #if USE_NEWTONSOFT_JSON
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using JsonValue = Newtonsoft.Json.Linq.JValue;
 #else
 using System.Text.Json.Serialization;
 using System.Text.Json;
+using JsonValue = System.Text.Json.JsonElement;
 #endif
 
 namespace ConfigCat.Client.Evaluation;
@@ -16,14 +18,14 @@ internal class SettingsWithPreferences
 #else
     [JsonPropertyName("f")]
 #endif
-    public Dictionary<string, Setting> Settings { get; set; }
+    public Dictionary<string, Setting>? Settings { get; set; }
 
 #if USE_NEWTONSOFT_JSON
     [JsonProperty(PropertyName = "p")]
 #else
     [JsonPropertyName("p")]
 #endif
-    public Preferences Preferences { get; set; }
+    public Preferences? Preferences { get; set; }
 }
 
 internal class Preferences
@@ -33,7 +35,7 @@ internal class Preferences
 #else
     [JsonPropertyName("u")]
 #endif
-    public string Url { get; set; }
+    public string? Url { get; set; }
 
 #if USE_NEWTONSOFT_JSON
     [JsonProperty(PropertyName = "r")]
@@ -47,11 +49,10 @@ internal class Setting
 {
 #if USE_NEWTONSOFT_JSON
     [JsonProperty(PropertyName = "v")]
-    public JValue Value { get; set; }
 #else
     [JsonPropertyName("v")]
-    public JsonElement Value { get; set; }
 #endif
+    public JsonValue Value { get; set; } = default!;
 
 #if USE_NEWTONSOFT_JSON
     [JsonProperty(PropertyName = "t")]
@@ -79,7 +80,7 @@ internal class Setting
 #else
     [JsonPropertyName("i")]
 #endif
-    public string VariationId { get; set; }
+    public string? VariationId { get; set; }
 }
 
 internal enum SettingType : byte

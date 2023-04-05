@@ -27,10 +27,10 @@ public abstract class ConfigEvaluatorTestsBase
     {
         this.configEvaluator = new RolloutEvaluator(this.Logger);
 
-        this.config = GetSampleJson().Deserialize<SettingsWithPreferences>().Settings;
+        this.config = GetSampleJson().Deserialize<SettingsWithPreferences>()!.Settings!;
     }
 
-    protected virtual void AssertValue(string keyName, string expected, User user)
+    protected virtual void AssertValue(string keyName, string expected, User? user)
     {
         var k = keyName.ToLowerInvariant();
 
@@ -67,11 +67,11 @@ public abstract class ConfigEvaluatorTestsBase
         return reader.ReadToEnd();
     }
 
-    public async Task MatrixTest(Action<string, string, User> assertation)
+    public async Task MatrixTest(Action<string, string, User?> assertation)
     {
         using Stream stream = File.OpenRead(Path.Combine("data", MatrixResultFileName));
         using StreamReader reader = new(stream);
-        var header = await reader.ReadLineAsync();
+        var header = (await reader.ReadLineAsync())!;
 
         var columns = header.Split(new[] { ';' }).ToList();
 
@@ -86,7 +86,7 @@ public abstract class ConfigEvaluatorTestsBase
 
             var row = rawline.Split(new[] { ';' });
 
-            User u = null;
+            User? u = null;
 
             if (row[0] != "##null##")
             {
@@ -94,7 +94,7 @@ public abstract class ConfigEvaluatorTestsBase
                 {
                     Email = row[1] == "##null##" ? null : row[1],
                     Country = row[2] == "##null##" ? null : row[2],
-                    Custom = row[3] == "##null##" ? null : new Dictionary<string, string> { { columns[3], row[3] } }
+                    Custom = row[3] == "##null##" ? null! : new Dictionary<string, string?> { { columns[3], row[3] } }
                 };
             }
 

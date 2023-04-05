@@ -77,7 +77,7 @@ public class OverrideTests
 
         Parallel.ForEach(keys, async item =>
         {
-            Assert.IsNotNull(await client.GetValueAsync<object>(item, null));
+            Assert.IsNotNull(await client.GetValueAsync<object?>(item, null));
         });
     }
 
@@ -100,7 +100,7 @@ public class OverrideTests
 
         Parallel.ForEach(keys, item =>
         {
-            Assert.IsNotNull(client.GetValue<object>(item, null));
+            Assert.IsNotNull(client.GetValue<object?>(item, null));
         });
     }
 

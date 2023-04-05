@@ -22,7 +22,7 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// <param name="defaultValue">In case of failure return this value</param>
     /// <param name="user">The user object for variation evaluation</param>
     /// <returns>The value of the feature flag or setting.</returns>
-    T GetValue<T>(string key, T defaultValue, User user = null);
+    T GetValue<T>(string key, T defaultValue, User? user = null);
 
     /// <summary>
     /// Returns a value for the key. (Key for programs)
@@ -32,7 +32,7 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// <param name="defaultValue">In case of failure return this value.</param>
     /// <param name="user">The user object for variation evaluation.</param>
     /// <returns>The task that will evaluate the value of the feature flag or setting.</returns>
-    Task<T> GetValueAsync<T>(string key, T defaultValue, User user = null);
+    Task<T> GetValueAsync<T>(string key, T defaultValue, User? user = null);
 
     /// <summary>
     /// Returns the value along with evaluation details of a feature flag or setting by the given key.
@@ -42,7 +42,7 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// <param name="defaultValue">In case of failure return this value</param>
     /// <param name="user">The user object for variation evaluation</param>
     /// <returns>The value along with the details of evaluation of the feature flag or setting.</returns>
-    EvaluationDetails<T> GetValueDetails<T>(string key, T defaultValue, User user = null);
+    EvaluationDetails<T> GetValueDetails<T>(string key, T defaultValue, User? user = null);
 
     /// <summary>
     /// Returns the value along with evaluation details of a feature flag or setting by the given key.
@@ -52,7 +52,7 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// <param name="defaultValue">In case of failure return this value</param>
     /// <param name="user">The user object for variation evaluation</param>
     /// <returns>The value along with the details of evaluation of the feature flag or setting.</returns>
-    Task<EvaluationDetails<T>> GetValueDetailsAsync<T>(string key, T defaultValue, User user = null);
+    Task<EvaluationDetails<T>> GetValueDetailsAsync<T>(string key, T defaultValue, User? user = null);
 
     /// <summary>
     /// Returns a collection with all keys.
@@ -71,28 +71,28 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// </summary>
     /// <param name="user">The user object for variation evaluation.</param>
     /// <returns>The key-value collection.</returns>
-    IDictionary<string, object> GetAllValues(User user = null);
+    IDictionary<string, object?> GetAllValues(User? user = null);
 
     /// <summary>
     /// Returns the key-value collection of all feature flags and settings asynchronously.
     /// </summary>
     /// <param name="user">The user object for variation evaluation.</param>
     /// <returns>The key-value collection.</returns>
-    Task<IDictionary<string, object>> GetAllValuesAsync(User user = null);
+    Task<IDictionary<string, object?>> GetAllValuesAsync(User? user = null);
 
     /// <summary>
     /// Returns the values along with evaluation details of all feature flags and settings synchronously.
     /// </summary>
     /// <param name="user">The user object for variation evaluation.</param>
     /// <returns>The key-value collection.</returns>
-    IReadOnlyList<EvaluationDetails> GetAllValueDetails(User user = null);
+    IReadOnlyList<EvaluationDetails> GetAllValueDetails(User? user = null);
 
     /// <summary>
     /// Returns the values along with evaluation details of all feature flags and settings asynchronously.
     /// </summary>
     /// <param name="user">The user object for variation evaluation.</param>
     /// <returns>The key-value collection.</returns>
-    Task<IReadOnlyList<EvaluationDetails>> GetAllValueDetailsAsync(User user = null);
+    Task<IReadOnlyList<EvaluationDetails>> GetAllValueDetailsAsync(User? user = null);
 
     /// <summary>
     /// Refreshes the configuration.

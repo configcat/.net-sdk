@@ -18,7 +18,7 @@ public class SynchronizationContextDeadlockTests
 
     private static readonly HttpClientHandler SharedHandler = new();
 
-    private static SynchronizationContext SynchronizationContextBackup;
+    private static SynchronizationContext? SynchronizationContextBackup;
     private readonly Mock<SynchronizationContext> syncContextMock;
 
     public SynchronizationContextDeadlockTests()
@@ -81,9 +81,13 @@ public class SynchronizationContextDeadlockTests
         ClientDeadlockCheck(client);
     }
 
-    private static readonly Dictionary<string, object[]> SpecificMethodParams = new()
+    private static readonly Dictionary<string, object?[]> SpecificMethodParams = new()
     {
-        ["SetDefaultUser"] = new object[] { new User("id") }
+        ["GetValue"] = new object?[] { "", null, null },
+        ["GetValueAsync"] = new object?[] { "", null, null },
+        ["GetValueDetails"] = new object?[] { "", null, null },
+        ["GetValueDetailsAsync"] = new object?[] { "", null, null },
+        ["SetDefaultUser"] = new object?[] { new User("id") },
     };
 
     private void ClientDeadlockCheck(IConfigCatClient client)
@@ -96,7 +100,7 @@ public class SynchronizationContextDeadlockTests
         {
             if (!SpecificMethodParams.TryGetValue(m.Name, out var parameters))
             {
-                parameters = Enumerable.Repeat<object>(null, m.GetParameters().Length).ToArray();
+                parameters = Enumerable.Repeat<object?>(null, m.GetParameters().Length).ToArray();
             }
 
             MethodInfo mi = m;
@@ -110,7 +114,7 @@ public class SynchronizationContextDeadlockTests
 
             if (mi.ReturnType.IsSubclassOf(typeof(Task)))
             {
-                var task = (Task)mi.Invoke(client, parameters);
+                var task = (Task)mi.Invoke(client, parameters)!;
 
                 task.ConfigureAwait(false);
                 task.Wait();

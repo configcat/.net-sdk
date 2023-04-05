@@ -9,10 +9,10 @@ namespace ConfigCat.Client;
 /// </summary>
 public class FlagOverrides
 {
-    private readonly string filePath;
+    private readonly string? filePath;
     private readonly bool autoReload;
 
-    private readonly IDictionary<string, object> dictionary;
+    private readonly IDictionary<string, object>? dictionary;
 
     private FlagOverrides(string filePath, bool autoReload, OverrideBehaviour overrideBehaviour)
     {

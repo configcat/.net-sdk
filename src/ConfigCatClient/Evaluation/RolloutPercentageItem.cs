@@ -33,7 +33,7 @@ public record class RolloutPercentageItem
 #else
     [JsonPropertyName("v")]
 #endif
-    public JsonValue Value { get; set; }
+    public JsonValue Value { get; set; } = default!;
 
     /// <summary>
     /// A number between 0 and 100 that represents a randomly allocated fraction of the users.
@@ -53,7 +53,7 @@ public record class RolloutPercentageItem
 #else
     [JsonPropertyName("i")]
 #endif
-    public string VariationId { get; set; }
+    public string? VariationId { get; set; }
 
     /// <inheritdoc/>>
     public override string ToString()

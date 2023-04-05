@@ -6,7 +6,7 @@ internal sealed class NullConfigService : IConfigService
 {
     private readonly LoggerWrapper logger;
 
-    public NullConfigService(LoggerWrapper logger, Hooks hooks = null)
+    public NullConfigService(LoggerWrapper logger, Hooks? hooks = null)
     {
         this.logger = logger;
 

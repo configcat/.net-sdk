@@ -12,7 +12,7 @@ internal sealed class ExceptionThrowerHttpClientHandler : HttpClientHandler
 
     public byte SendInvokeCount { get; private set; } = 0;
 
-    public ExceptionThrowerHttpClientHandler(Exception ex = null, TimeSpan? delay = null)
+    public ExceptionThrowerHttpClientHandler(Exception? ex = null, TimeSpan? delay = null)
     {
         this.exception = ex ?? new NotImplementedException();
         this.delay = delay;

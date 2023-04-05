@@ -45,7 +45,7 @@ public class UserTests
 
             Country = "US",
 
-            Custom = new Dictionary<string, string>
+            Custom = new Dictionary<string, string?>
             {
                 { "myCustomAttribute", "myCustomAttributeValue"},
                 { nameof(User.Identifier), "myIdentifier"},
@@ -93,7 +93,7 @@ public class UserTests
 
             Country = "US",
 
-            Custom = new Dictionary<string, string>
+            Custom = new Dictionary<string, string?>
             {
                 { attributeName, attributeValue}
             }

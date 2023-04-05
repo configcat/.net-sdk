@@ -10,7 +10,7 @@ namespace ConfigCat.Client.Tests;
 internal class FakeHttpClientHandler : HttpClientHandler
 {
     private readonly HttpStatusCode httpStatusCode;
-    private readonly string responseContent;
+    private readonly string? responseContent;
     private readonly TimeSpan? delay;
 
     public byte SendInvokeCount { get; private set; } = 0;
@@ -19,7 +19,7 @@ internal class FakeHttpClientHandler : HttpClientHandler
 
     public SortedList<byte, HttpRequestMessage> Requests = new();
 
-    public FakeHttpClientHandler(HttpStatusCode httpStatusCode = HttpStatusCode.NotModified, string responseContent = null, TimeSpan? delay = null)
+    public FakeHttpClientHandler(HttpStatusCode httpStatusCode = HttpStatusCode.NotModified, string? responseContent = null, TimeSpan? delay = null)
     {
         this.httpStatusCode = httpStatusCode;
         this.responseContent = responseContent;

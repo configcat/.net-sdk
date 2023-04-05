@@ -9,9 +9,9 @@ using ConfigCat.Client.Evaluation;
 using ConfigCat.Client.Utils;
 
 #if NET45
-using ResponseWithBody = System.Tuple<System.Net.Http.HttpResponseMessage, string>;
+using ResponseWithBody = System.Tuple<System.Net.Http.HttpResponseMessage, string?>;
 #else
-using ResponseWithBody = System.ValueTuple<System.Net.Http.HttpResponseMessage, string>;
+using ResponseWithBody = System.ValueTuple<System.Net.Http.HttpResponseMessage, string?>;
 #endif
 
 namespace ConfigCat.Client;
@@ -22,18 +22,18 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
     private readonly string productVersion;
     private readonly LoggerWrapper logger;
 
-    private readonly HttpClientHandler httpClientHandler;
+    private readonly HttpClientHandler? httpClientHandler;
     private readonly IConfigDeserializer deserializer;
     private readonly bool isCustomUri;
     private readonly TimeSpan timeout;
     private readonly CancellationTokenSource cancellationTokenSource = new();
     private HttpClient httpClient;
-    private Task<FetchResult> pendingFetch;
+    private Task<FetchResult>? pendingFetch;
 
     private Uri requestUri;
 
     public HttpConfigFetcher(Uri requestUri, string productVersion, LoggerWrapper logger,
-        HttpClientHandler httpClientHandler, IConfigDeserializer deserializer, bool isCustomUri, TimeSpan timeout)
+        HttpClientHandler? httpClientHandler, IConfigDeserializer deserializer, bool isCustomUri, TimeSpan timeout)
     {
         this.requestUri = requestUri;
         this.productVersion = productVersion;
@@ -42,7 +42,7 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
         this.deserializer = deserializer;
         this.isCustomUri = isCustomUri;
         this.timeout = timeout;
-        ReInitializeHttpClient();
+        this.httpClient = CreateHttpClient();
     }
 
     public FetchResult Fetch(ProjectConfig lastConfig)
@@ -206,7 +206,7 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                 if (!this.deserializer.TryDeserialize(responseBody, httpETag, out var body))
                     return new ResponseWithBody(response, null);
 
-                if (body?.Preferences is not null)
+                if (body.Preferences is not null)
                 {
                     var newBaseUrl = body.Preferences.Url;
 
@@ -268,27 +268,31 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
     {
         lock (this.syncObj)
         {
-            ReInitializeHttpClientLogic();
+            this.httpClient = CreateHttpClient();
         }
     }
 
-    private void ReInitializeHttpClientLogic()
+    private HttpClient CreateHttpClient()
     {
+        HttpClient httpClient;
+
         if (this.httpClientHandler is null)
         {
-            this.httpClient = new HttpClient(new HttpClientHandler
+            httpClient = new HttpClient(new HttpClientHandler
             {
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
             });
         }
         else
         {
-            this.httpClient = new HttpClient(this.httpClientHandler, false);
+            httpClient = new HttpClient(this.httpClientHandler, false);
         }
 
-        this.httpClient.Timeout = this.timeout;
-        this.httpClient.DefaultRequestHeaders.Add("X-ConfigCat-UserAgent",
+        httpClient.Timeout = this.timeout;
+        httpClient.DefaultRequestHeaders.Add("X-ConfigCat-UserAgent",
             new ProductInfoHeaderValue("ConfigCat-Dotnet", this.productVersion).ToString());
+
+        return httpClient;
     }
 
     public void Dispose()

@@ -50,7 +50,7 @@ public class ConfigServiceTests
 
         using var service = new LazyLoadConfigService(
             this.fetcherMock.Object,
-            new CacheParameters { ConfigCache = this.cacheMock.Object },
+            new CacheParameters(this.cacheMock.Object, cacheKey: null!),
             this.loggerMock.Object.AsWrapper(),
             DefaultExpire);
 
@@ -79,7 +79,7 @@ public class ConfigServiceTests
 
         using var service = new LazyLoadConfigService(
             this.fetcherMock.Object,
-            new CacheParameters { ConfigCache = this.cacheMock.Object },
+            new CacheParameters(this.cacheMock.Object, cacheKey: null!),
             this.loggerMock.Object.AsWrapper(),
             DefaultExpire);
 
@@ -122,7 +122,7 @@ public class ConfigServiceTests
 
         using var service = new LazyLoadConfigService(
             this.fetcherMock.Object,
-            new CacheParameters { ConfigCache = this.cacheMock.Object },
+            new CacheParameters(this.cacheMock.Object, cacheKey: null!),
             this.loggerMock.Object.AsWrapper(),
             DefaultExpire);
 
@@ -160,7 +160,7 @@ public class ConfigServiceTests
 
         using var service = new LazyLoadConfigService(
             this.fetcherMock.Object,
-            new CacheParameters { ConfigCache = this.cacheMock.Object },
+            new CacheParameters(this.cacheMock.Object, cacheKey: null!),
             this.loggerMock.Object.AsWrapper(),
             DefaultExpire,
             hooks: hooks);
@@ -199,7 +199,7 @@ public class ConfigServiceTests
         var config = PollingModes.AutoPoll(TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(60));
         using var service = new AutoPollConfigService(config,
             this.fetcherMock.Object,
-            new CacheParameters { ConfigCache = this.cacheMock.Object },
+            new CacheParameters(this.cacheMock.Object, cacheKey: null!),
             this.loggerMock.Object.AsWrapper(),
             startTimer: false);
 
@@ -237,7 +237,7 @@ public class ConfigServiceTests
         var config = PollingModes.AutoPoll(TimeSpan.FromSeconds(50), TimeSpan.FromSeconds(0));
         using var service = new AutoPollConfigService(config,
             this.fetcherMock.Object,
-            new CacheParameters { ConfigCache = this.cacheMock.Object },
+            new CacheParameters(this.cacheMock.Object, cacheKey: null!),
             this.loggerMock.Object.AsWrapper(),
             startTimer: true);
 
@@ -274,7 +274,7 @@ public class ConfigServiceTests
         var config = PollingModes.AutoPoll(TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(0));
         using var service = new AutoPollConfigService(config,
             this.fetcherMock.Object,
-            new CacheParameters { ConfigCache = this.cacheMock.Object },
+            new CacheParameters(this.cacheMock.Object, cacheKey: null!),
             this.loggerMock.Object.AsWrapper(),
             startTimer: false);
 
@@ -309,7 +309,7 @@ public class ConfigServiceTests
         var config = PollingModes.AutoPoll(TimeSpan.FromSeconds(0.2d), TimeSpan.FromSeconds(0));
         using var service = new AutoPollConfigService(config,
             this.fetcherMock.Object,
-            new CacheParameters { ConfigCache = this.cacheMock.Object, CacheKey = "" },
+            new CacheParameters(this.cacheMock.Object, cacheKey: ""),
             this.loggerMock.Object.AsWrapper(),
             startTimer: false);
 
@@ -346,7 +346,7 @@ public class ConfigServiceTests
         var config = PollingModes.AutoPoll(TimeSpan.FromSeconds(0.2d), TimeSpan.FromSeconds(0));
         using var service = new AutoPollConfigService(config,
             this.fetcherMock.Object,
-            new CacheParameters { ConfigCache = this.cacheMock.Object },
+            new CacheParameters(this.cacheMock.Object, cacheKey: null!),
             this.loggerMock.Object.AsWrapper(),
             startTimer: false);
 
@@ -375,7 +375,7 @@ public class ConfigServiceTests
 
         using var service = new ManualPollConfigService(
             this.fetcherMock.Object,
-            new CacheParameters { ConfigCache = this.cacheMock.Object },
+            new CacheParameters(this.cacheMock.Object, cacheKey: null!),
             this.loggerMock.Object.AsWrapper(),
             hooks: hooks);
 
@@ -423,7 +423,7 @@ public class ConfigServiceTests
 
         using var service = new ManualPollConfigService(
             this.fetcherMock.Object,
-            new CacheParameters { ConfigCache = this.cacheMock.Object },
+            new CacheParameters(this.cacheMock.Object, cacheKey: null!),
             this.loggerMock.Object.AsWrapper(),
             hooks: hooks);
         // Act
@@ -463,7 +463,7 @@ public class ConfigServiceTests
 
         using var service = new ManualPollConfigService(
             this.fetcherMock.Object,
-            new CacheParameters { ConfigCache = this.cacheMock.Object },
+            new CacheParameters(this.cacheMock.Object, cacheKey: null!),
             this.loggerMock.Object.AsWrapper(),
             hooks: hooks);
 
@@ -494,10 +494,10 @@ public class ConfigServiceTests
 
         var configServiceMock = new Mock<ConfigServiceBase>(
             MockBehavior.Loose,
-            new object[]
+            new object?[]
             {
                 configFetcherMock.Object,
-                new CacheParameters { ConfigCache = new InMemoryConfigCache() },
+                new CacheParameters(new InMemoryConfigCache(), cacheKey: null!),
                 this.loggerMock.Object.AsWrapper(),
                 false,
                 null
@@ -530,10 +530,10 @@ public class ConfigServiceTests
 
         var configServiceMock = new Mock<ConfigServiceBase>(
             MockBehavior.Loose,
-            new object[]
+            new object?[]
             {
                 configFetcherMock.Object,
-                new CacheParameters { ConfigCache = new InMemoryConfigCache() },
+                new CacheParameters(new InMemoryConfigCache(), cacheKey: null!),
                 new CounterLogger().AsWrapper(),
                 false,
                 null
@@ -560,21 +560,21 @@ public class ConfigServiceTests
 
         var hooks = new Hooks();
 
-        var clientReadyTcs = new TaskCompletionSource<object>();
+        var clientReadyTcs = new TaskCompletionSource<object?>();
         hooks.ClientReady += (s, e) => clientReadyTcs.TrySetResult(default);
 
         var pollInterval = DefaultExpire + DefaultExpire;
         var maxInitWaitTime = DefaultExpire;
 
         var cache = new InMemoryConfigCache();
-        cache.Set(null, this.cachedPc);
+        cache.Set(null!, this.cachedPc);
 
         this.fetcherMock.Setup(m => m.FetchAsync(this.cachedPc)).ReturnsAsync(FetchResult.Success(this.fetchedPc));
 
         var config = PollingModes.AutoPoll(pollInterval, maxInitWaitTime);
         var service = new AutoPollConfigService(config,
             this.fetcherMock.Object,
-            new CacheParameters { ConfigCache = cache },
+            new CacheParameters(cache, cacheKey: null!),
             this.loggerMock.Object.AsWrapper(),
             startTimer: true,
             hooks: hooks);
@@ -620,21 +620,21 @@ public class ConfigServiceTests
 
         var hooks = new Hooks();
 
-        var clientReadyTcs = new TaskCompletionSource<object>();
+        var clientReadyTcs = new TaskCompletionSource<object?>();
         hooks.ClientReady += (s, e) => clientReadyTcs.TrySetResult(default);
 
         var pollInterval = DefaultExpire + DefaultExpire;
         var maxInitWaitTime = DefaultExpire;
 
         var cache = new InMemoryConfigCache();
-        cache.Set(null, this.cachedPc with { TimeStamp = this.cachedPc.TimeStamp - pollInterval });
+        cache.Set(null!, this.cachedPc with { TimeStamp = this.cachedPc.TimeStamp - pollInterval });
 
         this.fetcherMock.Setup(m => m.FetchAsync(this.cachedPc)).ReturnsAsync(FetchResult.Success(this.fetchedPc));
 
         var config = PollingModes.AutoPoll(pollInterval, maxInitWaitTime);
         var service = new AutoPollConfigService(config,
             this.fetcherMock.Object,
-            new CacheParameters { ConfigCache = cache },
+            new CacheParameters(cache, cacheKey: null!),
             this.loggerMock.Object.AsWrapper(),
             startTimer: true,
             hooks: hooks);
@@ -672,7 +672,7 @@ public class ConfigServiceTests
 
         var hooks = new Hooks();
 
-        var clientReadyTcs = new TaskCompletionSource<object>();
+        var clientReadyTcs = new TaskCompletionSource<object?>();
         hooks.ClientReady += (s, e) => clientReadyTcs.TrySetResult(default);
 
         var pollInterval = TimeSpan.FromSeconds(5);
@@ -680,14 +680,14 @@ public class ConfigServiceTests
 
         var cache = new InMemoryConfigCache();
         var cachedPc = this.cachedPc with { TimeStamp = DateTime.UtcNow - pollInterval - pollInterval };
-        cache.Set(null, cachedPc);
+        cache.Set(null!, cachedPc);
 
         this.fetcherMock.Setup(m => m.FetchAsync(cachedPc)).ReturnsAsync(FetchResult.Success(cachedPc));
 
         var config = PollingModes.AutoPoll(pollInterval, maxInitWaitTime);
         var service = new AutoPollConfigService(config,
             this.fetcherMock.Object,
-            new CacheParameters { ConfigCache = cache },
+            new CacheParameters(cache, cacheKey: null!),
             this.loggerMock.Object.AsWrapper(),
             startTimer: true,
             hooks: hooks);
@@ -731,7 +731,7 @@ public class ConfigServiceTests
         var cacheTimeToLive = DefaultExpire + DefaultExpire;
 
         var cache = new InMemoryConfigCache();
-        cache.Set(null, this.cachedPc);
+        cache.Set(null!, this.cachedPc);
 
         if (isAsync)
         {
@@ -744,7 +744,7 @@ public class ConfigServiceTests
 
         var config = PollingModes.LazyLoad(cacheTimeToLive);
         var service = new LazyLoadConfigService(this.fetcherMock.Object,
-            new CacheParameters { ConfigCache = cache },
+            new CacheParameters(cache, cacheKey: null!),
             this.loggerMock.Object.AsWrapper(),
             config.CacheTimeToLive,
             hooks: hooks);
@@ -787,7 +787,7 @@ public class ConfigServiceTests
         var cacheTimeToLive = DefaultExpire + DefaultExpire;
 
         var cache = new InMemoryConfigCache();
-        cache.Set(null, this.cachedPc with { TimeStamp = this.cachedPc.TimeStamp - cacheTimeToLive });
+        cache.Set(null!, this.cachedPc with { TimeStamp = this.cachedPc.TimeStamp - cacheTimeToLive });
 
         if (isAsync)
         {
@@ -800,7 +800,7 @@ public class ConfigServiceTests
 
         var config = PollingModes.LazyLoad(cacheTimeToLive);
         var service = new LazyLoadConfigService(this.fetcherMock.Object,
-            new CacheParameters { ConfigCache = cache },
+            new CacheParameters(cache, cacheKey: null!),
             this.loggerMock.Object.AsWrapper(),
             config.CacheTimeToLive,
             hooks: hooks);

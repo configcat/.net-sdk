@@ -9,7 +9,7 @@ internal class Hooks : IProvidesHooks
     private static readonly EventHandlers DisconnectedEventHandlers = new();
 
     private volatile EventHandlers eventHandlers;
-    private WeakReference<IConfigCatClient> clientWeakRef; // should be null only in case of testing
+    private WeakReference<IConfigCatClient>? clientWeakRef; // should be null only in case of testing
 
     protected Hooks(EventHandlers eventHandlers)
     {
@@ -29,7 +29,7 @@ internal class Hooks : IProvidesHooks
         return !ReferenceEquals(originalEventHandlers, DisconnectedEventHandlers);
     }
 
-    private bool TryGetSender(out IConfigCatClient client)
+    private bool TryGetSender(out IConfigCatClient? client)
     {
         if (this.clientWeakRef is null)
         {
@@ -49,7 +49,7 @@ internal class Hooks : IProvidesHooks
     }
 
     /// <inheritdoc/>
-    public event EventHandler ClientReady
+    public event EventHandler? ClientReady
     {
         add { this.eventHandlers.ClientReady += value; }
         remove { this.eventHandlers.ClientReady -= value; }
@@ -65,7 +65,7 @@ internal class Hooks : IProvidesHooks
     }
 
     /// <inheritdoc/>
-    public event EventHandler<FlagEvaluatedEventArgs> FlagEvaluated
+    public event EventHandler<FlagEvaluatedEventArgs>? FlagEvaluated
     {
         add { this.eventHandlers.FlagEvaluated += value; }
         remove { this.eventHandlers.FlagEvaluated -= value; }
@@ -81,7 +81,7 @@ internal class Hooks : IProvidesHooks
     }
 
     /// <inheritdoc/>
-    public event EventHandler<ConfigChangedEventArgs> ConfigChanged
+    public event EventHandler<ConfigChangedEventArgs>? ConfigChanged
     {
         add { this.eventHandlers.ConfigChanged += value; }
         remove { this.eventHandlers.ConfigChanged -= value; }
@@ -97,14 +97,14 @@ internal class Hooks : IProvidesHooks
     }
 
     /// <inheritdoc/>
-    public event EventHandler<ConfigCatClientErrorEventArgs> Error
+    public event EventHandler<ConfigCatClientErrorEventArgs>? Error
     {
         add { this.eventHandlers.Error += value; }
         remove { this.eventHandlers.Error -= value; }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    internal void RaiseError(string message, Exception exception)
+    internal void RaiseError(string message, Exception? exception)
     {
         if (this.eventHandlers.Error is { } error && TryGetSender(out var client))
         {
@@ -114,19 +114,19 @@ internal class Hooks : IProvidesHooks
 
     protected class EventHandlers
     {
-        private static void Noop(Delegate _) { /* This method is for keeping SonarQube happy. */ }
+        private static void Noop(Delegate? _) { /* This method is for keeping SonarQube happy. */ }
 
-        public virtual EventHandler ClientReady { get => null; set => Noop(value); }
-        public virtual EventHandler<FlagEvaluatedEventArgs> FlagEvaluated { get => null; set => Noop(value); }
-        public virtual EventHandler<ConfigChangedEventArgs> ConfigChanged { get => null; set => Noop(value); }
-        public virtual EventHandler<ConfigCatClientErrorEventArgs> Error { get => null; set => Noop(value); }
+        public virtual EventHandler? ClientReady { get => null; set => Noop(value); }
+        public virtual EventHandler<FlagEvaluatedEventArgs>? FlagEvaluated { get => null; set => Noop(value); }
+        public virtual EventHandler<ConfigChangedEventArgs>? ConfigChanged { get => null; set => Noop(value); }
+        public virtual EventHandler<ConfigCatClientErrorEventArgs>? Error { get => null; set => Noop(value); }
     }
 
     private sealed class ActualEventHandlers : EventHandlers
     {
-        public override EventHandler ClientReady { get; set; }
-        public override EventHandler<FlagEvaluatedEventArgs> FlagEvaluated { get; set; }
-        public override EventHandler<ConfigChangedEventArgs> ConfigChanged { get; set; }
-        public override EventHandler<ConfigCatClientErrorEventArgs> Error { get; set; }
+        public override EventHandler? ClientReady { get; set; }
+        public override EventHandler<FlagEvaluatedEventArgs>? FlagEvaluated { get; set; }
+        public override EventHandler<ConfigChangedEventArgs>? ConfigChanged { get; set; }
+        public override EventHandler<ConfigCatClientErrorEventArgs>? Error { get; set; }
     }
 }

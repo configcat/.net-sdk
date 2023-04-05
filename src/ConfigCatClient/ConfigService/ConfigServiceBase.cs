@@ -28,7 +28,7 @@ internal abstract class ConfigServiceBase : IDisposable
     protected readonly string CacheKey;
     protected readonly Hooks Hooks;
 
-    protected ConfigServiceBase(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline, Hooks hooks)
+    protected ConfigServiceBase(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline, Hooks? hooks)
     {
         this.ConfigFetcher = configFetcher;
         this.ConfigCache = cacheParameters.ConfigCache;
@@ -171,7 +171,7 @@ internal abstract class ConfigServiceBase : IDisposable
 
     public void SetOnline()
     {
-        Action<LoggerWrapper> logAction = null;
+        Action<LoggerWrapper>? logAction = null;
 
         lock (this.syncObj)
         {
@@ -197,7 +197,7 @@ internal abstract class ConfigServiceBase : IDisposable
 
     public void SetOffline()
     {
-        Action<LoggerWrapper> logAction = null;
+        Action<LoggerWrapper>? logAction = null;
 
         lock (this.syncObj)
         {

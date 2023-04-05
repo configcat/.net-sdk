@@ -2,7 +2,8 @@ namespace System.Collections.Generic;
 
 internal static class DictionaryExtensions
 {
-    public static IDictionary<TKey, TValue> MergeOverwriteWith<TKey, TValue>(this IDictionary<TKey, TValue> source, IDictionary<TKey, TValue> other)
+    public static IDictionary<TKey, TValue> MergeOverwriteWith<TKey, TValue>(this IDictionary<TKey, TValue>? source, IDictionary<TKey, TValue>? other)
+        where TKey : notnull
     {
         Dictionary<TKey, TValue> result;
 

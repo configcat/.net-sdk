@@ -18,7 +18,7 @@ public struct FormattableLogMessage : IFormattable
     {
         return new FormattableLogMessage(message.Format,
             argNames ?? ArrayUtils.EmptyArray<string>(),
-            message.GetArguments() ?? ArrayUtils.EmptyArray<object>());
+            message.GetArguments() ?? ArrayUtils.EmptyArray<object?>());
     }
 
     /// <summary>
@@ -29,13 +29,13 @@ public struct FormattableLogMessage : IFormattable
         this.invariantFormattedMessage = message ?? throw new ArgumentNullException(nameof(message));
         this.format = null;
         ArgNames = ArrayUtils.EmptyArray<string>();
-        ArgValues = ArrayUtils.EmptyArray<object>();
+        ArgValues = ArrayUtils.EmptyArray<object?>();
     }
 
     /// <summary>
     /// Constructs a <see cref="FormattableLogMessage"/> from a log message format and the corresponding named arguments.
     /// </summary>
-    public FormattableLogMessage(string format, string[] argNames, object[] argValues)
+    public FormattableLogMessage(string format, string[] argNames, object?[] argValues)
     {
         this.format = format ?? throw new ArgumentNullException(nameof(format));
         ArgNames = argNames ?? throw new ArgumentNullException(nameof(argNames));
@@ -47,7 +47,7 @@ public struct FormattableLogMessage : IFormattable
         this.invariantFormattedMessage = null;
     }
 
-    private readonly string format;
+    private readonly string? format;
     /// <summary>
     /// Log message format.
     /// </summary>
@@ -61,9 +61,9 @@ public struct FormattableLogMessage : IFormattable
     /// <summary>
     /// Values of the named arguments.
     /// </summary>
-    public object[] ArgValues { get; }
+    public object?[] ArgValues { get; }
 
-    private string invariantFormattedMessage;
+    private string? invariantFormattedMessage;
     /// <summary>
     /// The log message formatted using <see cref="CultureInfo.InvariantCulture"/>.
     /// </summary>
@@ -80,7 +80,7 @@ public struct FormattableLogMessage : IFormattable
     /// <summary>
     /// Returns the log message formatted using the specified <paramref name="formatProvider"/>.
     /// </summary>
-    public string ToString(IFormatProvider formatProvider)
+    public string ToString(IFormatProvider? formatProvider)
     {
         return this.format is not null
             ? string.Format(formatProvider, this.format, ArgValues)
@@ -88,7 +88,7 @@ public struct FormattableLogMessage : IFormattable
     }
 
     /// <inheritdoc/>
-    public string ToString(string format, IFormatProvider formatProvider)
+    public string ToString(string? format, IFormatProvider? formatProvider)
     {
         return ToString(formatProvider);
     }

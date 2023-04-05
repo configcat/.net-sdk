@@ -9,7 +9,7 @@ internal static partial class LoggerExtensions
         return Log(logger, level, eventId, exception: null, message);
     }
 
-    public static FormattableLogMessage Log(this LoggerWrapper logger, LogLevel level, LogEventId eventId, Exception exception, string message)
+    public static FormattableLogMessage Log(this LoggerWrapper logger, LogLevel level, LogEventId eventId, Exception? exception, string message)
     {
         if (logger is null)
         {
@@ -26,7 +26,7 @@ internal static partial class LoggerExtensions
         return LogFormatted(logger, level, eventId, exception: null, messageFormat, argNames, argValues);
     }
 
-    public static FormattableLogMessage LogFormatted(this LoggerWrapper logger, LogLevel level, LogEventId eventId, Exception exception, string messageFormat, string[] argNames, object[] argValues)
+    public static FormattableLogMessage LogFormatted(this LoggerWrapper logger, LogLevel level, LogEventId eventId, Exception? exception, string messageFormat, string[] argNames, object[] argValues)
     {
         if (logger is null)
         {
@@ -51,7 +51,7 @@ internal static partial class LoggerExtensions
         return LogInterpolated(logger, level, eventId, exception: null, message, argNames);
     }
 
-    public static FormattableLogMessage LogInterpolated(this LoggerWrapper logger, LogLevel level, LogEventId eventId, Exception exception, FormattableString message, params string[] argNames)
+    public static FormattableLogMessage LogInterpolated(this LoggerWrapper logger, LogLevel level, LogEventId eventId, Exception? exception, FormattableString message, params string[] argNames)
     {
         if (logger is null)
         {

@@ -7,7 +7,7 @@ namespace ConfigCat.Client;
 /// </summary>
 public class ConfigCatClientErrorEventArgs : EventArgs
 {
-    internal ConfigCatClientErrorEventArgs(string message, Exception exception)
+    internal ConfigCatClientErrorEventArgs(string message, Exception? exception)
     {
         Message = message;
         Exception = exception;
@@ -21,5 +21,5 @@ public class ConfigCatClientErrorEventArgs : EventArgs
     /// <summary>
     /// The <see cref="System.Exception"/> object related to the error (if any).
     /// </summary>
-    public Exception Exception { get; }
+    public Exception? Exception { get; }
 }

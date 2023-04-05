@@ -1,15 +1,16 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using ConfigCat.Client.Evaluation;
 
 namespace ConfigCat.Client;
 
 internal sealed class ConfigDeserializer : IConfigDeserializer
 {
-    private SettingsWithPreferences lastDeserializedSettings;
-    private string lastConfig;
-    private string lastHttpETag;
+    private SettingsWithPreferences? lastDeserializedSettings;
+    private string? lastConfig;
+    private string? lastHttpETag;
 
-    public bool TryDeserialize(string config, string httpETag, out SettingsWithPreferences settings)
+    public bool TryDeserialize(string? config, string? httpETag, [NotNullWhen(true)] out SettingsWithPreferences? settings)
     {
         if (config is null)
         {
@@ -22,10 +23,11 @@ internal sealed class ConfigDeserializer : IConfigDeserializer
         if (!configContentHasChanged)
         {
             settings = this.lastDeserializedSettings;
-            return true;
+            return settings is not null;
         }
 
-        this.lastDeserializedSettings = settings = config.Deserialize<SettingsWithPreferences>();
+        this.lastDeserializedSettings = settings = config.Deserialize<SettingsWithPreferences>()
+            ?? throw new InvalidOperationException("Invalid config JSON content: " + config);
         this.lastConfig = config;
         this.lastHttpETag = httpETag;
         return true;

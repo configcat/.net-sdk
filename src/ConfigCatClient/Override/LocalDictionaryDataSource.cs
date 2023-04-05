@@ -9,7 +9,7 @@ namespace ConfigCat.Client.Override;
 internal sealed class LocalDictionaryDataSource : IOverrideDataSource
 {
     private readonly IDictionary<string, Setting> initialSettings;
-    private readonly IDictionary<string, object> overrideValues;
+    private readonly IDictionary<string, object>? overrideValues;
 
     public LocalDictionaryDataSource(IDictionary<string, object> overrideValues, bool watchChanges)
     {
@@ -26,7 +26,7 @@ internal sealed class LocalDictionaryDataSource : IOverrideDataSource
 
     public Task<IDictionary<string, Setting>> GetOverridesAsync() => Task.FromResult(GetSettingsFromSource());
 
-    private IDictionary<string, Setting> GetSettingsFromSource() => this.overrideValues != null
+    private IDictionary<string, Setting> GetSettingsFromSource() => this.overrideValues is not null
         ? this.overrideValues.ToDictionary(kv => kv.Key, kv => kv.Value.ToSetting())
         : this.initialSettings;
 }

@@ -14,7 +14,8 @@
     <PackageProjectUrl>https://configcat.com/docs/sdk-reference/dotnet</PackageProjectUrl>
     <RepositoryUrl>https://github.com/ConfigCat/.net-sdk</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <LangVersion>latest</LangVersion>
+    <LangVersion>10.0</LangVersion>
+    <Nullable>enable</Nullable>
     <PackageReleaseNotes>https://github.com/configcat/.net-sdk/blob/master/CHANGELOG.md</PackageReleaseNotes>
     <PackageTags>feature flag toggle feature-flag feature-flags featureflag featureflags feature-toggle  feature-toggles featuretoggle featuretoggles canary release remote config remoteconfig remote-config configcat configcatclient</PackageTags>
     <Description>Feature Flags created by developers for developers with ❤️.

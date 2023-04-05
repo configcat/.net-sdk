@@ -12,12 +12,12 @@ internal static partial class LoggerExtensions
         LogLevel.Error, 1000,
         $"Config JSON is not present. Returning {defaultReturnValue}.");
 
-    public static FormattableLogMessage ConfigJsonIsNotPresent(this LoggerWrapper logger, string key, string defaultParamName, object defaultParamValue) => logger.LogInterpolated(
+    public static FormattableLogMessage ConfigJsonIsNotPresent(this LoggerWrapper logger, string key, string defaultParamName, object? defaultParamValue) => logger.LogInterpolated(
         LogLevel.Error, 1000,
         $"Config JSON is not present when evaluating setting '{key}'. Returning the `{defaultParamName}` parameter that you specified in your application: '{defaultParamValue}'.",
         "KEY", "DEFAULT_PARAM_NAME", "DEFAULT_PARAM_VALUE");
 
-    public static FormattableLogMessage SettingEvaluationFailedDueToMissingKey(this LoggerWrapper logger, string key, string defaultParamName, object defaultParamValue, string availableKeys) => logger.LogInterpolated(
+    public static FormattableLogMessage SettingEvaluationFailedDueToMissingKey(this LoggerWrapper logger, string key, string defaultParamName, object? defaultParamValue, string availableKeys) => logger.LogInterpolated(
         LogLevel.Error, 1001,
         $"Failed to evaluate setting '{key}' (the key was not found in config JSON). Returning the `{defaultParamName}` parameter that you specified in your application: '{defaultParamValue}'. Available keys: [{availableKeys}].",
         "KEY", "DEFAULT_PARAM_NAME", "DEFAULT_PARAM_VALUE", "AVAILABLE_KEYS");
@@ -28,7 +28,7 @@ internal static partial class LoggerExtensions
         new[] { "METHOD_NAME" },
         new object[] { methodName });
 
-    public static FormattableLogMessage SettingEvaluationError(this LoggerWrapper logger, string methodName, string key, string defaultParamName, object defaultParamValue, Exception ex) => logger.LogInterpolated(
+    public static FormattableLogMessage SettingEvaluationError(this LoggerWrapper logger, string methodName, string key, string defaultParamName, object? defaultParamValue, Exception ex) => logger.LogInterpolated(
         LogLevel.Error, 1002, ex,
         $"Error occurred in the `{methodName}` method while evaluating setting '{key}'. Returning the `{defaultParamName}` parameter that you specified in your application: '{defaultParamValue}'.",
         "METHOD_NAME", "KEY", "DEFAULT_PARAM_NAME", "DEFAULT_PARAM_VALUE");
@@ -42,7 +42,7 @@ internal static partial class LoggerExtensions
         LogLevel.Error, 1100,
         "Your SDK Key seems to be wrong. You can find the valid SDK Key at https://app.configcat.com/sdkkey");
 
-    public static FormattableLogMessage FetchFailedDueToUnexpectedHttpResponse(this LoggerWrapper logger, int statusCode, string reasonPhrase) => logger.LogInterpolated(
+    public static FormattableLogMessage FetchFailedDueToUnexpectedHttpResponse(this LoggerWrapper logger, int statusCode, string? reasonPhrase) => logger.LogInterpolated(
         LogLevel.Error, 1101,
         $"Unexpected HTTP response was received while trying to fetch config JSON: {statusCode} {reasonPhrase}",
         "STATUS_CODE", "REASON_PHRASE");
@@ -64,7 +64,7 @@ internal static partial class LoggerExtensions
         LogLevel.Error, 1105,
         "Fetching config JSON was successful but the HTTP response content was invalid.");
 
-    public static FormattableLogMessage FetchReceived304WhenLocalCacheIsEmpty(this LoggerWrapper logger, int statusCode, string reasonPhrase) => logger.LogInterpolated(
+    public static FormattableLogMessage FetchReceived304WhenLocalCacheIsEmpty(this LoggerWrapper logger, int statusCode, string? reasonPhrase) => logger.LogInterpolated(
         LogLevel.Error, 1106,
         $"Unexpected HTTP response was received when no config JSON is cached locally: {statusCode} {reasonPhrase}",
         "STATUS_CODE", "REASON_PHRASE");
@@ -136,7 +136,7 @@ internal static partial class LoggerExtensions
 
     #region Common info messages (5000-5999)
 
-    public static FormattableLogMessage SettingEvaluated(this LoggerWrapper logger, EvaluateLogger<string> evaluateLog) => logger.LogInterpolated(
+    public static FormattableLogMessage SettingEvaluated(this LoggerWrapper logger, EvaluateLogger<string?> evaluateLog) => logger.LogInterpolated(
         LogLevel.Info, 5000,
         $"{evaluateLog}",
         "EVALUATE_LOG");

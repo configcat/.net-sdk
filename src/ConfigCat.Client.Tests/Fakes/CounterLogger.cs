@@ -15,7 +15,7 @@ internal sealed class CounterLogger : IConfigCatLogger
         LogLevel = logLevel;
     }
 
-    public void Log(LogLevel level, LogEventId eventId, ref FormattableLogMessage message, Exception exception = null)
+    public void Log(LogLevel level, LogEventId eventId, ref FormattableLogMessage message, Exception? exception = null)
     {
         this.LogMessageInvokeCount++;
     }

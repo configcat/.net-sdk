@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using ConfigCat.Client.Utils;
 
@@ -7,14 +8,14 @@ namespace ConfigCat.Client.Evaluation;
 
 internal static class RolloutEvaluatorExtensions
 {
-    public static EvaluationDetails<T> Evaluate<T>(this IRolloutEvaluator evaluator, Setting setting, string key, T defaultValue, User user,
-        ProjectConfig remoteConfig)
+    public static EvaluationDetails<T> Evaluate<T>(this IRolloutEvaluator evaluator, Setting setting, string key, T defaultValue, User? user,
+        ProjectConfig? remoteConfig)
     {
         return (EvaluationDetails<T>)evaluator.Evaluate(setting, key, defaultValue?.ToString(), user, remoteConfig, static (settingType, value) => EvaluationDetails.Create<T>(settingType, value));
     }
 
-    public static EvaluationDetails<T> Evaluate<T>(this IRolloutEvaluator evaluator, IDictionary<string, Setting> settings, string key, T defaultValue, User user,
-        ProjectConfig remoteConfig, LoggerWrapper logger)
+    public static EvaluationDetails<T> Evaluate<T>(this IRolloutEvaluator evaluator, IDictionary<string, Setting>? settings, string key, T defaultValue, User? user,
+        ProjectConfig? remoteConfig, LoggerWrapper logger)
     {
         FormattableLogMessage logMessage;
 
@@ -33,14 +34,14 @@ internal static class RolloutEvaluatorExtensions
         return evaluator.Evaluate(setting, key, defaultValue, user, remoteConfig);
     }
 
-    public static EvaluationDetails Evaluate(this IRolloutEvaluator evaluator, Setting setting, string key, object defaultValue, User user,
-        ProjectConfig remoteConfig)
+    public static EvaluationDetails Evaluate(this IRolloutEvaluator evaluator, Setting setting, string key, object? defaultValue, User? user,
+        ProjectConfig? remoteConfig)
     {
         return evaluator.Evaluate(setting, key, defaultValue?.ToString(), user, remoteConfig, static (settingType, value) => EvaluationDetails.Create(settingType, value));
     }
 
-    public static EvaluationDetails[] EvaluateAll(this IRolloutEvaluator evaluator, IDictionary<string, Setting> settings, User user,
-        ProjectConfig remoteConfig, LoggerWrapper logger, string defaultReturnValue, out IReadOnlyList<Exception> exceptions)
+    public static EvaluationDetails[] EvaluateAll(this IRolloutEvaluator evaluator, IDictionary<string, Setting>? settings, User? user,
+        ProjectConfig? remoteConfig, LoggerWrapper logger, string defaultReturnValue, out IReadOnlyList<Exception>? exceptions)
     {
         if (!CheckSettingsAvailable(settings, logger, defaultReturnValue))
         {
@@ -49,7 +50,7 @@ internal static class RolloutEvaluatorExtensions
         }
 
         var evaluationDetailsArray = new EvaluationDetails[settings.Count];
-        List<Exception> exceptionList = null;
+        List<Exception>? exceptionList = null;
 
         var index = 0;
         foreach (var kvp in settings)
@@ -63,7 +64,7 @@ internal static class RolloutEvaluatorExtensions
             {
                 exceptionList ??= new List<Exception>();
                 exceptionList.Add(ex);
-                evaluationDetails = EvaluationDetails.FromDefaultValue(kvp.Key, defaultValue: (object)null, fetchTime: remoteConfig?.TimeStamp, user, ex.Message, ex);
+                evaluationDetails = EvaluationDetails.FromDefaultValue(kvp.Key, defaultValue: (object?)null, fetchTime: remoteConfig?.TimeStamp, user, ex.Message, ex);
             }
 
             evaluationDetailsArray[index++] = evaluationDetails;
@@ -73,7 +74,7 @@ internal static class RolloutEvaluatorExtensions
         return evaluationDetailsArray;
     }
 
-    internal static bool CheckSettingsAvailable(IDictionary<string, Setting> settings, LoggerWrapper logger, string defaultReturnValue)
+    internal static bool CheckSettingsAvailable([NotNullWhen(true)] IDictionary<string, Setting>? settings, LoggerWrapper logger, string defaultReturnValue)
     {
         if (settings is null)
         {

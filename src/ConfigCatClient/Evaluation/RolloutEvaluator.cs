@@ -21,10 +21,10 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         this.logger = logger;
     }
 
-    public EvaluationDetails Evaluate(Setting setting, string key, string logDefaultValue, User user,
-        ProjectConfig remoteConfig, EvaluationDetailsFactory detailsFactory)
+    public EvaluationDetails Evaluate(Setting setting, string key, string? logDefaultValue, User? user,
+        ProjectConfig? remoteConfig, EvaluationDetailsFactory detailsFactory)
     {
-        var evaluateLog = new EvaluateLogger<string>
+        var evaluateLog = new EvaluateLogger<string?>
         {
             ReturnValue = logDefaultValue,
             User = user,
@@ -99,7 +99,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
     private static bool TryEvaluatePercentageRules<T>(ICollection<RolloutPercentageItem> rolloutPercentageItems, string key, User user, EvaluateLogger<T> evaluateLog, out EvaluateResult<RolloutPercentageItem> result)
     {
-        if (rolloutPercentageItems is { Count: > 0 })
+        if (rolloutPercentageItems.Count > 0)
         {
             var hashCandidate = key + user.Identifier;
 
@@ -131,7 +131,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
     private static bool TryEvaluateRules<T>(ICollection<RolloutRule> rules, User user, EvaluateLogger<T> logger, out EvaluateResult<RolloutRule> result)
     {
-        if (rules is { Count: > 0 })
+        if (rules.Count > 0)
         {
             logger.Log($"Applying the first targeting rule that matches the User '{user.Serialize()}':");
             foreach (var rule in rules.OrderBy(o => o.Order))
@@ -145,7 +145,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                     continue;
                 }
 
-                var comparisonAttributeValue = user.AllAttributes[rule.ComparisonAttribute];
+                var comparisonAttributeValue = user.AllAttributes[rule.ComparisonAttribute]!;
                 if (string.IsNullOrEmpty(comparisonAttributeValue))
                 {
                     logger.Log(l + "no match");
@@ -324,7 +324,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                     })
                     .ToList();
 
-                return !rsvi.Contains(null) && rsvi.Any(v => v.PrecedenceMatches(v1));
+                return !rsvi.Contains(null) && rsvi.Any(v => v!.PrecedenceMatches(v1));
 
             case Comparator.SemVerNotIn:
 
@@ -341,7 +341,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                     })
                     .ToList();
 
-                return !rsvni.Contains(null) && !rsvni.Any(v => v.PrecedenceMatches(v1));
+                return !rsvni.Contains(null) && !rsvni.Any(v => v!.PrecedenceMatches(v1));
 
             case Comparator.SemVerLessThan:
 
@@ -382,7 +382,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
     private readonly struct EvaluateResult<TRule>
     {
-        public EvaluateResult(JsonValue value, string variationId, TRule matchedRule)
+        public EvaluateResult(JsonValue value, string? variationId, TRule matchedRule)
         {
             Value = value;
             VariationId = variationId;
@@ -390,7 +390,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         }
 
         public JsonValue Value { get; }
-        public string VariationId { get; }
+        public string? VariationId { get; }
         public TRule MatchedRule { get; }
     }
 }

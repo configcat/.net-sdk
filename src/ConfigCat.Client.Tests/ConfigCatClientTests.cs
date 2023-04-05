@@ -51,9 +51,9 @@ public class ConfigCatClientTests
     [DoNotParallelize]
     public void CreateAnInstance_WhenSdkKeyIsNull_ShouldThrowArgumentNullException()
     {
-        string sdkKey = null;
+        string? sdkKey = null;
 
-        using var _ = ConfigCatClient.Get(sdkKey);
+        using var _ = ConfigCatClient.Get(sdkKey!);
     }
 
     [ExpectedException(typeof(ArgumentOutOfRangeException))]
@@ -110,7 +110,7 @@ public class ConfigCatClientTests
 
         // Act
 
-        var actual = client.GetValue(null, defaultValue);
+        var actual = client.GetValue("", defaultValue);
 
         // Assert
 
@@ -132,7 +132,7 @@ public class ConfigCatClientTests
 
         // Act
 
-        var actual = await client.GetValueAsync(null, defaultValue);
+        var actual = await client.GetValueAsync("", defaultValue);
 
         // Assert
 
@@ -157,7 +157,7 @@ public class ConfigCatClientTests
 
         // Act
 
-        var actual = client.GetValue(null, defaultValue);
+        var actual = client.GetValue("", defaultValue);
 
         // Assert
 
@@ -186,7 +186,7 @@ public class ConfigCatClientTests
 
         // Act
 
-        var actual = await client.GetValueAsync(null, defaultValue);
+        var actual = await client.GetValueAsync("", defaultValue);
 
         // Assert
 
@@ -432,13 +432,13 @@ public class ConfigCatClientTests
         // Assert
 
         Assert.IsNotNull(actual);
-        Assert.AreEqual(key, actual.Key);
+        Assert.AreEqual(key, actual!.Key);
         Assert.AreEqual(defaultValue, actual.Value);
         Assert.IsTrue(actual.IsDefaultValue);
         Assert.IsNull(actual.VariationId);
         Assert.AreEqual(DateTime.MinValue, actual.FetchTime);
         Assert.IsNull(actual.User);
-        Assert.AreEqual(errorMessage, actual?.ErrorMessage);
+        Assert.AreEqual(errorMessage, actual.ErrorMessage);
         Assert.IsInstanceOfType(actual.ErrorException, typeof(ApplicationException));
         Assert.IsNull(actual.MatchedEvaluationRule);
         Assert.IsNull(actual.MatchedEvaluationPercentageRule);
@@ -495,13 +495,13 @@ public class ConfigCatClientTests
         // Assert
 
         Assert.IsNotNull(actual);
-        Assert.AreEqual(key, actual.Key);
+        Assert.AreEqual(key, actual!.Key);
         Assert.AreEqual(defaultValue, actual.Value);
         Assert.IsTrue(actual.IsDefaultValue);
         Assert.IsNull(actual.VariationId);
         Assert.AreEqual(timeStamp, actual.FetchTime);
         Assert.AreSame(user, actual.User);
-        Assert.AreEqual(errorMessage, actual?.ErrorMessage);
+        Assert.AreEqual(errorMessage, actual.ErrorMessage);
         Assert.IsInstanceOfType(actual.ErrorException, typeof(ApplicationException));
         Assert.IsNull(actual.MatchedEvaluationRule);
         Assert.IsNull(actual.MatchedEvaluationPercentageRule);
@@ -699,13 +699,13 @@ public class ConfigCatClientTests
             var actualDetails = actual.FirstOrDefault(details => details.Key == key);
 
             Assert.IsNotNull(actualDetails);
-            Assert.AreEqual(key, actualDetails.Key);
+            Assert.AreEqual(key, actualDetails!.Key);
             Assert.IsNull(actualDetails.Value);
             Assert.IsTrue(actualDetails.IsDefaultValue);
             Assert.IsNull(actualDetails.VariationId);
             Assert.AreEqual(timeStamp, actualDetails.FetchTime);
             Assert.AreSame(user, actualDetails.User);
-            Assert.AreEqual(errorMessage, actualDetails?.ErrorMessage);
+            Assert.AreEqual(errorMessage, actualDetails.ErrorMessage);
             Assert.IsInstanceOfType(actualDetails.ErrorException, typeof(ApplicationException));
             Assert.IsNull(actualDetails.MatchedEvaluationRule);
             Assert.IsNull(actualDetails.MatchedEvaluationPercentageRule);
@@ -720,7 +720,7 @@ public class ConfigCatClientTests
         var errorEventArgs = errorEvents[0];
         StringAssert.Contains(errorEventArgs.Message, isAsync ? nameof(IConfigCatClient.GetAllValueDetailsAsync) : nameof(IConfigCatClient.GetAllValueDetails));
         Assert.IsInstanceOfType(errorEventArgs.Exception, typeof(AggregateException));
-        var actualException = (AggregateException)errorEventArgs.Exception;
+        var actualException = (AggregateException)errorEventArgs.Exception!;
         Assert.AreEqual(actual.Count, actualException.InnerExceptions.Count);
         foreach (var ex in actualException.InnerExceptions)
         {
@@ -811,7 +811,7 @@ public class ConfigCatClientTests
 
         this.configServiceMock.Setup(m => m.GetConfigAsync()).ReturnsAsync(ProjectConfig.Empty);
         this.configDeserializerMock
-            .Setup(m => m.TryDeserialize(It.IsAny<string>(), It.IsAny<string>(), out It.Ref<SettingsWithPreferences>.IsAny))
+            .Setup(m => m.TryDeserialize(It.IsAny<string>(), It.IsAny<string>(), out It.Ref<SettingsWithPreferences?>.IsAny))
             .Returns(false);
 
         IConfigCatClient instance = new ConfigCatClient(
@@ -838,7 +838,7 @@ public class ConfigCatClientTests
 
         this.configServiceMock.Setup(m => m.GetConfig()).Returns(ProjectConfig.Empty);
         this.configDeserializerMock
-            .Setup(m => m.TryDeserialize(It.IsAny<string>(), It.IsAny<string>(), out It.Ref<SettingsWithPreferences>.IsAny))
+            .Setup(m => m.TryDeserialize(It.IsAny<string>(), It.IsAny<string>(), out It.Ref<SettingsWithPreferences?>.IsAny))
             .Returns(false);
 
         IConfigCatClient instance = new ConfigCatClient(
@@ -1014,7 +1014,7 @@ public class ConfigCatClientTests
         Assert.AreSame(exception, result.ErrorException);
     }
 
-    private static IConfigCatClient CreateClientFromLocalFile(string fileName, User defaultUser = null)
+    private static IConfigCatClient CreateClientFromLocalFile(string fileName, User? defaultUser = null)
     {
         return ConfigCatClient.Get("localhost", options =>
         {
@@ -1036,7 +1036,7 @@ public class ConfigCatClientTests
         using IConfigCatClient client = CreateClientFromLocalFile("sample_v5.json", new User("a@configcat.com") { Email = "a@configcat.com" });
 
         var getValueAsync = isAsync
-            ? new Func<string, string, User, Task<string>>(client.GetValueAsync)
+            ? new Func<string, string, User?, Task<string>>(client.GetValueAsync)
             : (key, defaultValue, user) => Task.FromResult(client.GetValue(key, defaultValue, user));
 
         const string key = "stringIsInDogDefaultCat";
@@ -1067,7 +1067,7 @@ public class ConfigCatClientTests
         using IConfigCatClient client = CreateClientFromLocalFile("sample_v5.json", new User("a@configcat.com") { Email = "a@configcat.com" });
 
         var getAllValuesAsync = isAsync
-            ? new Func<User, Task<IDictionary<string, object>>>(client.GetAllValuesAsync)
+            ? new Func<User?, Task<IDictionary<string, object?>>>(client.GetAllValuesAsync)
             : user => Task.FromResult(client.GetAllValues(user));
 
         const string key = "stringIsInDogDefaultCat";
@@ -1271,7 +1271,7 @@ public class ConfigCatClientTests
         Func<ProjectConfig, FetchResult> onFetch,
         Func<IConfigFetcher, CacheParameters, LoggerWrapper, IConfigService> configServiceFactory,
         Func<LoggerWrapper, IRolloutEvaluator> evaluatorFactory,
-        Hooks hooks,
+        Hooks? hooks,
         out IConfigService configService,
         out IConfigCatCache configCache)
     {
@@ -1282,17 +1282,13 @@ public class ConfigCatClientTests
 
         configCache = new InMemoryConfigCache();
 
-        var cacheParams = new CacheParameters
-        {
-            ConfigCache = configCache,
-            CacheKey = cacheKey
-        };
+        var cacheParams = new CacheParameters(configCache, cacheKey);
 
         configService = configServiceFactory(fetcherMock.Object, cacheParams, loggerWrapper);
         return new ConfigCatClient(configService, loggerMock.Object, evaluatorFactory(loggerWrapper), new ConfigDeserializer(), hooks);
     }
 
-    private static int ParseETagAsInt32(string etag)
+    private static int ParseETagAsInt32(string? etag)
     {
         return int.TryParse(etag, NumberStyles.None, CultureInfo.InvariantCulture, out var value) ? value : 0;
     }
@@ -1585,11 +1581,7 @@ public class ConfigCatClientTests
 
         var configCache = new InMemoryConfigCache();
 
-        var cacheParams = new CacheParameters
-        {
-            ConfigCache = configCache,
-            CacheKey = cacheKey
-        };
+        var cacheParams = new CacheParameters(configCache, cacheKey);
 
         var configService = new ManualPollConfigService(this.fetcherMock.Object, cacheParams, loggerWrapper, hooks: hooks);
 
@@ -1711,7 +1703,7 @@ public class ConfigCatClientTests
 
         const string invalidKey = "<invalid-key>";
 
-        await client.GetValueAsync(invalidKey, defaultValue: (object)null);
+        await client.GetValueAsync(invalidKey, defaultValue: (object?)null);
 
         Assert.AreEqual(2, errorEvents.Count);
         Assert.IsNotNull(errorEvents[0].Message);

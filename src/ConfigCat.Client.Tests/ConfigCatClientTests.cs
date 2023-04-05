@@ -78,10 +78,9 @@ public class ConfigCatClientTests
         });
     }
 
-    [ExpectedException(typeof(ArgumentNullException))]
     [TestMethod]
     [DoNotParallelize]
-    public void CreateAnInstance_WhenLoggerIsNull_ShouldThrowArgumentNullException()
+    public void CreateAnInstance_WhenLoggerIsNull_ShouldCreateAnInstance()
     {
         using var _ = ConfigCatClient.Get("hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf", options =>
         {

@@ -14,47 +14,57 @@ public class ConfigCatClientOptions : IProvidesHooks
 
     internal static readonly Uri BaseUrlEu = new("https://cdn-eu.configcat.com");
 
-    private IConfigCatLogger logger = new ConsoleLogger(LogLevel.Warning);
-
     /// <summary>
-    /// Logger instance. If you want to use custom logging instead of the client's default <see cref="ConsoleLogger"/>, you can provide an implementation of <see cref="IConfigCatLogger"/>.
+    /// Logger instance. If not set, <see cref="ConsoleLogger"/> with Warning log level will be used by default.
+    /// If you want to use custom logging instead, you can provide an implementation of <see cref="IConfigCatLogger"/>.
     /// </summary>
-    public IConfigCatLogger Logger
-    {
-        get => this.logger;
-        set => this.logger = value ?? throw new ArgumentNullException(nameof(value));
-    }
+    public IConfigCatLogger Logger { get; set; }
+
+    internal static IConfigCatLogger CreateDefaultLogger() => new ConsoleLogger(LogLevel.Warning);
 
     /// <summary>
-    /// If you want to use custom caching instead of the client's default <see cref="InMemoryConfigCache"/>, you can provide an implementation of <see cref="IConfigCatCache"/>.
+    /// Cache instance. If not set, <see cref="InMemoryConfigCache"/> will be used by default.
+    /// If you want to use custom caching instead, you can provide an implementation of <see cref="IConfigCatCache"/>.
     /// </summary>
     public IConfigCatCache ConfigCache { get; set; }
 
-    /// <summary>
-    /// Polling mode. Defaults to auto polling.
-    /// </summary>
-    public PollingMode PollingMode { get; set; } = PollingModes.AutoPoll();
+    internal static IConfigCatCache CreateDefaultConfigCache() => new InMemoryConfigCache();
 
     /// <summary>
-    /// HttpClientHandler to provide network credentials and proxy settings.
+    /// Polling mode.
+    /// If not set, <see cref="PollingModes.AutoPoll"/> will be used by default.
+    /// </summary>
+    public PollingMode PollingMode { get; set; }
+
+    internal static PollingMode CreateDefaultPollingMode() => PollingModes.AutoPoll();
+
+    /// <summary>
+    /// <see cref="System.Net.Http.HttpClientHandler"/> to provide network credentials and proxy settings.
     /// </summary>
     public HttpClientHandler HttpClientHandler { get; set; }
+
+    private Uri baseUrl = BaseUrlGlobal;
 
     /// <summary>
     /// You can set a BaseUrl if you want to use a proxy server between your application and ConfigCat.
     /// </summary>
-    public Uri BaseUrl { get; set; } = BaseUrlGlobal;
+    public Uri BaseUrl
+    {
+        get => this.baseUrl;
+        set => this.baseUrl = value ?? throw new ArgumentNullException(nameof(value));
+    }
 
     internal bool IsCustomBaseUrl => BaseUrl != BaseUrlGlobal && BaseUrl != BaseUrlEu;
 
     /// <summary>
-    /// Default: Global. Set this parameter to be in sync with the Data Governance preference on the Dashboard:
-    /// https://app.configcat.com/organization/data-governance (Only Organization Admins have access)
+    /// Set this parameter to be in sync with the Data Governance preference on the Dashboard:
+    /// https://app.configcat.com/organization/data-governance (only Organization Admins have access).
+    /// Defaults to <see cref="DataGovernance.Global"/>.
     /// </summary>
     public DataGovernance DataGovernance { get; set; } = DataGovernance.Global;
 
     /// <summary>
-    /// Timeout for underlying http calls. Defaults to 30 seconds.
+    /// Timeout for underlying HTTP calls. Defaults to 30 seconds.
     /// </summary>
     public TimeSpan HttpTimeout { get; set; } = TimeSpan.FromSeconds(30);
 
@@ -74,16 +84,6 @@ public class ConfigCatClientOptions : IProvidesHooks
     public bool Offline { get; set; }
 
     internal Hooks Hooks { get; } = new Hooks();
-
-    internal void Validate()
-    {
-        if (Logger is null)
-        {
-            throw new ArgumentNullException(nameof(Logger));
-        }
-
-        PollingMode.Validate();
-    }
 
     internal Uri CreateUri(string sdkKey)
     {

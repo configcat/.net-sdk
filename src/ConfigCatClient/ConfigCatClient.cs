@@ -47,13 +47,13 @@ public sealed class ConfigCatClient : IConfigCatClient
         this.hooks = configuration.Hooks;
         this.hooks.SetSender(this);
 
-        this.logger = new LoggerWrapper(configuration.Logger, this.hooks);
+        this.logger = new LoggerWrapper(configuration.Logger ?? ConfigCatClientOptions.CreateDefaultLogger(), this.hooks);
         this.configDeserializer = new ConfigDeserializer();
         this.configEvaluator = new RolloutEvaluator(this.logger);
 
         var cacheParameters = new CacheParameters
         {
-            ConfigCache = configuration.ConfigCache ?? new InMemoryConfigCache(),
+            ConfigCache = configuration.ConfigCache ?? ConfigCatClientOptions.CreateDefaultConfigCache(),
             CacheKey = GetCacheKey(sdkKey)
         };
 
@@ -65,10 +65,12 @@ public sealed class ConfigCatClient : IConfigCatClient
 
         this.defaultUser = configuration.DefaultUser;
 
+        var pollingMode = configuration.PollingMode ?? ConfigCatClientOptions.CreateDefaultPollingMode();
+
         this.configService = this.overrideBehaviour is null || this.overrideBehaviour != OverrideBehaviour.LocalOnly
-            ? DetermineConfigService(configuration.PollingMode,
+            ? DetermineConfigService(pollingMode,
                 new HttpConfigFetcher(configuration.CreateUri(sdkKey),
-                        $"{configuration.PollingMode.Identifier}-{Version}",
+                        $"{pollingMode.Identifier}-{Version}",
                         this.logger,
                         configuration.HttpClientHandler,
                         this.configDeserializer,
@@ -128,7 +130,6 @@ public sealed class ConfigCatClient : IConfigCatClient
 
         var configuration = new ConfigCatClientOptions();
         configurationAction?.Invoke(configuration);
-        configuration.Validate();
 
         var instance = Instances.GetOrCreate(sdkKey, configuration, out var instanceAlreadyCreated);
 

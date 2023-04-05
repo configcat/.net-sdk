@@ -432,8 +432,8 @@ public class OverrideTests
         using var client = ConfigCatClient.Get("localhost", options =>
         {
             options.FlagOverrides = FlagOverrides.LocalFile(SampleFileToCreate, true, OverrideBehaviour.LocalOnly);
-            options.Logger.LogLevel = LogLevel.Info;
         });
+        client.LogLevel = LogLevel.Info;
 
         Assert.AreEqual("initial", await client.GetValueAsync("fakeKey", string.Empty));
         await Task.Delay(100);
@@ -453,8 +453,8 @@ public class OverrideTests
         using var client = ConfigCatClient.Get("localhost", options =>
         {
             options.FlagOverrides = FlagOverrides.LocalFile(SampleFileToCreate, true, OverrideBehaviour.LocalOnly);
-            options.Logger.LogLevel = LogLevel.Info;
         });
+        client.LogLevel = LogLevel.Info;
 
         Assert.AreEqual("initial", client.GetValue("fakeKey", string.Empty));
         await Task.Delay(100);

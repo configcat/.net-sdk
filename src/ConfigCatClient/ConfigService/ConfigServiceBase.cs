@@ -1,7 +1,6 @@
 using System;
 using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
-using ConfigCat.Client.Utils;
 
 #if NET45
 using ConfigWithFetchResult = System.Tuple<ConfigCat.Client.ProjectConfig, ConfigCat.Client.FetchResult>;
@@ -24,11 +23,7 @@ internal abstract class ConfigServiceBase : IDisposable
     private readonly object syncObj = new();
 
     protected readonly IConfigFetcher ConfigFetcher;
-
-#pragma warning disable CS0618 // Type or member is obsolete
-    protected readonly IConfigCache ConfigCache; // Backward compatibility, it'll be changed to IConfigCatCache later.
-#pragma warning restore CS0618 // Type or member is obsolete
-
+    protected readonly IConfigCatCache ConfigCache;
     protected readonly LoggerWrapper Logger;
     protected readonly string CacheKey;
     protected readonly Hooks Hooks;
@@ -75,24 +70,17 @@ internal abstract class ConfigServiceBase : IDisposable
 
     public virtual RefreshResult RefreshConfig()
     {
-        // check for the new cache interface until we remove the old IConfigCache.
-        if (this.ConfigCache is IConfigCatCache cache)
+        if (!IsOffline)
         {
-            if (!IsOffline)
-            {
-                var latestConfig = cache.Get(this.CacheKey);
-                var configWithFetchResult = RefreshConfigCore(latestConfig);
-                return RefreshResult.From(configWithFetchResult.Item2);
-            }
-            else
-            {
-                var logMessage = this.Logger.ConfigServiceCannotInitiateHttpCalls();
-                return RefreshResult.Failure(logMessage.InvariantFormattedMessage);
-            }
+            var latestConfig = this.ConfigCache.Get(this.CacheKey);
+            var configWithFetchResult = RefreshConfigCore(latestConfig);
+            return RefreshResult.From(configWithFetchResult.Item2);
         }
-
-        // worst scenario, fallback to sync over async, delete when we enforce IConfigCatCache.
-        return Syncer.Sync(RefreshConfigAsync);
+        else
+        {
+            var logMessage = this.Logger.ConfigServiceCannotInitiateHttpCalls();
+            return RefreshResult.Failure(logMessage.InvariantFormattedMessage);
+        }
     }
 
     protected ConfigWithFetchResult RefreshConfigCore(ProjectConfig latestConfig)
@@ -103,8 +91,7 @@ internal abstract class ConfigServiceBase : IDisposable
         var configContentHasChanged = !ProjectConfig.ContentEquals(latestConfig, newConfig);
         if ((configContentHasChanged || newConfig.TimeStamp > latestConfig.TimeStamp) && !newConfig.IsEmpty)
         {
-            // TODO: This cast can be removed when we delete the obsolete IConfigCache interface.
-            ((IConfigCatCache)this.ConfigCache).Set(this.CacheKey, newConfig);
+            this.ConfigCache.Set(this.CacheKey, newConfig);
 
             OnConfigUpdated(newConfig);
 

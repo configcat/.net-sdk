@@ -73,66 +73,6 @@ internal static class RolloutEvaluatorExtensions
         return evaluationDetailsArray;
     }
 
-    public static EvaluationDetails EvaluateVariationId(this IRolloutEvaluator evaluator, Setting setting, string key, string defaultVariationId, User user,
-        ProjectConfig remoteConfig)
-    {
-        return evaluator.EvaluateVariationId(setting, key, defaultVariationId, user, remoteConfig, static (settingType, value) => EvaluationDetails.Create(settingType, value));
-    }
-
-    public static EvaluationDetails EvaluateVariationId(this IRolloutEvaluator evaluator, IDictionary<string, Setting> settings, string key, string defaultVariationId, User user,
-        ProjectConfig remoteConfig, LoggerWrapper logger)
-    {
-        FormattableLogMessage logMessage;
-
-        if (settings is null)
-        {
-            logMessage = logger.ConfigJsonIsNotPresent(key, nameof(defaultVariationId), defaultVariationId);
-            return EvaluationDetails.FromDefaultVariationId(key, defaultVariationId, fetchTime: remoteConfig?.TimeStamp, user, logMessage.InvariantFormattedMessage);
-        }
-
-        if (!settings.TryGetValue(key, out var setting))
-        {
-            logMessage = logger.SettingEvaluationFailedDueToMissingKey(key, nameof(defaultVariationId), defaultVariationId, KeysToString(settings));
-            return EvaluationDetails.FromDefaultVariationId(key, defaultVariationId, fetchTime: remoteConfig?.TimeStamp, user, logMessage.InvariantFormattedMessage);
-        }
-
-        return evaluator.EvaluateVariationId(setting, key, defaultVariationId, user, remoteConfig);
-    }
-
-    public static EvaluationDetails[] EvaluateAllVariationIds(this IRolloutEvaluator evaluator, IDictionary<string, Setting> settings, User user,
-        ProjectConfig remoteConfig, LoggerWrapper logger, string defaultReturnValue, out IReadOnlyList<Exception> exceptions)
-    {
-        if (!CheckSettingsAvailable(settings, logger, defaultReturnValue))
-        {
-            exceptions = null;
-            return ArrayUtils.EmptyArray<EvaluationDetails>();
-        }
-
-        var evaluationDetailsArray = new EvaluationDetails[settings.Count];
-        List<Exception> exceptionList = null;
-
-        var index = 0;
-        foreach (var kvp in settings)
-        {
-            EvaluationDetails evaluationDetails;
-            try
-            {
-                evaluationDetails = evaluator.EvaluateVariationId(kvp.Value, kvp.Key, defaultVariationId: null, user, remoteConfig);
-            }
-            catch (Exception ex)
-            {
-                exceptionList ??= new List<Exception>();
-                exceptionList.Add(ex);
-                evaluationDetails = EvaluationDetails.FromDefaultVariationId(kvp.Key, defaultVariationId: null, fetchTime: remoteConfig?.TimeStamp, user, ex.Message, ex);
-            }
-
-            evaluationDetailsArray[index++] = evaluationDetails;
-        }
-
-        exceptions = exceptionList;
-        return evaluationDetailsArray;
-    }
-
     internal static bool CheckSettingsAvailable(IDictionary<string, Setting> settings, LoggerWrapper logger, string defaultReturnValue)
     {
         if (settings is null)

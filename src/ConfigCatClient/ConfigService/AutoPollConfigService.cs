@@ -3,7 +3,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
 using ConfigCat.Client.Configuration;
-using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client.ConfigService;
 
@@ -113,24 +112,18 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
 
     public ProjectConfig GetConfig()
     {
-        if (this.ConfigCache is IConfigCatCache cache)
+        if (!IsOffline && !IsInitialized)
         {
-            if (!IsOffline && !IsInitialized)
+            var cacheConfig = this.ConfigCache.Get(base.CacheKey);
+            if (!cacheConfig.IsExpired(expiration: this.configuration.PollInterval, out _))
             {
-                var cacheConfig = cache.Get(base.CacheKey);
-                if (!cacheConfig.IsExpired(expiration: this.configuration.PollInterval, out _))
-                {
-                    return cacheConfig;
-                }
-
-                WaitForInitialization();
+                return cacheConfig;
             }
 
-            return cache.Get(base.CacheKey);
+            WaitForInitialization();
         }
 
-        // worst scenario, fallback to sync over async, delete when we enforce IConfigCatCache.
-        return Syncer.Sync(GetConfigAsync);
+        return this.ConfigCache.Get(base.CacheKey);
     }
 
     public async Task<ProjectConfig> GetConfigAsync()
@@ -153,12 +146,6 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
     {
         base.OnConfigUpdated(newConfig);
         SignalInitialization();
-    }
-
-    protected override void OnConfigChanged(ProjectConfig newConfig)
-    {
-        base.OnConfigChanged(newConfig);
-        this.configuration.RaiseOnConfigurationChanged(this, OnConfigurationChangedEventArgs.Empty);
     }
 
     protected override void SetOnlineCoreSynchronized()

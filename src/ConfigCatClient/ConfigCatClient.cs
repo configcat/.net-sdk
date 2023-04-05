@@ -21,9 +21,7 @@ public sealed class ConfigCatClient : IConfigCatClient
 
     internal static readonly ConfigCatClientCache Instances = new();
 
-    private readonly string sdkKey;
-    // TODO: Remove this field when we delete the obsolete client constructors.
-    private readonly bool isUncached;
+    private readonly string sdkKey; // may be null in case of testing
     private readonly LoggerWrapper logger;
     private readonly IRolloutEvaluator configEvaluator;
     private readonly IConfigService configService;
@@ -41,90 +39,6 @@ public sealed class ConfigCatClient : IConfigCatClient
     {
         get => this.logger.LogLevel;
         set => this.logger.LogLevel = value;
-    }
-
-    /// <summary>
-    /// Create an instance of ConfigCatClient and setup AutoPoll mode
-    /// </summary>
-    /// <param name="sdkKey">SDK Key to access configuration</param>
-    /// <param name="dataGovernance">Default: Global. Set this parameter to be in sync with the Data Governance preference on the Dashboard: https://app.configcat.com/organization/data-governance (Only Organization Admins have access)</param>
-    /// <exception cref="ArgumentException">When the <paramref name="sdkKey"/> is null or empty</exception>                
-    [Obsolete("This constructor is obsolete and will be removed from the public API in a future major version. To obtain a ConfigCatClient instance for a specific SDK Key, please use the 'ConfigCatClient.Get(sdkKey, options => { /* configuration options */ })' format.")]
-    public ConfigCatClient(string sdkKey, DataGovernance dataGovernance = DataGovernance.Global) : this(options => { options.SdkKey = sdkKey; options.DataGovernance = dataGovernance; })
-    { }
-
-    /// <summary>
-    /// Create an instance of ConfigCatClient and setup AutoPoll mode
-    /// </summary>
-    /// <param name="configuration">Configuration for AutoPolling mode</param>
-    /// <exception cref="ArgumentException">When the configuration contains any invalid property</exception>
-    /// <exception cref="ArgumentNullException">When the configuration is null</exception>
-    [Obsolete("This constructor is obsolete and will be removed from the public API in a future major version. To obtain a ConfigCatClient instance for a specific SDK Key, please use the 'ConfigCatClient.Get(sdkKey, options => { /* configuration options */ })' format.")]
-    public ConfigCatClient(AutoPollConfiguration configuration)
-        : this(options =>
-        {
-            if (configuration is null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
-
-            configuration.ToOptions(options);
-            var autoPoll = PollingModes.AutoPoll(TimeSpan.FromSeconds(configuration.PollIntervalSeconds), TimeSpan.FromSeconds(configuration.MaxInitWaitTimeSeconds));
-            autoPoll.OnConfigurationChanged += configuration.RaiseOnConfigurationChanged;
-            options.PollingMode = autoPoll;
-        })
-    { }
-
-    /// <summary>
-    /// Create an instance of ConfigCatClient and setup LazyLoad mode
-    /// </summary>
-    /// <param name="configuration">Configuration for LazyLoading mode</param>
-    /// <exception cref="ArgumentException">When the configuration contains any invalid property</exception>
-    /// <exception cref="ArgumentNullException">When the configuration is null</exception>
-    [Obsolete("This constructor is obsolete and will be removed from the public API in a future major version. To obtain a ConfigCatClient instance for a specific SDK Key, please use the 'ConfigCatClient.Get(sdkKey, options => { /* configuration options */ })' format.")]
-    public ConfigCatClient(LazyLoadConfiguration configuration)
-        : this(options =>
-        {
-            if (configuration is null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
-
-            configuration.ToOptions(options);
-            options.PollingMode = PollingModes.LazyLoad(TimeSpan.FromSeconds(configuration.CacheTimeToLiveSeconds));
-        })
-    { }
-
-    /// <summary>
-    /// Create an instance of ConfigCatClient and setup ManualPoll mode
-    /// </summary>
-    /// <param name="configuration">Configuration for LazyLoading mode</param>
-    /// <exception cref="ArgumentException">When the configuration contains any invalid property</exception>
-    /// <exception cref="ArgumentNullException">When the configuration is null</exception>
-    [Obsolete("This constructor is obsolete and will be removed from the public API in a future major version. To obtain a ConfigCatClient instance for a specific SDK Key, please use the 'ConfigCatClient.Get(sdkKey, options => { /* configuration options */ })' format.")]
-    public ConfigCatClient(ManualPollConfiguration configuration)
-        : this(options =>
-        {
-            if (configuration is null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
-
-            configuration.ToOptions(options);
-            options.PollingMode = PollingModes.ManualPoll;
-        })
-    { }
-
-    /// <summary>
-    /// Creates a new <see cref="ConfigCatClient"/>.
-    /// </summary>
-    /// <param name="configurationAction">The configuration action.</param>
-    /// <exception cref="ArgumentNullException">When the <paramref name="configurationAction"/> is null.</exception>
-    [Obsolete("This constructor is obsolete and will be removed from the public API in a future major version. To obtain a ConfigCatClient instance for a specific SDK Key, please use the 'ConfigCatClient.Get(sdkKey, options => { /* configuration options */ })' format.")]
-    public ConfigCatClient(Action<ConfigCatClientOptions> configurationAction)
-        : this(sdkKey: BuildConfiguration(configurationAction ?? throw new ArgumentNullException(nameof(configurationAction)), out var configuration), configuration)
-    {
-        this.isUncached = true;
     }
 
     internal ConfigCatClient(string sdkKey, ConfigCatClientOptions configuration)
@@ -172,8 +86,6 @@ public sealed class ConfigCatClient : IConfigCatClient
     /// </summary>
     internal ConfigCatClient(IConfigService configService, IConfigCatLogger logger, IRolloutEvaluator evaluator, IConfigDeserializer configDeserializer, Hooks hooks = null)
     {
-        this.isUncached = true;
-
         if (hooks is not null)
         {
             this.hooks = hooks;
@@ -188,19 +100,6 @@ public sealed class ConfigCatClient : IConfigCatClient
         this.logger = new LoggerWrapper(logger, this.hooks);
         this.configEvaluator = evaluator;
         this.configDeserializer = configDeserializer;
-    }
-
-    // TODO: Remove this helper when we delete the obsolete client constructors.
-    private static string BuildConfiguration(Action<ConfigCatClientOptions> configurationAction, out ConfigCatClientOptions configuration)
-    {
-        configuration = new ConfigCatClientOptions();
-        configurationAction(configuration);
-
-        configuration.Validate();
-
-#pragma warning disable CS0618 // Type or member is obsolete
-        return configuration.SdkKey;
-#pragma warning restore CS0618 // Type or member is obsolete
     }
 
     /// <summary>
@@ -227,16 +126,9 @@ public sealed class ConfigCatClient : IConfigCatClient
             throw new ArgumentException("Invalid SDK Key.", nameof(sdkKey));
         }
 
-        // TODO: This should be simplified after SdkKey gets removed from ConfigurationBase.
-        BuildConfiguration(options =>
-        {
-            configurationAction?.Invoke(options);
-
-            // For the moment, we need to set SdkKey to keep ConfigurationBase.Validate happy.
-#pragma warning disable CS0618 // Type or member is obsolete
-            options.SdkKey = sdkKey;
-#pragma warning restore CS0618 // Type or member is obsolete
-        }, out var configuration);
+        var configuration = new ConfigCatClientOptions();
+        configurationAction?.Invoke(configuration);
+        configuration.Validate();
 
         var instance = Instances.GetOrCreate(sdkKey, configuration, out var instanceAlreadyCreated);
 
@@ -253,7 +145,7 @@ public sealed class ConfigCatClient : IConfigCatClient
     {
         // Safeguard against situations where user forgets to dispose of the client instance.
 
-        if (!this.isUncached && this.sdkKey is not null)
+        if (this.sdkKey is not null)
         {
             Instances.Remove(this.sdkKey, instanceToRemove: this);
         }
@@ -296,7 +188,7 @@ public sealed class ConfigCatClient : IConfigCatClient
     /// <inheritdoc />
     public void Dispose()
     {
-        if (!this.isUncached)
+        if (this.sdkKey is not null)
         {
             Instances.Remove(this.sdkKey, instanceToRemove: this);
         }
@@ -618,133 +510,6 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
     }
 
-    /// <inheritdoc />
-    [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the GetValueDetails() method instead.")]
-    public string GetVariationId(string key, string defaultVariationId, User user = null)
-    {
-        string variationId;
-        EvaluationDetails evaluationDetails;
-        SettingsWithRemoteConfig settings = default;
-        user ??= this.defaultUser;
-        try
-        {
-            settings = GetSettings();
-            evaluationDetails = this.configEvaluator.EvaluateVariationId(settings.Value, key, defaultVariationId, user, settings.RemoteConfig, this.logger);
-            variationId = evaluationDetails.VariationId;
-        }
-        catch (Exception ex)
-        {
-            this.logger.SettingEvaluationError(nameof(GetVariationId), key, nameof(defaultVariationId), defaultVariationId, ex);
-            evaluationDetails = EvaluationDetails.FromDefaultVariationId(key, defaultVariationId, fetchTime: settings.RemoteConfig?.TimeStamp, user, ex.Message, ex);
-            variationId = defaultVariationId;
-        }
-
-        this.hooks.RaiseFlagEvaluated(evaluationDetails);
-        return variationId;
-    }
-
-    /// <inheritdoc />
-    [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the GetValueDetailsAsync() method instead.")]
-    public async Task<string> GetVariationIdAsync(string key, string defaultVariationId, User user = null)
-    {
-        string variationId;
-        EvaluationDetails evaluationDetails;
-        SettingsWithRemoteConfig settings = default;
-        user ??= this.defaultUser;
-        try
-        {
-            settings = await GetSettingsAsync().ConfigureAwait(false);
-            evaluationDetails = this.configEvaluator.EvaluateVariationId(settings.Value, key, defaultVariationId, user, settings.RemoteConfig, this.logger);
-            variationId = evaluationDetails.VariationId;
-        }
-        catch (Exception ex)
-        {
-            this.logger.SettingEvaluationError(nameof(GetVariationIdAsync), key, nameof(defaultVariationId), defaultVariationId, ex);
-            evaluationDetails = EvaluationDetails.FromDefaultVariationId(key, defaultVariationId, fetchTime: settings.RemoteConfig?.TimeStamp, user, ex.Message, ex);
-            variationId = defaultVariationId;
-        }
-
-        this.hooks.RaiseFlagEvaluated(evaluationDetails);
-        return variationId;
-    }
-
-    /// <inheritdoc />
-    [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the GetAllValueDetails() method instead.")]
-    public IEnumerable<string> GetAllVariationId(User user = null)
-    {
-        const string defaultReturnValue = "empty collection";
-        IEnumerable<string> result;
-        EvaluationDetails[] evaluationDetailsArray = null;
-        user ??= this.defaultUser;
-        try
-        {
-            var settings = GetSettings();
-            evaluationDetailsArray = this.configEvaluator.EvaluateAllVariationIds(settings.Value, user, settings.RemoteConfig, this.logger, defaultReturnValue, out var exceptions);
-            if (exceptions is { Count: > 0 })
-            {
-                throw new AggregateException(exceptions);
-            }
-            result = evaluationDetailsArray.Select(details => details.VariationId).Where(variationId => variationId is not null).ToArray();
-        }
-        catch (Exception ex)
-        {
-            this.logger.SettingEvaluationError(nameof(GetAllVariationId), defaultReturnValue, ex);
-            evaluationDetailsArray ??= ArrayUtils.EmptyArray<EvaluationDetails>();
-            result = Enumerable.Empty<string>();
-        }
-
-        foreach (var evaluationDetails in evaluationDetailsArray)
-        {
-            this.hooks.RaiseFlagEvaluated(evaluationDetails);
-        }
-
-        return result;
-    }
-
-    /// <inheritdoc />
-    [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the GetAllValueDetailsAsync() method instead.")]
-    public async Task<IEnumerable<string>> GetAllVariationIdAsync(User user = null)
-    {
-        const string defaultReturnValue = "empty collection";
-        IEnumerable<string> result;
-        EvaluationDetails[] evaluationDetailsArray = null;
-        user ??= this.defaultUser;
-        try
-        {
-            var settings = await GetSettingsAsync().ConfigureAwait(false);
-            evaluationDetailsArray = this.configEvaluator.EvaluateAllVariationIds(settings.Value, user, settings.RemoteConfig, this.logger, defaultReturnValue, out var exceptions);
-            if (exceptions is { Count: > 0 })
-            {
-                throw new AggregateException(exceptions);
-            }
-            result = evaluationDetailsArray.Select(details => details.VariationId).Where(variationId => variationId is not null).ToArray();
-        }
-        catch (Exception ex)
-        {
-            this.logger.SettingEvaluationError(nameof(GetAllVariationIdAsync), defaultReturnValue, ex);
-            evaluationDetailsArray ??= ArrayUtils.EmptyArray<EvaluationDetails>();
-            result = Enumerable.Empty<string>();
-        }
-
-        foreach (var evaluationDetails in evaluationDetailsArray)
-        {
-            this.hooks.RaiseFlagEvaluated(evaluationDetails);
-        }
-
-        return result;
-    }
-
-    /// <summary>
-    /// Create a <see cref="ConfigCatClientBuilder"/> instance to setup the client
-    /// </summary>
-    /// <param name="sdkKey"></param>
-    /// <returns></returns>
-    [Obsolete("To obtain a ConfigCatClient instance for a specific SDK Key, please use the 'ConfigCatClient.Get(sdkKey, options => { /* configuration options */ })' format.")]
-    public static ConfigCatClientBuilder Create(string sdkKey)
-    {
-        return ConfigCatClientBuilder.Initialize(sdkKey);
-    }
-
     private SettingsWithRemoteConfig GetSettings()
     {
         if (this.overrideBehaviour is not null)
@@ -838,7 +603,7 @@ public sealed class ConfigCatClient : IConfigCatClient
 
     private static string GetCacheKey(string sdkKey)
     {
-        var key = $"dotnet_{ConfigurationBase.ConfigFileName}_{sdkKey}";
+        var key = $"dotnet_{ConfigCatClientOptions.ConfigFileName}_{sdkKey}";
         return key.Hash();
     }
 

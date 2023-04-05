@@ -1,7 +1,6 @@
 using System;
 using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
-using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client.ConfigService;
 
@@ -15,14 +14,7 @@ internal sealed class ManualPollConfigService : ConfigServiceBase, IConfigServic
 
     public ProjectConfig GetConfig()
     {
-        // check for the new cache interface until we remove the old IConfigCache.
-        if (this.ConfigCache is IConfigCatCache cache)
-        {
-            return cache.Get(base.CacheKey);
-        }
-
-        // worst scenario, fallback to sync over async, delete when we enforce IConfigCatCache.
-        return Syncer.Sync(GetConfigAsync);
+        return this.ConfigCache.Get(base.CacheKey);
     }
 
     public async Task<ProjectConfig> GetConfigAsync()

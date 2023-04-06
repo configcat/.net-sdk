@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Linq;
 using ConfigCat.Client.Utils;
 
@@ -11,7 +12,9 @@ internal static class RolloutEvaluatorExtensions
     public static EvaluationDetails<T> Evaluate<T>(this IRolloutEvaluator evaluator, Setting setting, string key, T defaultValue, User? user,
         ProjectConfig? remoteConfig)
     {
-        return (EvaluationDetails<T>)evaluator.Evaluate(setting, key, defaultValue?.ToString(), user, remoteConfig, static (settingType, value) => EvaluationDetails.Create<T>(settingType, value));
+        var logDefaultValue = defaultValue is not null ? Convert.ToString(defaultValue, CultureInfo.InvariantCulture) : null;
+        return (EvaluationDetails<T>)evaluator.Evaluate(setting, key, logDefaultValue, user, remoteConfig,
+            static (settingType, value) => EvaluationDetails.Create<T>(settingType, value));
     }
 
     public static EvaluationDetails<T> Evaluate<T>(this IRolloutEvaluator evaluator, IDictionary<string, Setting>? settings, string key, T defaultValue, User? user,
@@ -37,7 +40,9 @@ internal static class RolloutEvaluatorExtensions
     public static EvaluationDetails Evaluate(this IRolloutEvaluator evaluator, Setting setting, string key, object? defaultValue, User? user,
         ProjectConfig? remoteConfig)
     {
-        return evaluator.Evaluate(setting, key, defaultValue?.ToString(), user, remoteConfig, static (settingType, value) => EvaluationDetails.Create(settingType, value));
+        var logDefaultValue = defaultValue is not null ? Convert.ToString(defaultValue, CultureInfo.InvariantCulture) : null;
+        return evaluator.Evaluate(setting, key, logDefaultValue, user, remoteConfig,
+            static (settingType, value) => EvaluationDetails.Create(settingType, value));
     }
 
     public static EvaluationDetails[] EvaluateAll(this IRolloutEvaluator evaluator, IDictionary<string, Setting>? settings, User? user,

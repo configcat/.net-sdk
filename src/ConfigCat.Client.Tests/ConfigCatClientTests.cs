@@ -1067,7 +1067,7 @@ public class ConfigCatClientTests
         using IConfigCatClient client = CreateClientFromLocalFile("sample_v5.json", new User("a@configcat.com") { Email = "a@configcat.com" });
 
         var getAllValuesAsync = isAsync
-            ? new Func<User?, Task<IDictionary<string, object?>>>(client.GetAllValuesAsync)
+            ? new Func<User?, Task<IReadOnlyDictionary<string, object?>>>(client.GetAllValuesAsync)
             : user => Task.FromResult(client.GetAllValues(user));
 
         const string key = "stringIsInDogDefaultCat";

@@ -342,7 +342,7 @@ public sealed class ConfigCatClient : IConfigCatClient
     }
 
     /// <inheritdoc />
-    public IEnumerable<string> GetAllKeys()
+    public IReadOnlyCollection<string> GetAllKeys()
     {
         const string defaultReturnValue = "empty collection";
         try
@@ -350,19 +350,19 @@ public sealed class ConfigCatClient : IConfigCatClient
             var settings = GetSettings();
             if (!RolloutEvaluatorExtensions.CheckSettingsAvailable(settings.Value, this.logger, defaultReturnValue))
             {
-                return Enumerable.Empty<string>();
+                return ArrayUtils.EmptyArray<string>();
             }
-            return settings.Value.Keys;
+            return settings.Value.ReadOnlyKeys();
         }
         catch (Exception ex)
         {
             this.logger.SettingEvaluationError(nameof(GetAllKeys), defaultReturnValue, ex);
-            return Enumerable.Empty<string>();
+            return ArrayUtils.EmptyArray<string>();
         }
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<string>> GetAllKeysAsync()
+    public async Task<IReadOnlyCollection<string>> GetAllKeysAsync()
     {
         const string defaultReturnValue = "empty collection";
         try
@@ -370,22 +370,22 @@ public sealed class ConfigCatClient : IConfigCatClient
             var settings = await GetSettingsAsync().ConfigureAwait(false);
             if (!RolloutEvaluatorExtensions.CheckSettingsAvailable(settings.Value, this.logger, defaultReturnValue))
             {
-                return Enumerable.Empty<string>();
+                return ArrayUtils.EmptyArray<string>();
             }
-            return settings.Value.Keys;
+            return settings.Value.ReadOnlyKeys();
         }
         catch (Exception ex)
         {
             this.logger.SettingEvaluationError(nameof(GetAllKeysAsync), defaultReturnValue, ex);
-            return Enumerable.Empty<string>();
+            return ArrayUtils.EmptyArray<string>();
         }
     }
 
     /// <inheritdoc />
-    public IDictionary<string, object?> GetAllValues(User? user = null)
+    public IReadOnlyDictionary<string, object?> GetAllValues(User? user = null)
     {
         const string defaultReturnValue = "empty dictionary";
-        IDictionary<string, object?> result;
+        IReadOnlyDictionary<string, object?> result;
         EvaluationDetails[]? evaluationDetailsArray = null;
         user ??= this.defaultUser;
         try
@@ -414,10 +414,10 @@ public sealed class ConfigCatClient : IConfigCatClient
     }
 
     /// <inheritdoc />
-    public async Task<IDictionary<string, object?>> GetAllValuesAsync(User? user = null)
+    public async Task<IReadOnlyDictionary<string, object?>> GetAllValuesAsync(User? user = null)
     {
         const string defaultReturnValue = "empty dictionary";
-        IDictionary<string, object?> result;
+        IReadOnlyDictionary<string, object?> result;
         EvaluationDetails[]? evaluationDetailsArray = null;
         user ??= this.defaultUser;
         try
@@ -533,7 +533,7 @@ public sealed class ConfigCatClient : IConfigCatClient
 
     private SettingsWithRemoteConfig GetSettings()
     {
-        IDictionary<string, Setting> local;
+        Dictionary<string, Setting> local;
         SettingsWithRemoteConfig remote;
         switch (this.overrideBehaviour)
         {
@@ -565,7 +565,7 @@ public sealed class ConfigCatClient : IConfigCatClient
 
     private async Task<SettingsWithRemoteConfig> GetSettingsAsync()
     {
-        IDictionary<string, Setting> local;
+        Dictionary<string, Setting> local;
         SettingsWithRemoteConfig remote;
         switch (this.overrideBehaviour)
         {
@@ -683,13 +683,13 @@ public sealed class ConfigCatClient : IConfigCatClient
 
     private readonly struct SettingsWithRemoteConfig
     {
-        public SettingsWithRemoteConfig(IDictionary<string, Setting>? value, ProjectConfig? remoteConfig)
+        public SettingsWithRemoteConfig(Dictionary<string, Setting>? value, ProjectConfig? remoteConfig)
         {
             Value = value;
             RemoteConfig = remoteConfig;
         }
 
-        public IDictionary<string, Setting>? Value { get; }
+        public Dictionary<string, Setting>? Value { get; }
         public ProjectConfig? RemoteConfig { get; }
     }
 }

@@ -20,7 +20,7 @@ internal sealed class LocalFileDataSource : IOverrideDataSource
     private readonly LoggerWrapper logger;
     private readonly CancellationTokenSource cancellationTokenSource = new();
 
-    private volatile IDictionary<string, Setting>? overrideValues;
+    private volatile Dictionary<string, Setting>? overrideValues;
 
     public LocalFileDataSource(string filePath, bool autoReload, LoggerWrapper logger)
     {
@@ -46,9 +46,9 @@ internal sealed class LocalFileDataSource : IOverrideDataSource
         }
     }
 
-    public IDictionary<string, Setting> GetOverrides() => this.overrideValues ?? new Dictionary<string, Setting>();
+    public Dictionary<string, Setting> GetOverrides() => this.overrideValues ?? new Dictionary<string, Setting>();
 
-    public Task<IDictionary<string, Setting>> GetOverridesAsync() => Task.FromResult(this.overrideValues ?? new Dictionary<string, Setting>());
+    public Task<Dictionary<string, Setting>> GetOverridesAsync() => Task.FromResult(this.overrideValues ?? new Dictionary<string, Setting>());
 
     private void StartWatch()
     {

@@ -58,27 +58,27 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// Returns a collection with all keys.
     /// </summary>
     /// <returns>The key collection.</returns>
-    IEnumerable<string> GetAllKeys();
+    IReadOnlyCollection<string> GetAllKeys();
 
     /// <summary>
     /// Returns a collection with all keys asynchronously.
     /// </summary>
     /// <returns>The key collection.</returns>
-    Task<IEnumerable<string>> GetAllKeysAsync();
+    Task<IReadOnlyCollection<string>> GetAllKeysAsync();
 
     /// <summary>
     /// Returns the key-value collection of all feature flags and settings synchronously.
     /// </summary>
     /// <param name="user">The user object for variation evaluation.</param>
     /// <returns>The key-value collection.</returns>
-    IDictionary<string, object?> GetAllValues(User? user = null);
+    IReadOnlyDictionary<string, object?> GetAllValues(User? user = null);
 
     /// <summary>
     /// Returns the key-value collection of all feature flags and settings asynchronously.
     /// </summary>
     /// <param name="user">The user object for variation evaluation.</param>
     /// <returns>The key-value collection.</returns>
-    Task<IDictionary<string, object?>> GetAllValuesAsync(User? user = null);
+    Task<IReadOnlyDictionary<string, object?>> GetAllValuesAsync(User? user = null);
 
     /// <summary>
     /// Returns the values along with evaluation details of all feature flags and settings synchronously.

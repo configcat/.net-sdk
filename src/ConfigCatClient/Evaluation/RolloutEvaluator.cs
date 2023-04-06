@@ -24,7 +24,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
     public EvaluationDetails Evaluate(Setting setting, string key, string? logDefaultValue, User? user,
         ProjectConfig? remoteConfig, EvaluationDetailsFactory detailsFactory)
     {
-        var evaluateLog = new EvaluateLogger<string?>
+        var evaluateLog = new EvaluateLogger
         {
             ReturnValue = logDefaultValue,
             User = user,
@@ -97,7 +97,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         }
     }
 
-    private static bool TryEvaluatePercentageRules<T>(ICollection<RolloutPercentageItem> rolloutPercentageItems, string key, User user, EvaluateLogger<T> evaluateLog, out EvaluateResult<RolloutPercentageItem> result)
+    private static bool TryEvaluatePercentageRules(ICollection<RolloutPercentageItem> rolloutPercentageItems, string key, User user, EvaluateLogger evaluateLog, out EvaluateResult<RolloutPercentageItem> result)
     {
         if (rolloutPercentageItems.Count > 0)
         {
@@ -129,7 +129,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return false;
     }
 
-    private static bool TryEvaluateRules<T>(ICollection<RolloutRule> rules, User user, EvaluateLogger<T> logger, out EvaluateResult<RolloutRule> result)
+    private static bool TryEvaluateRules(ICollection<RolloutRule> rules, User user, EvaluateLogger logger, out EvaluateResult<RolloutRule> result)
     {
         if (rules.Count > 0)
         {

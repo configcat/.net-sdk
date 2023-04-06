@@ -3,11 +3,11 @@ using System.Text;
 
 namespace ConfigCat.Client.Evaluation;
 
-internal sealed class EvaluateLogger<T>
+internal sealed class EvaluateLogger
 {
     public User? User { get; set; }
 
-    public T? ReturnValue { get; set; }
+    public string? ReturnValue { get; set; }
 
     public string KeyName { get; set; } = null!;
 

@@ -136,7 +136,7 @@ internal static partial class LoggerExtensions
 
     #region Common info messages (5000-5999)
 
-    public static FormattableLogMessage SettingEvaluated(this LoggerWrapper logger, EvaluateLogger<string?> evaluateLog) => logger.LogInterpolated(
+    public static FormattableLogMessage SettingEvaluated(this LoggerWrapper logger, EvaluateLogger evaluateLog) => logger.LogInterpolated(
         LogLevel.Info, 5000,
         $"{evaluateLog}",
         "EVALUATE_LOG");

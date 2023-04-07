@@ -61,7 +61,7 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
 
     public Task<FetchResult> FetchAsync(ProjectConfig lastConfig, CancellationToken cancellationToken = default)
     {
-        AsyncFetch? pendingFetch;
+        AsyncFetch? currentFetch;
 
         lock (this.syncObj)
         {
@@ -70,10 +70,10 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                 return cancellationToken.ToTask<FetchResult>();
             }
 
-            pendingFetch = this.pendingFetch;
-            if (pendingFetch is null or { ObserverCount: 0 })
+            currentFetch = this.pendingFetch;
+            if (currentFetch is null or { ObserverCount: 0 })
             {
-                this.pendingFetch = pendingFetch = new AsyncFetch(this, lastConfig, fetchFunction: static async (@this, fetch) =>
+                this.pendingFetch = currentFetch = new AsyncFetch(this, lastConfig, fetchFunction: static async (@this, fetch) =>
                 {
                     try
                     {
@@ -96,18 +96,18 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                 });
             }
 
-            pendingFetch.ObserverCount++;
+            currentFetch.ObserverCount++;
         }
 
-        return Awaited(this, pendingFetch, cancellationToken);
+        return Awaited(this, currentFetch, cancellationToken);
 
-        static async Task<FetchResult> Awaited(HttpConfigFetcher @this, AsyncFetch pendingFetch, CancellationToken cancellationToken)
+        static async Task<FetchResult> Awaited(HttpConfigFetcher @this, AsyncFetch currentFetch, CancellationToken cancellationToken)
         {
             var externallyCanceled = false;
 
             try
             {
-                return await pendingFetch.FetchTask.WaitAsync(cancellationToken).ConfigureAwait(false);
+                return await currentFetch.FetchTask.WaitAsync(cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
             {
@@ -120,7 +120,7 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
 
                 lock (@this.syncObj)
                 {
-                    observerCount = --pendingFetch.ObserverCount;
+                    observerCount = --currentFetch.ObserverCount;
                 }
 
                 if (observerCount == 0)
@@ -128,9 +128,9 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                     // The fetch operation should also be canceled when all observers has signalled cancellation.
                     if (externallyCanceled)
                     {
-                        pendingFetch.Cancel();
+                        currentFetch.Cancel();
                     }
-                    pendingFetch.Dispose();
+                    currentFetch.Dispose();
                 }
             }
         }
@@ -339,25 +339,25 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
 
     private HttpClient CreateHttpClient()
     {
-        HttpClient httpClient;
+        HttpClient client;
 
         if (this.httpClientHandler is null)
         {
-            httpClient = new HttpClient(new HttpClientHandler
+            client = new HttpClient(new HttpClientHandler
             {
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
             });
         }
         else
         {
-            httpClient = new HttpClient(this.httpClientHandler, false);
+            client = new HttpClient(this.httpClientHandler, false);
         }
 
-        httpClient.Timeout = this.timeout;
-        httpClient.DefaultRequestHeaders.Add("X-ConfigCat-UserAgent",
+        client.Timeout = this.timeout;
+        client.DefaultRequestHeaders.Add("X-ConfigCat-UserAgent",
             new ProductInfoHeaderValue("ConfigCat-Dotnet", this.productVersion).ToString());
 
-        return httpClient;
+        return client;
     }
 
     public void Dispose()

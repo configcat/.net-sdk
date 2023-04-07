@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ConfigCat.Client;
@@ -31,8 +32,9 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// <param name="key">Key for programs.</param>
     /// <param name="defaultValue">In case of failure return this value.</param>
     /// <param name="user">The user object for variation evaluation.</param>
+    /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
     /// <returns>The task that will evaluate the value of the feature flag or setting.</returns>
-    Task<T> GetValueAsync<T>(string key, T defaultValue, User? user = null);
+    Task<T> GetValueAsync<T>(string key, T defaultValue, User? user = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the value along with evaluation details of a feature flag or setting by the given key.
@@ -51,8 +53,9 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// <param name="key">Key for programs</param>
     /// <param name="defaultValue">In case of failure return this value</param>
     /// <param name="user">The user object for variation evaluation</param>
+    /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
     /// <returns>The value along with the details of evaluation of the feature flag or setting.</returns>
-    Task<EvaluationDetails<T>> GetValueDetailsAsync<T>(string key, T defaultValue, User? user = null);
+    Task<EvaluationDetails<T>> GetValueDetailsAsync<T>(string key, T defaultValue, User? user = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns a collection with all keys.
@@ -63,8 +66,9 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// <summary>
     /// Returns a collection with all keys asynchronously.
     /// </summary>
+    /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
     /// <returns>The key collection.</returns>
-    Task<IReadOnlyCollection<string>> GetAllKeysAsync();
+    Task<IReadOnlyCollection<string>> GetAllKeysAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the key-value collection of all feature flags and settings synchronously.
@@ -77,8 +81,9 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// Returns the key-value collection of all feature flags and settings asynchronously.
     /// </summary>
     /// <param name="user">The user object for variation evaluation.</param>
+    /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
     /// <returns>The key-value collection.</returns>
-    Task<IReadOnlyDictionary<string, object?>> GetAllValuesAsync(User? user = null);
+    Task<IReadOnlyDictionary<string, object?>> GetAllValuesAsync(User? user = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the values along with evaluation details of all feature flags and settings synchronously.
@@ -91,8 +96,9 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// Returns the values along with evaluation details of all feature flags and settings asynchronously.
     /// </summary>
     /// <param name="user">The user object for variation evaluation.</param>
+    /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
     /// <returns>The key-value collection.</returns>
-    Task<IReadOnlyList<EvaluationDetails>> GetAllValueDetailsAsync(User? user = null);
+    Task<IReadOnlyList<EvaluationDetails>> GetAllValueDetailsAsync(User? user = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Refreshes the configuration.
@@ -102,7 +108,8 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// <summary>
     /// Refreshes the configuration asynchronously.
     /// </summary>
-    Task<RefreshResult> ForceRefreshAsync();
+    /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
+    Task<RefreshResult> ForceRefreshAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Sets the default user.

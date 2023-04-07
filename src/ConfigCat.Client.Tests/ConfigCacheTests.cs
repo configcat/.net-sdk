@@ -20,7 +20,7 @@ public class ConfigCacheTests
         ProjectConfig cachedConfig = ProjectConfig.Empty;
         var configCacheMock = new Mock<IConfigCatCache>();
 
-        configCacheMock.Setup(c => c.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>())).Callback<string, ProjectConfig>((key, config) =>
+        configCacheMock.Setup(c => c.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>())).Callback<string, ProjectConfig, CancellationToken>((key, config, _) =>
         {
             cachedConfig = config;
         });
@@ -39,8 +39,8 @@ public class ConfigCacheTests
 
         Assert.AreEqual("Cat", actual);
 
-        configCacheMock.Verify(c => c.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>()), Times.AtLeastOnce);
-        configCacheMock.Verify(c => c.GetAsync(It.IsAny<string>(), CancellationToken.None), Times.AtLeastOnce);
+        configCacheMock.Verify(c => c.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+        configCacheMock.Verify(c => c.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
     }
 
     [TestMethod]
@@ -48,12 +48,12 @@ public class ConfigCacheTests
     {
         ProjectConfig cachedConfig = ProjectConfig.Empty;
         var configCacheMock = new Mock<IConfigCatCache>();
-        configCacheMock.Setup(c => c.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>())).Callback<string, ProjectConfig>((key, config) =>
+        configCacheMock.Setup(c => c.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>())).Callback<string, ProjectConfig, CancellationToken>((key, config, _) =>
         {
             cachedConfig = config;
         });
 
-        configCacheMock.Setup(c => c.GetAsync(It.IsAny<string>(), CancellationToken.None)).ReturnsAsync(() => cachedConfig);
+        configCacheMock.Setup(c => c.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(() => cachedConfig);
 
         using var client = ConfigCatClient.Get(SDKKEY, options =>
         {
@@ -63,21 +63,21 @@ public class ConfigCacheTests
             options.HttpClientHandler = SharedHandler;
         });
 
-        configCacheMock.Verify(c => c.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>()), Times.Never);
-        configCacheMock.Verify(c => c.GetAsync(It.IsAny<string>(), CancellationToken.None), Times.Never);
+        configCacheMock.Verify(c => c.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Never);
+        configCacheMock.Verify(c => c.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
 
         var actual = await client.GetValueAsync("stringDefaultCat", "N/A");
 
         Assert.AreEqual("N/A", actual);
-        configCacheMock.Verify(c => c.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>()), Times.Never);
-        configCacheMock.Verify(c => c.GetAsync(It.IsAny<string>(), CancellationToken.None), Times.Once);
+        configCacheMock.Verify(c => c.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Never);
+        configCacheMock.Verify(c => c.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
 
         await client.ForceRefreshAsync();
 
         actual = await client.GetValueAsync("stringDefaultCat", "N/A");
         Assert.AreEqual("Cat", actual);
-        configCacheMock.Verify(c => c.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>()), Times.Once);
-        configCacheMock.Verify(c => c.GetAsync(It.IsAny<string>(), CancellationToken.None), Times.Exactly(3));
+        configCacheMock.Verify(c => c.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Once);
+        configCacheMock.Verify(c => c.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(3));
     }
 
     [TestMethod]
@@ -85,12 +85,12 @@ public class ConfigCacheTests
     {
         ProjectConfig cachedConfig = ProjectConfig.Empty;
         var configCacheMock = new Mock<IConfigCatCache>();
-        configCacheMock.Setup(c => c.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>())).Callback<string, ProjectConfig>((key, config) =>
+        configCacheMock.Setup(c => c.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>())).Callback<string, ProjectConfig, CancellationToken>((key, config, _) =>
         {
             cachedConfig = config;
         });
 
-        configCacheMock.Setup(c => c.GetAsync(It.IsAny<string>(), CancellationToken.None)).ReturnsAsync(() => cachedConfig);
+        configCacheMock.Setup(c => c.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(() => cachedConfig);
 
         using var client = ConfigCatClient.Get(SDKKEY, options =>
         {
@@ -103,7 +103,7 @@ public class ConfigCacheTests
         var actual = await client.GetValueAsync("stringDefaultCat", "N/A");
         Assert.AreEqual("Cat", actual);
 
-        configCacheMock.Verify(c => c.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>()), Times.AtLeastOnce);
-        configCacheMock.Verify(c => c.GetAsync(It.IsAny<string>(), CancellationToken.None), Times.AtLeastOnce);
+        configCacheMock.Verify(c => c.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+        configCacheMock.Verify(c => c.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
     }
 }

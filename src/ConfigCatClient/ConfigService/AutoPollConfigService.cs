@@ -96,15 +96,17 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
         return this.initializationCancellationTokenSource.Token.WaitHandle.WaitOne(this.configuration.MaxInitWaitTime);
     }
 
-    internal async Task<bool> WaitForInitializationAsync()
+    internal async Task<bool> WaitForInitializationAsync(CancellationToken cancellationToken = default)
     {
         try
         {
             // An infinite timeout would also work but we limit waiting to MaxInitWaitTime for maximum safety.
-            await Task.Delay(this.configuration.MaxInitWaitTime, this.initializationCancellationTokenSource.Token).ConfigureAwait(false);
+            await Task.Delay(this.configuration.MaxInitWaitTime, this.initializationCancellationTokenSource.Token)
+                .WaitAsync(cancellationToken).ConfigureAwait(false);
+
             return false;
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException ex) when (ex.CancellationToken != cancellationToken)
         {
             return true;
         }
@@ -126,20 +128,20 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
         return this.ConfigCache.Get(base.CacheKey);
     }
 
-    public async Task<ProjectConfig> GetConfigAsync()
+    public async Task<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default)
     {
         if (!IsOffline && !IsInitialized)
         {
-            var cacheConfig = await this.ConfigCache.GetAsync(base.CacheKey).ConfigureAwait(false);
+            var cacheConfig = await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(false);
             if (!cacheConfig.IsExpired(expiration: this.configuration.PollInterval, out _))
             {
                 return cacheConfig;
             }
 
-            await WaitForInitializationAsync().ConfigureAwait(false);
+            await WaitForInitializationAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        return await this.ConfigCache.GetAsync(base.CacheKey).ConfigureAwait(false);
+        return await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(false);
     }
 
     protected override void OnConfigUpdated(ProjectConfig newConfig)
@@ -210,7 +212,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
             {
                 if (!IsOffline)
                 {
-                    await RefreshConfigCoreAsync(latestConfig).ConfigureAwait(false);
+                    await RefreshConfigCoreAsync(latestConfig, cancellationToken).ConfigureAwait(false);
                 }
             }
             else
@@ -223,7 +225,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
             if (!IsOffline)
             {
                 var latestConfig = await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(false);
-                await RefreshConfigCoreAsync(latestConfig).ConfigureAwait(false);
+                await RefreshConfigCoreAsync(latestConfig, cancellationToken).ConfigureAwait(false);
             }
         }
     }

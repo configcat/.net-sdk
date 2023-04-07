@@ -35,16 +35,16 @@ public class ConfigServiceTests
         // Arrange
 
         this.cacheMock
-            .Setup(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None))
+            .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(this.cachedPc);
 
         this.cacheMock
-            .Setup(m => m.SetAsync(It.IsAny<string>(), this.fetchedPc))
+            .Setup(m => m.SetAsync(It.IsAny<string>(), this.fetchedPc, It.IsAny<CancellationToken>()))
             .Returns(Task.FromResult(0))
             .Verifiable();
 
         this.fetcherMock
-            .Setup(m => m.FetchAsync(this.cachedPc))
+            .Setup(m => m.FetchAsync(this.cachedPc, It.IsAny<CancellationToken>()))
             .ReturnsAsync(FetchResult.Success(this.fetchedPc))
             .Verifiable();
 
@@ -74,7 +74,7 @@ public class ConfigServiceTests
         var cachedPc = new ProjectConfig("{}", DateTime.UtcNow, "123");
 
         this.cacheMock
-            .Setup(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None))
+            .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(cachedPc);
 
         using var service = new LazyLoadConfigService(
@@ -91,8 +91,8 @@ public class ConfigServiceTests
 
         Assert.AreEqual(cachedPc, projectConfig);
 
-        this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Never);
-        this.cacheMock.Verify(m => m.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>()), Times.Never);
+        this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Never);
+        this.cacheMock.Verify(m => m.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [TestMethod]
@@ -103,19 +103,19 @@ public class ConfigServiceTests
         byte callOrder = 1;
 
         this.cacheMock
-            .Setup(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None))
+            .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(this.cachedPc)
             .Callback(() => Assert.AreEqual(1, callOrder++))
             .Verifiable();
 
         this.fetcherMock
-            .Setup(m => m.FetchAsync(this.cachedPc))
+            .Setup(m => m.FetchAsync(this.cachedPc, It.IsAny<CancellationToken>()))
             .ReturnsAsync(FetchResult.Success(this.fetchedPc))
             .Callback(() => Assert.AreEqual(2, callOrder++))
             .Verifiable();
 
         this.cacheMock
-            .Setup(m => m.SetAsync(It.IsAny<string>(), this.fetchedPc))
+            .Setup(m => m.SetAsync(It.IsAny<string>(), this.fetchedPc, It.IsAny<CancellationToken>()))
             .Returns(Task.FromResult(0))
             .Callback(() => Assert.AreEqual(3, callOrder))
             .Verifiable();
@@ -147,15 +147,15 @@ public class ConfigServiceTests
         hooks.ConfigChanged += (s, e) => configChangedEvents.Enqueue(e);
 
         this.cacheMock
-            .Setup(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None))
+            .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(this.cachedPc);
 
         this.fetcherMock
-            .Setup(m => m.FetchAsync(this.cachedPc))
+            .Setup(m => m.FetchAsync(this.cachedPc, It.IsAny<CancellationToken>()))
             .ReturnsAsync(FetchResult.Success(this.fetchedPc));
 
         this.cacheMock
-            .Setup(m => m.SetAsync(It.IsAny<string>(), this.fetchedPc))
+            .Setup(m => m.SetAsync(It.IsAny<string>(), this.fetchedPc, It.IsAny<CancellationToken>()))
             .Returns(Task.FromResult(0));
 
         using var service = new LazyLoadConfigService(
@@ -184,15 +184,15 @@ public class ConfigServiceTests
         var localPc = this.cachedPc;
 
         this.cacheMock
-            .Setup(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None))
+            .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(localPc);
 
         this.fetcherMock
-            .Setup(m => m.FetchAsync(localPc))
+            .Setup(m => m.FetchAsync(localPc, It.IsAny<CancellationToken>()))
             .ReturnsAsync(FetchResult.Success(this.fetchedPc));
 
         this.cacheMock
-            .Setup(m => m.SetAsync(It.IsAny<string>(), this.fetchedPc))
+            .Setup(m => m.SetAsync(It.IsAny<string>(), this.fetchedPc, It.IsAny<CancellationToken>()))
             .Callback(() => localPc = this.fetchedPc)
             .Returns(Task.FromResult(0));
 
@@ -209,9 +209,9 @@ public class ConfigServiceTests
 
         // Assert
 
-        this.cacheMock.Verify(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None), Times.Once);
-        this.cacheMock.Verify(m => m.SetAsync(It.IsAny<string>(), this.fetchedPc), Times.Never);
-        this.fetcherMock.Verify(m => m.FetchAsync(this.cachedPc), Times.Never);
+        this.cacheMock.Verify(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+        this.cacheMock.Verify(m => m.SetAsync(It.IsAny<string>(), this.fetchedPc, It.IsAny<CancellationToken>()), Times.Never);
+        this.fetcherMock.Verify(m => m.FetchAsync(this.cachedPc, It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [TestMethod]
@@ -226,11 +226,11 @@ public class ConfigServiceTests
             .ReturnsAsync(this.cachedPc);
 
         this.fetcherMock
-            .Setup(m => m.FetchAsync(this.cachedPc))
+            .Setup(m => m.FetchAsync(this.cachedPc, It.IsAny<CancellationToken>()))
             .ReturnsAsync(FetchResult.Success(this.fetchedPc));
 
         this.cacheMock
-            .Setup(m => m.SetAsync(It.IsAny<string>(), this.fetchedPc))
+            .Setup(m => m.SetAsync(It.IsAny<string>(), this.fetchedPc, It.IsAny<CancellationToken>()))
             .Callback(() => wd.Set())
             .Returns(Task.FromResult(0));
 
@@ -250,8 +250,8 @@ public class ConfigServiceTests
         // Assert
 
         this.cacheMock.Verify(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(3));
-        this.cacheMock.Verify(m => m.SetAsync(It.IsAny<string>(), this.fetchedPc), Times.Once);
-        this.fetcherMock.Verify(m => m.FetchAsync(this.cachedPc), Times.Once);
+        this.cacheMock.Verify(m => m.SetAsync(It.IsAny<string>(), this.fetchedPc, It.IsAny<CancellationToken>()), Times.Once);
+        this.fetcherMock.Verify(m => m.FetchAsync(this.cachedPc, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [TestMethod]
@@ -260,15 +260,15 @@ public class ConfigServiceTests
         // Arrange
 
         this.cacheMock
-            .Setup(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None))
+            .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(this.cachedPc);
 
         this.fetcherMock
-            .Setup(m => m.FetchAsync(this.cachedPc))
+            .Setup(m => m.FetchAsync(this.cachedPc, It.IsAny<CancellationToken>()))
             .ReturnsAsync(FetchResult.Success(this.fetchedPc));
 
         this.cacheMock
-            .Setup(m => m.SetAsync(It.IsAny<string>(), this.fetchedPc))
+            .Setup(m => m.SetAsync(It.IsAny<string>(), this.fetchedPc, It.IsAny<CancellationToken>()))
             .Returns(Task.FromResult(0));
 
         var config = PollingModes.AutoPoll(TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(0));
@@ -284,9 +284,9 @@ public class ConfigServiceTests
 
         // Assert
 
-        this.cacheMock.Verify(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None), Times.Once);
-        this.cacheMock.Verify(m => m.SetAsync(It.IsAny<string>(), this.fetchedPc), Times.Once);
-        this.fetcherMock.Verify(m => m.FetchAsync(this.cachedPc), Times.Once);
+        this.cacheMock.Verify(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+        this.cacheMock.Verify(m => m.SetAsync(It.IsAny<string>(), this.fetchedPc, It.IsAny<CancellationToken>()), Times.Once);
+        this.fetcherMock.Verify(m => m.FetchAsync(this.cachedPc, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [TestMethod]
@@ -302,7 +302,7 @@ public class ConfigServiceTests
             .Returns(Task.FromResult(this.cachedPc));
 
         this.fetcherMock
-            .Setup(m => m.FetchAsync(this.cachedPc))
+            .Setup(m => m.FetchAsync(this.cachedPc, It.IsAny<CancellationToken>()))
             .Callback(() => Interlocked.Increment(ref counter))
             .ReturnsAsync(FetchResult.Success(this.cachedPc));
 
@@ -335,11 +335,11 @@ public class ConfigServiceTests
         long e1;
 
         this.cacheMock
-            .Setup(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None))
+            .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(this.cachedPc);
 
         this.fetcherMock
-            .Setup(m => m.FetchAsync(this.cachedPc))
+            .Setup(m => m.FetchAsync(this.cachedPc, It.IsAny<CancellationToken>()))
             .Callback(() => Interlocked.Increment(ref counter))
             .ReturnsAsync(FetchResult.Success(this.cachedPc));
 
@@ -370,7 +370,7 @@ public class ConfigServiceTests
         hooks.ClientReady += (s, e) => Interlocked.Increment(ref clientReadyEventCount);
 
         this.cacheMock
-            .Setup(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None))
+            .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(this.cachedPc);
 
         using var service = new ManualPollConfigService(
@@ -387,9 +387,9 @@ public class ConfigServiceTests
 
         Assert.AreEqual(this.cachedPc, projectConfig);
 
-        this.cacheMock.Verify(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None), Times.Once);
-        this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Never);
-        this.cacheMock.Verify(m => m.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>()), Times.Never);
+        this.cacheMock.Verify(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+        this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Never);
+        this.cacheMock.Verify(m => m.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Never);
 
         Assert.AreEqual(1, Volatile.Read(ref clientReadyEventCount));
     }
@@ -407,17 +407,17 @@ public class ConfigServiceTests
         byte callOrder = 1;
 
         this.cacheMock
-            .Setup(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None))
+            .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(this.cachedPc)
             .Callback(() => Assert.AreEqual(1, callOrder++));
 
         this.fetcherMock
-            .Setup(m => m.FetchAsync(this.cachedPc))
+            .Setup(m => m.FetchAsync(this.cachedPc, It.IsAny<CancellationToken>()))
             .ReturnsAsync(FetchResult.Success(this.fetchedPc))
             .Callback(() => Assert.AreEqual(2, callOrder++));
 
         this.cacheMock
-            .Setup(m => m.SetAsync(It.IsAny<string>(), this.fetchedPc))
+            .Setup(m => m.SetAsync(It.IsAny<string>(), this.fetchedPc, It.IsAny<CancellationToken>()))
             .Callback(() => Assert.AreEqual(3, callOrder++))
             .Returns(Task.FromResult(0));
 
@@ -432,9 +432,9 @@ public class ConfigServiceTests
 
         // Assert
 
-        this.cacheMock.Verify(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None), Times.Once);
-        this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Once);
-        this.cacheMock.Verify(m => m.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>()), Times.Once);
+        this.cacheMock.Verify(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+        this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Once);
+        this.cacheMock.Verify(m => m.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Once);
 
         Assert.AreEqual(1, Volatile.Read(ref clientReadyEventCount));
     }
@@ -450,15 +450,15 @@ public class ConfigServiceTests
         hooks.ConfigChanged += (s, e) => configChangedEvents.Enqueue(e);
 
         this.cacheMock
-            .Setup(m => m.GetAsync(It.IsAny<string>(), CancellationToken.None))
+            .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(this.cachedPc);
 
         this.fetcherMock
-            .Setup(m => m.FetchAsync(this.cachedPc))
+            .Setup(m => m.FetchAsync(this.cachedPc, It.IsAny<CancellationToken>()))
             .ReturnsAsync(FetchResult.Success(this.fetchedPc));
 
         this.cacheMock
-            .Setup(m => m.SetAsync(It.IsAny<string>(), this.fetchedPc))
+            .Setup(m => m.SetAsync(It.IsAny<string>(), this.fetchedPc, It.IsAny<CancellationToken>()))
             .Returns(Task.FromResult(0));
 
         using var service = new ManualPollConfigService(
@@ -485,7 +485,7 @@ public class ConfigServiceTests
 
         var configFetcherMock = new Mock<IConfigFetcher>();
         configFetcherMock
-            .Setup(m => m.FetchAsync(It.IsAny<ProjectConfig>()))
+            .Setup(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(FetchResult.NotModified(ProjectConfig.Empty));
 
         var configFetcherMockDispose = configFetcherMock.As<IDisposable>();
@@ -525,7 +525,7 @@ public class ConfigServiceTests
 
         var configFetcherMock = new Mock<IConfigFetcher>();
         configFetcherMock
-            .Setup(m => m.FetchAsync(It.IsAny<ProjectConfig>()))
+            .Setup(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(FetchResult.NotModified(ProjectConfig.Empty));
 
         var configServiceMock = new Mock<ConfigServiceBase>(
@@ -569,7 +569,7 @@ public class ConfigServiceTests
         var cache = new InMemoryConfigCache();
         cache.Set(null!, this.cachedPc);
 
-        this.fetcherMock.Setup(m => m.FetchAsync(this.cachedPc)).ReturnsAsync(FetchResult.Success(this.fetchedPc));
+        this.fetcherMock.Setup(m => m.FetchAsync(this.cachedPc, It.IsAny<CancellationToken>())).ReturnsAsync(FetchResult.Success(this.fetchedPc));
 
         var config = PollingModes.AutoPoll(pollInterval, maxInitWaitTime);
         var service = new AutoPollConfigService(config,
@@ -603,7 +603,7 @@ public class ConfigServiceTests
 
         Assert.AreEqual(this.cachedPc, actualPc);
 
-        this.fetcherMock.Verify(m => m.FetchAsync(this.cachedPc), Times.Never);
+        this.fetcherMock.Verify(m => m.FetchAsync(this.cachedPc, It.IsAny<CancellationToken>()), Times.Never);
 
         if (waitForClientReady)
         {
@@ -629,7 +629,7 @@ public class ConfigServiceTests
         var cache = new InMemoryConfigCache();
         cache.Set(null!, this.cachedPc with { TimeStamp = this.cachedPc.TimeStamp - pollInterval });
 
-        this.fetcherMock.Setup(m => m.FetchAsync(this.cachedPc)).ReturnsAsync(FetchResult.Success(this.fetchedPc));
+        this.fetcherMock.Setup(m => m.FetchAsync(this.cachedPc, It.IsAny<CancellationToken>())).ReturnsAsync(FetchResult.Success(this.fetchedPc));
 
         var config = PollingModes.AutoPoll(pollInterval, maxInitWaitTime);
         var service = new AutoPollConfigService(config,
@@ -658,7 +658,7 @@ public class ConfigServiceTests
 
         Assert.AreEqual(this.fetchedPc, actualPc);
 
-        this.fetcherMock.Verify(m => m.FetchAsync(this.cachedPc), Times.Once);
+        this.fetcherMock.Verify(m => m.FetchAsync(this.cachedPc, It.IsAny<CancellationToken>()), Times.Once);
 
         Assert.IsTrue(clientReadyCalled);
     }
@@ -682,7 +682,7 @@ public class ConfigServiceTests
         var cachedPc = this.cachedPc with { TimeStamp = DateTime.UtcNow - pollInterval - pollInterval };
         cache.Set(null!, cachedPc);
 
-        this.fetcherMock.Setup(m => m.FetchAsync(cachedPc)).ReturnsAsync(FetchResult.Success(cachedPc));
+        this.fetcherMock.Setup(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>())).ReturnsAsync(FetchResult.Success(cachedPc));
 
         var config = PollingModes.AutoPoll(pollInterval, maxInitWaitTime);
         var service = new AutoPollConfigService(config,
@@ -711,7 +711,7 @@ public class ConfigServiceTests
 
         Assert.AreEqual(cachedPc, actualPc);
 
-        this.fetcherMock.Verify(m => m.FetchAsync(cachedPc), Times.AtLeast(2));
+        this.fetcherMock.Verify(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>()), Times.AtLeast(2));
 
         Assert.IsTrue(clientReadyCalled);
     }
@@ -735,7 +735,7 @@ public class ConfigServiceTests
 
         if (isAsync)
         {
-            this.fetcherMock.Setup(m => m.FetchAsync(this.cachedPc)).ReturnsAsync(FetchResult.Success(this.fetchedPc));
+            this.fetcherMock.Setup(m => m.FetchAsync(this.cachedPc, It.IsAny<CancellationToken>())).ReturnsAsync(FetchResult.Success(this.fetchedPc));
         }
         else
         {
@@ -762,7 +762,7 @@ public class ConfigServiceTests
 
         if (isAsync)
         {
-            this.fetcherMock.Verify(m => m.FetchAsync(this.cachedPc), Times.Never);
+            this.fetcherMock.Verify(m => m.FetchAsync(this.cachedPc, It.IsAny<CancellationToken>()), Times.Never);
         }
         else
         {
@@ -791,7 +791,7 @@ public class ConfigServiceTests
 
         if (isAsync)
         {
-            this.fetcherMock.Setup(m => m.FetchAsync(this.cachedPc)).ReturnsAsync(FetchResult.Success(this.fetchedPc));
+            this.fetcherMock.Setup(m => m.FetchAsync(this.cachedPc, It.IsAny<CancellationToken>())).ReturnsAsync(FetchResult.Success(this.fetchedPc));
         }
         else
         {
@@ -818,7 +818,7 @@ public class ConfigServiceTests
 
         if (isAsync)
         {
-            this.fetcherMock.Verify(m => m.FetchAsync(this.cachedPc), Times.Once);
+            this.fetcherMock.Verify(m => m.FetchAsync(this.cachedPc, It.IsAny<CancellationToken>()), Times.Once);
         }
         else
         {

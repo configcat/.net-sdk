@@ -48,7 +48,7 @@ internal sealed class LocalFileDataSource : IOverrideDataSource
 
     public Dictionary<string, Setting> GetOverrides() => this.overrideValues ?? new Dictionary<string, Setting>();
 
-    public Task<Dictionary<string, Setting>> GetOverridesAsync() => Task.FromResult(this.overrideValues ?? new Dictionary<string, Setting>());
+    public Task<Dictionary<string, Setting>> GetOverridesAsync(CancellationToken cancellationToken = default) => Task.FromResult(this.overrideValues ?? new Dictionary<string, Setting>());
 
     private void StartWatch()
     {

@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
 
@@ -17,8 +18,8 @@ internal sealed class ManualPollConfigService : ConfigServiceBase, IConfigServic
         return this.ConfigCache.Get(base.CacheKey);
     }
 
-    public async Task<ProjectConfig> GetConfigAsync()
+    public async Task<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default)
     {
-        return await this.ConfigCache.GetAsync(base.CacheKey).ConfigureAwait(false);
+        return await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(false);
     }
 }

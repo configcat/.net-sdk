@@ -24,24 +24,12 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
     public EvaluationDetails Evaluate(Setting setting, string key, string logDefaultValue, User user,
         ProjectConfig remoteConfig, EvaluationDetailsFactory detailsFactory)
     {
-        return EvaluateLogic(setting, key, logDefaultValue, logDefaultVariationId: null, user, remoteConfig, detailsFactory);
-    }
-
-    public EvaluationDetails EvaluateVariationId(Setting setting, string key, string logDefaultVariationId, User user,
-        ProjectConfig remoteConfig, EvaluationDetailsFactory detailsFactory)
-    {
-        return EvaluateLogic(setting, key, logDefaultValue: null, logDefaultVariationId, user, remoteConfig, detailsFactory);
-    }
-
-    private EvaluationDetails EvaluateLogic(Setting setting, string key, string logDefaultValue, string logDefaultVariationId, User user,
-        ProjectConfig remoteConfig, EvaluationDetailsFactory detailsFactory)
-    {
         var evaluateLog = new EvaluateLogger<string>
         {
             ReturnValue = logDefaultValue,
             User = user,
             KeyName = key,
-            VariationId = logDefaultVariationId
+            VariationId = null
         };
 
         try

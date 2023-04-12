@@ -29,12 +29,6 @@ public class AutoPoll : PollingMode
     /// </summary>
     public TimeSpan MaxInitWaitTime { get; }
 
-    /// <summary>
-    /// <see cref="OnConfigurationChanged"/> raised when the configuration was updated
-    /// </summary>
-    [Obsolete("This event is obsolete and will be removed from the public API in a future major version. Please use the 'ConfigCatClientOptions.ConfigChanged' event instead.")]
-    public event OnConfigurationChangedEventHandler OnConfigurationChanged;
-
     internal AutoPoll(TimeSpan pollInterval, TimeSpan maxInitWaitTime)
     {
         PollInterval = pollInterval;
@@ -48,9 +42,6 @@ public class AutoPoll : PollingMode
             throw new ArgumentOutOfRangeException(nameof(PollInterval), "Value must be greater than zero.");
         }
     }
-
-    internal void RaiseOnConfigurationChanged(object sender, OnConfigurationChangedEventArgs args) =>
-        OnConfigurationChanged?.Invoke(sender, args);
 }
 
 /// <summary>

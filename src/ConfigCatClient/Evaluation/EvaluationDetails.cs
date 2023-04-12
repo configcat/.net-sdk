@@ -124,27 +124,6 @@ public abstract record class EvaluationDetails
         return instance;
     }
 
-    internal static EvaluationDetails FromDefaultVariationId(string key, string defaultVariationId, DateTime? fetchTime, User user,
-        string errorMessage = null, Exception errorException = null)
-    {
-        var instance = new EvaluationDetails<object>
-        {
-            Key = key,
-            User = user,
-            IsDefaultValue = true,
-            VariationId = defaultVariationId,
-            ErrorMessage = errorMessage,
-            ErrorException = errorException
-        };
-
-        if (fetchTime is not null)
-        {
-            instance.FetchTime = fetchTime.Value;
-        }
-
-        return instance;
-    }
-
     private protected EvaluationDetails() { }
 
     /// <summary>

@@ -1,7 +1,7 @@
 namespace ConfigCat.Client;
 
 /// <summary>
-/// Specifies message's filtering to output for the <see cref="ILogger"/> class.
+/// Specifies message's filtering to output for the <see cref="IConfigCatLogger"/> class.
 /// Debug > Info > Warning > Error > Off
 /// </summary>
 public enum LogLevel

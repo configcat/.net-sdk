@@ -10,11 +10,8 @@ using ConfigCat.Client.Cache;
 using ConfigCat.Client.ConfigService;
 using ConfigCat.Client.Configuration;
 using ConfigCat.Client.Evaluation;
-using ConfigCat.Client.Utils;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
-
-#pragma warning disable CS0618 // Type or member is obsolete
 
 namespace ConfigCat.Client.Tests;
 
@@ -41,195 +38,62 @@ public class ConfigCatClientTests
 
     [ExpectedException(typeof(ArgumentException))]
     [TestMethod]
+    [DoNotParallelize]
     public void CreateAnInstance_WhenSdkKeyIsEmpty_ShouldThrowArgumentNullException()
     {
         var sdkKey = string.Empty;
 
-        new ConfigCatClient(sdkKey);
+        using var _ = ConfigCatClient.Get(sdkKey);
     }
 
-    [ExpectedException(typeof(ArgumentException))]
+    [ExpectedException(typeof(ArgumentNullException))]
     [TestMethod]
+    [DoNotParallelize]
     public void CreateAnInstance_WhenSdkKeyIsNull_ShouldThrowArgumentNullException()
     {
         string sdkKey = null;
 
-        new ConfigCatClient(sdkKey);
-    }
-
-    [ExpectedException(typeof(ArgumentException))]
-    [TestMethod]
-    public void CreateAnInstance_WhenAutoPollConfigurationSdkKeyIsNull_ShouldThrowArgumentNullException()
-    {
-        var clientConfiguration = new AutoPollConfiguration
-        {
-            SdkKey = null
-        };
-
-        new ConfigCatClient(clientConfiguration);
-    }
-
-    [ExpectedException(typeof(ArgumentException))]
-    [TestMethod]
-    public void CreateAnInstance_WhenAutoPollConfigurationSdkKeyIsNull_ShouldThrowArgumentException_NewApi()
-    {
-        new ConfigCatClient(options => { options.SdkKey = null; });
-    }
-
-    [ExpectedException(typeof(ArgumentException))]
-    [TestMethod]
-    public void CreateAnInstance_WhenConfigurationSdkKeyIsEmpty_ShouldThrowArgumentException()
-    {
-        var clientConfiguration = new AutoPollConfiguration
-        {
-            SdkKey = string.Empty
-        };
-
-        new ConfigCatClient(clientConfiguration);
-    }
-
-    [ExpectedException(typeof(ArgumentException))]
-    [TestMethod]
-    public void CreateAnInstance_WhenAutoPollConfigurationSdkKeyIsEmpty_ShouldThrowArgumentException_NewApi()
-    {
-        new ConfigCatClient(options => { options.SdkKey = string.Empty; });
+        using var _ = ConfigCatClient.Get(sdkKey);
     }
 
     [ExpectedException(typeof(ArgumentOutOfRangeException))]
     [TestMethod]
+    [DoNotParallelize]
     public void CreateAnInstance_WhenAutoPollConfigurationPollIntervalsZero_ShouldThrowArgumentOutOfRangeException()
     {
-        var clientConfiguration = new AutoPollConfiguration
+        using var _ = ConfigCatClient.Get("hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf", options =>
         {
-            SdkKey = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf",
-            PollIntervalSeconds = 0
-        };
-
-        new ConfigCatClient(clientConfiguration);
-    }
-
-    [ExpectedException(typeof(ArgumentOutOfRangeException))]
-    [TestMethod]
-    public void CreateAnInstance_WhenAutoPollConfigurationPollIntervalsZero_ShouldThrowArgumentOutOfRangeException_NewApi()
-    {
-        new ConfigCatClient(options =>
-        {
-            options.SdkKey = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf";
             options.PollingMode = PollingModes.AutoPoll(TimeSpan.FromSeconds(0));
         });
     }
 
     [ExpectedException(typeof(ArgumentOutOfRangeException))]
     [TestMethod]
+    [DoNotParallelize]
     public void CreateAnInstance_WhenLazyLoadConfigurationTimeToLiveSecondsIsZero_ShouldThrowArgumentOutOfRangeException()
     {
-        var clientConfiguration = new LazyLoadConfiguration
+        using var _ = ConfigCatClient.Get("hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf", options =>
         {
-            SdkKey = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf",
-            CacheTimeToLiveSeconds = 0
-        };
-
-        new ConfigCatClient(clientConfiguration);
-    }
-
-    [ExpectedException(typeof(ArgumentOutOfRangeException))]
-    [TestMethod]
-    public void CreateAnInstance_WhenLazyLoadConfigurationTimeToLiveSecondsIsZero_ShouldThrowArgumentOutOfRangeException_NewApi()
-    {
-        new ConfigCatClient(options =>
-        {
-            options.SdkKey = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf";
             options.PollingMode = PollingModes.LazyLoad(TimeSpan.FromSeconds(0));
         });
     }
 
     [ExpectedException(typeof(ArgumentNullException))]
     [TestMethod]
-    public void CreateAnInstance_WhenOptionsIsNull_ShouldThrowArgumentNullException()
-    {
-        Action<ConfigCatClientOptions> config = null;
-
-        new ConfigCatClient(config);
-    }
-
-    [ExpectedException(typeof(ArgumentNullException))]
-    [TestMethod]
-    public void CreateAnInstance_WhenAutoPollConfigurationIsNull_ShouldThrowArgumentNullException()
-    {
-        AutoPollConfiguration config = null;
-
-        new ConfigCatClient(config);
-    }
-
-    [ExpectedException(typeof(ArgumentNullException))]
-    [TestMethod]
-    public void CreateAnInstance_WhenLazyLoadConfigurationIsNull_ShouldThrowArgumentNullException()
-    {
-        LazyLoadConfiguration clientConfiguration = null;
-
-        new ConfigCatClient(clientConfiguration);
-    }
-
-    [ExpectedException(typeof(ArgumentNullException))]
-    [TestMethod]
-    public void CreateAnInstance_WhenManualPollConfigurationIsNull_ShouldThrowArgumentNullException()
-    {
-        ManualPollConfiguration clientConfiguration = null;
-
-        new ConfigCatClient(clientConfiguration);
-    }
-
-    [ExpectedException(typeof(ArgumentNullException))]
-    [TestMethod]
+    [DoNotParallelize]
     public void CreateAnInstance_WhenLoggerIsNull_ShouldThrowArgumentNullException()
     {
-        var clientConfiguration = new AutoPollConfiguration
+        using var _ = ConfigCatClient.Get("hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf", options =>
         {
-            SdkKey = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf",
-            Logger = null
-        };
-
-        new ConfigCatClient(clientConfiguration);
-
-    }
-
-    [ExpectedException(typeof(ArgumentNullException))]
-    [TestMethod]
-    public void CreateAnInstance_WhenLoggerIsNull_ShouldThrowArgumentNullException_NewApi()
-    {
-        new ConfigCatClient(options =>
-        {
-            options.SdkKey = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf";
             options.Logger = null;
         });
-
     }
 
     [TestMethod]
-    public void CreateAnInstance_WithValidConfiguration_ShouldCreateAnInstance()
-    {
-        var config = new AutoPollConfiguration
-        {
-            SdkKey = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf"
-        };
-
-        new ConfigCatClient(config);
-    }
-
-    [TestMethod]
+    [DoNotParallelize]
     public void CreateAnInstance_WithSdkKey_ShouldCreateAnInstance()
     {
-        var sdkKey = "hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf";
-
-        new ConfigCatClient(sdkKey);
-    }
-
-    [TestMethod]
-    public void CreateConfigurationBuilderInstance_ShouldCreateAnInstance()
-    {
-        var builder = ConfigCatClient.Create("SDKKEY");
-
-        Assert.IsNotNull(builder);
+        using var _ = ConfigCatClient.Get("hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf");
     }
 
     [TestMethod]
@@ -996,161 +860,6 @@ public class ConfigCatClientTests
     }
 
     [TestMethod]
-    public void GetVariationId_EvaluateServiceThrowException_ShouldReturnDefaultValue()
-    {
-        // Arrange
-
-        const string defaultValue = "Victory for the Firstborn!";
-
-        this.evaluatorMock
-            .Setup(m => m.EvaluateVariationId(It.IsAny<Setting>(), It.IsAny<string>(), defaultValue, null, It.IsAny<ProjectConfig>(), It.IsAny<EvaluationDetailsFactory>()))
-            .Throws<Exception>();
-
-        var client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, this.configDeserializerMock.Object, new Hooks());
-
-        var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
-        client.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
-
-        // Act
-
-        var actual = client.GetVariationId(null, defaultValue);
-
-        // Assert
-
-        Assert.AreEqual(defaultValue, actual);
-
-        Assert.AreEqual(1, flagEvaluatedEvents.Count);
-        Assert.AreEqual(defaultValue, flagEvaluatedEvents[0].EvaluationDetails.VariationId);
-        Assert.IsTrue(flagEvaluatedEvents[0].EvaluationDetails.IsDefaultValue);
-    }
-
-    [TestMethod]
-    public async Task GetVariationIdAsync_EvaluateServiceThrowException_ShouldReturnDefaultValue()
-    {
-        // Arrange
-
-        const string defaultValue = "Victory for the Firstborn!";
-
-        this.evaluatorMock
-            .Setup(m => m.EvaluateVariationId(It.IsAny<Setting>(), It.IsAny<string>(), defaultValue, null, It.IsAny<ProjectConfig>(), It.IsAny<EvaluationDetailsFactory>()))
-            .Throws<Exception>();
-
-        var client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, this.configDeserializerMock.Object, new Hooks());
-
-        var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
-        client.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
-
-        // Act
-
-        var actual = await client.GetVariationIdAsync(null, defaultValue);
-
-        // Assert
-
-        Assert.AreEqual(defaultValue, actual);
-
-        Assert.AreEqual(1, flagEvaluatedEvents.Count);
-        Assert.AreEqual(defaultValue, flagEvaluatedEvents[0].EvaluationDetails.VariationId);
-        Assert.IsTrue(flagEvaluatedEvents[0].EvaluationDetails.IsDefaultValue);
-    }
-
-    [TestMethod]
-    public void GetAllVariationId_DeserializeFailed_ShouldReturnsWithEmptyArray()
-    {
-        // Arrange
-
-        this.configServiceMock.Setup(m => m.GetConfig()).Returns(ProjectConfig.Empty);
-        this.configServiceMock.Setup(m => m.GetConfigAsync()).ReturnsAsync(ProjectConfig.Empty);
-        var o = new SettingsWithPreferences();
-        this.configDeserializerMock
-            .Setup(m => m.TryDeserialize(It.IsAny<string>(), It.IsAny<string>(), out o))
-            .Returns(false);
-
-        IConfigCatClient instance = new ConfigCatClient(
-            this.configServiceMock.Object,
-            this.loggerMock.Object,
-            this.evaluatorMock.Object,
-            this.configDeserializerMock.Object);
-
-        // Act
-
-        var actual = instance.GetAllVariationId();
-
-        // Assert
-
-        Assert.IsNotNull(actual);
-        Assert.AreEqual(0, actual.Count());
-        this.loggerMock.Verify(m => m.Log(LogLevel.Error, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
-    }
-
-    [TestMethod]
-    public async Task GetAllVariationIdAsync_DeserializeFailed_ShouldReturnsWithEmptyArray()
-    {
-        // Arrange
-
-        this.configServiceMock.Setup(m => m.GetConfigAsync()).ReturnsAsync(ProjectConfig.Empty);
-        var o = new SettingsWithPreferences();
-        this.configDeserializerMock
-            .Setup(m => m.TryDeserialize(It.IsAny<string>(), It.IsAny<string>(), out o))
-            .Returns(false);
-
-        IConfigCatClient instance = new ConfigCatClient(
-            this.configServiceMock.Object,
-            this.loggerMock.Object,
-            this.evaluatorMock.Object,
-            this.configDeserializerMock.Object);
-
-        // Act
-
-        var actual = await instance.GetAllVariationIdAsync();
-
-        // Assert
-
-        Assert.IsNotNull(actual);
-        Assert.AreEqual(0, actual.Count());
-        this.loggerMock.Verify(m => m.Log(LogLevel.Error, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
-    }
-
-    [TestMethod]
-    public void GetAllVariationId_ConfigServiceThrowException_ShouldReturnEmptyEnumerable()
-    {
-        // Arrange
-
-        this.configServiceMock
-            .Setup(m => m.GetConfigAsync())
-            .Throws<Exception>();
-
-        var client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, this.configDeserializerMock.Object);
-
-        // Act
-
-        var actual = client.GetAllVariationId(null);
-
-        // Assert
-
-        CollectionAssert.AreEqual(ArrayUtils.EmptyArray<string>(), actual.ToArray());
-    }
-
-    [TestMethod]
-    public async Task GetAllVariationIdAsync_ConfigServiceThrowException_ShouldReturnEmptyEnumerable()
-    {
-        // Arrange
-
-        this.configServiceMock
-            .Setup(m => m.GetConfigAsync())
-            .Throws<Exception>();
-
-        var client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, this.configDeserializerMock.Object);
-
-        // Act
-
-        var actual = await client.GetAllVariationIdAsync(null);
-
-        // Assert
-
-        CollectionAssert.AreEqual(ArrayUtils.EmptyArray<string>(), actual.ToArray());
-    }
-
-    [TestMethod]
     public void Dispose_ConfigServiceIsDisposable_ShouldInvokeDispose()
     {
         // Arrange
@@ -1308,9 +1017,8 @@ public class ConfigCatClientTests
 
     private static IConfigCatClient CreateClientFromLocalFile(string fileName, User defaultUser = null)
     {
-        return new ConfigCatClient(options =>
+        return ConfigCatClient.Get("localhost", options =>
         {
-            options.SdkKey = "localhost";
             options.FlagOverrides = FlagOverrides.LocalFile(
                 Path.Combine("data", fileName),
                 autoReload: false,
@@ -1323,9 +1031,10 @@ public class ConfigCatClientTests
     [DataRow(true)]
     [DataRow(false)]
     [DataTestMethod]
+    [DoNotParallelize]
     public async Task DefaultUser_GetValue(bool isAsync)
     {
-        IConfigCatClient client = CreateClientFromLocalFile("sample_v5.json", new User("a@configcat.com") { Email = "a@configcat.com" });
+        using IConfigCatClient client = CreateClientFromLocalFile("sample_v5.json", new User("a@configcat.com") { Email = "a@configcat.com" });
 
         var getValueAsync = isAsync
             ? new Func<string, string, User, Task<string>>(client.GetValueAsync)
@@ -1353,9 +1062,10 @@ public class ConfigCatClientTests
     [DataRow(true)]
     [DataRow(false)]
     [DataTestMethod]
+    [DoNotParallelize]
     public async Task DefaultUser_GetAllValues(bool isAsync)
     {
-        IConfigCatClient client = CreateClientFromLocalFile("sample_v5.json", new User("a@configcat.com") { Email = "a@configcat.com" });
+        using IConfigCatClient client = CreateClientFromLocalFile("sample_v5.json", new User("a@configcat.com") { Email = "a@configcat.com" });
 
         var getAllValuesAsync = isAsync
             ? new Func<User, Task<IDictionary<string, object>>>(client.GetAllValuesAsync)
@@ -1378,64 +1088,6 @@ public class ConfigCatClientTests
 
         // 4. Checks that default user can be overridden by parameter
         Assert.AreEqual("Cat", (await getAllValuesAsync(new User("c@configcat.com") { Email = "c@configcat.com" }))[key]);
-    }
-
-    [DataRow(true)]
-    [DataRow(false)]
-    [DataTestMethod]
-    public async Task DefaultUser_GetVariationId(bool isAsync)
-    {
-        IConfigCatClient client = CreateClientFromLocalFile("sample_variationid_v5.json", new User("a@configcat.com") { Email = "a@configcat.com" });
-
-        var getVariationIdAsync = isAsync
-            ? new Func<string, string, User, Task<string>>(client.GetVariationIdAsync)
-            : (key, defaultValue, user) => Task.FromResult(client.GetVariationId(key, defaultValue, user));
-
-        const string key = "boolean";
-
-        // 1. Checks that default user set in options is used for evaluation 
-        Assert.AreEqual("67787ae4", await getVariationIdAsync(key, string.Empty, null));
-
-        client.ClearDefaultUser();
-
-        // 2. Checks that default user can be cleared
-        Assert.AreEqual("a0e56eda", await getVariationIdAsync(key, string.Empty, null));
-
-        client.SetDefaultUser(new User("b@configcat.com") { Email = "b@configcat.com" });
-
-        // 3. Checks that default user set on client is used for evaluation 
-        Assert.AreEqual("67787ae4", await getVariationIdAsync(key, string.Empty, null));
-
-        // 4. Checks that default user can be overridden by parameter
-        Assert.AreEqual("a0e56eda", await getVariationIdAsync(key, string.Empty, new User("c@example.com") { Email = "c@example.com" }));
-    }
-
-    [DataRow(true)]
-    [DataRow(false)]
-    [DataTestMethod]
-    public async Task DefaultUser_GetAllVariationId(bool isAsync)
-    {
-        IConfigCatClient client = CreateClientFromLocalFile("sample_variationid_v5.json", new User("a@configcat.com") { Email = "a@configcat.com" });
-
-        var getAllVariationIdAsync = isAsync
-            ? new Func<User, Task<IEnumerable<string>>>(client.GetAllVariationIdAsync)
-            : user => Task.FromResult(client.GetAllVariationId(user));
-
-        // 1. Checks that default user set in options is used for evaluation 
-        Assert.IsTrue((await getAllVariationIdAsync(null)).Contains("67787ae4"));
-
-        client.ClearDefaultUser();
-
-        // 2. Checks that default user can be cleared
-        Assert.IsTrue((await getAllVariationIdAsync(null)).Contains("a0e56eda"));
-
-        client.SetDefaultUser(new User("b@configcat.com") { Email = "b@configcat.com" });
-
-        // 3. Checks that default user set on client is used for evaluation 
-        Assert.IsTrue((await getAllVariationIdAsync(null)).Contains("67787ae4"));
-
-        // 4. Checks that default user can be overridden by parameter
-        Assert.IsTrue((await getAllVariationIdAsync(new User("c@example.com") { Email = "c@example.com" })).Contains("a0e56eda"));
     }
 
     [DataRow(false)]

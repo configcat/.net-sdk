@@ -105,42 +105,6 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     Task<RefreshResult> ForceRefreshAsync();
 
     /// <summary>
-    /// Returns the Variation ID (analytics) for a feature flag or setting by the given key.
-    /// </summary>
-    /// <param name="key">Key for programs</param>
-    /// <param name="defaultVariationId">In case of failure return this value.</param>
-    /// <param name="user">The user object for variation evaluation.</param>
-    /// <returns>Variation ID.</returns>
-    [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the GetValueDetails() method instead.")]
-    string GetVariationId(string key, string defaultVariationId, User user = null);
-
-    /// <summary>
-    /// Returns the Variation ID (analytics) for a feature flag or setting by the given key.
-    /// </summary>
-    /// <param name="key">Key for programs</param>
-    /// <param name="defaultVariationId">In case of failure return this value.</param>
-    /// <param name="user">The user object for variation evaluation.</param>
-    /// <returns>Variation ID.</returns>
-    [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the GetValueDetailsAsync() method instead.")]
-    Task<string> GetVariationIdAsync(string key, string defaultVariationId, User user = null);
-
-    /// <summary>
-    /// Returns all Variation IDs (analytics) for each feature flag and setting.
-    /// </summary>
-    /// <param name="user">The user object for variation evaluation.</param>
-    /// <returns>Collection of all Variation IDs.</returns>
-    [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the GetAllValueDetails() method instead.")]
-    IEnumerable<string> GetAllVariationId(User user = null);
-
-    /// <summary>
-    /// Returns all Variation IDs (analytics) for each feature flags or settings.
-    /// </summary>
-    /// <param name="user">The user object for variation evaluation.</param>
-    /// <returns>Collection of all Variation IDs.</returns>
-    [Obsolete("This method is obsolete and will be removed from the public API in a future major version. Please use the GetAllValueDetailsAsync() method instead.")]
-    Task<IEnumerable<string>> GetAllVariationIdAsync(User user = null);
-
-    /// <summary>
     /// Sets the default user.
     /// </summary>
     /// <param name="user">The default user object for variation evaluation.</param>

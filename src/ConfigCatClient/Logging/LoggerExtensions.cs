@@ -67,5 +67,5 @@ internal static partial class LoggerExtensions
     /// Shorthand method for
     /// <code>logger.Log(LogLevel.Debug, default, message);</code>
     /// </summary>
-    public static FormattableLogMessage LogDebug(this LoggerWrapper logger, string message) => logger.Log(LogLevel.Debug, default, message);
+    public static FormattableLogMessage Debug(this LoggerWrapper logger, string message) => logger.Log(LogLevel.Debug, default, message);
 }

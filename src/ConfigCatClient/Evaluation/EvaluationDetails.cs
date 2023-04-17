@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using ConfigCat.Client.Evaluation;
 
 #if USE_NEWTONSOFT_JSON
@@ -23,9 +24,8 @@ public abstract record class EvaluationDetails
 
     internal static EvaluationDetails<TValue> Create<TValue>(SettingType settingType, JsonValue value)
     {
-        var objectValueExpected = typeof(TValue) == typeof(object);
-        var expectedSettingType = typeof(TValue).ToSettingType();
-        expectedSettingType.EnsureSupportedSettingType(isAnyAllowed: objectValueExpected);
+        // NOTE: We've already checked earlier in the call chain that TValue is an allowed type (see also TypeExtensions.EnsureSupportedSettingClrType).
+        Debug.Assert(typeof(TValue) == typeof(object) || typeof(TValue).ToSettingType() != SettingType.Unknown, "Type is not supported.");
 
         // SettingType was not specified in the config.json?
         if (settingType == SettingType.Unknown)
@@ -39,9 +39,9 @@ public abstract record class EvaluationDetails
             }
         }
 
-        if (!objectValueExpected)
+        if (typeof(TValue) != typeof(object))
         {
-            if (settingType != expectedSettingType)
+            if (settingType != typeof(TValue).ToSettingType())
             {
                 throw new InvalidOperationException($"The type of a setting must match the type of the setting's default value.{Environment.NewLine}Setting's type was {settingType} but the default value's type was {typeof(TValue)}.{Environment.NewLine}Please use a default value which corresponds to the setting type {settingType}.");
             }

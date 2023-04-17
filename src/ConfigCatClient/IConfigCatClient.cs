@@ -18,43 +18,69 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// <summary>
     /// Returns a value for the key. (Key for programs)
     /// </summary>
-    /// <typeparam name="T">Setting type</typeparam>
+    /// <typeparam name="T">
+    /// Setting type. Only the following types are allowed:
+    /// <see cref="string"/>, <see cref="bool"/>, <see cref="int"/>, <see cref="long"/>, <see cref="double"/> and <see cref="object"/> (both nullable and non-nullable).
+    /// </typeparam>
     /// <param name="key">Key for programs</param>
     /// <param name="defaultValue">In case of failure return this value</param>
     /// <param name="user">The user object for variation evaluation</param>
     /// <returns>The value of the feature flag or setting.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="key"/> is an empty string.</exception>
+    /// <exception cref="ArgumentException"><typeparamref name="T"/> is not an allowed type.</exception>
     T GetValue<T>(string key, T defaultValue, User? user = null);
 
     /// <summary>
     /// Returns a value for the key. (Key for programs)
     /// </summary>
-    /// <typeparam name="T">Setting type.</typeparam>
+    /// <typeparam name="T">
+    /// Setting type. Only the following types are allowed:
+    /// <see cref="string"/>, <see cref="bool"/>, <see cref="int"/>, <see cref="long"/>, <see cref="double"/> and <see cref="object"/> (both nullable and non-nullable).
+    /// </typeparam>
     /// <param name="key">Key for programs.</param>
     /// <param name="defaultValue">In case of failure return this value.</param>
     /// <param name="user">The user object for variation evaluation.</param>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
     /// <returns>The task that will evaluate the value of the feature flag or setting.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="key"/> is an empty string.</exception>
+    /// <exception cref="ArgumentException"><typeparamref name="T"/> is not an allowed type.</exception>
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> is canceled during the execution of the task.</exception>
     Task<T> GetValueAsync<T>(string key, T defaultValue, User? user = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the value along with evaluation details of a feature flag or setting by the given key.
     /// </summary>
-    /// <typeparam name="T">Setting type</typeparam>
+    /// <typeparam name="T">
+    /// Setting type. Only the following types are allowed:
+    /// <see cref="string"/>, <see cref="bool"/>, <see cref="int"/>, <see cref="long"/>, <see cref="double"/> and <see cref="object"/> (both nullable and non-nullable).
+    /// </typeparam>
     /// <param name="key">Key for programs</param>
     /// <param name="defaultValue">In case of failure return this value</param>
     /// <param name="user">The user object for variation evaluation</param>
     /// <returns>The value along with the details of evaluation of the feature flag or setting.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="key"/> is an empty string.</exception>
+    /// <exception cref="ArgumentException"><typeparamref name="T"/> is not an allowed type.</exception>
     EvaluationDetails<T> GetValueDetails<T>(string key, T defaultValue, User? user = null);
 
     /// <summary>
     /// Returns the value along with evaluation details of a feature flag or setting by the given key.
     /// </summary>
-    /// <typeparam name="T">Setting type</typeparam>
+    /// <typeparam name="T">
+    /// Setting type. Only the following types are allowed:
+    /// <see cref="string"/>, <see cref="bool"/>, <see cref="int"/>, <see cref="long"/>, <see cref="double"/> and <see cref="object"/> (both nullable and non-nullable).
+    /// </typeparam>
     /// <param name="key">Key for programs</param>
     /// <param name="defaultValue">In case of failure return this value</param>
     /// <param name="user">The user object for variation evaluation</param>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
     /// <returns>The value along with the details of evaluation of the feature flag or setting.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="key"/> is an empty string.</exception>
+    /// <exception cref="ArgumentException"><typeparamref name="T"/> is not an allowed type.</exception>
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> is canceled during the execution of the task.</exception>
     Task<EvaluationDetails<T>> GetValueDetailsAsync<T>(string key, T defaultValue, User? user = null, CancellationToken cancellationToken = default);
 
     /// <summary>

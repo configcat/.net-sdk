@@ -116,7 +116,8 @@ public sealed class ConfigCatClient : IConfigCatClient
     /// </remarks>
     /// <param name="sdkKey">SDK Key to access configuration. (For the moment, SDK Key can also be set using <paramref name="configurationAction"/>. This setting will, however, be ignored and <paramref name="sdkKey"/> will be used, regardless.)</param>
     /// <param name="configurationAction">The configuration action.</param>
-    /// <exception cref="ArgumentNullException">When the <paramref name="configurationAction"/> is null.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="sdkKey"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="sdkKey"/> is an empty string.</exception>
     public static IConfigCatClient Get(string sdkKey, Action<ConfigCatClientOptions>? configurationAction = null)
     {
         if (sdkKey is null)
@@ -126,7 +127,7 @@ public sealed class ConfigCatClient : IConfigCatClient
 
         if (sdkKey.Length == 0)
         {
-            throw new ArgumentException("Invalid SDK Key.", nameof(sdkKey));
+            throw new ArgumentException("SDK Key cannot be empty.", nameof(sdkKey));
         }
 
         var configuration = new ConfigCatClientOptions();
@@ -236,13 +237,19 @@ public sealed class ConfigCatClient : IConfigCatClient
             throw new ArgumentNullException(nameof(key));
         }
 
+        if (key.Length == 0)
+        {
+            throw new ArgumentException("Key cannot be empty.", nameof(key));
+        }
+
+        typeof(T).EnsureSupportedSettingClrType(nameof(T));
+
         T value;
         EvaluationDetails<T> evaluationDetails;
         SettingsWithRemoteConfig settings = default;
         user ??= this.defaultUser;
         try
         {
-            typeof(T).EnsureSupportedSettingClrType();
             settings = GetSettings();
             evaluationDetails = this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, this.logger);
             value = evaluationDetails.Value;
@@ -266,13 +273,19 @@ public sealed class ConfigCatClient : IConfigCatClient
             throw new ArgumentNullException(nameof(key));
         }
 
+        if (key.Length == 0)
+        {
+            throw new ArgumentException("Key cannot be empty.", nameof(key));
+        }
+
+        typeof(T).EnsureSupportedSettingClrType(nameof(T));
+
         T value;
         EvaluationDetails<T> evaluationDetails;
         SettingsWithRemoteConfig settings = default;
         user ??= this.defaultUser;
         try
         {
-            typeof(T).EnsureSupportedSettingClrType();
             settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(false);
             evaluationDetails = this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, this.logger);
             value = evaluationDetails.Value;
@@ -300,12 +313,18 @@ public sealed class ConfigCatClient : IConfigCatClient
             throw new ArgumentNullException(nameof(key));
         }
 
+        if (key.Length == 0)
+        {
+            throw new ArgumentException("Key cannot be empty.", nameof(key));
+        }
+
+        typeof(T).EnsureSupportedSettingClrType(nameof(T));
+
         EvaluationDetails<T> evaluationDetails;
         SettingsWithRemoteConfig settings = default;
         user ??= this.defaultUser;
         try
         {
-            typeof(T).EnsureSupportedSettingClrType();
             settings = GetSettings();
             evaluationDetails = this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, this.logger);
         }
@@ -327,12 +346,18 @@ public sealed class ConfigCatClient : IConfigCatClient
             throw new ArgumentNullException(nameof(key));
         }
 
+        if (key.Length == 0)
+        {
+            throw new ArgumentException("Key cannot be empty.", nameof(key));
+        }
+
+        typeof(T).EnsureSupportedSettingClrType(nameof(T));
+
         EvaluationDetails<T> evaluationDetails;
         SettingsWithRemoteConfig settings = default;
         user ??= this.defaultUser;
         try
         {
-            typeof(T).EnsureSupportedSettingClrType();
             settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(false);
             evaluationDetails = this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, this.logger);
         }

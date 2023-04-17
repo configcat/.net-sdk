@@ -114,7 +114,7 @@ public class ConfigCatClientTests
 
         // Act
 
-        var actual = client.GetValue("", defaultValue);
+        var actual = client.GetValue("x", defaultValue);
 
         // Assert
 
@@ -136,7 +136,7 @@ public class ConfigCatClientTests
 
         // Act
 
-        var actual = await client.GetValueAsync("", defaultValue);
+        var actual = await client.GetValueAsync("x", defaultValue);
 
         // Assert
 
@@ -161,7 +161,7 @@ public class ConfigCatClientTests
 
         // Act
 
-        var actual = client.GetValue("", defaultValue);
+        var actual = client.GetValue("x", defaultValue);
 
         // Assert
 
@@ -190,7 +190,7 @@ public class ConfigCatClientTests
 
         // Act
 
-        var actual = await client.GetValueAsync("", defaultValue);
+        var actual = await client.GetValueAsync("x", defaultValue);
 
         // Assert
 

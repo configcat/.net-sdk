@@ -8,9 +8,10 @@ internal static partial class LoggerExtensions
 {
     #region Common error messages (1000-1999)
 
-    public static FormattableLogMessage ConfigJsonIsNotPresent(this LoggerWrapper logger, string defaultReturnValue) => logger.Log(
+    public static FormattableLogMessage ConfigJsonIsNotPresent(this LoggerWrapper logger, string defaultReturnValue) => logger.LogInterpolated(
         LogLevel.Error, 1000,
-        $"Config JSON is not present. Returning {defaultReturnValue}.");
+        $"Config JSON is not present. Returning {defaultReturnValue}.",
+        "DEFAULT_RETURN_VALUE");
 
     public static FormattableLogMessage ConfigJsonIsNotPresent(this LoggerWrapper logger, string key, string defaultParamName, object? defaultParamValue) => logger.LogInterpolated(
         LogLevel.Error, 1000,
@@ -22,11 +23,10 @@ internal static partial class LoggerExtensions
         $"Failed to evaluate setting '{key}' (the key was not found in config JSON). Returning the `{defaultParamName}` parameter that you specified in your application: '{defaultParamValue}'. Available keys: [{availableKeys}].",
         "KEY", "DEFAULT_PARAM_NAME", "DEFAULT_PARAM_VALUE", "AVAILABLE_KEYS");
 
-    public static FormattableLogMessage SettingEvaluationError(this LoggerWrapper logger, string methodName, string defaultReturnValue, Exception ex) => logger.LogFormatted(
+    public static FormattableLogMessage SettingEvaluationError(this LoggerWrapper logger, string methodName, string defaultReturnValue, Exception ex) => logger.LogInterpolated(
         LogLevel.Error, 1002, ex,
-        $"Error occurred in the `{{0}}` method. Returning {defaultReturnValue}.",
-        new[] { "METHOD_NAME" },
-        new object[] { methodName });
+        $"Error occurred in the `{methodName}` method. Returning {defaultReturnValue}.",
+        "METHOD_NAME", "DEFAULT_RETURN_VALUE");
 
     public static FormattableLogMessage SettingEvaluationError(this LoggerWrapper logger, string methodName, string key, string defaultParamName, object? defaultParamValue, Exception ex) => logger.LogInterpolated(
         LogLevel.Error, 1002, ex,

@@ -16,6 +16,7 @@
     <RepositoryType>git</RepositoryType>
     <LangVersion>10.0</LangVersion>
     <Nullable>enable</Nullable>
+    <WarningsAsErrors>nullable</WarningsAsErrors>
     <PackageReleaseNotes>https://github.com/configcat/.net-sdk/blob/master/CHANGELOG.md</PackageReleaseNotes>
     <PackageTags>feature flag toggle feature-flag feature-flags featureflag featureflags feature-toggle  feature-toggles featuretoggle featuretoggles canary release remote config remoteconfig remote-config configcat configcatclient</PackageTags>
     <Description>

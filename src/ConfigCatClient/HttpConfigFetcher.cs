@@ -28,7 +28,7 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
     private readonly TimeSpan timeout;
     private readonly CancellationTokenSource cancellationTokenSource = new();
     private HttpClient httpClient;
-    internal AsyncFetch? pendingFetch;
+    internal Task<FetchResult>? pendingFetch;
 
     private Uri requestUri;
 
@@ -48,95 +48,41 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
     public FetchResult Fetch(ProjectConfig lastConfig)
     {
 #if NET5_0_OR_GREATER
-        var valueTask = FetchInternalAsync(lastConfig, isAsync: false, CancellationToken.None);
+        var valueTask = FetchInternalAsync(lastConfig, isAsync: false);
         Debug.Assert(valueTask.IsCompleted);
 
         // The value task holds the sync result, it's safe to call GetAwaiter().GetResult()
         return valueTask.GetAwaiter().GetResult();
 #else
         // we can't synchronize HttpClient, so we have to go sync over async.
-        return Syncer.Sync(() => FetchInternalAsync(lastConfig, isAsync: true, CancellationToken.None).AsTask());
+        return Syncer.Sync(() => FetchInternalAsync(lastConfig, isAsync: true).AsTask());
 #endif
     }
 
     public Task<FetchResult> FetchAsync(ProjectConfig lastConfig, CancellationToken cancellationToken = default)
     {
-        AsyncFetch? currentFetch;
-
         lock (this.syncObj)
         {
-            if (cancellationToken.IsCancellationRequested)
+            this.pendingFetch ??= Task.Run(async () =>
             {
-                return cancellationToken.ToTask<FetchResult>();
-            }
-
-            currentFetch = this.pendingFetch;
-            if (currentFetch is null or { ObserverCount: 0 })
-            {
-                this.pendingFetch = currentFetch = new AsyncFetch(this, lastConfig, fetchFunction: static async (@this, fetch) =>
+                try
                 {
-                    try
-                    {
-                        // The fetch operation should be canceled when the config fetcher gets disposed.
-                        using (@this.cancellationTokenSource.Token.Register(fetch.Cancel, useSynchronizationContext: false))
-                        {
-                            return await @this.FetchInternalAsync(fetch.LastConfig, isAsync: true, fetch.CancellationToken).ConfigureAwait(false);
-                        }
-                    }
-                    finally
-                    {
-                        lock (@this.syncObj)
-                        {
-                            if (@this.pendingFetch == fetch)
-                            {
-                                @this.pendingFetch = null;
-                            }
-                        }
-                    }
-                });
-            }
-
-            currentFetch.ObserverCount++;
-        }
-
-        return Awaited(this, currentFetch, cancellationToken);
-
-        static async Task<FetchResult> Awaited(HttpConfigFetcher @this, AsyncFetch currentFetch, CancellationToken cancellationToken)
-        {
-            var externallyCanceled = false;
-
-            try
-            {
-                return await currentFetch.FetchTask.WaitAsync(cancellationToken).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
-            {
-                externallyCanceled = true;
-                throw;
-            }
-            finally
-            {
-                int observerCount;
-
-                lock (@this.syncObj)
-                {
-                    observerCount = --currentFetch.ObserverCount;
+                    return await FetchInternalAsync(lastConfig, isAsync: true).ConfigureAwait(false);
                 }
-
-                if (observerCount == 0)
+                finally
                 {
-                    // The fetch operation should also be canceled when all observers has signalled cancellation.
-                    if (externallyCanceled)
+                    lock (this.syncObj)
                     {
-                        currentFetch.Cancel();
+                        this.pendingFetch = null;
                     }
-                    currentFetch.Dispose();
                 }
-            }
+            });
+
+            return this.pendingFetch.WaitAsync(cancellationToken);
         }
     }
 
-    private async ValueTask<FetchResult> FetchInternalAsync(ProjectConfig lastConfig, bool isAsync, CancellationToken cancellationToken)
+    private async ValueTask<FetchResult> FetchInternalAsync(ProjectConfig lastConfig, bool isAsync)
     {
         FormattableLogMessage logMessage;
         Exception errorException;
@@ -146,18 +92,18 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
 #if NET5_0_OR_GREATER
             if (isAsync)
             {
-                responseWithBody = await FetchRequestAsync(lastConfig, this.requestUri, isAsync: true, cancellationToken).ConfigureAwait(false);
+                responseWithBody = await FetchRequestAsync(lastConfig, this.requestUri, isAsync: true).ConfigureAwait(false);
             }
             else
             {
-                var valueTask = FetchRequestAsync(lastConfig, this.requestUri, isAsync: false, cancellationToken);
+                var valueTask = FetchRequestAsync(lastConfig, this.requestUri, isAsync: false);
                 Debug.Assert(valueTask.IsCompleted);
 
                 // The value task holds the sync result, it's safe to call GetAwaiter().GetResult()
                 responseWithBody = valueTask.GetAwaiter().GetResult();
             }
 #else
-            responseWithBody = await FetchRequestAsync(lastConfig, this.requestUri, isAsync: true, cancellationToken).ConfigureAwait(false);
+            responseWithBody = await FetchRequestAsync(lastConfig, this.requestUri, isAsync: true).ConfigureAwait(false);
 #endif
 
             var response = responseWithBody.Item1;
@@ -201,19 +147,14 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                     return FetchResult.Failure(lastConfig, logMessage.InvariantFormattedMessage);
             }
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (this.cancellationTokenSource.IsCancellationRequested)
         {
-            // NOTE: Unfortunately, we can't check the CancellationToken property of the exception in the when condition
-            // because it seems that HttpClient.SendAsync combines our token with another one under the hood (in runtimes earlier than .NET 6),
-            // so we'd get a Linked2CancellationTokenSource here instead of our token which we pass to that method...
+            // NOTE: Unfortunately, we can't check the CancellationToken property of the exception in the when condition above because
+            // it seems that HttpClient.SendAsync combines our token with another one under the hood (at least, in runtimes earlier than .NET 6),
+            // so we'd get a Linked2CancellationTokenSource here instead of our token which we pass to the HttpClient.SendAsync method...
 
-            if (this.cancellationTokenSource.IsCancellationRequested)
-            {
-                /* do nothing on dispose cancel */
-                return FetchResult.NotModified(lastConfig);
-            }
-
-            throw;
+            /* do nothing on dispose cancel */
+            return FetchResult.NotModified(lastConfig);
         }
         catch (OperationCanceledException ex)
         {
@@ -236,7 +177,7 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
     }
 
     private async ValueTask<ResponseWithBody> FetchRequestAsync(ProjectConfig lastConfig,
-        Uri requestUri, bool isAsync, CancellationToken cancellationToken, sbyte maxExecutionCount = 3)
+        Uri requestUri, bool isAsync, sbyte maxExecutionCount = 3)
     {
         for (; ; maxExecutionCount--)
         {
@@ -250,18 +191,18 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
             HttpResponseMessage response;
 #if NET5_0_OR_GREATER
             response = isAsync
-                ? await this.httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false)
-                : this.httpClient.Send(request, cancellationToken);
+                ? await this.httpClient.SendAsync(request, this.cancellationTokenSource.Token).ConfigureAwait(false)
+                : this.httpClient.Send(request, this.cancellationTokenSource.Token);
 #else
-            response = await this.httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            response = await this.httpClient.SendAsync(request, this.cancellationTokenSource.Token).ConfigureAwait(false);
 #endif
 
             if (response.StatusCode == HttpStatusCode.OK)
             {
 #if NET5_0_OR_GREATER
                 var responseBody = isAsync
-                    ? await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false)
-                    : response.Content.ReadAsString(cancellationToken);
+                    ? await response.Content.ReadAsStringAsync(this.cancellationTokenSource.Token).ConfigureAwait(false)
+                    : response.Content.ReadAsString(this.cancellationTokenSource.Token);
 #else
                 var responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 #endif
@@ -364,41 +305,5 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
     {
         this.cancellationTokenSource.Cancel();
         this.httpClient?.Dispose();
-    }
-
-    internal sealed class AsyncFetch : IDisposable
-    {
-        private readonly HttpConfigFetcher configFetcher;
-        public readonly ProjectConfig LastConfig;
-        private readonly Func<HttpConfigFetcher, AsyncFetch, Task<FetchResult>> fetchFunction;
-        public readonly Task<FetchResult> FetchTask;
-        private CancellationTokenSource? cancellationTokenSource;
-        public readonly CancellationToken CancellationToken;
-        public int ObserverCount;
-
-        public AsyncFetch(HttpConfigFetcher configFetcher, ProjectConfig lastConfig, Func<HttpConfigFetcher, AsyncFetch, Task<FetchResult>> fetchFunction)
-        {
-            this.configFetcher = configFetcher;
-            this.LastConfig = lastConfig;
-            this.fetchFunction = fetchFunction;
-
-            this.cancellationTokenSource = new CancellationTokenSource();
-            this.CancellationToken = this.cancellationTokenSource.Token;
-            this.FetchTask = Task.Run(() => this.fetchFunction(this.configFetcher, this));
-        }
-
-        public void Cancel()
-        {
-            if (Interlocked.Exchange(ref this.cancellationTokenSource, null) is { } cts)
-            {
-                cts.Cancel();
-                cts.Dispose();
-            }
-        }
-
-        public void Dispose()
-        {
-            Interlocked.Exchange(ref this.cancellationTokenSource, null)?.Dispose();
-        }
     }
 }

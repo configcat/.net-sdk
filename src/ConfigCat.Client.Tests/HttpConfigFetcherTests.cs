@@ -203,14 +203,7 @@ public class HttpConfigFetcherTests
             Assert.AreEqual(configContent, (await fetchTask2).Config.JsonString);
         }
 
-        if (cancel1 && cancel2)
-        {
-            await Assert.ThrowsExceptionAsync<TaskCanceledException>(() => pendingFetchBetween.FetchTask);
-        }
-        else
-        {
-            Assert.AreEqual(configContent, (await pendingFetchBetween.FetchTask).Config.JsonString);
-        }
+        await pendingFetchBetween;
 
         Assert.IsNull(configFetcher.pendingFetch);
     }

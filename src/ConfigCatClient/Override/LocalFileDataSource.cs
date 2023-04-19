@@ -161,6 +161,6 @@ internal sealed class LocalFileDataSource : IOverrideDataSource
 #else
         [System.Text.Json.Serialization.JsonPropertyName("flags")]
 #endif
-        public IDictionary<string, object>? Entries { get; set; }
+        public Dictionary<string, object>? Entries { get; set; }
     }
 }

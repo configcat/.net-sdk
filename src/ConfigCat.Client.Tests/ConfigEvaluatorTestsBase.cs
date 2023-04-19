@@ -15,7 +15,7 @@ public abstract class ConfigEvaluatorTestsBase
     private protected readonly LoggerWrapper Logger = new ConsoleLogger(LogLevel.Debug).AsWrapper();
 #pragma warning restore IDE1006 // Naming Styles
 
-    private protected readonly IDictionary<string, Setting> config;
+    private protected readonly IReadOnlyDictionary<string, Setting> config;
 
     internal readonly IRolloutEvaluator configEvaluator;
 

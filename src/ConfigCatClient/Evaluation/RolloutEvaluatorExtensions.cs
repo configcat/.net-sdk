@@ -17,7 +17,7 @@ internal static class RolloutEvaluatorExtensions
             static (settingType, value) => EvaluationDetails.Create<T>(settingType, value));
     }
 
-    public static EvaluationDetails<T> Evaluate<T>(this IRolloutEvaluator evaluator, IDictionary<string, Setting>? settings, string key, T defaultValue, User? user,
+    public static EvaluationDetails<T> Evaluate<T>(this IRolloutEvaluator evaluator, IReadOnlyDictionary<string, Setting>? settings, string key, T defaultValue, User? user,
         ProjectConfig? remoteConfig, LoggerWrapper logger)
     {
         FormattableLogMessage logMessage;
@@ -45,7 +45,7 @@ internal static class RolloutEvaluatorExtensions
             static (settingType, value) => EvaluationDetails.Create(settingType, value));
     }
 
-    public static EvaluationDetails[] EvaluateAll(this IRolloutEvaluator evaluator, IDictionary<string, Setting>? settings, User? user,
+    public static EvaluationDetails[] EvaluateAll(this IRolloutEvaluator evaluator, IReadOnlyDictionary<string, Setting>? settings, User? user,
         ProjectConfig? remoteConfig, LoggerWrapper logger, string defaultReturnValue, out IReadOnlyList<Exception>? exceptions)
     {
         if (!CheckSettingsAvailable(settings, logger, defaultReturnValue))
@@ -79,7 +79,7 @@ internal static class RolloutEvaluatorExtensions
         return evaluationDetailsArray;
     }
 
-    internal static bool CheckSettingsAvailable([NotNullWhen(true)] IDictionary<string, Setting>? settings, LoggerWrapper logger, string defaultReturnValue)
+    internal static bool CheckSettingsAvailable([NotNullWhen(true)] IReadOnlyDictionary<string, Setting>? settings, LoggerWrapper logger, string defaultReturnValue)
     {
         if (settings is null)
         {
@@ -90,7 +90,7 @@ internal static class RolloutEvaluatorExtensions
         return true;
     }
 
-    private static string KeysToString(IDictionary<string, Setting> settings)
+    private static string KeysToString(IReadOnlyDictionary<string, Setting> settings)
     {
         return string.Join(", ", settings.Keys.Select(s => $"'{s}'").ToArray());
     }

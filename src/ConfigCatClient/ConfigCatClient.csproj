@@ -14,15 +14,19 @@
     <PackageProjectUrl>https://configcat.com/docs/sdk-reference/dotnet</PackageProjectUrl>
     <RepositoryUrl>https://github.com/ConfigCat/.net-sdk</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <LangVersion>latest</LangVersion>
+    <LangVersion>10.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <WarningsAsErrors>nullable</WarningsAsErrors>
     <PackageReleaseNotes>https://github.com/configcat/.net-sdk/blob/master/CHANGELOG.md</PackageReleaseNotes>
     <PackageTags>feature flag toggle feature-flag feature-flags featureflag featureflags feature-toggle  feature-toggles featuretoggle featuretoggles canary release remote config remoteconfig remote-config configcat configcatclient</PackageTags>
-    <Description>Feature Flags created by developers for developers with ❤️.
+    <Description>
+      Feature Flags created by developers for developers with ❤️.
 
-ConfigCat lets you manage feature flags across frontend, backend, mobile, and desktop apps without (re)deploying code. % rollouts, user targeting, segmentation. Feature toggle SDKs for all main languages. Alternative to LaunchDarkly. 
-Host yourself, or use the hosted management app at https://configcat.com.
+      ConfigCat lets you manage feature flags across frontend, backend, mobile, and desktop apps without (re)deploying code. % rollouts, user targeting, segmentation. Feature toggle SDKs for all main languages. Alternative to LaunchDarkly.
+      Host yourself, or use the hosted management app at https://configcat.com.
 
-Works with .NET, .NET Core, .NET Standard</Description>
+      Works with .NET, .NET Core, .NET Standard
+    </Description>
     <PackageIcon>icon.png</PackageIcon>
     <AssemblyVersion>0.1.0.0</AssemblyVersion>
     <FileVersion>0.1.0.0</FileVersion>
@@ -37,9 +41,9 @@ Works with .NET, .NET Core, .NET Standard</Description>
     <RootNamespace>ConfigCat.Client.Benchmark</RootNamespace>
     <Optimize>true</Optimize>
   </PropertyGroup>
-	
+
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net45' ">
-	<DefineConstants>USE_NEWTONSOFT_JSON</DefineConstants>	
+    <DefineConstants>USE_NEWTONSOFT_JSON</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
@@ -53,7 +57,7 @@ Works with .NET, .NET Core, .NET Standard</Description>
   <ItemGroup Condition=" '$(TargetFramework)' != 'net45' ">
     <PackageReference Include="System.Text.Json" Version="6.0.5" />
   </ItemGroup>
-	
+
   <ItemGroup>
     <PackageReference Include="ConfigureAwaitChecker.Analyzer" Version="5.0.0.1">
       <PrivateAssets>all</PrivateAssets>
@@ -64,6 +68,11 @@ Works with .NET, .NET Core, .NET Standard</Description>
     <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
     <None Include="icon.png" Pack="true" Visible="false" PackagePath="" />
     <None Include="..\..\README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ConfigCatClientTests, PublicKey=0024000004800000940000000602000000240000525341310004000001000100dbeb3ff4c4224a3ff3e5d2db0114a80df04bd0d2e00756f7f0b269d23079034782c543401246241b7bbd4dee1e205cb5a3f05ffcce681600a1578b66f0276822f399838962748414e7ec37b8f2b8fcc47a7340104683873f4f9d66ef72ec508abcd66814261e744df4e3610189953de230162b7b718bbeafee82245ec786eb93" />
+    <InternalsVisibleTo Include="DynamicProxyGenAssembly2, PublicKey=0024000004800000940000000602000000240000525341310004000001000100c547cac37abd99c8db225ef2f6c8a3602f3b3606cc9891605d02baa56104f4cfc0734aa39b93bf7852f7d9266654753cc297e7d2edfe0bac1cdcf9f717241550e0a7b191195b7667bb4f64bcb8e2121380fd1d9d46ad2d92d2d15605093924cceaf74c4861eff62abf69b9291ed0a340e113be11e6a7d3113e92484cf7045cc7" />
   </ItemGroup>
 
 </Project>

@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
 
@@ -8,7 +9,7 @@ internal sealed class LazyLoadConfigService : ConfigServiceBase, IConfigService
 {
     private readonly TimeSpan cacheTimeToLive;
 
-    internal LazyLoadConfigService(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger, TimeSpan cacheTimeToLive, bool isOffline = false, Hooks hooks = null)
+    internal LazyLoadConfigService(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger, TimeSpan cacheTimeToLive, bool isOffline = false, Hooks? hooks = null)
         : base(configFetcher, cacheParameters, logger, isOffline, hooks)
     {
         this.cacheTimeToLive = cacheTimeToLive;
@@ -37,9 +38,9 @@ internal sealed class LazyLoadConfigService : ConfigServiceBase, IConfigService
         return config;
     }
 
-    public async Task<ProjectConfig> GetConfigAsync()
+    public async Task<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default)
     {
-        var config = await this.ConfigCache.GetAsync(base.CacheKey).ConfigureAwait(false);
+        var config = await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(false);
 
         if (config.IsExpired(expiration: this.cacheTimeToLive, out var cachedConfigIsEmpty))
         {
@@ -50,7 +51,7 @@ internal sealed class LazyLoadConfigService : ConfigServiceBase, IConfigService
 
             if (!IsOffline)
             {
-                var configWithFetchResult = await RefreshConfigCoreAsync(config).ConfigureAwait(false);
+                var configWithFetchResult = await RefreshConfigCoreAsync(config, cancellationToken).ConfigureAwait(false);
                 return configWithFetchResult.Item1;
             }
         }

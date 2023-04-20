@@ -20,7 +20,8 @@ public interface IConfigCatCache
     /// </summary>
     /// <param name="key">A string identifying the <see cref="ProjectConfig"/> value.</param>
     /// <param name="config">The config to cache.</param>
-    Task SetAsync(string key, ProjectConfig config);
+    /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
+    Task SetAsync(string key, ProjectConfig config, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets a <see cref="ProjectConfig"/> from cache.
@@ -33,7 +34,7 @@ public interface IConfigCatCache
     /// Gets a <see cref="ProjectConfig"/> from cache.
     /// </summary>
     /// <param name="key">A string identifying the <see cref="ProjectConfig"/> value.</param>
-    /// <param name="cancellationToken">An optional <see cref="CancellationToken"/>.</param>
+    /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
     /// <returns>The cached config or <see cref="ProjectConfig.Empty"/> if there is none.</returns>
     Task<ProjectConfig> GetAsync(string key, CancellationToken cancellationToken = default);
 }

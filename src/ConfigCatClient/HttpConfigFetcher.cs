@@ -9,9 +9,9 @@ using ConfigCat.Client.Evaluation;
 using ConfigCat.Client.Utils;
 
 #if NET45
-using ResponseWithBody = System.Tuple<System.Net.Http.HttpResponseMessage, string>;
+using ResponseWithBody = System.Tuple<System.Net.Http.HttpResponseMessage, string?>;
 #else
-using ResponseWithBody = System.ValueTuple<System.Net.Http.HttpResponseMessage, string>;
+using ResponseWithBody = System.ValueTuple<System.Net.Http.HttpResponseMessage, string?>;
 #endif
 
 namespace ConfigCat.Client;
@@ -22,18 +22,18 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
     private readonly string productVersion;
     private readonly LoggerWrapper logger;
 
-    private readonly HttpClientHandler httpClientHandler;
+    private readonly HttpClientHandler? httpClientHandler;
     private readonly IConfigDeserializer deserializer;
     private readonly bool isCustomUri;
     private readonly TimeSpan timeout;
     private readonly CancellationTokenSource cancellationTokenSource = new();
     private HttpClient httpClient;
-    private Task<FetchResult> pendingFetch;
+    internal Task<FetchResult>? pendingFetch;
 
     private Uri requestUri;
 
     public HttpConfigFetcher(Uri requestUri, string productVersion, LoggerWrapper logger,
-        HttpClientHandler httpClientHandler, IConfigDeserializer deserializer, bool isCustomUri, TimeSpan timeout)
+        HttpClientHandler? httpClientHandler, IConfigDeserializer deserializer, bool isCustomUri, TimeSpan timeout)
     {
         this.requestUri = requestUri;
         this.productVersion = productVersion;
@@ -42,7 +42,7 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
         this.deserializer = deserializer;
         this.isCustomUri = isCustomUri;
         this.timeout = timeout;
-        ReInitializeHttpClient();
+        this.httpClient = CreateHttpClient();
     }
 
     public FetchResult Fetch(ProjectConfig lastConfig)
@@ -59,11 +59,11 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
 #endif
     }
 
-    public Task<FetchResult> FetchAsync(ProjectConfig lastConfig)
+    public Task<FetchResult> FetchAsync(ProjectConfig lastConfig, CancellationToken cancellationToken = default)
     {
         lock (this.syncObj)
         {
-            return this.pendingFetch ??= Task.Run(async () =>
+            this.pendingFetch ??= Task.Run(async () =>
             {
                 try
                 {
@@ -77,6 +77,8 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                     }
                 }
             });
+
+            return this.pendingFetch.WaitAsync(cancellationToken);
         }
     }
 
@@ -90,18 +92,18 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
 #if NET5_0_OR_GREATER
             if (isAsync)
             {
-                responseWithBody = await FetchRequest(lastConfig, this.requestUri, isAsync: true).ConfigureAwait(false);
+                responseWithBody = await FetchRequestAsync(lastConfig, this.requestUri, isAsync: true).ConfigureAwait(false);
             }
             else
             {
-                var valueTask = FetchRequest(lastConfig, this.requestUri, isAsync: false);
+                var valueTask = FetchRequestAsync(lastConfig, this.requestUri, isAsync: false);
                 Debug.Assert(valueTask.IsCompleted);
 
                 // The value task holds the sync result, it's safe to call GetAwaiter().GetResult()
                 responseWithBody = valueTask.GetAwaiter().GetResult();
             }
 #else
-            responseWithBody = await FetchRequest(lastConfig, this.requestUri, isAsync: true).ConfigureAwait(false);
+            responseWithBody = await FetchRequestAsync(lastConfig, this.requestUri, isAsync: true).ConfigureAwait(false);
 #endif
 
             var response = responseWithBody.Item1;
@@ -147,10 +149,14 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
         }
         catch (OperationCanceledException) when (this.cancellationTokenSource.IsCancellationRequested)
         {
+            // NOTE: Unfortunately, we can't check the CancellationToken property of the exception in the when condition above because
+            // it seems that HttpClient.SendAsync combines our token with another one under the hood (at least, in runtimes earlier than .NET 6),
+            // so we'd get a Linked2CancellationTokenSource here instead of our token which we pass to the HttpClient.SendAsync method...
+
             /* do nothing on dispose cancel */
             return FetchResult.NotModified(lastConfig);
         }
-        catch (OperationCanceledException ex) when (!this.cancellationTokenSource.IsCancellationRequested)
+        catch (OperationCanceledException ex)
         {
             logMessage = this.logger.FetchFailedDueToRequestTimeout(this.timeout, ex);
             errorException = ex;
@@ -170,7 +176,7 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
         return FetchResult.Failure(lastConfig, logMessage.InvariantFormattedMessage, errorException);
     }
 
-    private async ValueTask<ResponseWithBody> FetchRequest(ProjectConfig lastConfig,
+    private async ValueTask<ResponseWithBody> FetchRequestAsync(ProjectConfig lastConfig,
         Uri requestUri, bool isAsync, sbyte maxExecutionCount = 3)
     {
         for (; ; maxExecutionCount--)
@@ -206,7 +212,7 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                 if (!this.deserializer.TryDeserialize(responseBody, httpETag, out var body))
                     return new ResponseWithBody(response, null);
 
-                if (body?.Preferences is not null)
+                if (body.Preferences is not null)
                 {
                     var newBaseUrl = body.Preferences.Url;
 
@@ -268,27 +274,31 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
     {
         lock (this.syncObj)
         {
-            ReInitializeHttpClientLogic();
+            this.httpClient = CreateHttpClient();
         }
     }
 
-    private void ReInitializeHttpClientLogic()
+    private HttpClient CreateHttpClient()
     {
+        HttpClient client;
+
         if (this.httpClientHandler is null)
         {
-            this.httpClient = new HttpClient(new HttpClientHandler
+            client = new HttpClient(new HttpClientHandler
             {
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
             });
         }
         else
         {
-            this.httpClient = new HttpClient(this.httpClientHandler, false);
+            client = new HttpClient(this.httpClientHandler, false);
         }
 
-        this.httpClient.Timeout = this.timeout;
-        this.httpClient.DefaultRequestHeaders.Add("X-ConfigCat-UserAgent",
+        client.Timeout = this.timeout;
+        client.DefaultRequestHeaders.Add("X-ConfigCat-UserAgent",
             new ProductInfoHeaderValue("ConfigCat-Dotnet", this.productVersion).ToString());
+
+        return client;
     }
 
     public void Dispose()

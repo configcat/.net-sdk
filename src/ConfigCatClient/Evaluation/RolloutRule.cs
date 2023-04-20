@@ -33,7 +33,7 @@ public record class RolloutRule
 #else
     [JsonPropertyName("a")]
 #endif
-    public string ComparisonAttribute { get; set; }
+    public string ComparisonAttribute { get; set; } = null!;
 
     /// <summary>
     /// The comparison operator. Defines the connection between the attribute and the value.
@@ -53,7 +53,7 @@ public record class RolloutRule
 #else
     [JsonPropertyName("c")]
 #endif
-    public string ComparisonValue { get; set; }
+    public string ComparisonValue { get; set; } = null!;
 
     /// <summary>
     /// The value associated with the targeting rule.
@@ -63,7 +63,7 @@ public record class RolloutRule
 #else
     [JsonPropertyName("v")]
 #endif
-    public JsonValue Value { get; set; }
+    public JsonValue Value { get; set; } = default!;
 
     /// <summary>
     /// Variation ID.
@@ -73,7 +73,7 @@ public record class RolloutRule
 #else
     [JsonPropertyName("i")]
 #endif
-    public string VariationId { get; set; }
+    public string? VariationId { get; set; }
 
     internal static string FormatComparator(Comparator comparator)
     {

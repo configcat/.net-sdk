@@ -59,7 +59,7 @@ public readonly struct LogEventId : IEquatable<LogEventId>
     }
 
     /// <inheritdoc/>
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         return obj is LogEventId other && Equals(other);
     }

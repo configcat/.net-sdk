@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Evaluation;
 
@@ -8,8 +9,8 @@ namespace ConfigCat.Client.Override;
 
 internal sealed class LocalDictionaryDataSource : IOverrideDataSource
 {
-    private readonly IDictionary<string, Setting> initialSettings;
-    private readonly IDictionary<string, object> overrideValues;
+    private readonly Dictionary<string, Setting> initialSettings;
+    private readonly IDictionary<string, object>? overrideValues;
 
     public LocalDictionaryDataSource(IDictionary<string, object> overrideValues, bool watchChanges)
     {
@@ -22,11 +23,11 @@ internal sealed class LocalDictionaryDataSource : IOverrideDataSource
 
     public void Dispose() { /* no need to dispose anything */ }
 
-    public IDictionary<string, Setting> GetOverrides() => GetSettingsFromSource();
+    public Dictionary<string, Setting> GetOverrides() => GetSettingsFromSource();
 
-    public Task<IDictionary<string, Setting>> GetOverridesAsync() => Task.FromResult(GetSettingsFromSource());
+    public Task<Dictionary<string, Setting>> GetOverridesAsync(CancellationToken cancellationToken = default) => Task.FromResult(GetSettingsFromSource());
 
-    private IDictionary<string, Setting> GetSettingsFromSource() => this.overrideValues != null
+    private Dictionary<string, Setting> GetSettingsFromSource() => this.overrideValues is not null
         ? this.overrideValues.ToDictionary(kv => kv.Key, kv => kv.Value.ToSetting())
         : this.initialSettings;
 }

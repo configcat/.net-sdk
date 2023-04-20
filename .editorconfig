@@ -238,7 +238,7 @@ dotnet_naming_rule.everything_else.severity = warning
 dotnet_naming_rule.everything_else.symbols = all_symbols
 dotnet_naming_rule.everything_else.style = pascal_case
 
-# Analyzers 
+# Analyzers
 
 # CAC001: ConfigureAwaitChecker
 dotnet_diagnostic.CAC001.severity = warning

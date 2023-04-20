@@ -7,9 +7,9 @@ namespace ConfigCat.Client.Configuration;
 /// </summary>
 public abstract class PollingMode
 {
-    internal abstract string Identifier { get; }
+    private protected PollingMode() { }
 
-    internal abstract void Validate();
+    internal abstract string Identifier { get; }
 }
 
 /// <summary>
@@ -31,16 +31,11 @@ public class AutoPoll : PollingMode
 
     internal AutoPoll(TimeSpan pollInterval, TimeSpan maxInitWaitTime)
     {
-        PollInterval = pollInterval;
-        MaxInitWaitTime = maxInitWaitTime;
-    }
+        PollInterval = pollInterval > TimeSpan.Zero
+            ? pollInterval
+            : throw new ArgumentOutOfRangeException(nameof(pollInterval), "Value must be greater than zero.");
 
-    internal override void Validate()
-    {
-        if (PollInterval <= TimeSpan.Zero)
-        {
-            throw new ArgumentOutOfRangeException(nameof(PollInterval), "Value must be greater than zero.");
-        }
+        MaxInitWaitTime = maxInitWaitTime;
     }
 }
 
@@ -58,15 +53,9 @@ public class LazyLoad : PollingMode
 
     internal LazyLoad(TimeSpan cacheTimeToLive)
     {
-        CacheTimeToLive = cacheTimeToLive;
-    }
-
-    internal override void Validate()
-    {
-        if (CacheTimeToLive < TimeSpan.FromSeconds(1))
-        {
-            throw new ArgumentOutOfRangeException(nameof(CacheTimeToLive), "Value must be greater than or equal to 1 seconds.");
-        }
+        CacheTimeToLive = cacheTimeToLive >= TimeSpan.FromSeconds(1)
+            ? cacheTimeToLive
+            : throw new ArgumentOutOfRangeException(nameof(cacheTimeToLive), "Value must be greater than or equal to 1 seconds.");
     }
 }
 
@@ -76,6 +65,4 @@ public class LazyLoad : PollingMode
 public class ManualPoll : PollingMode
 {
     internal override string Identifier => "m";
-
-    internal override void Validate() { }
 }

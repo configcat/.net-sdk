@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace ConfigCat.Client;
 
@@ -20,7 +21,7 @@ public readonly record struct RefreshResult
     /// Creates an instance which indicates that the operation failed.
     /// </summary>
     /// <returns></returns>
-    public static RefreshResult Failure(string errorMessage, Exception errorException = null)
+    public static RefreshResult Failure(string errorMessage, Exception? errorException = null)
     {
         return new RefreshResult(errorMessage ?? throw new ArgumentNullException(nameof(errorMessage)), errorException);
     }
@@ -32,7 +33,7 @@ public readonly record struct RefreshResult
             : Failure(fetchResult.ErrorMessage, fetchResult.ErrorException);
     }
 
-    private RefreshResult(string errorMessage, Exception errorException)
+    private RefreshResult(string? errorMessage, Exception? errorException)
     {
         ErrorMessage = errorMessage;
         ErrorException = errorException;
@@ -41,15 +42,16 @@ public readonly record struct RefreshResult
     /// <summary>
     /// Indicates whether the operation was successful or not.
     /// </summary>
+    [MemberNotNullWhen(false, nameof(ErrorMessage))]
     public bool IsSuccess => ErrorMessage is null;
 
     /// <summary>
     /// Error message in case the operation failed, otherwise <see langword="null" />.
     /// </summary>
-    public string ErrorMessage { get; }
+    public string? ErrorMessage { get; }
 
     /// <summary>
     /// The <see cref="Exception"/> object related to the error in case the operation failed (if any).
     /// </summary>
-    public Exception ErrorException { get; }
+    public Exception? ErrorException { get; }
 }

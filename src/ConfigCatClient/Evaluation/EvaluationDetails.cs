@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using ConfigCat.Client.Evaluation;
 
 #if USE_NEWTONSOFT_JSON
@@ -23,9 +24,8 @@ public abstract record class EvaluationDetails
 
     internal static EvaluationDetails<TValue> Create<TValue>(SettingType settingType, JsonValue value)
     {
-        var objectValueExpected = typeof(TValue) == typeof(object);
-        var expectedSettingType = typeof(TValue).ToSettingType();
-        expectedSettingType.EnsureSupportedSettingType(isAnyAllowed: objectValueExpected);
+        // NOTE: We've already checked earlier in the call chain that TValue is an allowed type (see also TypeExtensions.EnsureSupportedSettingClrType).
+        Debug.Assert(typeof(TValue) == typeof(object) || typeof(TValue).ToSettingType() != SettingType.Unknown, "Type is not supported.");
 
         // SettingType was not specified in the config.json?
         if (settingType == SettingType.Unknown)
@@ -39,9 +39,9 @@ public abstract record class EvaluationDetails
             }
         }
 
-        if (!objectValueExpected)
+        if (typeof(TValue) != typeof(object))
         {
-            if (settingType != expectedSettingType)
+            if (settingType != typeof(TValue).ToSettingType())
             {
                 throw new InvalidOperationException($"The type of a setting must match the type of the setting's default value.{Environment.NewLine}Setting's type was {settingType} but the default value's type was {typeof(TValue)}.{Environment.NewLine}Please use a default value which corresponds to the setting type {settingType}.");
             }
@@ -82,11 +82,11 @@ public abstract record class EvaluationDetails
         SettingType settingType,
         string key,
         JsonValue value,
-        string variationId,
+        string? variationId,
         DateTime? fetchTime,
-        User user,
-        RolloutRule matchedEvaluationRule = null,
-        RolloutPercentageItem matchedEvaluationPercentageRule = null)
+        User? user,
+        RolloutRule? matchedEvaluationRule = null,
+        RolloutPercentageItem? matchedEvaluationPercentageRule = null)
     {
         var instance = factory(settingType, value);
 
@@ -103,8 +103,8 @@ public abstract record class EvaluationDetails
         return instance;
     }
 
-    internal static EvaluationDetails<TValue> FromDefaultValue<TValue>(string key, TValue defaultValue, DateTime? fetchTime, User user,
-        string errorMessage = null, Exception errorException = null)
+    internal static EvaluationDetails<TValue> FromDefaultValue<TValue>(string key, TValue defaultValue, DateTime? fetchTime, User? user,
+        string? errorMessage = null, Exception? errorException = null)
     {
         var instance = new EvaluationDetails<TValue>
         {
@@ -124,24 +124,27 @@ public abstract record class EvaluationDetails
         return instance;
     }
 
-    private protected EvaluationDetails() { }
+    private protected EvaluationDetails(string key)
+    {
+        Key = key;
+    }
 
     /// <summary>
     /// Key of the feature or setting flag.
     /// </summary>
-    public string Key { get; set; }
+    public string Key { get; private set; }
 
     /// <summary>
     /// Evaluated value of the feature or setting flag.
     /// </summary>
-    public object Value => GetValueAsObject();
+    public object? Value => GetValueAsObject();
 
-    private protected abstract object GetValueAsObject();
+    private protected abstract object? GetValueAsObject();
 
     /// <summary>
     /// Variation ID of the feature or setting flag (if available).
     /// </summary>
-    public string VariationId { get; set; }
+    public string? VariationId { get; set; }
 
     /// <summary>
     /// Time of last successful download of config.json (or <see cref="DateTime.MinValue"/> if there has been no successful download yet).
@@ -151,7 +154,7 @@ public abstract record class EvaluationDetails
     /// <summary>
     /// The <see cref="User"/> object used for the evaluation (if available).
     /// </summary>
-    public User User { get; set; }
+    public User? User { get; set; }
 
     /// <summary>
     /// Indicates whether the default value passed to <see cref="IConfigCatClient.GetValue"/> or <see cref="IConfigCatClient.GetValueAsync"/>
@@ -162,34 +165,39 @@ public abstract record class EvaluationDetails
     /// <summary>
     /// Error message in case evaluation failed.
     /// </summary>
-    public string ErrorMessage { get; set; }
+    public string? ErrorMessage { get; set; }
 
     /// <summary>
     /// The <see cref="Exception"/> object related to the error in case evaluation failed (if any).
     /// </summary>
-    public Exception ErrorException { get; set; }
+    public Exception? ErrorException { get; set; }
 
     /// <summary>
     /// The comparison-based targeting rule which was used to select the evaluated value (if any).
     /// </summary>
-    public RolloutRule MatchedEvaluationRule { get; set; }
+    public RolloutRule? MatchedEvaluationRule { get; set; }
 
     /// <summary>
     /// The percentage-based targeting rule which was used to select the evaluated value (if any).
     /// </summary>
-    public RolloutPercentageItem MatchedEvaluationPercentageRule { get; set; }
+    public RolloutPercentageItem? MatchedEvaluationPercentageRule { get; set; }
 }
 
 /// <inheritdoc/>
 public sealed record class EvaluationDetails<TValue> : EvaluationDetails
 {
+    internal EvaluationDetails() : this(key: null!, value: default!) { }
+
     /// <summary>
     /// Creates an instance of <see cref="EvaluationDetails"/>.
     /// </summary>
-    public EvaluationDetails() { }
+    public EvaluationDetails(string key, TValue value) : base(key)
+    {
+        Value = value;
+    }
 
     /// <inheritdoc/>
     public new TValue Value { get; set; }
 
-    private protected override object GetValueAsObject() => Value;
+    private protected override object? GetValueAsObject() => Value;
 }

@@ -13,7 +13,7 @@ internal sealed class LoggerWrapper : IConfigCatLogger
         set => this.logger.LogLevel = value;
     }
 
-    internal LoggerWrapper(IConfigCatLogger logger, Hooks hooks = null)
+    internal LoggerWrapper(IConfigCatLogger logger, Hooks? hooks = null)
     {
         this.logger = logger;
         this.hooks = hooks ?? NullHooks.Instance;
@@ -25,7 +25,7 @@ internal sealed class LoggerWrapper : IConfigCatLogger
     }
 
     /// <inheritdoc />
-    public void Log(LogLevel level, LogEventId eventId, ref FormattableLogMessage message, Exception exception = null)
+    public void Log(LogLevel level, LogEventId eventId, ref FormattableLogMessage message, Exception? exception = null)
     {
         if (TargetLogEnabled(level))
         {

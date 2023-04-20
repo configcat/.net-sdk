@@ -15,7 +15,7 @@ internal static class SerializationExtensions
     private static readonly JsonSerializer Serializer = JsonSerializer.Create();
 #endif
 
-    public static T Deserialize<T>(this string json)
+    public static T? Deserialize<T>(this string json)
     {
 #if USE_NEWTONSOFT_JSON
         using var stringReader = new StringReader(json);
@@ -26,7 +26,7 @@ internal static class SerializationExtensions
 #endif
     }
 
-    public static T DeserializeOrDefault<T>(this string json)
+    public static T? DeserializeOrDefault<T>(this string json)
     {
         try
         {

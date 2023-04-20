@@ -16,7 +16,7 @@ public record class ProjectConfig : IEquatable<ProjectConfig>
     /// <summary>
     /// The <see cref="ProjectConfig"/> in json string format
     /// </summary>
-    public string JsonString
+    public string? JsonString
     {
         get;
 #if NET5_0_OR_GREATER
@@ -42,7 +42,7 @@ public record class ProjectConfig : IEquatable<ProjectConfig>
     /// <summary>
     /// Http entity tag of the <see cref="ProjectConfig"/>
     /// </summary>
-    public string HttpETag
+    public string? HttpETag
     {
         get;
 #if NET5_0_OR_GREATER
@@ -65,14 +65,14 @@ public record class ProjectConfig : IEquatable<ProjectConfig>
     /// <param name="jsonString">ProjectConfig in json string format.</param>
     /// <param name="timeStamp">TimeStamp of the ProjectConfig's acquire.</param>
     /// <param name="httpETag">Http entity tag of the ProjectConfig.</param>
-    public ProjectConfig(string jsonString, DateTime timeStamp, string httpETag)
+    public ProjectConfig(string? jsonString, DateTime timeStamp, string? httpETag)
     {
         JsonString = jsonString;
         TimeStamp = timeStamp;
         HttpETag = httpETag;
     }
 
-    internal static bool ContentEquals(string httpETag1, string jsonString1, string httpETag2, string jsonString2)
+    internal static bool ContentEquals(string? httpETag1, string? jsonString1, string? httpETag2, string? jsonString2)
     {
         // NOTE: When both ETags are available, we don't need to check the JSON content
         // (because of how HTTP ETags work - see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag).
@@ -98,7 +98,7 @@ public record class ProjectConfig : IEquatable<ProjectConfig>
     /// <returns>
     /// True if the value of the value parameter is the same as the value of this instance otherwise, false.
     /// </returns>
-    public virtual bool Equals(ProjectConfig other)
+    public virtual bool Equals(ProjectConfig? other)
     {
         return
             other is not null &&
@@ -110,8 +110,8 @@ public record class ProjectConfig : IEquatable<ProjectConfig>
     public override int GetHashCode()
     {
         var hashCode = 1098790081;
-        hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(HttpETag);
-        hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(JsonString);
+        hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(HttpETag!);
+        hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(JsonString!);
         return hashCode;
     }
 

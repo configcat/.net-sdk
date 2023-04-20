@@ -74,7 +74,7 @@ public class DataGovernanceTests
 
         handlerMock.VerifyAll();
         Assert.AreEqual(1, requestCount);
-        Assert.AreEqual(new Uri(expectedUrl).Host, requests[0].RequestUri.Host);
+        Assert.AreEqual(new Uri(expectedUrl).Host, requests[0].RequestUri!.Host);
     }
 
     [TestMethod]
@@ -99,7 +99,7 @@ public class DataGovernanceTests
 
         // Assert
 
-        Assert.IsTrue(requests.Values.All(message => message.RequestUri.Host == GlobalCdnUri.Host));
+        Assert.IsTrue(requests.Values.All(message => message.RequestUri!.Host == GlobalCdnUri.Host));
     }
 
     [TestMethod]
@@ -126,8 +126,8 @@ public class DataGovernanceTests
         // Assert
 
         Assert.AreEqual(3, requests.Count);
-        Assert.AreEqual(EuOnlyCdnUri.Host, requests[1].RequestUri.Host);
-        Assert.IsTrue(requests.Values.Skip(1).All(message => message.RequestUri.Host == GlobalCdnUri.Host));
+        Assert.AreEqual(EuOnlyCdnUri.Host, requests[1].RequestUri!.Host);
+        Assert.IsTrue(requests.Values.Skip(1).All(message => message.RequestUri!.Host == GlobalCdnUri.Host));
     }
 
     [TestMethod]
@@ -154,9 +154,9 @@ public class DataGovernanceTests
         // Assert
 
         Assert.AreEqual(3 + 1, requests.Count);
-        Assert.AreEqual(GlobalCdnUri.Host, requests[1].RequestUri.Host);
-        Assert.AreEqual(EuOnlyCdnUri.Host, requests[2].RequestUri.Host);
-        Assert.IsTrue(requests.Values.Skip(2).All(m => m.RequestUri.Host == EuOnlyCdnUri.Host));
+        Assert.AreEqual(GlobalCdnUri.Host, requests[1].RequestUri!.Host);
+        Assert.AreEqual(EuOnlyCdnUri.Host, requests[2].RequestUri!.Host);
+        Assert.IsTrue(requests.Values.Skip(2).All(m => m.RequestUri!.Host == EuOnlyCdnUri.Host));
     }
 
     [TestMethod]
@@ -182,7 +182,7 @@ public class DataGovernanceTests
         // Assert
 
         Assert.AreEqual(3, requests.Count);
-        Assert.IsTrue(requests.Values.All(m => m.RequestUri.Host == EuOnlyCdnUri.Host));
+        Assert.IsTrue(requests.Values.All(m => m.RequestUri!.Host == EuOnlyCdnUri.Host));
     }
 
     [TestMethod]
@@ -195,7 +195,7 @@ public class DataGovernanceTests
             {CustomCdnUri.Host, CreateResponse()}
         };
 
-        string sdkKey = null;
+        string? sdkKey = null;
         var fetchConfig = new ConfigCatClientOptions
         {
             DataGovernance = DataGovernance.Global,
@@ -204,12 +204,12 @@ public class DataGovernanceTests
 
         // Act
 
-        var requests = await Fetch(sdkKey, fetchConfig, responsesRegistry, 3);
+        var requests = await Fetch(sdkKey!, fetchConfig, responsesRegistry, 3);
 
         // Assert
 
         Assert.AreEqual(3, requests.Count);
-        Assert.IsTrue(requests.Values.All(m => m.RequestUri.Host == CustomCdnUri.Host));
+        Assert.IsTrue(requests.Values.All(m => m.RequestUri!.Host == CustomCdnUri.Host));
     }
 
     [TestMethod]
@@ -222,7 +222,7 @@ public class DataGovernanceTests
             {CustomCdnUri.Host, CreateResponse()}
         };
 
-        string sdkKey = null;
+        string? sdkKey = null;
         var fetchConfig = new ConfigCatClientOptions
         {
             DataGovernance = DataGovernance.EuOnly,
@@ -231,12 +231,12 @@ public class DataGovernanceTests
 
         // Act
 
-        var requests = await Fetch(sdkKey, fetchConfig, responsesRegistry, 3);
+        var requests = await Fetch(sdkKey!, fetchConfig, responsesRegistry, 3);
 
         // Assert
 
         Assert.AreEqual(3, requests.Count);
-        Assert.IsTrue(requests.Values.All(m => m.RequestUri.Host == CustomCdnUri.Host));
+        Assert.IsTrue(requests.Values.All(m => m.RequestUri!.Host == CustomCdnUri.Host));
     }
 
     [TestMethod]
@@ -257,14 +257,14 @@ public class DataGovernanceTests
 
         // Act
 
-        string sdkKey = null;
-        var requests = await Fetch(sdkKey, fetchConfig, responsesRegistry, 3);
+        string? sdkKey = null;
+        var requests = await Fetch(sdkKey!, fetchConfig, responsesRegistry, 3);
 
         // Assert
 
         Assert.AreEqual(3 + 1, requests.Count);
-        Assert.AreEqual(GlobalCdnUri.Host, requests[1].RequestUri.Host);
-        Assert.IsTrue(requests.Values.Skip(1).All(m => m.RequestUri.Host == ForcedCdnUri.Host));
+        Assert.AreEqual(GlobalCdnUri.Host, requests[1].RequestUri!.Host);
+        Assert.IsTrue(requests.Values.Skip(1).All(m => m.RequestUri!.Host == ForcedCdnUri.Host));
     }
 
     [TestMethod]
@@ -278,7 +278,7 @@ public class DataGovernanceTests
             {ForcedCdnUri.Host, CreateResponse(ForcedCdnUri, RedirectMode.Force, true)}
         };
 
-        string sdkKey = null;
+        string? sdkKey = null;
         var fetchConfig = new ConfigCatClientOptions
         {
             DataGovernance = DataGovernance.EuOnly
@@ -286,13 +286,13 @@ public class DataGovernanceTests
 
         // Act
 
-        var requests = await Fetch(sdkKey, fetchConfig, responsesRegistry, 3);
+        var requests = await Fetch(sdkKey!, fetchConfig, responsesRegistry, 3);
 
         // Assert
 
         Assert.AreEqual(3 + 1, requests.Count);
-        Assert.AreEqual(EuOnlyCdnUri.Host, requests[1].RequestUri.Host);
-        Assert.IsTrue(requests.Values.Skip(1).All(m => m.RequestUri.Host == ForcedCdnUri.Host));
+        Assert.AreEqual(EuOnlyCdnUri.Host, requests[1].RequestUri!.Host);
+        Assert.IsTrue(requests.Values.Skip(1).All(m => m.RequestUri!.Host == ForcedCdnUri.Host));
     }
 
     [TestMethod]
@@ -306,7 +306,7 @@ public class DataGovernanceTests
             {ForcedCdnUri.Host, CreateResponse(ForcedCdnUri, RedirectMode.Force, true)}
         };
 
-        string sdkKey = null;
+        string? sdkKey = null;
         var fetchConfig = new ConfigCatClientOptions
         {
             DataGovernance = DataGovernance.Global,
@@ -315,13 +315,13 @@ public class DataGovernanceTests
 
         // Act
 
-        var responses = await Fetch(sdkKey, fetchConfig, responsesRegistry, 3);
+        var responses = await Fetch(sdkKey!, fetchConfig, responsesRegistry, 3);
 
         // Assert
 
         Assert.AreEqual(3 + 1, responses.Count);
-        Assert.AreEqual(CustomCdnUri.Host, responses[1].RequestUri.Host);
-        Assert.IsTrue(responses.Values.Skip(1).All(m => m.RequestUri.Host == ForcedCdnUri.Host));
+        Assert.AreEqual(CustomCdnUri.Host, responses[1].RequestUri!.Host);
+        Assert.IsTrue(responses.Values.Skip(1).All(m => m.RequestUri!.Host == ForcedCdnUri.Host));
     }
 
     [TestMethod]
@@ -335,7 +335,7 @@ public class DataGovernanceTests
             {EuOnlyCdnUri.Host, CreateResponse(GlobalCdnUri, RedirectMode.Should, false)}
         };
 
-        string sdkKey = null;
+        string? sdkKey = null;
         var fetchConfig = new ConfigCatClientOptions
         {
             DataGovernance = DataGovernance.Global
@@ -343,7 +343,7 @@ public class DataGovernanceTests
 
         // Act
 
-        var requests = await Fetch(sdkKey, fetchConfig, responsesRegistry);
+        var requests = await Fetch(sdkKey!, fetchConfig, responsesRegistry);
 
         // Assert
 
@@ -376,7 +376,7 @@ public class DataGovernanceTests
             .Returns<HttpRequestMessage, CancellationToken>((message, _) => Task.FromResult(new HttpResponseMessage()
             {
                 StatusCode = HttpStatusCode.OK,
-                Content = new StringContent(responsesRegistry[message.RequestUri.Host].Serialize())
+                Content = new StringContent(responsesRegistry[message.RequestUri!.Host].Serialize())
             }))
             .Verifiable();
 
@@ -403,7 +403,7 @@ public class DataGovernanceTests
         return requests;
     }
 
-    private static SettingsWithPreferences CreateResponse(Uri url = null, RedirectMode redirectMode = RedirectMode.No, bool withSettings = true)
+    private static SettingsWithPreferences CreateResponse(Uri? url = null, RedirectMode redirectMode = RedirectMode.No, bool withSettings = true)
     {
         return new SettingsWithPreferences
         {

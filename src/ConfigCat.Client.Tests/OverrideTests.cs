@@ -77,7 +77,7 @@ public class OverrideTests
 
         Parallel.ForEach(keys, async item =>
         {
-            Assert.IsNotNull(await client.GetValueAsync<object>(item, null));
+            Assert.IsNotNull(await client.GetValueAsync<object?>(item, null));
         });
     }
 
@@ -100,7 +100,7 @@ public class OverrideTests
 
         Parallel.ForEach(keys, item =>
         {
-            Assert.IsNotNull(client.GetValue<object>(item, null));
+            Assert.IsNotNull(client.GetValue<object?>(item, null));
         });
     }
 
@@ -432,8 +432,8 @@ public class OverrideTests
         using var client = ConfigCatClient.Get("localhost", options =>
         {
             options.FlagOverrides = FlagOverrides.LocalFile(SampleFileToCreate, true, OverrideBehaviour.LocalOnly);
-            options.Logger.LogLevel = LogLevel.Info;
         });
+        client.LogLevel = LogLevel.Info;
 
         Assert.AreEqual("initial", await client.GetValueAsync("fakeKey", string.Empty));
         await Task.Delay(100);
@@ -453,8 +453,8 @@ public class OverrideTests
         using var client = ConfigCatClient.Get("localhost", options =>
         {
             options.FlagOverrides = FlagOverrides.LocalFile(SampleFileToCreate, true, OverrideBehaviour.LocalOnly);
-            options.Logger.LogLevel = LogLevel.Info;
         });
+        client.LogLevel = LogLevel.Info;
 
         Assert.AreEqual("initial", client.GetValue("fakeKey", string.Empty));
         await Task.Delay(100);

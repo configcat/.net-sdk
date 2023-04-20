@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
 using ConfigCat.Client.ConfigService;
@@ -17,22 +18,22 @@ namespace ConfigCat.Client;
 /// </summary>
 public sealed class ConfigCatClient : IConfigCatClient
 {
-    private static readonly string Version = typeof(ConfigCatClient).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
+    private static readonly string Version = typeof(ConfigCatClient).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion;
 
     internal static readonly ConfigCatClientCache Instances = new();
 
-    private readonly string sdkKey; // may be null in case of testing
+    private readonly string? sdkKey; // may be null in case of testing
     private readonly LoggerWrapper logger;
     private readonly IRolloutEvaluator configEvaluator;
     private readonly IConfigService configService;
     private readonly IConfigDeserializer configDeserializer;
-    private readonly IOverrideDataSource overrideDataSource;
+    private readonly IOverrideDataSource? overrideDataSource;
     private readonly OverrideBehaviour? overrideBehaviour;
     private readonly Hooks hooks;
     // NOTE: The following mutable field(s) may be accessed from multiple threads and we need to make sure that changes to them are observable in these threads.
     // Volatile guarantees (see https://learn.microsoft.com/en-us/dotnet/api/system.threading.volatile) that such changes become visible to them *eventually*,
     // which is good enough in these cases.
-    private volatile User defaultUser;
+    private volatile User? defaultUser;
 
     /// <inheritdoc />
     public LogLevel LogLevel
@@ -47,15 +48,15 @@ public sealed class ConfigCatClient : IConfigCatClient
         this.hooks = configuration.Hooks;
         this.hooks.SetSender(this);
 
-        this.logger = new LoggerWrapper(configuration.Logger, this.hooks);
+        this.logger = new LoggerWrapper(configuration.Logger ?? ConfigCatClientOptions.CreateDefaultLogger(), this.hooks);
         this.configDeserializer = new ConfigDeserializer();
         this.configEvaluator = new RolloutEvaluator(this.logger);
 
         var cacheParameters = new CacheParameters
-        {
-            ConfigCache = configuration.ConfigCache ?? new InMemoryConfigCache(),
-            CacheKey = GetCacheKey(sdkKey)
-        };
+        (
+            configCache: configuration.ConfigCache ?? ConfigCatClientOptions.CreateDefaultConfigCache(),
+            cacheKey: GetCacheKey(sdkKey)
+        );
 
         if (configuration.FlagOverrides is not null)
         {
@@ -65,10 +66,12 @@ public sealed class ConfigCatClient : IConfigCatClient
 
         this.defaultUser = configuration.DefaultUser;
 
-        this.configService = this.overrideBehaviour is null || this.overrideBehaviour != OverrideBehaviour.LocalOnly
-            ? DetermineConfigService(configuration.PollingMode,
+        var pollingMode = configuration.PollingMode ?? ConfigCatClientOptions.CreateDefaultPollingMode();
+
+        this.configService = this.overrideBehaviour != OverrideBehaviour.LocalOnly
+            ? DetermineConfigService(pollingMode,
                 new HttpConfigFetcher(configuration.CreateUri(sdkKey),
-                        $"{configuration.PollingMode.Identifier}-{Version}",
+                        $"{pollingMode.Identifier}-{Version}",
                         this.logger,
                         configuration.HttpClientHandler,
                         this.configDeserializer,
@@ -84,7 +87,7 @@ public sealed class ConfigCatClient : IConfigCatClient
     /// <summary>
     /// For testing purposes only
     /// </summary>
-    internal ConfigCatClient(IConfigService configService, IConfigCatLogger logger, IRolloutEvaluator evaluator, IConfigDeserializer configDeserializer, Hooks hooks = null)
+    internal ConfigCatClient(IConfigService configService, IConfigCatLogger logger, IRolloutEvaluator evaluator, IConfigDeserializer configDeserializer, Hooks? hooks = null)
     {
         if (hooks is not null)
         {
@@ -113,8 +116,9 @@ public sealed class ConfigCatClient : IConfigCatClient
     /// </remarks>
     /// <param name="sdkKey">SDK Key to access configuration. (For the moment, SDK Key can also be set using <paramref name="configurationAction"/>. This setting will, however, be ignored and <paramref name="sdkKey"/> will be used, regardless.)</param>
     /// <param name="configurationAction">The configuration action.</param>
-    /// <exception cref="ArgumentNullException">When the <paramref name="configurationAction"/> is null.</exception>
-    public static IConfigCatClient Get(string sdkKey, Action<ConfigCatClientOptions> configurationAction = null)
+    /// <exception cref="ArgumentNullException"><paramref name="sdkKey"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="sdkKey"/> is an empty string.</exception>
+    public static IConfigCatClient Get(string sdkKey, Action<ConfigCatClientOptions>? configurationAction = null)
     {
         if (sdkKey is null)
         {
@@ -123,12 +127,11 @@ public sealed class ConfigCatClient : IConfigCatClient
 
         if (sdkKey.Length == 0)
         {
-            throw new ArgumentException("Invalid SDK Key.", nameof(sdkKey));
+            throw new ArgumentException("SDK Key cannot be empty.", nameof(sdkKey));
         }
 
         var configuration = new ConfigCatClientOptions();
         configurationAction?.Invoke(configuration);
-        configuration.Validate();
 
         var instance = Instances.GetOrCreate(sdkKey, configuration, out var instanceAlreadyCreated);
 
@@ -205,7 +208,7 @@ public sealed class ConfigCatClient : IConfigCatClient
     {
         Instances.Clear(out var removedInstances);
 
-        List<Exception> exceptions = null;
+        List<Exception>? exceptions = null;
         foreach (var instance in removedInstances)
         {
             try
@@ -227,15 +230,26 @@ public sealed class ConfigCatClient : IConfigCatClient
     }
 
     /// <inheritdoc />
-    public T GetValue<T>(string key, T defaultValue, User user = null)
+    public T GetValue<T>(string key, T defaultValue, User? user = null)
     {
+        if (key is null)
+        {
+            throw new ArgumentNullException(nameof(key));
+        }
+
+        if (key.Length == 0)
+        {
+            throw new ArgumentException("Key cannot be empty.", nameof(key));
+        }
+
+        typeof(T).EnsureSupportedSettingClrType(nameof(T));
+
         T value;
         EvaluationDetails<T> evaluationDetails;
         SettingsWithRemoteConfig settings = default;
         user ??= this.defaultUser;
         try
         {
-            typeof(T).EnsureSupportedSettingClrType();
             settings = GetSettings();
             evaluationDetails = this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, this.logger);
             value = evaluationDetails.Value;
@@ -252,18 +266,33 @@ public sealed class ConfigCatClient : IConfigCatClient
     }
 
     /// <inheritdoc />
-    public async Task<T> GetValueAsync<T>(string key, T defaultValue, User user = null)
+    public async Task<T> GetValueAsync<T>(string key, T defaultValue, User? user = null, CancellationToken cancellationToken = default)
     {
+        if (key is null)
+        {
+            throw new ArgumentNullException(nameof(key));
+        }
+
+        if (key.Length == 0)
+        {
+            throw new ArgumentException("Key cannot be empty.", nameof(key));
+        }
+
+        typeof(T).EnsureSupportedSettingClrType(nameof(T));
+
         T value;
         EvaluationDetails<T> evaluationDetails;
         SettingsWithRemoteConfig settings = default;
         user ??= this.defaultUser;
         try
         {
-            typeof(T).EnsureSupportedSettingClrType();
-            settings = await GetSettingsAsync().ConfigureAwait(false);
+            settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(false);
             evaluationDetails = this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, this.logger);
             value = evaluationDetails.Value;
+        }
+        catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -277,14 +306,25 @@ public sealed class ConfigCatClient : IConfigCatClient
     }
 
     /// <inheritdoc />
-    public EvaluationDetails<T> GetValueDetails<T>(string key, T defaultValue, User user = null)
+    public EvaluationDetails<T> GetValueDetails<T>(string key, T defaultValue, User? user = null)
     {
+        if (key is null)
+        {
+            throw new ArgumentNullException(nameof(key));
+        }
+
+        if (key.Length == 0)
+        {
+            throw new ArgumentException("Key cannot be empty.", nameof(key));
+        }
+
+        typeof(T).EnsureSupportedSettingClrType(nameof(T));
+
         EvaluationDetails<T> evaluationDetails;
         SettingsWithRemoteConfig settings = default;
         user ??= this.defaultUser;
         try
         {
-            typeof(T).EnsureSupportedSettingClrType();
             settings = GetSettings();
             evaluationDetails = this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, this.logger);
         }
@@ -299,16 +339,31 @@ public sealed class ConfigCatClient : IConfigCatClient
     }
 
     /// <inheritdoc />
-    public async Task<EvaluationDetails<T>> GetValueDetailsAsync<T>(string key, T defaultValue, User user = null)
+    public async Task<EvaluationDetails<T>> GetValueDetailsAsync<T>(string key, T defaultValue, User? user = null, CancellationToken cancellationToken = default)
     {
+        if (key is null)
+        {
+            throw new ArgumentNullException(nameof(key));
+        }
+
+        if (key.Length == 0)
+        {
+            throw new ArgumentException("Key cannot be empty.", nameof(key));
+        }
+
+        typeof(T).EnsureSupportedSettingClrType(nameof(T));
+
         EvaluationDetails<T> evaluationDetails;
         SettingsWithRemoteConfig settings = default;
         user ??= this.defaultUser;
         try
         {
-            typeof(T).EnsureSupportedSettingClrType();
-            settings = await GetSettingsAsync().ConfigureAwait(false);
+            settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(false);
             evaluationDetails = this.configEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, this.logger);
+        }
+        catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -321,7 +376,7 @@ public sealed class ConfigCatClient : IConfigCatClient
     }
 
     /// <inheritdoc />
-    public IEnumerable<string> GetAllKeys()
+    public IReadOnlyCollection<string> GetAllKeys()
     {
         const string defaultReturnValue = "empty collection";
         try
@@ -329,43 +384,47 @@ public sealed class ConfigCatClient : IConfigCatClient
             var settings = GetSettings();
             if (!RolloutEvaluatorExtensions.CheckSettingsAvailable(settings.Value, this.logger, defaultReturnValue))
             {
-                return Enumerable.Empty<string>();
+                return ArrayUtils.EmptyArray<string>();
             }
-            return settings.Value.Keys;
+            return settings.Value.ReadOnlyKeys();
         }
         catch (Exception ex)
         {
             this.logger.SettingEvaluationError(nameof(GetAllKeys), defaultReturnValue, ex);
-            return Enumerable.Empty<string>();
+            return ArrayUtils.EmptyArray<string>();
         }
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<string>> GetAllKeysAsync()
+    public async Task<IReadOnlyCollection<string>> GetAllKeysAsync(CancellationToken cancellationToken = default)
     {
         const string defaultReturnValue = "empty collection";
         try
         {
-            var settings = await GetSettingsAsync().ConfigureAwait(false);
+            var settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(false);
             if (!RolloutEvaluatorExtensions.CheckSettingsAvailable(settings.Value, this.logger, defaultReturnValue))
             {
-                return Enumerable.Empty<string>();
+                return ArrayUtils.EmptyArray<string>();
             }
-            return settings.Value.Keys;
+            return settings.Value.ReadOnlyKeys();
+        }
+        catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
+        {
+            throw;
         }
         catch (Exception ex)
         {
             this.logger.SettingEvaluationError(nameof(GetAllKeysAsync), defaultReturnValue, ex);
-            return Enumerable.Empty<string>();
+            return ArrayUtils.EmptyArray<string>();
         }
     }
 
     /// <inheritdoc />
-    public IDictionary<string, object> GetAllValues(User user = null)
+    public IReadOnlyDictionary<string, object?> GetAllValues(User? user = null)
     {
         const string defaultReturnValue = "empty dictionary";
-        IDictionary<string, object> result;
-        EvaluationDetails[] evaluationDetailsArray = null;
+        IReadOnlyDictionary<string, object?> result;
+        EvaluationDetails[]? evaluationDetailsArray = null;
         user ??= this.defaultUser;
         try
         {
@@ -381,7 +440,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         {
             this.logger.SettingEvaluationError(nameof(GetAllValues), defaultReturnValue, ex);
             evaluationDetailsArray ??= ArrayUtils.EmptyArray<EvaluationDetails>();
-            result = new Dictionary<string, object>();
+            result = new Dictionary<string, object?>();
         }
 
         foreach (var evaluationDetails in evaluationDetailsArray)
@@ -393,15 +452,15 @@ public sealed class ConfigCatClient : IConfigCatClient
     }
 
     /// <inheritdoc />
-    public async Task<IDictionary<string, object>> GetAllValuesAsync(User user = null)
+    public async Task<IReadOnlyDictionary<string, object?>> GetAllValuesAsync(User? user = null, CancellationToken cancellationToken = default)
     {
         const string defaultReturnValue = "empty dictionary";
-        IDictionary<string, object> result;
-        EvaluationDetails[] evaluationDetailsArray = null;
+        IReadOnlyDictionary<string, object?> result;
+        EvaluationDetails[]? evaluationDetailsArray = null;
         user ??= this.defaultUser;
         try
         {
-            var settings = await GetSettingsAsync().ConfigureAwait(false);
+            var settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(false);
             evaluationDetailsArray = this.configEvaluator.EvaluateAll(settings.Value, user, settings.RemoteConfig, this.logger, defaultReturnValue, out var exceptions);
             if (exceptions is { Count: > 0 })
             {
@@ -409,11 +468,15 @@ public sealed class ConfigCatClient : IConfigCatClient
             }
             result = evaluationDetailsArray.ToDictionary(details => details.Key, details => details.Value);
         }
+        catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             this.logger.SettingEvaluationError(nameof(GetAllValuesAsync), defaultReturnValue, ex);
             evaluationDetailsArray ??= ArrayUtils.EmptyArray<EvaluationDetails>();
-            result = new Dictionary<string, object>();
+            result = new Dictionary<string, object?>();
         }
 
         foreach (var evaluationDetails in evaluationDetailsArray)
@@ -425,10 +488,10 @@ public sealed class ConfigCatClient : IConfigCatClient
     }
 
     /// <inheritdoc />
-    public IReadOnlyList<EvaluationDetails> GetAllValueDetails(User user = null)
+    public IReadOnlyList<EvaluationDetails> GetAllValueDetails(User? user = null)
     {
         const string defaultReturnValue = "empty list";
-        EvaluationDetails[] evaluationDetailsArray = null;
+        EvaluationDetails[]? evaluationDetailsArray = null;
         user ??= this.defaultUser;
         try
         {
@@ -454,19 +517,23 @@ public sealed class ConfigCatClient : IConfigCatClient
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<EvaluationDetails>> GetAllValueDetailsAsync(User user = null)
+    public async Task<IReadOnlyList<EvaluationDetails>> GetAllValueDetailsAsync(User? user = null, CancellationToken cancellationToken = default)
     {
         const string defaultReturnValue = "empty list";
-        EvaluationDetails[] evaluationDetailsArray = null;
+        EvaluationDetails[]? evaluationDetailsArray = null;
         user ??= this.defaultUser;
         try
         {
-            var settings = await GetSettingsAsync().ConfigureAwait(false);
+            var settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(false);
             evaluationDetailsArray = this.configEvaluator.EvaluateAll(settings.Value, user, settings.RemoteConfig, this.logger, defaultReturnValue, out var exceptions);
             if (exceptions is { Count: > 0 })
             {
                 throw new AggregateException(exceptions);
             }
+        }
+        catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -497,11 +564,15 @@ public sealed class ConfigCatClient : IConfigCatClient
     }
 
     /// <inheritdoc />
-    public async Task<RefreshResult> ForceRefreshAsync()
+    public async Task<RefreshResult> ForceRefreshAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            return await this.configService.RefreshConfigAsync().ConfigureAwait(false);
+            return await this.configService.RefreshConfigAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -512,26 +583,25 @@ public sealed class ConfigCatClient : IConfigCatClient
 
     private SettingsWithRemoteConfig GetSettings()
     {
-        if (this.overrideBehaviour is not null)
+        Dictionary<string, Setting> local;
+        SettingsWithRemoteConfig remote;
+        switch (this.overrideBehaviour)
         {
-            IDictionary<string, Setting> local;
-            SettingsWithRemoteConfig remote;
-            switch (this.overrideBehaviour)
-            {
-                case OverrideBehaviour.LocalOnly:
-                    return new SettingsWithRemoteConfig(this.overrideDataSource.GetOverrides(), remoteConfig: null);
-                case OverrideBehaviour.LocalOverRemote:
-                    local = this.overrideDataSource.GetOverrides();
-                    remote = GetRemoteConfig();
-                    return new SettingsWithRemoteConfig(remote.Value.MergeOverwriteWith(local), remote.RemoteConfig);
-                case OverrideBehaviour.RemoteOverLocal:
-                    local = this.overrideDataSource.GetOverrides();
-                    remote = GetRemoteConfig();
-                    return new SettingsWithRemoteConfig(local.MergeOverwriteWith(remote.Value), remote.RemoteConfig);
-            }
+            case null:
+                return GetRemoteConfig();
+            case OverrideBehaviour.LocalOnly:
+                return new SettingsWithRemoteConfig(this.overrideDataSource!.GetOverrides(), remoteConfig: null);
+            case OverrideBehaviour.LocalOverRemote:
+                local = this.overrideDataSource!.GetOverrides();
+                remote = GetRemoteConfig();
+                return new SettingsWithRemoteConfig(remote.Value.MergeOverwriteWith(local), remote.RemoteConfig);
+            case OverrideBehaviour.RemoteOverLocal:
+                local = this.overrideDataSource!.GetOverrides();
+                remote = GetRemoteConfig();
+                return new SettingsWithRemoteConfig(local.MergeOverwriteWith(remote.Value), remote.RemoteConfig);
+            default:
+                throw new InvalidOperationException(); // execution should never get here
         }
-
-        return GetRemoteConfig();
 
         SettingsWithRemoteConfig GetRemoteConfig()
         {
@@ -543,32 +613,33 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
     }
 
-    private async Task<SettingsWithRemoteConfig> GetSettingsAsync()
+    private async Task<SettingsWithRemoteConfig> GetSettingsAsync(CancellationToken cancellationToken)
     {
-        if (this.overrideBehaviour is not null)
+        cancellationToken.ThrowIfCancellationRequested();
+
+        Dictionary<string, Setting> local;
+        SettingsWithRemoteConfig remote;
+        switch (this.overrideBehaviour)
         {
-            IDictionary<string, Setting> local;
-            SettingsWithRemoteConfig remote;
-            switch (this.overrideBehaviour)
-            {
-                case OverrideBehaviour.LocalOnly:
-                    return new SettingsWithRemoteConfig(await this.overrideDataSource.GetOverridesAsync().ConfigureAwait(false), remoteConfig: null);
-                case OverrideBehaviour.LocalOverRemote:
-                    local = await this.overrideDataSource.GetOverridesAsync().ConfigureAwait(false);
-                    remote = await GetRemoteConfigAsync().ConfigureAwait(false);
-                    return new SettingsWithRemoteConfig(remote.Value.MergeOverwriteWith(local), remote.RemoteConfig);
-                case OverrideBehaviour.RemoteOverLocal:
-                    local = await this.overrideDataSource.GetOverridesAsync().ConfigureAwait(false);
-                    remote = await GetRemoteConfigAsync().ConfigureAwait(false);
-                    return new SettingsWithRemoteConfig(local.MergeOverwriteWith(remote.Value), remote.RemoteConfig);
-            }
+            case null:
+                return await GetRemoteConfigAsync(cancellationToken).ConfigureAwait(false);
+            case OverrideBehaviour.LocalOnly:
+                return new SettingsWithRemoteConfig(await this.overrideDataSource!.GetOverridesAsync(cancellationToken).ConfigureAwait(false), remoteConfig: null);
+            case OverrideBehaviour.LocalOverRemote:
+                local = await this.overrideDataSource!.GetOverridesAsync(cancellationToken).ConfigureAwait(false);
+                remote = await GetRemoteConfigAsync(cancellationToken).ConfigureAwait(false);
+                return new SettingsWithRemoteConfig(remote.Value.MergeOverwriteWith(local), remote.RemoteConfig);
+            case OverrideBehaviour.RemoteOverLocal:
+                local = await this.overrideDataSource!.GetOverridesAsync(cancellationToken).ConfigureAwait(false);
+                remote = await GetRemoteConfigAsync(cancellationToken).ConfigureAwait(false);
+                return new SettingsWithRemoteConfig(local.MergeOverwriteWith(remote.Value), remote.RemoteConfig);
+            default:
+                throw new InvalidOperationException(); // execution should never get here
         }
 
-        return await GetRemoteConfigAsync().ConfigureAwait(false);
-
-        async Task<SettingsWithRemoteConfig> GetRemoteConfigAsync()
+        async Task<SettingsWithRemoteConfig> GetRemoteConfigAsync(CancellationToken cancellationToken)
         {
-            var config = await this.configService.GetConfigAsync().ConfigureAwait(false);
+            var config = await this.configService.GetConfigAsync(cancellationToken).ConfigureAwait(false);
             if (!this.configDeserializer.TryDeserialize(config.JsonString, config.HttpETag, out var deserialized))
                 return new SettingsWithRemoteConfig(null, config);
 
@@ -635,28 +706,28 @@ public sealed class ConfigCatClient : IConfigCatClient
     }
 
     /// <inheritdoc/>
-    public event EventHandler ClientReady
+    public event EventHandler? ClientReady
     {
         add { this.hooks.ClientReady += value; }
         remove { this.hooks.ClientReady -= value; }
     }
 
     /// <inheritdoc/>
-    public event EventHandler<FlagEvaluatedEventArgs> FlagEvaluated
+    public event EventHandler<FlagEvaluatedEventArgs>? FlagEvaluated
     {
         add { this.hooks.FlagEvaluated += value; }
         remove { this.hooks.FlagEvaluated -= value; }
     }
 
     /// <inheritdoc/>
-    public event EventHandler<ConfigChangedEventArgs> ConfigChanged
+    public event EventHandler<ConfigChangedEventArgs>? ConfigChanged
     {
         add { this.hooks.ConfigChanged += value; }
         remove { this.hooks.ConfigChanged -= value; }
     }
 
     /// <inheritdoc/>
-    public event EventHandler<ConfigCatClientErrorEventArgs> Error
+    public event EventHandler<ConfigCatClientErrorEventArgs>? Error
     {
         add { this.hooks.Error += value; }
         remove { this.hooks.Error -= value; }
@@ -664,13 +735,13 @@ public sealed class ConfigCatClient : IConfigCatClient
 
     private readonly struct SettingsWithRemoteConfig
     {
-        public SettingsWithRemoteConfig(IDictionary<string, Setting> value, ProjectConfig remoteConfig)
+        public SettingsWithRemoteConfig(Dictionary<string, Setting>? value, ProjectConfig? remoteConfig)
         {
             Value = value;
             RemoteConfig = remoteConfig;
         }
 
-        public IDictionary<string, Setting> Value { get; }
-        public ProjectConfig RemoteConfig { get; }
+        public Dictionary<string, Setting>? Value { get; }
+        public ProjectConfig? RemoteConfig { get; }
     }
 }

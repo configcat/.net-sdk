@@ -4,16 +4,11 @@ namespace System;
 
 internal static class TypeExtensions
 {
-    public static void EnsureSupportedSettingClrType(this Type type)
+    public static void EnsureSupportedSettingClrType(this Type type, string paramName)
     {
-        type.ToSettingType().EnsureSupportedSettingType(isAnyAllowed: type == typeof(object));
-    }
-
-    public static void EnsureSupportedSettingType(this SettingType type, bool isAnyAllowed)
-    {
-        if (!isAnyAllowed && type == SettingType.Unknown)
+        if (type != typeof(object) && type.ToSettingType() == SettingType.Unknown)
         {
-            throw new InvalidOperationException($"Only {typeof(string)}, {typeof(bool)}, {typeof(int)}, {typeof(long)}, {typeof(double)} and {typeof(object)} are supported.");
+            throw new ArgumentException($"Only the following types are supported: {typeof(string)}, {typeof(bool)}, {typeof(int)}, {typeof(long)}, {typeof(double)} and {typeof(object)}  (both nullable and non-nullable).", paramName);
         }
     }
 

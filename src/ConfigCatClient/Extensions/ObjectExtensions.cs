@@ -78,7 +78,7 @@ internal static class ObjectExtensions
 #endif
     }
 
-    public static SettingType DetermineSettingType(this object value)
+    public static SettingType DetermineSettingType(this object? value)
     {
         if (value is null)
         {
@@ -113,7 +113,7 @@ internal static class ObjectExtensions
         };
     }
 
-    public static Setting ToSetting(this object value)
+    public static Setting ToSetting(this object? value)
     {
         var settingType = DetermineSettingType(value);
         if (settingType == SettingType.Unknown)
@@ -137,9 +137,11 @@ internal static class ObjectExtensions
         Debug.Assert(typeof(TValue) != typeof(object), "Conversion to object is not supported.");
 
 #if USE_NEWTONSOFT_JSON
-        return Newtonsoft.Json.Linq.Extensions.Value<TValue>(value);
+        Debug.Assert(value.Type != Newtonsoft.Json.Linq.JTokenType.Null, "Tried to convert unexpected null value.");
+        return Newtonsoft.Json.Linq.Extensions.Value<TValue>(value)!;
 #else
-        return System.Text.Json.JsonSerializer.Deserialize<TValue>(value);
+        Debug.Assert(value.ValueKind != Text.Json.JsonValueKind.Null, "Tried to convert unexpected null value.");
+        return Text.Json.JsonSerializer.Deserialize<TValue>(value)!;
 #endif
     }
 }

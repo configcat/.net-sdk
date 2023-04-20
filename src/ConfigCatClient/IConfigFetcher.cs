@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ConfigCat.Client;
@@ -11,8 +12,9 @@ internal interface IConfigFetcher
     /// Fetches the configuration asynchronously.
     /// </summary>
     /// <param name="lastConfig">Last fetched configuration if it is present</param>
+    /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
     /// <returns>The task that does the fetch.</returns>
-    Task<FetchResult> FetchAsync(ProjectConfig lastConfig);
+    Task<FetchResult> FetchAsync(ProjectConfig lastConfig, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Fetches the configuration synchronously.

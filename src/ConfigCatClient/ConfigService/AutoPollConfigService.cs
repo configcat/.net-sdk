@@ -10,7 +10,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
 {
     private readonly AutoPoll configuration;
     private readonly CancellationTokenSource initializationCancellationTokenSource = new(); // used for signalling initialization
-    private CancellationTokenSource timerCancellationTokenSource = new(); // used for signalling background work to stop
+    private CancellationTokenSource? timerCancellationTokenSource = new(); // used for signalling background work to stop
 
     internal AutoPollConfigService(
         AutoPoll configuration,
@@ -18,7 +18,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
         CacheParameters cacheParameters,
         LoggerWrapper logger,
         bool isOffline = false,
-        Hooks hooks = null) : this(configuration, configFetcher, cacheParameters, logger, startTimer: true, isOffline, hooks)
+        Hooks? hooks = null) : this(configuration, configFetcher, cacheParameters, logger, startTimer: true, isOffline, hooks)
     { }
 
     // For test purposes only
@@ -29,7 +29,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
         LoggerWrapper logger,
         bool startTimer,
         bool isOffline = false,
-        Hooks hooks = null) : base(configFetcher, cacheParameters, logger, isOffline, hooks)
+        Hooks? hooks = null) : base(configFetcher, cacheParameters, logger, isOffline, hooks)
     {
         this.configuration = configuration;
 
@@ -52,7 +52,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
     protected override void DisposeSynchronized(bool disposing)
     {
         // Background work should stop under all circumstances
-        this.timerCancellationTokenSource.Cancel();
+        this.timerCancellationTokenSource!.Cancel();
 
         if (disposing)
         {
@@ -96,15 +96,17 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
         return this.initializationCancellationTokenSource.Token.WaitHandle.WaitOne(this.configuration.MaxInitWaitTime);
     }
 
-    internal async Task<bool> WaitForInitializationAsync()
+    internal async Task<bool> WaitForInitializationAsync(CancellationToken cancellationToken = default)
     {
         try
         {
             // An infinite timeout would also work but we limit waiting to MaxInitWaitTime for maximum safety.
-            await Task.Delay(this.configuration.MaxInitWaitTime, this.initializationCancellationTokenSource.Token).ConfigureAwait(false);
+            await Task.Delay(this.configuration.MaxInitWaitTime, this.initializationCancellationTokenSource.Token)
+                .WaitAsync(cancellationToken).ConfigureAwait(false);
+
             return false;
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException ex) when (ex.CancellationToken != cancellationToken)
         {
             return true;
         }
@@ -126,20 +128,20 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
         return this.ConfigCache.Get(base.CacheKey);
     }
 
-    public async Task<ProjectConfig> GetConfigAsync()
+    public async Task<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default)
     {
         if (!IsOffline && !IsInitialized)
         {
-            var cacheConfig = await this.ConfigCache.GetAsync(base.CacheKey).ConfigureAwait(false);
+            var cacheConfig = await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(false);
             if (!cacheConfig.IsExpired(expiration: this.configuration.PollInterval, out _))
             {
                 return cacheConfig;
             }
 
-            await WaitForInitializationAsync().ConfigureAwait(false);
+            await WaitForInitializationAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        return await this.ConfigCache.GetAsync(base.CacheKey).ConfigureAwait(false);
+        return await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(false);
     }
 
     protected override void OnConfigUpdated(ProjectConfig newConfig)
@@ -155,7 +157,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
 
     protected override void SetOfflineCoreSynchronized()
     {
-        this.timerCancellationTokenSource.Cancel();
+        this.timerCancellationTokenSource!.Cancel();
         this.timerCancellationTokenSource.Dispose();
         this.timerCancellationTokenSource = new CancellationTokenSource();
     }
@@ -210,7 +212,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
             {
                 if (!IsOffline)
                 {
-                    await RefreshConfigCoreAsync(latestConfig).ConfigureAwait(false);
+                    await RefreshConfigCoreAsync(latestConfig, cancellationToken).ConfigureAwait(false);
                 }
             }
             else
@@ -223,7 +225,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
             if (!IsOffline)
             {
                 var latestConfig = await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(false);
-                await RefreshConfigCoreAsync(latestConfig).ConfigureAwait(false);
+                await RefreshConfigCoreAsync(latestConfig, cancellationToken).ConfigureAwait(false);
             }
         }
     }

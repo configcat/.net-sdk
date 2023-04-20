@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 
+using static System.FormattableString;
 #if USE_NEWTONSOFT_JSON
 using JsonValue = Newtonsoft.Json.Linq.JValue;
 #else
@@ -21,10 +22,10 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         this.logger = logger;
     }
 
-    public EvaluationDetails Evaluate(Setting setting, string key, string logDefaultValue, User user,
-        ProjectConfig remoteConfig, EvaluationDetailsFactory detailsFactory)
+    public EvaluationDetails Evaluate(Setting setting, string key, string? logDefaultValue, User? user,
+        ProjectConfig? remoteConfig, EvaluationDetailsFactory detailsFactory)
     {
-        var evaluateLog = new EvaluateLogger<string>
+        var evaluateLog = new EvaluateLogger
         {
             ReturnValue = logDefaultValue,
             User = user,
@@ -97,16 +98,16 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         }
     }
 
-    private static bool TryEvaluatePercentageRules<T>(ICollection<RolloutPercentageItem> rolloutPercentageItems, string key, User user, EvaluateLogger<T> evaluateLog, out EvaluateResult<RolloutPercentageItem> result)
+    private static bool TryEvaluatePercentageRules(ICollection<RolloutPercentageItem> rolloutPercentageItems, string key, User user, EvaluateLogger evaluateLog, out EvaluateResult<RolloutPercentageItem> result)
     {
-        if (rolloutPercentageItems is { Count: > 0 })
+        if (rolloutPercentageItems.Count > 0)
         {
             var hashCandidate = key + user.Identifier;
 
             var hashValue = hashCandidate.Hash().Substring(0, 7);
 
             var hashScale = int.Parse(hashValue, NumberStyles.HexNumber) % 100;
-            evaluateLog.Log($"Applying the % option that matches the User's pseudo-random '{hashScale}' (this value is sticky and consistent across all SDKs):");
+            evaluateLog.Log(Invariant($"Applying the % option that matches the User's pseudo-random '{hashScale}' (this value is sticky and consistent across all SDKs):"));
 
             var bucket = 0;
 
@@ -116,11 +117,11 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
                 if (hashScale >= bucket)
                 {
-                    evaluateLog.Log($"  - % option: [IF {bucket} > {hashScale} THEN '{percentageRule.Value}'] => no match");
+                    evaluateLog.Log(Invariant($"  - % option: [IF {bucket} > {hashScale} THEN '{percentageRule.Value}'] => no match"));
                     continue;
                 }
                 result = new EvaluateResult<RolloutPercentageItem>(percentageRule.Value, percentageRule.VariationId, percentageRule);
-                evaluateLog.Log($"  - % option: [IF {bucket} > {hashScale} THEN '{percentageRule.Value}'] => MATCH, applying % option");
+                evaluateLog.Log(Invariant($"  - % option: [IF {bucket} > {hashScale} THEN '{percentageRule.Value}'] => MATCH, applying % option"));
                 return true;
             }
         }
@@ -129,23 +130,23 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return false;
     }
 
-    private static bool TryEvaluateRules<T>(ICollection<RolloutRule> rules, User user, EvaluateLogger<T> logger, out EvaluateResult<RolloutRule> result)
+    private static bool TryEvaluateRules(ICollection<RolloutRule> rules, User user, EvaluateLogger logger, out EvaluateResult<RolloutRule> result)
     {
-        if (rules is { Count: > 0 })
+        if (rules.Count > 0)
         {
-            logger.Log($"Applying the first targeting rule that matches the User '{user.Serialize()}':");
+            logger.Log(Invariant($"Applying the first targeting rule that matches the User '{user.Serialize()}':"));
             foreach (var rule in rules.OrderBy(o => o.Order))
             {
                 result = new EvaluateResult<RolloutRule>(rule.Value, rule.VariationId, rule);
 
-                var l = $"  - rule: [IF User.{rule.ComparisonAttribute} {RolloutRule.FormatComparator(rule.Comparator)} '{rule.ComparisonValue}' THEN {rule.Value}] => ";
+                var l = Invariant($"  - rule: [IF User.{rule.ComparisonAttribute} {RolloutRule.FormatComparator(rule.Comparator)} '{rule.ComparisonValue}' THEN {rule.Value}] => ");
                 if (!user.AllAttributes.ContainsKey(rule.ComparisonAttribute))
                 {
                     logger.Log(l + "no match");
                     continue;
                 }
 
-                var comparisonAttributeValue = user.AllAttributes[rule.ComparisonAttribute];
+                var comparisonAttributeValue = user.AllAttributes[rule.ComparisonAttribute]!;
                 if (string.IsNullOrEmpty(comparisonAttributeValue))
                 {
                     logger.Log(l + "no match");
@@ -324,7 +325,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                     })
                     .ToList();
 
-                return !rsvi.Contains(null) && rsvi.Any(v => v.PrecedenceMatches(v1));
+                return !rsvi.Contains(null) && rsvi.Any(v => v!.PrecedenceMatches(v1));
 
             case Comparator.SemVerNotIn:
 
@@ -341,7 +342,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                     })
                     .ToList();
 
-                return !rsvni.Contains(null) && !rsvni.Any(v => v.PrecedenceMatches(v1));
+                return !rsvni.Contains(null) && !rsvni.Any(v => v!.PrecedenceMatches(v1));
 
             case Comparator.SemVerLessThan:
 
@@ -382,7 +383,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
     private readonly struct EvaluateResult<TRule>
     {
-        public EvaluateResult(JsonValue value, string variationId, TRule matchedRule)
+        public EvaluateResult(JsonValue value, string? variationId, TRule matchedRule)
         {
             Value = value;
             VariationId = variationId;
@@ -390,7 +391,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         }
 
         public JsonValue Value { get; }
-        public string VariationId { get; }
+        public string? VariationId { get; }
         public TRule MatchedRule { get; }
     }
 }

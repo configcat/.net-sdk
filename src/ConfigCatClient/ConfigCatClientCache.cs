@@ -13,11 +13,11 @@ internal sealed class ConfigCatClientCache
     {
         lock (this.instances)
         {
-            ConfigCatClient instance;
+            ConfigCatClient? instance;
 
-            instanceAlreadyCreated = this.instances.TryGetValue(sdkKey, out var weakRef);
-            if (!instanceAlreadyCreated)
+            if (!this.instances.TryGetValue(sdkKey, out var weakRef))
             {
+                instanceAlreadyCreated = false;
                 instance = new ConfigCatClient(sdkKey, configuration);
                 weakRef = new WeakReference<ConfigCatClient>(instance);
                 this.instances.Add(sdkKey, weakRef);
@@ -28,12 +28,16 @@ internal sealed class ConfigCatClientCache
                 instance = new ConfigCatClient(sdkKey, configuration);
                 weakRef.SetTarget(instance);
             }
+            else
+            {
+                instanceAlreadyCreated = true;
+            }
 
             return instance;
         }
     }
 
-    public bool Remove(string sdkKey, ConfigCatClient instanceToRemove)
+    public bool Remove(string sdkKey, ConfigCatClient? instanceToRemove)
     {
         lock (this.instances)
         {
@@ -58,7 +62,7 @@ internal sealed class ConfigCatClientCache
             removedInstances = this.instances.Values
                 .Select(weakRef => weakRef.TryGetTarget(out var instance) ? instance : null)
                 .Where(instance => instance is not null)
-                .ToArray();
+                .ToArray()!;
 
             this.instances.Clear();
         }

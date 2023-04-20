@@ -19,5 +19,5 @@ public interface IConfigCatLogger
     /// <param name="eventId">Event identifier.</param>
     /// <param name="message">Message.</param>
     /// <param name="exception">The <see cref="Exception"/> object related to the message (if any).</param>
-    void Log(LogLevel level, LogEventId eventId, ref FormattableLogMessage message, Exception exception = null);
+    void Log(LogLevel level, LogEventId eventId, ref FormattableLogMessage message, Exception? exception = null);
 }

@@ -20,18 +20,20 @@ internal sealed class LocalFileDataSource : IOverrideDataSource
     private readonly LoggerWrapper logger;
     private readonly CancellationTokenSource cancellationTokenSource = new();
 
-    private volatile IDictionary<string, Setting> overrideValues;
+    private volatile Dictionary<string, Setting>? overrideValues;
 
     public LocalFileDataSource(string filePath, bool autoReload, LoggerWrapper logger)
     {
+        this.logger = logger;
+
         if (!File.Exists(filePath))
         {
+            this.fullPath = string.Empty;
             logger.LocalFileDataSourceDoesNotExist(filePath);
             return;
         }
 
         this.fullPath = Path.GetFullPath(filePath);
-        this.logger = logger;
 
         // method executes synchronously, GetAwaiter().GetResult() is just for preventing compiler warnings
         var reloadFileTask = ReloadFileAsync(isAsync: false);
@@ -44,9 +46,9 @@ internal sealed class LocalFileDataSource : IOverrideDataSource
         }
     }
 
-    public IDictionary<string, Setting> GetOverrides() => this.overrideValues ?? new Dictionary<string, Setting>();
+    public Dictionary<string, Setting> GetOverrides() => this.overrideValues ?? new Dictionary<string, Setting>();
 
-    public Task<IDictionary<string, Setting>> GetOverridesAsync() => Task.FromResult(this.overrideValues ?? new Dictionary<string, Setting>());
+    public Task<Dictionary<string, Setting>> GetOverridesAsync(CancellationToken cancellationToken = default) => Task.FromResult(this.overrideValues ?? new Dictionary<string, Setting>());
 
     private void StartWatch()
     {
@@ -110,7 +112,8 @@ internal sealed class LocalFileDataSource : IOverrideDataSource
                         return;
                     }
 
-                    var deserialized = content.Deserialize<SettingsWithPreferences>();
+                    var deserialized = content.Deserialize<SettingsWithPreferences>()
+                        ?? throw new InvalidOperationException("Invalid config JSON content: " + content);
                     this.overrideValues = deserialized.Settings;
                     break;
                 }
@@ -158,6 +161,6 @@ internal sealed class LocalFileDataSource : IOverrideDataSource
 #else
         [System.Text.Json.Serialization.JsonPropertyName("flags")]
 #endif
-        public IDictionary<string, object> Entries { get; set; }
+        public Dictionary<string, object>? Entries { get; set; }
     }
 }

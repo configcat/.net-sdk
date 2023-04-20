@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
 using ConfigCat.Client.ConfigService;
@@ -51,9 +53,9 @@ public class ConfigCatClientTests
     [DoNotParallelize]
     public void CreateAnInstance_WhenSdkKeyIsNull_ShouldThrowArgumentNullException()
     {
-        string sdkKey = null;
+        string? sdkKey = null;
 
-        using var _ = ConfigCatClient.Get(sdkKey);
+        using var _ = ConfigCatClient.Get(sdkKey!);
     }
 
     [ExpectedException(typeof(ArgumentOutOfRangeException))]
@@ -78,15 +80,16 @@ public class ConfigCatClientTests
         });
     }
 
-    [ExpectedException(typeof(ArgumentNullException))]
     [TestMethod]
     [DoNotParallelize]
-    public void CreateAnInstance_WhenLoggerIsNull_ShouldThrowArgumentNullException()
+    public void CreateAnInstance_WhenLoggerIsNull_ShouldCreateAnInstance()
     {
-        using var _ = ConfigCatClient.Get("hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf", options =>
+        using var client = ConfigCatClient.Get("hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf", options =>
         {
             options.Logger = null;
         });
+
+        Assert.IsNotNull(client);
     }
 
     [TestMethod]
@@ -111,7 +114,7 @@ public class ConfigCatClientTests
 
         // Act
 
-        var actual = client.GetValue(null, defaultValue);
+        var actual = client.GetValue("x", defaultValue);
 
         // Assert
 
@@ -126,14 +129,14 @@ public class ConfigCatClientTests
         const string defaultValue = "Victory for the Firstborn!";
 
         this.configServiceMock
-            .Setup(m => m.GetConfigAsync())
+            .Setup(m => m.GetConfigAsync(It.IsAny<CancellationToken>()))
             .Throws<Exception>();
 
         var client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, this.configDeserializerMock.Object);
 
         // Act
 
-        var actual = await client.GetValueAsync(null, defaultValue);
+        var actual = await client.GetValueAsync("x", defaultValue);
 
         // Assert
 
@@ -158,7 +161,7 @@ public class ConfigCatClientTests
 
         // Act
 
-        var actual = client.GetValue(null, defaultValue);
+        var actual = client.GetValue("x", defaultValue);
 
         // Assert
 
@@ -187,7 +190,7 @@ public class ConfigCatClientTests
 
         // Act
 
-        var actual = await client.GetValueAsync(null, defaultValue);
+        var actual = await client.GetValueAsync("x", defaultValue);
 
         // Assert
 
@@ -415,7 +418,7 @@ public class ConfigCatClientTests
 
         if (isAsync)
         {
-            this.configServiceMock.Setup(m => m.GetConfigAsync()).Throws(new ApplicationException(errorMessage));
+            this.configServiceMock.Setup(m => m.GetConfigAsync(It.IsAny<CancellationToken>())).Throws(new ApplicationException(errorMessage));
         }
         else
         {
@@ -433,13 +436,13 @@ public class ConfigCatClientTests
         // Assert
 
         Assert.IsNotNull(actual);
-        Assert.AreEqual(key, actual.Key);
+        Assert.AreEqual(key, actual!.Key);
         Assert.AreEqual(defaultValue, actual.Value);
         Assert.IsTrue(actual.IsDefaultValue);
         Assert.IsNull(actual.VariationId);
         Assert.AreEqual(DateTime.MinValue, actual.FetchTime);
         Assert.IsNull(actual.User);
-        Assert.AreEqual(errorMessage, actual?.ErrorMessage);
+        Assert.AreEqual(errorMessage, actual.ErrorMessage);
         Assert.IsInstanceOfType(actual.ErrorException, typeof(ApplicationException));
         Assert.IsNull(actual.MatchedEvaluationRule);
         Assert.IsNull(actual.MatchedEvaluationPercentageRule);
@@ -496,13 +499,13 @@ public class ConfigCatClientTests
         // Assert
 
         Assert.IsNotNull(actual);
-        Assert.AreEqual(key, actual.Key);
+        Assert.AreEqual(key, actual!.Key);
         Assert.AreEqual(defaultValue, actual.Value);
         Assert.IsTrue(actual.IsDefaultValue);
         Assert.IsNull(actual.VariationId);
         Assert.AreEqual(timeStamp, actual.FetchTime);
         Assert.AreSame(user, actual.User);
-        Assert.AreEqual(errorMessage, actual?.ErrorMessage);
+        Assert.AreEqual(errorMessage, actual.ErrorMessage);
         Assert.IsInstanceOfType(actual.ErrorException, typeof(ApplicationException));
         Assert.IsNull(actual.MatchedEvaluationRule);
         Assert.IsNull(actual.MatchedEvaluationPercentageRule);
@@ -591,7 +594,7 @@ public class ConfigCatClientTests
         // Arrange
 
         this.configServiceMock.Setup(m => m.GetConfig()).Returns(ProjectConfig.Empty);
-        this.configServiceMock.Setup(m => m.GetConfigAsync()).ReturnsAsync(ProjectConfig.Empty);
+        this.configServiceMock.Setup(m => m.GetConfigAsync(It.IsAny<CancellationToken>())).ReturnsAsync(ProjectConfig.Empty);
         var o = new SettingsWithPreferences();
         this.configDeserializerMock
             .Setup(m => m.TryDeserialize(It.IsAny<string>(), It.IsAny<string>(), out o))
@@ -624,7 +627,7 @@ public class ConfigCatClientTests
         // Arrange
 
         this.configServiceMock
-            .Setup(m => m.GetConfigAsync())
+            .Setup(m => m.GetConfigAsync(It.IsAny<CancellationToken>()))
             .Throws<Exception>();
 
         using IConfigCatClient client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, this.configDeserializerMock.Object, new Hooks());
@@ -700,13 +703,13 @@ public class ConfigCatClientTests
             var actualDetails = actual.FirstOrDefault(details => details.Key == key);
 
             Assert.IsNotNull(actualDetails);
-            Assert.AreEqual(key, actualDetails.Key);
+            Assert.AreEqual(key, actualDetails!.Key);
             Assert.IsNull(actualDetails.Value);
             Assert.IsTrue(actualDetails.IsDefaultValue);
             Assert.IsNull(actualDetails.VariationId);
             Assert.AreEqual(timeStamp, actualDetails.FetchTime);
             Assert.AreSame(user, actualDetails.User);
-            Assert.AreEqual(errorMessage, actualDetails?.ErrorMessage);
+            Assert.AreEqual(errorMessage, actualDetails.ErrorMessage);
             Assert.IsInstanceOfType(actualDetails.ErrorException, typeof(ApplicationException));
             Assert.IsNull(actualDetails.MatchedEvaluationRule);
             Assert.IsNull(actualDetails.MatchedEvaluationPercentageRule);
@@ -721,7 +724,7 @@ public class ConfigCatClientTests
         var errorEventArgs = errorEvents[0];
         StringAssert.Contains(errorEventArgs.Message, isAsync ? nameof(IConfigCatClient.GetAllValueDetailsAsync) : nameof(IConfigCatClient.GetAllValueDetails));
         Assert.IsInstanceOfType(errorEventArgs.Exception, typeof(AggregateException));
-        var actualException = (AggregateException)errorEventArgs.Exception;
+        var actualException = (AggregateException)errorEventArgs.Exception!;
         Assert.AreEqual(actual.Count, actualException.InnerExceptions.Count);
         foreach (var ex in actualException.InnerExceptions)
         {
@@ -734,7 +737,7 @@ public class ConfigCatClientTests
     {
         // Arrange
 
-        this.configServiceMock.Setup(m => m.GetConfigAsync()).Throws<Exception>();
+        this.configServiceMock.Setup(m => m.GetConfigAsync(It.IsAny<CancellationToken>())).Throws<Exception>();
 
         IConfigCatClient instance = new ConfigCatClient(
             this.configServiceMock.Object,
@@ -782,7 +785,7 @@ public class ConfigCatClientTests
     {
         // Arrange
 
-        this.configServiceMock.Setup(m => m.GetConfigAsync()).ReturnsAsync(ProjectConfig.Empty);
+        this.configServiceMock.Setup(m => m.GetConfigAsync(It.IsAny<CancellationToken>())).ReturnsAsync(ProjectConfig.Empty);
         var o = new SettingsWithPreferences();
         this.configDeserializerMock
             .Setup(m => m.TryDeserialize(It.IsAny<string>(), It.IsAny<string>(), out o))
@@ -810,9 +813,9 @@ public class ConfigCatClientTests
     {
         // Arrange
 
-        this.configServiceMock.Setup(m => m.GetConfigAsync()).ReturnsAsync(ProjectConfig.Empty);
+        this.configServiceMock.Setup(m => m.GetConfigAsync(It.IsAny<CancellationToken>())).ReturnsAsync(ProjectConfig.Empty);
         this.configDeserializerMock
-            .Setup(m => m.TryDeserialize(It.IsAny<string>(), It.IsAny<string>(), out It.Ref<SettingsWithPreferences>.IsAny))
+            .Setup(m => m.TryDeserialize(It.IsAny<string>(), It.IsAny<string>(), out It.Ref<SettingsWithPreferences?>.IsAny))
             .Returns(false);
 
         IConfigCatClient instance = new ConfigCatClient(
@@ -839,7 +842,7 @@ public class ConfigCatClientTests
 
         this.configServiceMock.Setup(m => m.GetConfig()).Returns(ProjectConfig.Empty);
         this.configDeserializerMock
-            .Setup(m => m.TryDeserialize(It.IsAny<string>(), It.IsAny<string>(), out It.Ref<SettingsWithPreferences>.IsAny))
+            .Setup(m => m.TryDeserialize(It.IsAny<string>(), It.IsAny<string>(), out It.Ref<SettingsWithPreferences?>.IsAny))
             .Returns(false);
 
         IConfigCatClient instance = new ConfigCatClient(
@@ -857,6 +860,48 @@ public class ConfigCatClientTests
         Assert.IsNotNull(actualKeys);
         Assert.AreEqual(0, actualKeys.Count());
         this.loggerMock.Verify(m => m.Log(LogLevel.Error, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
+    }
+
+    [DataRow(nameof(IConfigCatClient.GetValueAsync))]
+    [DataRow(nameof(IConfigCatClient.GetValueDetailsAsync))]
+    [DataRow(nameof(IConfigCatClient.GetAllKeysAsync))]
+    [DataRow(nameof(IConfigCatClient.GetAllValuesAsync))]
+    [DataRow(nameof(IConfigCatClient.GetAllValueDetailsAsync))]
+    [DataTestMethod]
+    public async Task EvaluationMethods_ShouldBeCancelable(string methodName)
+    {
+        // Arrange
+
+        const int delayMs = 2000;
+
+        var loggerWrapper = this.loggerMock.Object.AsWrapper();
+        var configDeserializer = new ConfigDeserializer();
+        var fakeHandler = new FakeHttpClientHandler(HttpStatusCode.OK, "{ }", TimeSpan.FromMilliseconds(delayMs));
+        var configFetcher = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", loggerWrapper, fakeHandler, configDeserializer, false, TimeSpan.FromMilliseconds(delayMs * 2));
+        var configCache = new InMemoryConfigCache();
+        var cacheParams = new CacheParameters(configCache, cacheKey: null!);
+        var configService = new LazyLoadConfigService(configFetcher, cacheParams, loggerWrapper, TimeSpan.FromSeconds(1));
+        var evaluator = new RolloutEvaluator(loggerWrapper);
+        using var client = new ConfigCatClient(configService, loggerWrapper, evaluator, configDeserializer);
+
+        // Act
+
+        using var cts = new CancellationTokenSource(delayMs / 4);
+
+        Func<Task> action = methodName switch
+        {
+            nameof(IConfigCatClient.GetValueAsync) => () => client.GetValueAsync("KEY", "", cancellationToken: cts.Token),
+            nameof(IConfigCatClient.GetValueDetailsAsync) => () => client.GetValueDetailsAsync("KEY", "", cancellationToken: cts.Token),
+            nameof(IConfigCatClient.GetAllKeysAsync) => () => client.GetAllKeysAsync(cancellationToken: cts.Token),
+            nameof(IConfigCatClient.GetAllValuesAsync) => () => client.GetAllValuesAsync(cancellationToken: cts.Token),
+            nameof(IConfigCatClient.GetAllValueDetailsAsync) => () => client.GetAllValueDetailsAsync(cancellationToken: cts.Token),
+            _ => throw new ArgumentOutOfRangeException(nameof(methodName))
+        };
+
+        // Assert
+
+        var ex = await Assert.ThrowsExceptionAsync<TaskCanceledException>(action);
+        Assert.AreEqual(cts.Token, ex.CancellationToken);
     }
 
     [TestMethod]
@@ -886,7 +931,7 @@ public class ConfigCatClientTests
     {
         // Arrange
 
-        this.configServiceMock.Setup(m => m.RefreshConfigAsync()).ReturnsAsync(RefreshResult.Success());
+        this.configServiceMock.Setup(m => m.RefreshConfigAsync(It.IsAny<CancellationToken>())).ReturnsAsync(RefreshResult.Success());
 
         IConfigCatClient instance = new ConfigCatClient(
             this.configServiceMock.Object,
@@ -900,7 +945,7 @@ public class ConfigCatClientTests
 
         // Assert
 
-        this.configServiceMock.Verify(m => m.RefreshConfigAsync(), Times.Once);
+        this.configServiceMock.Verify(m => m.RefreshConfigAsync(It.IsAny<CancellationToken>()), Times.Once);
 
         Assert.IsTrue(result.IsSuccess);
         Assert.IsNull(result.ErrorMessage);
@@ -938,7 +983,7 @@ public class ConfigCatClientTests
     {
         // Arrange
 
-        this.configServiceMock.Setup(m => m.RefreshConfigAsync()).ReturnsAsync(RefreshResult.Success());
+        this.configServiceMock.Setup(m => m.RefreshConfigAsync(It.IsAny<CancellationToken>())).ReturnsAsync(RefreshResult.Success());
 
         IConfigCatClient instance = new ConfigCatClient(
             this.configServiceMock.Object,
@@ -952,7 +997,7 @@ public class ConfigCatClientTests
 
         // Assert
 
-        this.configServiceMock.Verify(m => m.RefreshConfigAsync(), Times.Once);
+        this.configServiceMock.Verify(m => m.RefreshConfigAsync(It.IsAny<CancellationToken>()), Times.Once);
 
         Assert.IsTrue(result.IsSuccess);
         Assert.IsNull(result.ErrorMessage);
@@ -966,7 +1011,7 @@ public class ConfigCatClientTests
 
         var exception = new Exception();
 
-        this.configServiceMock.Setup(m => m.RefreshConfigAsync()).Throws(exception);
+        this.configServiceMock.Setup(m => m.RefreshConfigAsync(It.IsAny<CancellationToken>())).Throws(exception);
 
         IConfigCatClient instance = new ConfigCatClient(
             this.configServiceMock.Object,
@@ -1015,7 +1060,36 @@ public class ConfigCatClientTests
         Assert.AreSame(exception, result.ErrorException);
     }
 
-    private static IConfigCatClient CreateClientFromLocalFile(string fileName, User defaultUser = null)
+    [TestMethod]
+    public async Task ForceRefreshAsync_ShouldBeCancelable()
+    {
+        // Arrange
+
+        const int delayMs = 2000;
+
+        var loggerWrapper = this.loggerMock.Object.AsWrapper();
+        var configDeserializer = new ConfigDeserializer();
+        var fakeHandler = new FakeHttpClientHandler(HttpStatusCode.OK, "{ }", TimeSpan.FromMilliseconds(delayMs));
+        var configFetcher = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", loggerWrapper, fakeHandler, configDeserializer, false, TimeSpan.FromMilliseconds(delayMs * 2));
+        var configCache = new InMemoryConfigCache();
+        var cacheParams = new CacheParameters(configCache, cacheKey: null!);
+        var configService = new ManualPollConfigService(configFetcher, cacheParams, loggerWrapper);
+        var evaluator = new RolloutEvaluator(loggerWrapper);
+        using var client = new ConfigCatClient(configService, loggerWrapper, evaluator, configDeserializer);
+
+        // Act
+
+        using var cts = new CancellationTokenSource(delayMs / 4);
+
+        Func<Task> action = () => client.ForceRefreshAsync(cts.Token);
+
+        // Assert
+
+        var ex = await Assert.ThrowsExceptionAsync<TaskCanceledException>(action);
+        Assert.AreEqual(cts.Token, ex.CancellationToken);
+    }
+
+    private static IConfigCatClient CreateClientFromLocalFile(string fileName, User? defaultUser = null)
     {
         return ConfigCatClient.Get("localhost", options =>
         {
@@ -1036,8 +1110,8 @@ public class ConfigCatClientTests
     {
         using IConfigCatClient client = CreateClientFromLocalFile("sample_v5.json", new User("a@configcat.com") { Email = "a@configcat.com" });
 
-        var getValueAsync = isAsync
-            ? new Func<string, string, User, Task<string>>(client.GetValueAsync)
+        Func<string, string, User?, Task<string>> getValueAsync = isAsync
+            ? (key, defaultValue, user) => client.GetValueAsync(key, defaultValue, user)
             : (key, defaultValue, user) => Task.FromResult(client.GetValue(key, defaultValue, user));
 
         const string key = "stringIsInDogDefaultCat";
@@ -1067,8 +1141,8 @@ public class ConfigCatClientTests
     {
         using IConfigCatClient client = CreateClientFromLocalFile("sample_v5.json", new User("a@configcat.com") { Email = "a@configcat.com" });
 
-        var getAllValuesAsync = isAsync
-            ? new Func<User, Task<IDictionary<string, object>>>(client.GetAllValuesAsync)
+        Func<User?, Task<IReadOnlyDictionary<string, object?>>> getAllValuesAsync = isAsync
+            ? user => client.GetAllValuesAsync(user)
             : user => Task.FromResult(client.GetAllValues(user));
 
         const string key = "stringIsInDogDefaultCat";
@@ -1272,28 +1346,24 @@ public class ConfigCatClientTests
         Func<ProjectConfig, FetchResult> onFetch,
         Func<IConfigFetcher, CacheParameters, LoggerWrapper, IConfigService> configServiceFactory,
         Func<LoggerWrapper, IRolloutEvaluator> evaluatorFactory,
-        Hooks hooks,
+        Hooks? hooks,
         out IConfigService configService,
         out IConfigCatCache configCache)
     {
         fetcherMock.Setup(m => m.Fetch(It.IsAny<ProjectConfig>())).Returns(onFetch);
-        fetcherMock.Setup(m => m.FetchAsync(It.IsAny<ProjectConfig>())).ReturnsAsync(onFetch);
+        fetcherMock.Setup(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>())).ReturnsAsync((ProjectConfig pc, CancellationToken _) => onFetch(pc));
 
         var loggerWrapper = loggerMock.Object.AsWrapper();
 
         configCache = new InMemoryConfigCache();
 
-        var cacheParams = new CacheParameters
-        {
-            ConfigCache = configCache,
-            CacheKey = cacheKey
-        };
+        var cacheParams = new CacheParameters(configCache, cacheKey);
 
         configService = configServiceFactory(fetcherMock.Object, cacheParams, loggerWrapper);
         return new ConfigCatClient(configService, loggerMock.Object, evaluatorFactory(loggerWrapper), new ConfigDeserializer(), hooks);
     }
 
-    private static int ParseETagAsInt32(string etag)
+    private static int ParseETagAsInt32(string? etag)
     {
         return int.TryParse(etag, NumberStyles.None, CultureInfo.InvariantCulture, out var value) ? value : 0;
     }
@@ -1347,7 +1417,7 @@ public class ConfigCatClientTests
 
             Assert.IsTrue(client.IsOffline);
             this.fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
-            this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchAsyncCount));
+            this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Exactly(expectedFetchAsyncCount));
 
             // 3. Checks that SetOnline() does enable HTTP calls
             client.SetOnline();
@@ -1360,7 +1430,7 @@ public class ConfigCatClientTests
 
             Assert.IsFalse(client.IsOffline);
             this.fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
-            this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchAsyncCount));
+            this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Exactly(expectedFetchAsyncCount));
 
             var etag1 = ParseETagAsInt32(configService.GetConfig().HttpETag);
             if (pollingMode == nameof(LazyLoad))
@@ -1368,7 +1438,7 @@ public class ConfigCatClientTests
                 expectedFetchCount++;
             }
             this.fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
-            this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchAsyncCount));
+            this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Exactly(expectedFetchAsyncCount));
 
             if (pollingMode == nameof(ManualPoll))
             {
@@ -1386,7 +1456,7 @@ public class ConfigCatClientTests
 
             Assert.IsFalse(client.IsOffline);
             this.fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
-            this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchAsyncCount));
+            this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Exactly(expectedFetchAsyncCount));
 
             var etag2 = ParseETagAsInt32(configService.GetConfig().HttpETag);
             if (pollingMode == nameof(ManualPoll))
@@ -1409,7 +1479,7 @@ public class ConfigCatClientTests
 
             Assert.IsFalse(client.IsOffline);
             this.fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
-            this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchAsyncCount));
+            this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Exactly(expectedFetchAsyncCount));
 
             var etag3 = ParseETagAsInt32(configService.GetConfig().HttpETag);
             Assert.IsTrue(etag3 > etag2);
@@ -1474,7 +1544,7 @@ public class ConfigCatClientTests
             }
 
             this.fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
-            this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchAsyncCount));
+            this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Exactly(expectedFetchAsyncCount));
 
             var etag1 = ParseETagAsInt32(configService.GetConfig().HttpETag);
             if (pollingMode == nameof(LazyLoad))
@@ -1482,7 +1552,7 @@ public class ConfigCatClientTests
                 expectedFetchCount++;
             }
             this.fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
-            this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchAsyncCount));
+            this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Exactly(expectedFetchAsyncCount));
 
             if (pollingMode == nameof(ManualPoll))
             {
@@ -1499,14 +1569,14 @@ public class ConfigCatClientTests
 
             Assert.IsFalse(client.IsOffline);
             this.fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
-            this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchAsyncCount));
+            this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Exactly(expectedFetchAsyncCount));
 
             // 3. Checks that SetOffline() does disable HTTP calls
             client.SetOffline();
 
             Assert.IsTrue(client.IsOffline);
             this.fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
-            this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchAsyncCount));
+            this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Exactly(expectedFetchAsyncCount));
 
             if (pollingMode == nameof(LazyLoad))
             {
@@ -1527,7 +1597,7 @@ public class ConfigCatClientTests
 
             Assert.IsTrue(client.IsOffline);
             this.fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
-            this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchAsyncCount));
+            this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Exactly(expectedFetchAsyncCount));
 
             Assert.AreEqual(etag1, ParseETagAsInt32(configService.GetConfig().HttpETag));
             Assert.AreEqual(etag1, ParseETagAsInt32((await configService.GetConfigAsync()).HttpETag));
@@ -1541,7 +1611,7 @@ public class ConfigCatClientTests
 
             Assert.IsTrue(client.IsOffline);
             this.fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
-            this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchAsyncCount));
+            this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Exactly(expectedFetchAsyncCount));
 
             Assert.AreEqual(etag1, ParseETagAsInt32(configService.GetConfig().HttpETag));
             Assert.AreEqual(etag1, ParseETagAsInt32((await configService.GetConfigAsync()).HttpETag));
@@ -1577,20 +1647,16 @@ public class ConfigCatClientTests
 
         var errorException = new HttpRequestException();
 
-        var onFetch = (ProjectConfig latestConfig) =>
+        var onFetch = (ProjectConfig latestConfig, CancellationToken _) =>
         {
             var logMessage = loggerWrapper.FetchFailedDueToUnexpectedError(errorException);
             return FetchResult.Failure(latestConfig, errorMessage: logMessage.InvariantFormattedMessage, errorException: errorException);
         };
-        this.fetcherMock.Setup(m => m.FetchAsync(It.IsAny<ProjectConfig>())).ReturnsAsync(onFetch);
+        this.fetcherMock.Setup(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>())).ReturnsAsync(onFetch);
 
         var configCache = new InMemoryConfigCache();
 
-        var cacheParams = new CacheParameters
-        {
-            ConfigCache = configCache,
-            CacheKey = cacheKey
-        };
+        var cacheParams = new CacheParameters(configCache, cacheKey);
 
         var configService = new ManualPollConfigService(this.fetcherMock.Object, cacheParams, loggerWrapper, hooks: hooks);
 
@@ -1613,9 +1679,9 @@ public class ConfigCatClientTests
         // 3. Fetch succeeds
         var config = new ProjectConfig { JsonString = File.ReadAllText(configJsonFilePath), HttpETag = "12345", TimeStamp = DateTime.UtcNow };
 
-        onFetch = _ => FetchResult.Success(config);
+        onFetch = (_, _) => FetchResult.Success(config);
         this.fetcherMock.Reset();
-        this.fetcherMock.Setup(m => m.FetchAsync(It.IsAny<ProjectConfig>())).ReturnsAsync(onFetch);
+        this.fetcherMock.Setup(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>())).ReturnsAsync(onFetch);
 
         await client.ForceRefreshAsync();
 
@@ -1712,7 +1778,7 @@ public class ConfigCatClientTests
 
         const string invalidKey = "<invalid-key>";
 
-        await client.GetValueAsync(invalidKey, defaultValue: (object)null);
+        await client.GetValueAsync(invalidKey, defaultValue: (object?)null);
 
         Assert.AreEqual(2, errorEvents.Count);
         Assert.IsNotNull(errorEvents[0].Message);
@@ -1764,12 +1830,12 @@ public class ConfigCatClientTests
             base.Dispose(disposing);
         }
 
-        public Task<ProjectConfig> GetConfigAsync()
+        public Task<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default)
         {
             return Task.FromResult(ProjectConfig.Empty);
         }
 
-        public override Task<RefreshResult> RefreshConfigAsync()
+        public override Task<RefreshResult> RefreshConfigAsync(CancellationToken cancellationToken = default)
         {
             return Task.FromResult(RefreshConfig());
         }

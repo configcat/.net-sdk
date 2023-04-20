@@ -18,6 +18,7 @@
 //OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //THE SOFTWARE.
 
+#nullable disable
 #pragma warning disable IDE0011 // Add braces
 #pragma warning disable IDE0055 // Fix formatting
 #pragma warning disable SYSLIB0003 // SecurityAction' is obsolete: 'Code Access Security is not supported or honored by the runtime.'

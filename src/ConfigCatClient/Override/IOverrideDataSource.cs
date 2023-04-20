@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Evaluation;
 
@@ -7,7 +8,7 @@ namespace ConfigCat.Client.Override;
 
 internal interface IOverrideDataSource : IDisposable
 {
-    IDictionary<string, Setting> GetOverrides();
+    Dictionary<string, Setting> GetOverrides();
 
-    Task<IDictionary<string, Setting>> GetOverridesAsync();
+    Task<Dictionary<string, Setting>> GetOverridesAsync(CancellationToken cancellationToken = default);
 }

@@ -48,13 +48,13 @@ public class BasicConfigEvaluatorTests : ConfigEvaluatorTestsBase
         {
             Email = "c@configcat.com",
             Country = "United Kingdom",
-            Custom = new Dictionary<string, string> { { "Custom1", "admin" } }
+            Custom = new Dictionary<string, string?> { { "Custom1", "admin" } }
         }, null, this.Logger).Value;
 
         Assert.AreEqual(3.1415, actual);
     }
 
-    private delegate EvaluationDetails<object> EvaluateDelegate(IRolloutEvaluator evaluator, IDictionary<string, Setting> settings, string key, object defaultValue, User user,
+    private delegate EvaluationDetails<object> EvaluateDelegate(IRolloutEvaluator evaluator, IReadOnlyDictionary<string, Setting> settings, string key, object defaultValue, User user,
         ProjectConfig remoteConfig, LoggerWrapper logger);
 
     private static readonly MethodInfo EvaluateMethodDefinition = new EvaluateDelegate(RolloutEvaluatorExtensions.Evaluate).Method.GetGenericMethodDefinition();
@@ -75,7 +75,7 @@ public class BasicConfigEvaluatorTests : ConfigEvaluatorTestsBase
     [DataTestMethod]
     public void GetValue_WithCompatibleDefaultValue_ShouldSucceed(string key, object defaultValue, object expectedValue, Type settingClrType)
     {
-        var args = new object[]
+        var args = new object?[]
         {
             this.configEvaluator,
             this.config,
@@ -86,7 +86,7 @@ public class BasicConfigEvaluatorTests : ConfigEvaluatorTestsBase
             this.Logger,
         };
 
-        var evaluationDetails = (EvaluationDetails)EvaluateMethodDefinition.MakeGenericMethod(settingClrType).Invoke(null, args);
+        var evaluationDetails = (EvaluationDetails)EvaluateMethodDefinition.MakeGenericMethod(settingClrType).Invoke(null, args)!;
 
         Assert.AreEqual(expectedValue, evaluationDetails.Value);
     }
@@ -98,7 +98,7 @@ public class BasicConfigEvaluatorTests : ConfigEvaluatorTestsBase
     [DataTestMethod]
     public void GetValue_WithIncompatibleDefaultValueType_ShouldThrowWithImprovedErrorMessage(string key, object defaultValue, Type settingClrType)
     {
-        var args = new object[]
+        var args = new object?[]
         {
             this.configEvaluator,
             this.config,
@@ -112,7 +112,7 @@ public class BasicConfigEvaluatorTests : ConfigEvaluatorTestsBase
         var ex = Assert.ThrowsException<InvalidOperationException>(() =>
         {
             try { EvaluateMethodDefinition.MakeGenericMethod(settingClrType).Invoke(null, args); }
-            catch (TargetInvocationException ex) { throw ex.InnerException; }
+            catch (TargetInvocationException ex) { throw ex.InnerException!; }
         });
         StringAssert.Contains(ex.Message, $"Setting's type was {this.config[key].SettingType} but the default value's type was {settingClrType}.");
     }

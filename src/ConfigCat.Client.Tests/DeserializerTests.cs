@@ -17,7 +17,6 @@ public class DeserializerTests
             return settings;
         };
 
-        var deserializer = new ConfigDeserializer();
-        deserializer.TryDeserialize("{\"p\": {\"u\": \"http://example.com\", \"r\": 0}}", httpETag: null, out var configs);
+        Assert.IsNotNull(ProjectConfig.Deserialize("{\"p\": {\"u\": \"http://example.com\", \"r\": 0}}"));
     }
 }

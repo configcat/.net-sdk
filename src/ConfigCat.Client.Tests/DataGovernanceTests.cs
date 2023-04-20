@@ -62,7 +62,6 @@ public class DataGovernanceTests
             "DEMO",
             Mock.Of<IConfigCatLogger>().AsWrapper(),
             handlerMock.Object,
-            Mock.Of<IConfigDeserializer>(),
             configuration.IsCustomBaseUrl,
             TimeSpan.FromSeconds(30));
 
@@ -385,7 +384,6 @@ public class DataGovernanceTests
             "DEMO",
             Mock.Of<IConfigCatLogger>().AsWrapper(),
             handlerMock.Object,
-            new ConfigDeserializer(),
             fetchConfig.IsCustomBaseUrl,
             TimeSpan.FromSeconds(30));
 

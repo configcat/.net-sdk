@@ -5,6 +5,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
 using ConfigCat.Client.ConfigService;
+using ConfigCat.Client.Evaluation;
+using ConfigCat.Client.Tests.Helpers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 
@@ -16,10 +18,10 @@ public class ConfigServiceTests
     private static readonly TimeSpan DefaultExpire = TimeSpan.FromSeconds(30);
 
     private readonly Mock<IConfigFetcher> fetcherMock = new(MockBehavior.Strict);
-    private readonly Mock<IConfigCatCache> cacheMock = new(MockBehavior.Strict);
+    private readonly Mock<ConfigCache> cacheMock = new(MockBehavior.Strict);
     private readonly Mock<IConfigCatLogger> loggerMock = new(MockBehavior.Loose);
-    private readonly ProjectConfig cachedPc = new("CACHED", DateTime.UtcNow.Subtract(DefaultExpire.Add(TimeSpan.FromSeconds(1))), "67890");
-    private readonly ProjectConfig fetchedPc = new("FETCHED", DateTime.UtcNow, "12345");
+    private readonly ProjectConfig cachedPc = new(new SettingsWithPreferences { Settings = new() }, DateTime.UtcNow.Subtract(DefaultExpire.Add(TimeSpan.FromSeconds(1))), "67890");
+    private readonly ProjectConfig fetchedPc = new(new SettingsWithPreferences { Settings = new() }, DateTime.UtcNow, "12345");
 
     [TestInitialize]
     public void TestInitialize()
@@ -71,7 +73,7 @@ public class ConfigServiceTests
     {
         // Arrange
 
-        var cachedPc = new ProjectConfig("{}", DateTime.UtcNow, "123");
+        var cachedPc = new ProjectConfig(new SettingsWithPreferences(), DateTime.UtcNow, "123");
 
         this.cacheMock
             .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -172,7 +174,7 @@ public class ConfigServiceTests
         // Assert
 
         Assert.IsTrue(configChangedEvents.TryDequeue(out var configChangedEvent));
-        Assert.AreSame(this.fetchedPc, configChangedEvent.NewConfig);
+        Assert.AreSame(this.fetchedPc.Config, configChangedEvent.NewConfig);
         Assert.AreEqual(0, configChangedEvents.Count);
     }
 
@@ -474,7 +476,7 @@ public class ConfigServiceTests
         // Assert
 
         Assert.IsTrue(configChangedEvents.TryDequeue(out var configChangedEvent));
-        Assert.AreSame(this.fetchedPc, configChangedEvent.NewConfig);
+        Assert.AreSame(this.fetchedPc.Config, configChangedEvent.NewConfig);
         Assert.AreEqual(0, configChangedEvents.Count);
     }
 
@@ -627,9 +629,10 @@ public class ConfigServiceTests
         var maxInitWaitTime = DefaultExpire;
 
         var cache = new InMemoryConfigCache();
-        cache.Set(null!, this.cachedPc with { TimeStamp = this.cachedPc.TimeStamp - pollInterval });
+        var cachedPc = this.cachedPc.With(timeStamp: this.cachedPc.TimeStamp - pollInterval);
+        cache.Set(null!, cachedPc);
 
-        this.fetcherMock.Setup(m => m.FetchAsync(this.cachedPc, It.IsAny<CancellationToken>())).ReturnsAsync(FetchResult.Success(this.fetchedPc));
+        this.fetcherMock.Setup(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>())).ReturnsAsync(FetchResult.Success(this.fetchedPc));
 
         var config = PollingModes.AutoPoll(pollInterval, maxInitWaitTime);
         var service = new AutoPollConfigService(config,
@@ -658,7 +661,7 @@ public class ConfigServiceTests
 
         Assert.AreEqual(this.fetchedPc, actualPc);
 
-        this.fetcherMock.Verify(m => m.FetchAsync(this.cachedPc, It.IsAny<CancellationToken>()), Times.Once);
+        this.fetcherMock.Verify(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>()), Times.Once);
 
         Assert.IsTrue(clientReadyCalled);
     }
@@ -679,7 +682,7 @@ public class ConfigServiceTests
         var maxInitWaitTime = pollInterval + pollInterval;
 
         var cache = new InMemoryConfigCache();
-        var cachedPc = this.cachedPc with { TimeStamp = DateTime.UtcNow - pollInterval - pollInterval };
+        var cachedPc = this.cachedPc.With(timeStamp: DateTime.UtcNow - pollInterval - pollInterval);
         cache.Set(null!, cachedPc);
 
         this.fetcherMock.Setup(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>())).ReturnsAsync(FetchResult.Success(cachedPc));
@@ -787,15 +790,16 @@ public class ConfigServiceTests
         var cacheTimeToLive = DefaultExpire + DefaultExpire;
 
         var cache = new InMemoryConfigCache();
-        cache.Set(null!, this.cachedPc with { TimeStamp = this.cachedPc.TimeStamp - cacheTimeToLive });
+        var cachedPc = this.cachedPc.With(timeStamp: this.cachedPc.TimeStamp - cacheTimeToLive);
+        cache.Set(null!, cachedPc);
 
         if (isAsync)
         {
-            this.fetcherMock.Setup(m => m.FetchAsync(this.cachedPc, It.IsAny<CancellationToken>())).ReturnsAsync(FetchResult.Success(this.fetchedPc));
+            this.fetcherMock.Setup(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>())).ReturnsAsync(FetchResult.Success(this.fetchedPc));
         }
         else
         {
-            this.fetcherMock.Setup(m => m.Fetch(this.cachedPc)).Returns(FetchResult.Success(this.fetchedPc));
+            this.fetcherMock.Setup(m => m.Fetch(cachedPc)).Returns(FetchResult.Success(this.fetchedPc));
         }
 
         var config = PollingModes.LazyLoad(cacheTimeToLive);
@@ -818,11 +822,11 @@ public class ConfigServiceTests
 
         if (isAsync)
         {
-            this.fetcherMock.Verify(m => m.FetchAsync(this.cachedPc, It.IsAny<CancellationToken>()), Times.Once);
+            this.fetcherMock.Verify(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>()), Times.Once);
         }
         else
         {
-            this.fetcherMock.Verify(m => m.Fetch(this.cachedPc), Times.Once);
+            this.fetcherMock.Verify(m => m.Fetch(cachedPc), Times.Once);
         }
 
         Assert.AreEqual(1, Volatile.Read(ref clientReadyEventCount));

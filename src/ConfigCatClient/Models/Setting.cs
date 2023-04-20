@@ -13,12 +13,34 @@ using JsonValue = System.Text.Json.JsonElement;
 
 namespace ConfigCat.Client;
 
+/// <summary>
+/// Feature flag or setting.
+/// </summary>
 public interface ISetting
 {
+    /// <summary>
+    /// The default value of the setting.
+    /// </summary>
     object Value { get; }
+
+    /// <summary>
+    /// Setting type.
+    /// </summary>
     SettingType SettingType { get; }
+
+    /// <summary>
+    /// List of percentage options.
+    /// </summary>
     IReadOnlyList<IRolloutPercentageItem> RolloutPercentageItems { get; }
+
+    /// <summary>
+    /// List of targeting rules.
+    /// </summary>
     IReadOnlyList<IRolloutRule> RolloutRules { get; }
+
+    /// <summary>
+    /// Variation ID.
+    /// </summary>
     string? VariationId { get; }
 }
 

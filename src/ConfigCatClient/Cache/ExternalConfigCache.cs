@@ -99,7 +99,7 @@ internal sealed class ExternalConfigCache : ConfigCache
         {
             if (SetCore(config) is { } serializedConfig)
             {
-                await this.cache.SetAsync(key, serializedConfig).ConfigureAwait(false);
+                await this.cache.SetAsync(key, serializedConfig, cancellationToken).ConfigureAwait(false);
             }
         }
         catch (Exception ex)

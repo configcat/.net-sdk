@@ -11,7 +11,7 @@ using JsonValue = System.Text.Json.JsonElement;
 namespace ConfigCat.Client;
 
 /// <summary>
-/// Comparison-based targeting rule.
+/// Targeting rule.
 /// </summary>
 public interface IRolloutRule
 {

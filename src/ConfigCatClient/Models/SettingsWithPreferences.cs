@@ -9,8 +9,14 @@ using System.Text.Json.Serialization;
 
 namespace ConfigCat.Client;
 
+/// <summary>
+/// ConfigCat config.
+/// </summary>
 public interface IConfig
 {
+    /// <summary>
+    /// The dictionary of settings.
+    /// </summary>
     IReadOnlyDictionary<string, ISetting> Settings { get; }
 }
 

@@ -11,7 +11,7 @@ using JsonValue = System.Text.Json.JsonElement;
 namespace ConfigCat.Client;
 
 /// <summary>
-/// Percentage-based targeting rule.
+/// Percentage option.
 /// </summary>
 public interface IRolloutPercentageItem
 {

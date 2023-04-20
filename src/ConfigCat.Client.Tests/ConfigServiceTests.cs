@@ -20,8 +20,8 @@ public class ConfigServiceTests
     private readonly Mock<IConfigFetcher> fetcherMock = new(MockBehavior.Strict);
     private readonly Mock<ConfigCache> cacheMock = new(MockBehavior.Strict);
     private readonly Mock<IConfigCatLogger> loggerMock = new(MockBehavior.Loose);
-    private readonly ProjectConfig cachedPc = new(new SettingsWithPreferences { Settings = new() }, DateTime.UtcNow.Subtract(DefaultExpire.Add(TimeSpan.FromSeconds(1))), "67890");
-    private readonly ProjectConfig fetchedPc = new(new SettingsWithPreferences { Settings = new() }, DateTime.UtcNow, "12345");
+    private readonly ProjectConfig cachedPc = new(new SettingsWithPreferences(), DateTime.UtcNow.Subtract(DefaultExpire.Add(TimeSpan.FromSeconds(1))), "67890");
+    private readonly ProjectConfig fetchedPc = new(new SettingsWithPreferences(), DateTime.UtcNow, "12345");
 
     [TestInitialize]
     public void TestInitialize()

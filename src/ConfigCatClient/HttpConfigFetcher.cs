@@ -9,9 +9,9 @@ using ConfigCat.Client.Evaluation;
 using ConfigCat.Client.Utils;
 
 #if NET45
-using ResponseWithBody = System.Tuple<System.Net.Http.HttpResponseMessage, ConfigCat.Client.Evaluation.SettingsWithPreferences?>;
+using ResponseWithBody = System.Tuple<System.Net.Http.HttpResponseMessage, ConfigCat.Client.SettingsWithPreferences?>;
 #else
-using ResponseWithBody = System.ValueTuple<System.Net.Http.HttpResponseMessage, ConfigCat.Client.Evaluation.SettingsWithPreferences?>;
+using ResponseWithBody = System.ValueTuple<System.Net.Http.HttpResponseMessage, ConfigCat.Client.SettingsWithPreferences?>;
 #endif
 
 namespace ConfigCat.Client;

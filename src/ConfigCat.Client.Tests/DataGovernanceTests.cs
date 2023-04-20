@@ -5,8 +5,8 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using ConfigCat.Client;
 using ConfigCat.Client.Configuration;
-using ConfigCat.Client.Evaluation;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Moq.Protected;
@@ -403,19 +403,20 @@ public class DataGovernanceTests
 
     private static SettingsWithPreferences CreateResponse(Uri? url = null, RedirectMode redirectMode = RedirectMode.No, bool withSettings = true)
     {
-        return new SettingsWithPreferences
+        var response = new SettingsWithPreferences
         {
             Preferences = new Preferences
             {
                 Url = (url ?? ConfigCatClientOptions.BaseUrlGlobal).ToString(),
                 RedirectMode = redirectMode
             },
-            Settings = withSettings
-            ? new Dictionary<string, Setting>
-                {
-                    { "myKey", "foo".ToSetting() }
-                }
-            : null
         };
+
+        if (withSettings)
+        {
+            response.Settings.Add("myKey", "foo".ToSetting());
+        }
+
+        return response;
     }
 }

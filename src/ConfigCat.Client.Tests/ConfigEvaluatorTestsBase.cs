@@ -27,7 +27,7 @@ public abstract class ConfigEvaluatorTestsBase
     {
         this.configEvaluator = new RolloutEvaluator(this.Logger);
 
-        this.config = GetSampleJson().Deserialize<SettingsWithPreferences>()!.Settings!;
+        this.config = GetSampleJson().Deserialize<SettingsWithPreferences>()!.Settings;
     }
 
     protected virtual void AssertValue(string keyName, string expected, User? user)

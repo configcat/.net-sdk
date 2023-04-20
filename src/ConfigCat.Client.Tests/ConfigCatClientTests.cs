@@ -1745,7 +1745,7 @@ public class ConfigCatClientTests
         await client.ForceRefreshAsync();
 
         Assert.AreEqual(2, configChangedEvents.Count);
-        Assert.IsTrue(((SettingsWithPreferences)configChangedEvents[0].NewConfig).Settings is { Count: > 0});
+        Assert.IsTrue(configChangedEvents[0].NewConfig.Settings.Any());
         Assert.AreSame(configChangedEvents[0], configChangedEvents[1]);
 
         // 3. Non-existent flag is evaluated

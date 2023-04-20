@@ -604,7 +604,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         SettingsWithRemoteConfig GetRemoteConfig()
         {
             var config = this.configService.GetConfig();
-            var settings = !config.IsEmpty ? config.Config.Settings ?? new Dictionary<string, Setting>() : null;
+            var settings = !config.IsEmpty ? config.Config.Settings : null;
             return new SettingsWithRemoteConfig(settings, config);
         }
     }
@@ -636,7 +636,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         async Task<SettingsWithRemoteConfig> GetRemoteConfigAsync(CancellationToken cancellationToken)
         {
             var config = await this.configService.GetConfigAsync(cancellationToken).ConfigureAwait(false);
-            var settings = !config.IsEmpty ? config.Config.Settings ?? new Dictionary<string, Setting>() : null;
+            var settings = !config.IsEmpty ? config.Config.Settings : null;
             return new SettingsWithRemoteConfig(settings, config);
         }
     }

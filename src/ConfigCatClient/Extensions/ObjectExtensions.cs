@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
-using ConfigCat.Client.Evaluation;
+using ConfigCat.Client;
 
 #if USE_NEWTONSOFT_JSON
 using JsonValue = Newtonsoft.Json.Linq.JValue;
@@ -143,5 +143,17 @@ internal static class ObjectExtensions
         Debug.Assert(value.ValueKind != Text.Json.JsonValueKind.Null, "Tried to convert unexpected null value.");
         return Text.Json.JsonSerializer.Deserialize<TValue>(value)!;
 #endif
+    }
+
+    public static object ConvertToObject(this JsonValue value, SettingType settingType)
+    {
+        return settingType switch
+        {
+            SettingType.Boolean => value.ConvertTo<bool>(),
+            SettingType.String => value.ConvertTo<string>(),
+            SettingType.Int => value.ConvertTo<int>(),
+            SettingType.Double => value.ConvertTo<double>(),
+            _ => throw new ArgumentOutOfRangeException(nameof(settingType), settingType, null)
+        };
     }
 }

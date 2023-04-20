@@ -50,17 +50,7 @@ public abstract record class EvaluationDetails
         }
         else
         {
-            EvaluationDetails evaluationDetails = new EvaluationDetails<object>
-            {
-                Value = settingType switch
-                {
-                    SettingType.Boolean => value.ConvertTo<bool>(),
-                    SettingType.String => value.ConvertTo<string>(),
-                    SettingType.Int => value.ConvertTo<int>(),
-                    SettingType.Double => value.ConvertTo<double>(),
-                    _ => throw new ArgumentOutOfRangeException(nameof(settingType), settingType, null)
-                }
-            };
+            EvaluationDetails evaluationDetails = new EvaluationDetails<object> { Value = value.ConvertToObject(settingType) };
             return (EvaluationDetails<TValue>)evaluationDetails;
         }
     }
@@ -175,12 +165,12 @@ public abstract record class EvaluationDetails
     /// <summary>
     /// The comparison-based targeting rule which was used to select the evaluated value (if any).
     /// </summary>
-    public RolloutRule? MatchedEvaluationRule { get; set; }
+    public IRolloutRule? MatchedEvaluationRule { get; set; }
 
     /// <summary>
     /// The percentage-based targeting rule which was used to select the evaluated value (if any).
     /// </summary>
-    public RolloutPercentageItem? MatchedEvaluationPercentageRule { get; set; }
+    public IRolloutPercentageItem? MatchedEvaluationPercentageRule { get; set; }
 }
 
 /// <inheritdoc/>

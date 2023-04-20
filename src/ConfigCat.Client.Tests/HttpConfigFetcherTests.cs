@@ -156,12 +156,14 @@ public class HttpConfigFetcherTests
         Assert.AreSame(fetchResults[0].ErrorException, fetchResults[1].ErrorException);
     }
 
-    [DataRow(false, false)]
-    [DataRow(false, true)]
-    [DataRow(true, false)]
-    [DataRow(true, true)]
+    [DataRow(false, false, true)]
+    [DataRow(false, false, false)]
+    [DataRow(false, false, null)]
+    [DataRow(false, true, true)]
+    [DataRow(true, false, true)]
+    [DataRow(true, true, true)]
     [DataTestMethod]
-    public async Task HttpConfigFetcher_FetchAsync_PendingOperationShouldBeJoined(bool cancel1, bool cancel2)
+    public async Task HttpConfigFetcher_FetchAsync_PendingOperationShouldBeJoined(bool cancel1, bool cancel2, bool? bothAsync)
     {
         // Arrange
 
@@ -177,18 +179,30 @@ public class HttpConfigFetcherTests
         // Act
 
         var pendingFetchBefore = configFetcher.pendingFetch;
-        var fetchTask1 = configFetcher.FetchAsync(ProjectConfig.Empty, cancel1 ? cts.Token : CancellationToken.None);
+
+        var fetchTask1 = bothAsync is true or null
+            ? configFetcher.FetchAsync(ProjectConfig.Empty, cancel1 ? cts.Token : CancellationToken.None)
+            : Task.Run(() => configFetcher.Fetch(ProjectConfig.Empty));
+
         var pendingFetchBetween = configFetcher.pendingFetch;
-        var fetchTask2 = configFetcher.FetchAsync(ProjectConfig.Empty, cancel2 ? cts.Token : CancellationToken.None);
+
+        var fetchTask2 = bothAsync is true or not null
+            ? configFetcher.FetchAsync(ProjectConfig.Empty, cancel2 ? cts.Token : CancellationToken.None)
+            : Task.Run(() => configFetcher.Fetch(ProjectConfig.Empty));
+
         var pendingFetchAfter = configFetcher.pendingFetch;
 
         // Assert
 
         Assert.IsNull(pendingFetchBefore);
-        Assert.IsNotNull(pendingFetchBetween);
-        Assert.AreEqual(pendingFetchBetween, pendingFetchAfter);
 
-        if (cancel1)
+        if (bothAsync is not false)
+        {
+            Assert.IsNotNull(pendingFetchBetween);
+            Assert.AreEqual(pendingFetchBetween, pendingFetchAfter);
+        }
+
+        if (bothAsync is not false && cancel1)
         {
             var ex = await Assert.ThrowsExceptionAsync<TaskCanceledException>(() => fetchTask1);
             Assert.AreEqual(ex.CancellationToken, cts.Token);
@@ -199,7 +213,7 @@ public class HttpConfigFetcherTests
             Assert.AreEqual(configETag, new EntityTagHeaderValue(fetchResult.Config.HttpETag!));
         }
 
-        if (cancel2)
+        if (bothAsync is not false && cancel2)
         {
             var ex = await Assert.ThrowsExceptionAsync<TaskCanceledException>(() => fetchTask2);
             Assert.AreEqual(ex.CancellationToken, cts.Token);
@@ -210,8 +224,11 @@ public class HttpConfigFetcherTests
             Assert.AreEqual(configETag, new EntityTagHeaderValue(fetchResult.Config.HttpETag!));
         }
 
-        await pendingFetchBetween;
+        if (bothAsync is not false)
+        {
+            await pendingFetchBetween!;
 
-        Assert.IsNull(configFetcher.pendingFetch);
+            Assert.IsNull(configFetcher.pendingFetch);
+        }
     }
 }

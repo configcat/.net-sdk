@@ -1,12 +1,9 @@
 using System;
-using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
-using ConfigCat.Client.Evaluation;
-using ConfigCat.Client.Utils;
 
 #if NET45
 using ResponseWithBody = System.Tuple<System.Net.Http.HttpResponseMessage, string?, ConfigCat.Client.SettingsWithPreferences?>;
@@ -43,21 +40,7 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
         this.httpClient = CreateHttpClient();
     }
 
-    public FetchResult Fetch(ProjectConfig lastConfig)
-    {
-#if NET5_0_OR_GREATER
-        var valueTask = FetchInternalAsync(lastConfig, isAsync: false);
-        Debug.Assert(valueTask.IsCompleted);
-
-        // The value task holds the sync result, it's safe to call GetAwaiter().GetResult()
-        return valueTask.GetAwaiter().GetResult();
-#else
-        // we can't synchronize HttpClient, so we have to go sync over async.
-        return Syncer.Sync(() => FetchInternalAsync(lastConfig, isAsync: true).AsTask());
-#endif
-    }
-
-    public Task<FetchResult> FetchAsync(ProjectConfig lastConfig, CancellationToken cancellationToken = default)
+    private Task<FetchResult> BeginFetchOrJoinPending(ProjectConfig lastConfig)
     {
         lock (this.syncObj)
         {
@@ -65,7 +48,7 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
             {
                 try
                 {
-                    return await FetchInternalAsync(lastConfig, isAsync: true).ConfigureAwait(false);
+                    return await FetchInternalAsync(lastConfig).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -76,33 +59,31 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                 }
             });
 
-            return this.pendingFetch.WaitAsync(cancellationToken);
+            return this.pendingFetch;
         }
     }
 
-    private async ValueTask<FetchResult> FetchInternalAsync(ProjectConfig lastConfig, bool isAsync)
+    public FetchResult Fetch(ProjectConfig lastConfig)
+    {
+        // NOTE: We go sync over async here, however it's safe to do that in this case as
+        // BeginFetchOrJoinPending will run the fetch operation on the thread pool,
+        // where there's no synchronization context which awaits want to return to,
+        // thus, they won't try to run continuations on this thread where we're block waiting.
+        return BeginFetchOrJoinPending(lastConfig).GetAwaiter().GetResult();
+    }
+
+    public Task<FetchResult> FetchAsync(ProjectConfig lastConfig, CancellationToken cancellationToken = default)
+    {
+        return BeginFetchOrJoinPending(lastConfig).WaitAsync(cancellationToken);
+    }
+
+    private async ValueTask<FetchResult> FetchInternalAsync(ProjectConfig lastConfig)
     {
         FormattableLogMessage logMessage;
         Exception errorException;
         try
         {
-            ResponseWithBody responseWithBody;
-#if NET5_0_OR_GREATER
-            if (isAsync)
-            {
-                responseWithBody = await FetchRequestAsync(lastConfig.HttpETag, this.requestUri, isAsync: true).ConfigureAwait(false);
-            }
-            else
-            {
-                var valueTask = FetchRequestAsync(lastConfig.HttpETag, this.requestUri, isAsync: false);
-                Debug.Assert(valueTask.IsCompleted);
-
-                // The value task holds the sync result, it's safe to call GetAwaiter().GetResult()
-                responseWithBody = valueTask.GetAwaiter().GetResult();
-            }
-#else
-            responseWithBody = await FetchRequestAsync(lastConfig.HttpETag, this.requestUri, isAsync: true).ConfigureAwait(false);
-#endif
+            var responseWithBody = await FetchRequestAsync(lastConfig.HttpETag, this.requestUri).ConfigureAwait(false);
 
             var response = responseWithBody.Item1;
 
@@ -175,8 +156,7 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
         return FetchResult.Failure(lastConfig, logMessage.InvariantFormattedMessage, errorException);
     }
 
-    private async ValueTask<ResponseWithBody> FetchRequestAsync(string? httpETag,
-        Uri requestUri, bool isAsync, sbyte maxExecutionCount = 3)
+    private async ValueTask<ResponseWithBody> FetchRequestAsync(string? httpETag, Uri requestUri, sbyte maxExecutionCount = 3)
     {
         for (; ; maxExecutionCount--)
         {
@@ -187,21 +167,12 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                 request.Headers.IfNoneMatch.Add(new EntityTagHeaderValue(httpETag));
             }
 
-            HttpResponseMessage response;
-#if NET5_0_OR_GREATER
-            response = isAsync
-                ? await this.httpClient.SendAsync(request, this.cancellationTokenSource.Token).ConfigureAwait(false)
-                : this.httpClient.Send(request, this.cancellationTokenSource.Token);
-#else
-            response = await this.httpClient.SendAsync(request, this.cancellationTokenSource.Token).ConfigureAwait(false);
-#endif
+            var response = await this.httpClient.SendAsync(request, this.cancellationTokenSource.Token).ConfigureAwait(false);
 
             if (response.StatusCode == HttpStatusCode.OK)
             {
 #if NET5_0_OR_GREATER
-                var responseBody = isAsync
-                    ? await response.Content.ReadAsStringAsync(this.cancellationTokenSource.Token).ConfigureAwait(false)
-                    : response.Content.ReadAsString(this.cancellationTokenSource.Token);
+                var responseBody = await response.Content.ReadAsStringAsync(this.cancellationTokenSource.Token).ConfigureAwait(false);
 #else
                 var responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 #endif

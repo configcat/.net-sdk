@@ -9,20 +9,17 @@ internal readonly record struct FetchResult
 
     public static FetchResult Success(ProjectConfig config)
     {
-        return new FetchResult(config ?? throw new ArgumentNullException(nameof(config)), errorMessageOrToken: null);
+        return new FetchResult(config, errorMessageOrToken: null);
     }
 
     public static FetchResult NotModified(ProjectConfig config)
     {
-        return new FetchResult(config ?? throw new ArgumentNullException(nameof(config)), NotModifiedToken);
+        return new FetchResult(config, NotModifiedToken);
     }
 
     public static FetchResult Failure(ProjectConfig config, string errorMessage, Exception? errorException = null)
     {
-        return new FetchResult(
-            config ?? throw new ArgumentNullException(nameof(config)),
-            errorMessage ?? throw new ArgumentNullException(nameof(errorMessage)),
-            errorException);
+        return new FetchResult(config, errorMessage, errorException);
     }
 
     private readonly object? errorMessageOrToken;

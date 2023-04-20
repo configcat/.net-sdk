@@ -19,44 +19,44 @@ internal sealed class LazyLoadConfigService : ConfigServiceBase, IConfigService
 
     public ProjectConfig GetConfig()
     {
-        var config = this.ConfigCache.Get(base.CacheKey);
+        var cachedConfig = this.ConfigCache.Get(base.CacheKey);
 
-        if (config.IsExpired(expiration: this.cacheTimeToLive, out var cachedConfigIsEmpty))
+        if (cachedConfig.IsExpired(expiration: this.cacheTimeToLive))
         {
-            if (!cachedConfigIsEmpty)
+            if (!cachedConfig.IsEmpty)
             {
                 OnConfigExpired();
             }
 
             if (!IsOffline)
             {
-                var configWithFetchResult = RefreshConfigCore(config);
+                var configWithFetchResult = RefreshConfigCore(cachedConfig);
                 return configWithFetchResult.Item1;
             }
         }
 
-        return config;
+        return cachedConfig;
     }
 
     public async Task<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default)
     {
-        var config = await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(false);
+        var cachedConfig = await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(false);
 
-        if (config.IsExpired(expiration: this.cacheTimeToLive, out var cachedConfigIsEmpty))
+        if (cachedConfig.IsExpired(expiration: this.cacheTimeToLive))
         {
-            if (!cachedConfigIsEmpty)
+            if (!cachedConfig.IsEmpty)
             {
                 OnConfigExpired();
             }
 
             if (!IsOffline)
             {
-                var configWithFetchResult = await RefreshConfigCoreAsync(config, cancellationToken).ConfigureAwait(false);
+                var configWithFetchResult = await RefreshConfigCoreAsync(cachedConfig, cancellationToken).ConfigureAwait(false);
                 return configWithFetchResult.Item1;
             }
         }
 
-        return config;
+        return cachedConfig;
     }
 
     private void OnConfigExpired()

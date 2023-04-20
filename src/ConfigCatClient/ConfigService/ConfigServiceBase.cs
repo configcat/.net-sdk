@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
@@ -24,7 +25,7 @@ internal abstract class ConfigServiceBase : IDisposable
     private readonly object syncObj = new();
 
     protected readonly IConfigFetcher ConfigFetcher;
-    protected readonly IConfigCatCache ConfigCache;
+    protected readonly ConfigCache ConfigCache;
     protected readonly LoggerWrapper Logger;
     protected readonly string CacheKey;
     protected readonly Hooks Hooks;
@@ -87,21 +88,19 @@ internal abstract class ConfigServiceBase : IDisposable
     protected ConfigWithFetchResult RefreshConfigCore(ProjectConfig latestConfig)
     {
         var fetchResult = this.ConfigFetcher.Fetch(latestConfig);
-        var newConfig = fetchResult.Config;
 
-        var configContentHasChanged = !ProjectConfig.ContentEquals(latestConfig, newConfig);
-        if ((configContentHasChanged || newConfig.TimeStamp > latestConfig.TimeStamp) && !newConfig.IsEmpty)
+        if (fetchResult.Config.IsNewerThan(latestConfig))
         {
-            this.ConfigCache.Set(this.CacheKey, newConfig);
+            latestConfig = fetchResult.Config;
 
-            OnConfigUpdated(newConfig);
+            this.ConfigCache.Set(this.CacheKey, fetchResult.Config);
 
-            if (configContentHasChanged)
+            OnConfigUpdated(latestConfig);
+
+            if (fetchResult.IsSuccess)
             {
-                OnConfigChanged(newConfig);
+                OnConfigChanged(latestConfig);
             }
-
-            return new ConfigWithFetchResult(newConfig, fetchResult);
         }
 
         return new ConfigWithFetchResult(latestConfig, fetchResult);
@@ -125,21 +124,19 @@ internal abstract class ConfigServiceBase : IDisposable
     protected async Task<ConfigWithFetchResult> RefreshConfigCoreAsync(ProjectConfig latestConfig, CancellationToken cancellationToken)
     {
         var fetchResult = await this.ConfigFetcher.FetchAsync(latestConfig, cancellationToken).ConfigureAwait(false);
-        var newConfig = fetchResult.Config;
 
-        var configContentHasChanged = !ProjectConfig.ContentEquals(latestConfig, newConfig);
-        if ((configContentHasChanged || newConfig.TimeStamp > latestConfig.TimeStamp) && !newConfig.IsEmpty)
+        if (fetchResult.Config.IsNewerThan(latestConfig))
         {
-            await this.ConfigCache.SetAsync(this.CacheKey, newConfig, cancellationToken).ConfigureAwait(false);
+            latestConfig = fetchResult.Config;
 
-            OnConfigUpdated(newConfig);
+            await this.ConfigCache.SetAsync(this.CacheKey, latestConfig, cancellationToken).ConfigureAwait(false);
 
-            if (configContentHasChanged)
+            OnConfigUpdated(latestConfig);
+
+            if (fetchResult.IsSuccess)
             {
-                OnConfigChanged(newConfig);
+                OnConfigChanged(latestConfig);
             }
-
-            return new ConfigWithFetchResult(newConfig, fetchResult);
         }
 
         return new ConfigWithFetchResult(latestConfig, fetchResult);
@@ -151,7 +148,7 @@ internal abstract class ConfigServiceBase : IDisposable
     {
         this.Logger.Debug("config changed");
 
-        this.Hooks.RaiseConfigChanged(newConfig);
+        this.Hooks.RaiseConfigChanged(newConfig.Config!);
     }
 
     public bool IsOffline

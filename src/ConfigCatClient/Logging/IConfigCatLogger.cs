@@ -3,7 +3,7 @@ using System;
 namespace ConfigCat.Client;
 
 /// <summary>
-/// Defines the interface for the ConfigCat SDK to perform logging.
+/// Defines the interface used by the ConfigCat SDK to perform logging.
 /// </summary>
 public interface IConfigCatLogger
 {

@@ -1,31 +1,18 @@
-using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ConfigCat.Client;
+namespace ConfigCat.Client.Cache;
 
-internal sealed class InMemoryConfigCache : IConfigCatCache
+internal sealed class InMemoryConfigCache : ConfigCache
 {
-    private ProjectConfig projectConfig = ProjectConfig.Empty;
+    private ProjectConfig cachedConfig = ProjectConfig.Empty;
 
-    /// <inheritdoc />
-    public Task SetAsync(string key, ProjectConfig config, CancellationToken cancellationToken = default)
+    public override ProjectConfig Get(string key)
     {
-        if (cancellationToken.IsCancellationRequested)
-        {
-            return cancellationToken.ToTask();
-        }
-
-        Set(key, config);
-#if NET45
-        return Task.FromResult(0);
-#else
-        return Task.CompletedTask;
-#endif
+        return Volatile.Read(ref this.cachedConfig);
     }
 
-    /// <inheritdoc />
-    public Task<ProjectConfig> GetAsync(string key, CancellationToken cancellationToken = default)
+    public override Task<ProjectConfig> GetAsync(string key, CancellationToken cancellationToken = default)
     {
         if (cancellationToken.IsCancellationRequested)
         {
@@ -35,16 +22,44 @@ internal sealed class InMemoryConfigCache : IConfigCatCache
         return Task.FromResult(Get(key));
     }
 
-    /// <inheritdoc />
-    public void Set(string key, ProjectConfig config)
+    public override void Set(string key, ProjectConfig config)
     {
-        Interlocked.Exchange(ref this.projectConfig, config ?? throw new ArgumentNullException(nameof(config)));
+        // Read the current cached config.
+        var currentCachedConfig = Volatile.Read(ref this.cachedConfig);
+        for (; ; )
+        {
+            // If the specified config is not newer than what we have in the cache currently, ignore it.
+            if (!config.IsNewerThan(currentCachedConfig))
+            {
+                return;
+            }
+
+            // Otherwise, let's try to overwrite the current config with the specified one.
+            var originalValue = Interlocked.CompareExchange(ref this.cachedConfig, config, currentCachedConfig);
+
+            // Overwrite succeeded?
+            if (originalValue == currentCachedConfig)
+            {
+                return;
+            }
+
+            // Another thread has changed the cached config in the meantime. Rinse & repeat.
+            currentCachedConfig = originalValue;
+        }
     }
 
-    /// <inheritdoc />
-    public ProjectConfig Get(string key)
+    public override Task SetAsync(string key, ProjectConfig config, CancellationToken cancellationToken = default)
     {
-        // NOTE: Volatile.Read(ref this.projectConfig) would probably be sufficient but Interlocked.CompareExchange is the 100% safe way.
-        return Interlocked.CompareExchange(ref this.projectConfig, null!, null!);
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return cancellationToken.ToTask<ProjectConfig>();
+        }
+
+        Set(key, config);
+#if NET45
+        return Task.FromResult(0);
+#else
+        return Task.CompletedTask;
+#endif
     }
 }

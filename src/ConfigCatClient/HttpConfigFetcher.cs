@@ -9,9 +9,9 @@ using ConfigCat.Client.Evaluation;
 using ConfigCat.Client.Utils;
 
 #if NET45
-using ResponseWithBody = System.Tuple<System.Net.Http.HttpResponseMessage, string?>;
+using ResponseWithBody = System.Tuple<System.Net.Http.HttpResponseMessage, ConfigCat.Client.Evaluation.SettingsWithPreferences?>;
 #else
-using ResponseWithBody = System.ValueTuple<System.Net.Http.HttpResponseMessage, string?>;
+using ResponseWithBody = System.ValueTuple<System.Net.Http.HttpResponseMessage, ConfigCat.Client.Evaluation.SettingsWithPreferences?>;
 #endif
 
 namespace ConfigCat.Client;
@@ -23,7 +23,6 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
     private readonly LoggerWrapper logger;
 
     private readonly HttpClientHandler? httpClientHandler;
-    private readonly IConfigDeserializer deserializer;
     private readonly bool isCustomUri;
     private readonly TimeSpan timeout;
     private readonly CancellationTokenSource cancellationTokenSource = new();
@@ -33,13 +32,12 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
     private Uri requestUri;
 
     public HttpConfigFetcher(Uri requestUri, string productVersion, LoggerWrapper logger,
-        HttpClientHandler? httpClientHandler, IConfigDeserializer deserializer, bool isCustomUri, TimeSpan timeout)
+        HttpClientHandler? httpClientHandler, bool isCustomUri, TimeSpan timeout)
     {
         this.requestUri = requestUri;
         this.productVersion = productVersion;
         this.logger = logger;
         this.httpClientHandler = httpClientHandler;
-        this.deserializer = deserializer;
         this.isCustomUri = isCustomUri;
         this.timeout = timeout;
         this.httpClient = CreateHttpClient();
@@ -92,18 +90,18 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
 #if NET5_0_OR_GREATER
             if (isAsync)
             {
-                responseWithBody = await FetchRequestAsync(lastConfig, this.requestUri, isAsync: true).ConfigureAwait(false);
+                responseWithBody = await FetchRequestAsync(lastConfig.HttpETag, this.requestUri, isAsync: true).ConfigureAwait(false);
             }
             else
             {
-                var valueTask = FetchRequestAsync(lastConfig, this.requestUri, isAsync: false);
+                var valueTask = FetchRequestAsync(lastConfig.HttpETag, this.requestUri, isAsync: false);
                 Debug.Assert(valueTask.IsCompleted);
 
                 // The value task holds the sync result, it's safe to call GetAwaiter().GetResult()
                 responseWithBody = valueTask.GetAwaiter().GetResult();
             }
 #else
-            responseWithBody = await FetchRequestAsync(lastConfig, this.requestUri, isAsync: true).ConfigureAwait(false);
+            responseWithBody = await FetchRequestAsync(lastConfig.HttpETag, this.requestUri, isAsync: true).ConfigureAwait(false);
 #endif
 
             var response = responseWithBody.Item1;
@@ -118,11 +116,11 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                     }
 
                     return FetchResult.Success(new ProjectConfig
-                    {
-                        HttpETag = response.Headers.ETag?.Tag,
-                        JsonString = responseWithBody.Item2,
-                        TimeStamp = DateTime.UtcNow
-                    });
+                    (
+                        httpETag: response.Headers.ETag?.Tag,
+                        config: responseWithBody.Item2,
+                        timeStamp: DateTime.UtcNow
+                    ));
 
                 case HttpStatusCode.NotModified:
                     if (lastConfig.IsEmpty)
@@ -131,14 +129,14 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                         return FetchResult.Failure(lastConfig, logMessage.InvariantFormattedMessage);
                     }
 
-                    return FetchResult.NotModified(lastConfig with { TimeStamp = DateTime.UtcNow });
+                    return FetchResult.NotModified(lastConfig.With(timeStamp: DateTime.UtcNow));
 
                 case HttpStatusCode.Forbidden:
                 case HttpStatusCode.NotFound:
                     logMessage = this.logger.FetchFailedDueToInvalidSdkKey();
 
                     // We update the timestamp for extra protection against flooding.
-                    return FetchResult.Failure(lastConfig with { TimeStamp = DateTime.UtcNow }, logMessage.InvariantFormattedMessage);
+                    return FetchResult.Failure(lastConfig.With(timeStamp: DateTime.UtcNow), logMessage.InvariantFormattedMessage);
 
                 default:
                     logMessage = this.logger.FetchFailedDueToUnexpectedHttpResponse((int)response.StatusCode, response.ReasonPhrase);
@@ -176,16 +174,16 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
         return FetchResult.Failure(lastConfig, logMessage.InvariantFormattedMessage, errorException);
     }
 
-    private async ValueTask<ResponseWithBody> FetchRequestAsync(ProjectConfig lastConfig,
+    private async ValueTask<ResponseWithBody> FetchRequestAsync(string? httpETag,
         Uri requestUri, bool isAsync, sbyte maxExecutionCount = 3)
     {
         for (; ; maxExecutionCount--)
         {
             var request = new HttpRequestMessage { Method = HttpMethod.Get, RequestUri = requestUri };
 
-            if (lastConfig.HttpETag is not null)
+            if (httpETag is not null)
             {
-                request.Headers.IfNoneMatch.Add(new EntityTagHeaderValue(lastConfig.HttpETag));
+                request.Headers.IfNoneMatch.Add(new EntityTagHeaderValue(httpETag));
             }
 
             HttpResponseMessage response;
@@ -207,10 +205,11 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                 var responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 #endif
 
-                var httpETag = response.Headers.ETag?.Tag;
-
-                if (!this.deserializer.TryDeserialize(responseBody, httpETag, out var body))
+                var body = responseBody.DeserializeOrDefault<SettingsWithPreferences>();
+                if (body is null)
+                {
                     return new ResponseWithBody(response, null);
+                }
 
                 if (body.Preferences is not null)
                 {
@@ -218,21 +217,21 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
 
                     if (newBaseUrl is null || requestUri.Host == new Uri(newBaseUrl).Host)
                     {
-                        return new ResponseWithBody(response, responseBody);
+                        return new ResponseWithBody(response, body);
                     }
 
                     RedirectMode redirect = body.Preferences.RedirectMode;
 
                     if (this.isCustomUri && redirect != RedirectMode.Force)
                     {
-                        return new ResponseWithBody(response, responseBody);
+                        return new ResponseWithBody(response, body);
                     }
 
                     UpdateRequestUri(new Uri(newBaseUrl));
 
                     if (redirect == RedirectMode.No)
                     {
-                        return new ResponseWithBody(response, responseBody);
+                        return new ResponseWithBody(response, body);
                     }
 
                     if (redirect == RedirectMode.Should)
@@ -243,14 +242,14 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                     if (maxExecutionCount <= 1)
                     {
                         this.logger.FetchFailedDueToRedirectLoop();
-                        return new ResponseWithBody(response, responseBody);
+                        return new ResponseWithBody(response, body);
                     }
 
                     requestUri = ReplaceUri(request.RequestUri, new Uri(newBaseUrl));
                     continue;
                 }
 
-                return new ResponseWithBody(response, responseBody);
+                return new ResponseWithBody(response, body);
             }
 
             return new ResponseWithBody(response, null);

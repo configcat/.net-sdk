@@ -7,7 +7,8 @@ namespace ConfigCat.Client;
 /// </summary>
 public class ConfigChangedEventArgs : EventArgs
 {
-    internal ConfigChangedEventArgs(ProjectConfig newConfig)
+    // TODO: in what form should we provide the new config to user?
+    internal ConfigChangedEventArgs(object newConfig)
     {
         NewConfig = newConfig;
     }
@@ -15,5 +16,5 @@ public class ConfigChangedEventArgs : EventArgs
     /// <summary>
     /// The new <see cref="ProjectConfig"/> object.
     /// </summary>
-    public ProjectConfig NewConfig { get; }
+    public object NewConfig { get; }
 }

@@ -88,7 +88,7 @@ internal class Hooks : IProvidesHooks
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    internal void RaiseConfigChanged(ProjectConfig newConfig)
+    internal void RaiseConfigChanged(object newConfig)
     {
         if (this.eventHandlers.ConfigChanged is { } configChanged && TryGetSender(out var client))
         {

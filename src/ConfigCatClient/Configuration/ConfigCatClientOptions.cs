@@ -1,5 +1,6 @@
 using System;
 using System.Net.Http;
+using ConfigCat.Client.Cache;
 
 namespace ConfigCat.Client.Configuration;
 
@@ -28,7 +29,7 @@ public class ConfigCatClientOptions : IProvidesHooks
     /// </summary>
     public IConfigCatCache? ConfigCache { get; set; }
 
-    internal static IConfigCatCache CreateDefaultConfigCache() => new InMemoryConfigCache();
+    internal static ConfigCache CreateDefaultConfigCache() => new InMemoryConfigCache();
 
     /// <summary>
     /// Polling mode.

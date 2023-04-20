@@ -13,7 +13,7 @@ namespace ConfigCat.Client;
 /// <summary>
 /// Percentage option.
 /// </summary>
-public interface IRolloutPercentageItem
+public interface IPercentageOption
 {
     /// <summary>
     /// The order value for determining the order of evaluation of rules.
@@ -36,7 +36,7 @@ public interface IRolloutPercentageItem
     string? VariationId { get; set; }
 }
 
-internal sealed class RolloutPercentageItem : IRolloutPercentageItem
+internal sealed class RolloutPercentageItem : IPercentageOption
 {
 #if USE_NEWTONSOFT_JSON
     [JsonProperty(PropertyName = "o")]
@@ -52,7 +52,7 @@ internal sealed class RolloutPercentageItem : IRolloutPercentageItem
 #endif
     public JsonValue Value { get; set; } = default!;
 
-    object IRolloutPercentageItem.Value => Value.ConvertToObject(Value.DetermineSettingType());
+    object IPercentageOption.Value => Value.ConvertToObject(Value.DetermineSettingType());
 
 #if USE_NEWTONSOFT_JSON
     [JsonProperty(PropertyName = "p")]

@@ -31,12 +31,12 @@ public interface ISetting
     /// <summary>
     /// List of percentage options.
     /// </summary>
-    IReadOnlyList<IRolloutPercentageItem> RolloutPercentageItems { get; }
+    IReadOnlyList<IPercentageOption> PercentageOptions { get; }
 
     /// <summary>
     /// List of targeting rules.
     /// </summary>
-    IReadOnlyList<IRolloutRule> RolloutRules { get; }
+    IReadOnlyList<ITargetingRule> TargetingRules { get; }
 
     /// <summary>
     /// Variation ID.
@@ -63,7 +63,6 @@ internal sealed class Setting : ISetting
     public SettingType SettingType { get; set; } = SettingType.Unknown;
 
     private RolloutPercentageItem[]? rolloutPercentageItems;
-    private IReadOnlyList<IRolloutPercentageItem>? rolloutPercentageItemsReadOnly;
 
 #if USE_NEWTONSOFT_JSON
     [JsonProperty(PropertyName = "p")]
@@ -76,10 +75,10 @@ internal sealed class Setting : ISetting
         private set => this.rolloutPercentageItems = value;
     }
 
-    IReadOnlyList<IRolloutPercentageItem> ISetting.RolloutPercentageItems => this.rolloutPercentageItemsReadOnly ??= new ReadOnlyCollection<RolloutPercentageItem>(RolloutPercentageItems);
+    private IReadOnlyList<IPercentageOption>? percentageOptionsReadOnly;
+    IReadOnlyList<IPercentageOption> ISetting.PercentageOptions => this.percentageOptionsReadOnly ??= new ReadOnlyCollection<RolloutPercentageItem>(RolloutPercentageItems);
 
     private RolloutRule[]? rolloutRules;
-    private IReadOnlyList<IRolloutRule>? rolloutRulesReadOnly;
 
 #if USE_NEWTONSOFT_JSON
     [JsonProperty(PropertyName = "r")]
@@ -92,7 +91,8 @@ internal sealed class Setting : ISetting
         private set => this.rolloutRules = value;
     }
 
-    IReadOnlyList<IRolloutRule> ISetting.RolloutRules => this.rolloutRulesReadOnly ??= new ReadOnlyCollection<RolloutRule>(RolloutRules);
+    private IReadOnlyList<ITargetingRule>? targetingRulesReadOnly;
+    IReadOnlyList<ITargetingRule> ISetting.TargetingRules => this.targetingRulesReadOnly ??= new ReadOnlyCollection<RolloutRule>(RolloutRules);
 
 #if USE_NEWTONSOFT_JSON
     [JsonProperty(PropertyName = "i")]

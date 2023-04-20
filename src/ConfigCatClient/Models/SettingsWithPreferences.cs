@@ -23,7 +23,6 @@ public interface IConfig
 internal sealed class SettingsWithPreferences : IConfig
 {
     private Dictionary<string, Setting>? settings;
-    private IReadOnlyDictionary<string, ISetting>? settingsReadOnly;
 
 #if USE_NEWTONSOFT_JSON
     [JsonProperty(PropertyName = "f")]
@@ -36,6 +35,7 @@ internal sealed class SettingsWithPreferences : IConfig
         private set => this.settings = value;
     }
 
+    private IReadOnlyDictionary<string, ISetting>? settingsReadOnly;
     IReadOnlyDictionary<string, ISetting> IConfig.Settings => this.settingsReadOnly ??= Settings.ToDictionary(kvp => kvp.Key, kvp => (ISetting)kvp.Value);
 
 #if USE_NEWTONSOFT_JSON

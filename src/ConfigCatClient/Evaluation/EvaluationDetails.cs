@@ -165,12 +165,12 @@ public abstract record class EvaluationDetails
     /// <summary>
     /// The targeting rule which was used to select the evaluated value (if any).
     /// </summary>
-    public IRolloutRule? MatchedEvaluationRule { get; set; }
+    public ITargetingRule? MatchedEvaluationRule { get; set; }
 
     /// <summary>
     /// The percentage option which was used to select the evaluated value (if any).
     /// </summary>
-    public IRolloutPercentageItem? MatchedEvaluationPercentageRule { get; set; }
+    public IPercentageOption? MatchedEvaluationPercentageRule { get; set; }
 }
 
 /// <inheritdoc/>

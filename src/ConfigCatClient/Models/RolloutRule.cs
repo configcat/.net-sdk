@@ -13,7 +13,7 @@ namespace ConfigCat.Client;
 /// <summary>
 /// Targeting rule.
 /// </summary>
-public interface IRolloutRule
+public interface ITargetingRule
 {
     /// <summary>
     /// The order value for determining the order of evaluation of rules.
@@ -46,7 +46,7 @@ public interface IRolloutRule
     string? VariationId { get; }
 }
 
-internal sealed class RolloutRule : IRolloutRule
+internal sealed class RolloutRule : ITargetingRule
 {
 #if USE_NEWTONSOFT_JSON
     [JsonProperty(PropertyName = "o")]
@@ -83,7 +83,7 @@ internal sealed class RolloutRule : IRolloutRule
 #endif
     public JsonValue Value { get; set; } = default!;
 
-    object IRolloutRule.Value => Value.ConvertToObject(Value.DetermineSettingType());
+    object ITargetingRule.Value => Value.ConvertToObject(Value.DetermineSettingType());
 
 #if USE_NEWTONSOFT_JSON
     [JsonProperty(PropertyName = "i")]

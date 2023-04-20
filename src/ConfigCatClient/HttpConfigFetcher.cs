@@ -9,9 +9,9 @@ using ConfigCat.Client.Evaluation;
 using ConfigCat.Client.Utils;
 
 #if NET45
-using ResponseWithBody = System.Tuple<System.Net.Http.HttpResponseMessage, ConfigCat.Client.SettingsWithPreferences?>;
+using ResponseWithBody = System.Tuple<System.Net.Http.HttpResponseMessage, string?, ConfigCat.Client.SettingsWithPreferences?>;
 #else
-using ResponseWithBody = System.ValueTuple<System.Net.Http.HttpResponseMessage, ConfigCat.Client.SettingsWithPreferences?>;
+using ResponseWithBody = System.ValueTuple<System.Net.Http.HttpResponseMessage, string?, ConfigCat.Client.SettingsWithPreferences?>;
 #endif
 
 namespace ConfigCat.Client;
@@ -118,8 +118,9 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                     return FetchResult.Success(new ProjectConfig
                     (
                         httpETag: response.Headers.ETag?.Tag,
-                        config: responseWithBody.Item2,
-                        timeStamp: DateTime.UtcNow
+                        configJson: responseWithBody.Item2,
+                        config: responseWithBody.Item3,
+                        timeStamp: ProjectConfig.GetTimeStampFrom(response)
                     ));
 
                 case HttpStatusCode.NotModified:
@@ -129,14 +130,14 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                         return FetchResult.Failure(lastConfig, logMessage.InvariantFormattedMessage);
                     }
 
-                    return FetchResult.NotModified(lastConfig.With(timeStamp: DateTime.UtcNow));
+                    return FetchResult.NotModified(lastConfig.With(ProjectConfig.GetTimeStampFrom(response)));
 
                 case HttpStatusCode.Forbidden:
                 case HttpStatusCode.NotFound:
                     logMessage = this.logger.FetchFailedDueToInvalidSdkKey();
 
                     // We update the timestamp for extra protection against flooding.
-                    return FetchResult.Failure(lastConfig.With(timeStamp: DateTime.UtcNow), logMessage.InvariantFormattedMessage);
+                    return FetchResult.Failure(lastConfig.With(ProjectConfig.GetTimeStampFrom(response)), logMessage.InvariantFormattedMessage);
 
                 default:
                     logMessage = this.logger.FetchFailedDueToUnexpectedHttpResponse((int)response.StatusCode, response.ReasonPhrase);
@@ -205,33 +206,33 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                 var responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 #endif
 
-                var body = responseBody.DeserializeOrDefault<SettingsWithPreferences>();
-                if (body is null)
+                var config = responseBody.DeserializeOrDefault<SettingsWithPreferences>();
+                if (config is null)
                 {
-                    return new ResponseWithBody(response, null);
+                    return new ResponseWithBody(response, null, null);
                 }
 
-                if (body.Preferences is not null)
+                if (config.Preferences is not null)
                 {
-                    var newBaseUrl = body.Preferences.Url;
+                    var newBaseUrl = config.Preferences.Url;
 
                     if (newBaseUrl is null || requestUri.Host == new Uri(newBaseUrl).Host)
                     {
-                        return new ResponseWithBody(response, body);
+                        return new ResponseWithBody(response, responseBody, config);
                     }
 
-                    RedirectMode redirect = body.Preferences.RedirectMode;
+                    RedirectMode redirect = config.Preferences.RedirectMode;
 
                     if (this.isCustomUri && redirect != RedirectMode.Force)
                     {
-                        return new ResponseWithBody(response, body);
+                        return new ResponseWithBody(response, responseBody, config);
                     }
 
                     UpdateRequestUri(new Uri(newBaseUrl));
 
                     if (redirect == RedirectMode.No)
                     {
-                        return new ResponseWithBody(response, body);
+                        return new ResponseWithBody(response, responseBody, config);
                     }
 
                     if (redirect == RedirectMode.Should)
@@ -242,17 +243,17 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                     if (maxExecutionCount <= 1)
                     {
                         this.logger.FetchFailedDueToRedirectLoop();
-                        return new ResponseWithBody(response, body);
+                        return new ResponseWithBody(response, responseBody, config);
                     }
 
                     requestUri = ReplaceUri(request.RequestUri, new Uri(newBaseUrl));
                     continue;
                 }
 
-                return new ResponseWithBody(response, body);
+                return new ResponseWithBody(response, responseBody, config);
             }
 
-            return new ResponseWithBody(response, null);
+            return new ResponseWithBody(response, null, null);
         }
     }
 

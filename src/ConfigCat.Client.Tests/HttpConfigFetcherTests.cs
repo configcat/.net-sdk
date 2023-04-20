@@ -4,6 +4,7 @@ using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Evaluation;
+using ConfigCat.Client.Tests.Helpers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ConfigCat.Client.Tests;
@@ -59,7 +60,7 @@ public class HttpConfigFetcherTests
         using var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), myHandler, false,
             TimeSpan.FromSeconds(30));
 
-        var lastConfig = new ProjectConfig(new SettingsWithPreferences(), DateTime.UtcNow - TimeSpan.FromMilliseconds(1), "\"ETAG\"");
+        var lastConfig = ConfigHelper.FromString("{}", timeStamp: ProjectConfig.GenerateTimeStamp(), httpETag: "\"ETAG\"");
 
         // Act
 
@@ -87,7 +88,7 @@ public class HttpConfigFetcherTests
         var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), myHandler, false,
             TimeSpan.FromSeconds(30));
 
-        var lastConfig = new ProjectConfig(new SettingsWithPreferences(), DateTime.UtcNow, "\"ETAG\"");
+        var lastConfig = ConfigHelper.FromString("{}", timeStamp: ProjectConfig.GenerateTimeStamp(), httpETag: "\"ETAG\"");
 
         // Act
 
@@ -110,7 +111,7 @@ public class HttpConfigFetcherTests
 
         var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), myHandler, false, TimeSpan.FromSeconds(30));
 
-        var lastConfig = new ProjectConfig(new SettingsWithPreferences(), DateTime.UtcNow, "\"ETAG\"");
+        var lastConfig = ConfigHelper.FromString("{}", timeStamp: ProjectConfig.GenerateTimeStamp(), httpETag: "\"ETAG\"");
 
         // Act
 
@@ -137,7 +138,7 @@ public class HttpConfigFetcherTests
 
         var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), myHandler, false, TimeSpan.FromSeconds(30));
 
-        var lastConfig = new ProjectConfig(new SettingsWithPreferences(), DateTime.UtcNow, "\"ETAG\"");
+        var lastConfig = ConfigHelper.FromString("{}", timeStamp: ProjectConfig.GenerateTimeStamp(), httpETag: "\"ETAG\"");
 
         // Act
 

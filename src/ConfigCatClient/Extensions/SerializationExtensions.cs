@@ -15,10 +15,12 @@ internal static class SerializationExtensions
     private static readonly JsonSerializer Serializer = JsonSerializer.Create();
 #endif
 
-    public static T? Deserialize<T>(this string json)
+    public static T? Deserialize<T>(this string json) => json.AsSpan().Deserialize<T>();
+
+    public static T? Deserialize<T>(this ReadOnlySpan<char> json)
     {
 #if USE_NEWTONSOFT_JSON
-        using var stringReader = new StringReader(json);
+        using var stringReader = new StringReader(json.ToString());
         using var reader = new JsonTextReader(stringReader);
         return Serializer.Deserialize<T>(reader);
 #else
@@ -26,7 +28,9 @@ internal static class SerializationExtensions
 #endif
     }
 
-    public static T? DeserializeOrDefault<T>(this string json)
+    public static T? DeserializeOrDefault<T>(this string json) => json.AsSpan().DeserializeOrDefault<T>();
+
+    public static T? DeserializeOrDefault<T>(this ReadOnlySpan<char> json)
     {
         try
         {

@@ -1,3 +1,5 @@
+using System;
+using ConfigCat.Client.Tests.Helpers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -17,6 +19,6 @@ public class DeserializerTests
             return settings;
         };
 
-        Assert.IsNotNull(ProjectConfig.Deserialize("{\"p\": {\"u\": \"http://example.com\", \"r\": 0}}"));
+        Assert.IsNotNull("{\"p\": {\"u\": \"http://example.com\", \"r\": 0}}".DeserializeOrDefault<SettingsWithPreferences>());
     }
 }

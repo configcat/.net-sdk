@@ -668,7 +668,7 @@ public sealed class ConfigCatClient : IConfigCatClient
 
     private static string GetCacheKey(string sdkKey)
     {
-        var key = $"dotnet_{ConfigCatClientOptions.ConfigFileName}_{sdkKey}";
+        var key = $"{sdkKey}_{ConfigCatClientOptions.ConfigFileName}_{ProjectConfig.SerializationFormatVersion}";
         return key.Hash();
     }
 

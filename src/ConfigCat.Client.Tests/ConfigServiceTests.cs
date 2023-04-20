@@ -20,8 +20,8 @@ public class ConfigServiceTests
     private readonly Mock<IConfigFetcher> fetcherMock = new(MockBehavior.Strict);
     private readonly Mock<ConfigCache> cacheMock = new(MockBehavior.Strict);
     private readonly Mock<IConfigCatLogger> loggerMock = new(MockBehavior.Loose);
-    private readonly ProjectConfig cachedPc = new(new SettingsWithPreferences(), DateTime.UtcNow.Subtract(DefaultExpire.Add(TimeSpan.FromSeconds(1))), "67890");
-    private readonly ProjectConfig fetchedPc = new(new SettingsWithPreferences(), DateTime.UtcNow, "12345");
+    private readonly ProjectConfig cachedPc = ConfigHelper.FromString("{}", timeStamp: ProjectConfig.GenerateTimeStamp() - DefaultExpire - TimeSpan.FromSeconds(1), httpETag: "67890");
+    private readonly ProjectConfig fetchedPc = ConfigHelper.FromString("{}", timeStamp: ProjectConfig.GenerateTimeStamp(), httpETag: "12345");
 
     [TestInitialize]
     public void TestInitialize()
@@ -73,7 +73,7 @@ public class ConfigServiceTests
     {
         // Arrange
 
-        var cachedPc = new ProjectConfig(new SettingsWithPreferences(), DateTime.UtcNow, "123");
+        var cachedPc = ConfigHelper.FromString("{}", "123", ProjectConfig.GenerateTimeStamp());
 
         this.cacheMock
             .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -682,7 +682,7 @@ public class ConfigServiceTests
         var maxInitWaitTime = pollInterval + pollInterval;
 
         var cache = new InMemoryConfigCache();
-        var cachedPc = this.cachedPc.With(timeStamp: DateTime.UtcNow - pollInterval - pollInterval);
+        var cachedPc = this.cachedPc.With(timeStamp: ProjectConfig.GenerateTimeStamp() - pollInterval - pollInterval);
         cache.Set(null!, cachedPc);
 
         this.fetcherMock.Setup(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>())).ReturnsAsync(FetchResult.Success(cachedPc));

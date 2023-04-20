@@ -214,7 +214,7 @@ public class ConfigCatClientTests
         var configJsonFilePath = Path.Combine("data", "sample_variationid_v5.json");
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
-            onFetch: _ => FetchResult.Success(SerializationHelper.ProjectConfigFromFile(configJsonFilePath, httpETag: "12345", timeStamp: DateTime.UtcNow)),
+            onFetch: _ => FetchResult.Success(ConfigHelper.FromFile(configJsonFilePath, httpETag: "12345", ProjectConfig.GenerateTimeStamp())),
             configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
             {
                 return new ManualPollConfigService(this.fetcherMock.Object, cacheParams, loggerWrapper);
@@ -256,10 +256,10 @@ public class ConfigCatClientTests
 
         const string cacheKey = "123";
         var configJsonFilePath = Path.Combine("data", "sample_variationid_v5.json");
-        var timeStamp = DateTime.UtcNow;
+        var timeStamp = ProjectConfig.GenerateTimeStamp();
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
-            onFetch: _ => FetchResult.Success(SerializationHelper.ProjectConfigFromFile(configJsonFilePath, httpETag: "12345", timeStamp)),
+            onFetch: _ => FetchResult.Success(ConfigHelper.FromFile(configJsonFilePath, httpETag: "12345", timeStamp)),
             configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
             {
                 return new ManualPollConfigService(this.fetcherMock.Object, cacheParams, loggerWrapper);
@@ -308,10 +308,10 @@ public class ConfigCatClientTests
 
         const string cacheKey = "123";
         var configJsonFilePath = Path.Combine("data", "sample_variationid_v5.json");
-        var timeStamp = DateTime.UtcNow;
+        var timeStamp = ProjectConfig.GenerateTimeStamp();
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
-            onFetch: _ => FetchResult.Success(SerializationHelper.ProjectConfigFromFile(configJsonFilePath, httpETag: "12345", timeStamp)),
+            onFetch: _ => FetchResult.Success(ConfigHelper.FromFile(configJsonFilePath, httpETag: "12345", timeStamp)),
             configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
             {
                 return new ManualPollConfigService(this.fetcherMock.Object, cacheParams, loggerWrapper);
@@ -362,10 +362,10 @@ public class ConfigCatClientTests
 
         const string cacheKey = "123";
         var configJsonFilePath = Path.Combine("data", "sample_variationid_v5.json");
-        var timeStamp = DateTime.UtcNow;
+        var timeStamp = ProjectConfig.GenerateTimeStamp();
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
-            onFetch: _ => FetchResult.Success(SerializationHelper.ProjectConfigFromFile(configJsonFilePath, httpETag: "12345", timeStamp)),
+            onFetch: _ => FetchResult.Success(ConfigHelper.FromFile(configJsonFilePath, httpETag: "12345", timeStamp)),
             configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
             {
                 return new ManualPollConfigService(this.fetcherMock.Object, cacheParams, loggerWrapper);
@@ -460,14 +460,14 @@ public class ConfigCatClientTests
 
         const string cacheKey = "123";
         var configJsonFilePath = Path.Combine("data", "sample_variationid_v5.json");
-        var timeStamp = DateTime.UtcNow;
+        var timeStamp = ProjectConfig.GenerateTimeStamp();
 
         this.evaluatorMock
             .Setup(m => m.Evaluate(It.IsAny<Setting>(), It.IsAny<string>(), defaultValue, It.IsAny<User>(), It.IsAny<ProjectConfig>(), It.IsNotNull<EvaluationDetailsFactory>()))
             .Throws(new ApplicationException(errorMessage));
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
-            onFetch: _ => FetchResult.Success(SerializationHelper.ProjectConfigFromFile(configJsonFilePath, httpETag: "12345", timeStamp)),
+            onFetch: _ => FetchResult.Success(ConfigHelper.FromFile(configJsonFilePath, httpETag: "12345", timeStamp)),
             configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
             {
                 return new ManualPollConfigService(this.fetcherMock.Object, cacheParams, loggerWrapper);
@@ -522,10 +522,10 @@ public class ConfigCatClientTests
 
         const string cacheKey = "123";
         var configJsonFilePath = Path.Combine("data", "sample_variationid_v5.json");
-        var timeStamp = DateTime.UtcNow;
+        var timeStamp = ProjectConfig.GenerateTimeStamp();
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
-            onFetch: _ => FetchResult.Success(SerializationHelper.ProjectConfigFromFile(configJsonFilePath, httpETag: "12345", timeStamp)),
+            onFetch: _ => FetchResult.Success(ConfigHelper.FromFile(configJsonFilePath, httpETag: "12345", timeStamp)),
             configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
             {
                 return new ManualPollConfigService(this.fetcherMock.Object, cacheParams, loggerWrapper);
@@ -655,14 +655,14 @@ public class ConfigCatClientTests
 
         const string cacheKey = "123";
         var configJsonFilePath = Path.Combine("data", "sample_variationid_v5.json");
-        var timeStamp = DateTime.UtcNow;
+        var timeStamp = ProjectConfig.GenerateTimeStamp();
 
         this.evaluatorMock
             .Setup(m => m.Evaluate(It.IsAny<Setting>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ProjectConfig>(), It.IsNotNull<EvaluationDetailsFactory>()))
             .Throws(new ApplicationException(errorMessage));
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
-            onFetch: _ => FetchResult.Success(SerializationHelper.ProjectConfigFromFile(configJsonFilePath, httpETag: "12345", timeStamp)),
+            onFetch: _ => FetchResult.Success(ConfigHelper.FromFile(configJsonFilePath, httpETag: "12345", timeStamp)),
             configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
             {
                 return new ManualPollConfigService(this.fetcherMock.Object, cacheParams, loggerWrapper);
@@ -1373,7 +1373,7 @@ public class ConfigCatClientTests
         };
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
-            onFetch: cfg => FetchResult.Success(new ProjectConfig(new SettingsWithPreferences(), httpETag: (++httpETag).ToString(CultureInfo.InvariantCulture), timeStamp: DateTime.UtcNow)),
+            onFetch: cfg => FetchResult.Success(ConfigHelper.FromString("{}", httpETag: (++httpETag).ToString(CultureInfo.InvariantCulture), timeStamp: ProjectConfig.GenerateTimeStamp())),
             configServiceFactory, out var configService, out _);
 
         var expectedFetchCount = 0;
@@ -1500,7 +1500,7 @@ public class ConfigCatClientTests
         };
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
-            onFetch: cfg => FetchResult.Success(new ProjectConfig(new SettingsWithPreferences(), httpETag: (++httpETag).ToString(CultureInfo.InvariantCulture), timeStamp: DateTime.UtcNow)),
+            onFetch: cfg => FetchResult.Success(ConfigHelper.FromString("{}", httpETag: (++httpETag).ToString(CultureInfo.InvariantCulture), timeStamp: ProjectConfig.GenerateTimeStamp())),
             configServiceFactory, out var configService, out var configCache);
 
         var expectedFetchCount = 0;
@@ -1556,10 +1556,7 @@ public class ConfigCatClientTests
             {
                 // We make sure manually that the cached config is expired for the next GetConfig() call
                 var cachedConfig = configCache.Get(cacheKey);
-                cachedConfig = new ProjectConfig(
-                    cachedConfig.Config,
-                    cachedConfig.TimeStamp - TimeSpan.FromMilliseconds(int.MaxValue * 2.0),
-                    cachedConfig.HttpETag);
+                cachedConfig = cachedConfig.With(cachedConfig.TimeStamp - TimeSpan.FromMilliseconds(int.MaxValue * 2.0));
                 configCache.Set(cacheKey, cachedConfig);
             }
 
@@ -1651,7 +1648,7 @@ public class ConfigCatClientTests
         Assert.AreSame(errorException, errorEvents[0].Exception);
 
         // 3. Fetch succeeds
-        var config = SerializationHelper.ProjectConfigFromFile(configJsonFilePath, httpETag: "12345", timeStamp: DateTime.UtcNow);
+        var config = ConfigHelper.FromFile(configJsonFilePath, httpETag: "12345", ProjectConfig.GenerateTimeStamp());
 
         onFetch = (_, _) => FetchResult.Success(config);
         this.fetcherMock.Reset();

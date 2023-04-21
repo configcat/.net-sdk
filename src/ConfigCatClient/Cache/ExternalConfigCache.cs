@@ -18,7 +18,7 @@ internal sealed class ExternalConfigCache : ConfigCache
         this.logger = logger;
     }
 
-    public ProjectConfig LocalConfig
+    public override ProjectConfig LocalCachedConfig
     {
         get
         {
@@ -38,7 +38,7 @@ internal sealed class ExternalConfigCache : ConfigCache
         catch (Exception ex)
         {
             this.logger.ConfigServiceCacheReadError(ex);
-            return LocalConfig;
+            return LocalCachedConfig;
         }
     }
 
@@ -51,7 +51,7 @@ internal sealed class ExternalConfigCache : ConfigCache
         catch (Exception ex)
         {
             this.logger.ConfigServiceCacheReadError(ex);
-            return LocalConfig;
+            return LocalCachedConfig;
         }
     }
 
@@ -69,7 +69,7 @@ internal sealed class ExternalConfigCache : ConfigCache
 
         lock (this.syncObj)
         {
-            if (this.cachedConfig.IsEmpty || this.cachedConfig.TimeStamp < config.TimeStamp)
+            if (config.IsNewerThan(this.cachedConfig))
             {
                 this.cachedConfig = config;
                 this.cachedSerializedConfig = serializedConfig;
@@ -129,7 +129,7 @@ internal sealed class ExternalConfigCache : ConfigCache
 
         lock (this.syncObj)
         {
-            if (this.cachedConfig.IsEmpty || this.cachedConfig.TimeStamp < config.TimeStamp)
+            if (config.IsNewerThan(this.cachedConfig))
             {
                 this.cachedConfig = config;
                 return this.cachedSerializedConfig = serializedConfig;

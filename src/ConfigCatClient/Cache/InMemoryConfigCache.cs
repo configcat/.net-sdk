@@ -7,9 +7,11 @@ internal sealed class InMemoryConfigCache : ConfigCache
 {
     private ProjectConfig cachedConfig = ProjectConfig.Empty;
 
+    public override ProjectConfig LocalCachedConfig => Volatile.Read(ref this.cachedConfig);
+
     public override ProjectConfig Get(string key)
     {
-        return Volatile.Read(ref this.cachedConfig);
+        return LocalCachedConfig;
     }
 
     public override Task<ProjectConfig> GetAsync(string key, CancellationToken cancellationToken = default)

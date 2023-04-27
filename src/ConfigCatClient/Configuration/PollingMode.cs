@@ -25,17 +25,22 @@ public class AutoPoll : PollingMode
     public TimeSpan PollInterval { get; }
 
     /// <summary>
-    /// Maximum waiting time between initialization and the first config acquisition. (Default value is 5 seconds.)
+    /// Maximum waiting time between initialization and the first config acquisition.
     /// </summary>
     public TimeSpan MaxInitWaitTime { get; }
 
     internal AutoPoll(TimeSpan pollInterval, TimeSpan maxInitWaitTime)
     {
-        PollInterval = pollInterval > TimeSpan.Zero
-            ? pollInterval
-            : throw new ArgumentOutOfRangeException(nameof(pollInterval), "Value must be greater than zero.");
+        var minPollInterval = TimeSpan.FromSeconds(1);
+        var maxTimerInterval = TimeSpan.FromMilliseconds(int.MaxValue);
 
-        MaxInitWaitTime = maxInitWaitTime;
+        PollInterval = minPollInterval <= pollInterval && pollInterval <= maxTimerInterval
+            ? pollInterval
+            : throw new ArgumentOutOfRangeException(nameof(pollInterval), pollInterval, $"Value must be between {minPollInterval} and {maxTimerInterval}.");
+
+        MaxInitWaitTime = maxInitWaitTime <= maxTimerInterval
+            ? maxInitWaitTime
+            : throw new ArgumentOutOfRangeException(nameof(maxInitWaitTime), maxInitWaitTime, $"Value must be less than or equal to {maxTimerInterval}.");
     }
 }
 
@@ -47,15 +52,18 @@ public class LazyLoad : PollingMode
     internal override string Identifier => "l";
 
     /// <summary>
-    /// Cache time to live value, minimum value is 1 seconds. (Default value is 60 seconds.)     
+    /// Cache time to live value.
     /// </summary>
     public TimeSpan CacheTimeToLive { get; }
 
     internal LazyLoad(TimeSpan cacheTimeToLive)
     {
-        CacheTimeToLive = cacheTimeToLive >= TimeSpan.FromSeconds(1)
+        var minCacheTimeToLive = TimeSpan.FromSeconds(1);
+        var maxCacheTimeToLive = TimeSpan.FromSeconds(int.MaxValue);
+
+        CacheTimeToLive = minCacheTimeToLive <= cacheTimeToLive && cacheTimeToLive <= maxCacheTimeToLive
             ? cacheTimeToLive
-            : throw new ArgumentOutOfRangeException(nameof(cacheTimeToLive), "Value must be greater than or equal to 1 seconds.");
+            : throw new ArgumentOutOfRangeException(nameof(cacheTimeToLive), cacheTimeToLive, $"Value must be between {minCacheTimeToLive} and {maxCacheTimeToLive}.");
     }
 }
 

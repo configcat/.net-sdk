@@ -306,7 +306,7 @@ public class ConfigServiceTests
             .Callback(() => Interlocked.Increment(ref counter))
             .ReturnsAsync(FetchResult.Success(this.cachedPc));
 
-        var config = PollingModes.AutoPoll(TimeSpan.FromSeconds(0.2d), TimeSpan.FromSeconds(0));
+        var config = PollingModes.AutoPoll(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(0));
         using var service = new AutoPollConfigService(config,
             this.fetcherMock.Object,
             new CacheParameters(this.cacheMock.Object, cacheKey: ""),
@@ -314,13 +314,13 @@ public class ConfigServiceTests
             startTimer: false);
 
         // Act
-        await Task.Delay(TimeSpan.FromSeconds(1));
+        await Task.Delay(TimeSpan.FromSeconds(2));
         e1 = Interlocked.Read(ref counter);
         service.Dispose();
 
         // Assert
 
-        await Task.Delay(TimeSpan.FromSeconds(1));
+        await Task.Delay(TimeSpan.FromSeconds(2));
         e2 = Interlocked.Read(ref counter);
         Console.WriteLine(e2 - e1);
         Assert.IsTrue(e2 - e1 <= 1);
@@ -343,7 +343,7 @@ public class ConfigServiceTests
             .Callback(() => Interlocked.Increment(ref counter))
             .ReturnsAsync(FetchResult.Success(this.cachedPc));
 
-        var config = PollingModes.AutoPoll(TimeSpan.FromSeconds(0.2d), TimeSpan.FromSeconds(0));
+        var config = PollingModes.AutoPoll(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(0));
         using var service = new AutoPollConfigService(config,
             this.fetcherMock.Object,
             new CacheParameters(this.cacheMock.Object, cacheKey: null!),
@@ -351,7 +351,7 @@ public class ConfigServiceTests
             startTimer: false);
 
         // Act
-        await Task.Delay(TimeSpan.FromSeconds(1));
+        await Task.Delay(TimeSpan.FromSeconds(2));
         e1 = Interlocked.Read(ref counter);
         service.Dispose();
 

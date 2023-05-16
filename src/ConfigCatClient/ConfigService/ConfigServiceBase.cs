@@ -93,7 +93,7 @@ internal abstract class ConfigServiceBase : IDisposable
         {
             latestConfig = fetchResult.Config;
 
-            this.ConfigCache.Set(this.CacheKey, fetchResult.Config);
+            this.ConfigCache.Set(this.CacheKey, latestConfig);
 
             OnConfigUpdated(latestConfig);
 

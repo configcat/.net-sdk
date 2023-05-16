@@ -116,7 +116,7 @@ internal sealed class ExternalConfigCache : ConfigCache
             {
                 return null;
             }
-            else if (config.IsEmpty)
+            else if (config.IsEmpty) // when config is empty, config.IsNewerThan(this.cachedConfig) returning true implies that this.cachedConfig is empty as well
             {
                 // We may have empty entries with TimeStamp > DateTime.MinValue (see the flooding prevention logic in HttpConfigFetcher).
                 // In such cases we want to preserve the TimeStamp locally but don't want to store those entries into the external cache.

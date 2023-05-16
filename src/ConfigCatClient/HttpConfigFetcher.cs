@@ -40,6 +40,20 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
         this.httpClient = CreateHttpClient();
     }
 
+    public FetchResult Fetch(ProjectConfig lastConfig)
+    {
+        // NOTE: We go sync over async here, however it's safe to do that in this case as
+        // BeginFetchOrJoinPending will run the fetch operation on the thread pool,
+        // where there's no synchronization context which awaits want to return to,
+        // thus, they won't try to run continuations on this thread where we're block waiting.
+        return BeginFetchOrJoinPending(lastConfig).GetAwaiter().GetResult();
+    }
+
+    public Task<FetchResult> FetchAsync(ProjectConfig lastConfig, CancellationToken cancellationToken = default)
+    {
+        return BeginFetchOrJoinPending(lastConfig).WaitAsync(cancellationToken);
+    }
+
     private Task<FetchResult> BeginFetchOrJoinPending(ProjectConfig lastConfig)
     {
         lock (this.syncObj)
@@ -61,20 +75,6 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
 
             return this.pendingFetch;
         }
-    }
-
-    public FetchResult Fetch(ProjectConfig lastConfig)
-    {
-        // NOTE: We go sync over async here, however it's safe to do that in this case as
-        // BeginFetchOrJoinPending will run the fetch operation on the thread pool,
-        // where there's no synchronization context which awaits want to return to,
-        // thus, they won't try to run continuations on this thread where we're block waiting.
-        return BeginFetchOrJoinPending(lastConfig).GetAwaiter().GetResult();
-    }
-
-    public Task<FetchResult> FetchAsync(ProjectConfig lastConfig, CancellationToken cancellationToken = default)
-    {
-        return BeginFetchOrJoinPending(lastConfig).WaitAsync(cancellationToken);
     }
 
     private async ValueTask<FetchResult> FetchInternalAsync(ProjectConfig lastConfig)

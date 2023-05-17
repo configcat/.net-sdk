@@ -35,7 +35,7 @@ internal sealed class ProjectConfig
 
     public bool IsExpired(TimeSpan expiration)
     {
-        return IsEmpty || TimeStamp + expiration < GenerateTimeStamp();
+        return ReferenceEquals(this, Empty) || TimeStamp + expiration < GenerateTimeStamp();
     }
 
     public bool IsNewerThan(ProjectConfig other)

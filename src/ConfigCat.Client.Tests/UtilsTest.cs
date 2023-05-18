@@ -17,20 +17,23 @@ public class UtilsTest
         Assert.AreEqual(expected, bytes.ToHexString());
     }
 
-    [DataRow("Mon, 01 Jan 0001 00:00:00 GMT", 0L)]
-    [DataRow("Fri, 31 Dec 9999 23:59:59 GMT", 3155378975990000000L)]
-    [DataRow("Wed, 21 Oct 2015 07:28:00 GMT", 635810092800000000L)]
-    [DataRow("Wed, 35 Oct 2015 07:28:00 GMT", -1)]
-    [DataRow("Wed, 21 Oct 2015 07:28:00 CET", -1)]
+    [DataRow("-62135596801", -1L)]
+    [DataRow("-62135596800", 0L)]
+    [DataRow("0", 621355968000000000L)]
+    [DataRow("+253402300799", 3155378975990000000L)]
+    [DataRow("+253402300800", -1L)]
+    [DataRow("1x", -1L)]
     [DataTestMethod]
-    public void DateTimeUtils_HttpHeaderDateConversion_Works(string dateString, long ticks)
+    public void DateTimeUtils_UnixTimeStampConversion_Works(string dateString, long ticks)
     {
-        var success = DateTimeUtils.TryParseHttpHeaderDate(dateString.AsSpan(), out var dateTime);
+        var success = DateTimeUtils.TryParseUnixTimeStamp(dateString.AsSpan(), out var dateTime);
         if (ticks >= 0)
         {
             Assert.IsTrue(success);
             Assert.AreEqual(ticks, dateTime.Ticks);
-            Assert.AreEqual(dateString, DateTimeUtils.ToHttpHeaderDate(dateTime));
+            Assert.AreEqual(
+                dateString.StartsWith("+", StringComparison.Ordinal) ? dateString.Substring(1) : dateString,
+                DateTimeUtils.ToUnixTimeStamp(dateTime));
         }
         else
         {

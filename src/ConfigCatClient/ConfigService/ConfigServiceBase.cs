@@ -89,7 +89,8 @@ internal abstract class ConfigServiceBase : IDisposable
     {
         var fetchResult = this.ConfigFetcher.Fetch(latestConfig);
 
-        if (fetchResult.Config.IsNewerThan(latestConfig))
+        if (fetchResult.IsSuccess
+            || fetchResult.Config.TimeStamp > latestConfig.TimeStamp && (!fetchResult.Config.IsEmpty || latestConfig.IsEmpty))
         {
             latestConfig = fetchResult.Config;
 
@@ -125,7 +126,8 @@ internal abstract class ConfigServiceBase : IDisposable
     {
         var fetchResult = await this.ConfigFetcher.FetchAsync(latestConfig, cancellationToken).ConfigureAwait(false);
 
-        if (fetchResult.Config.IsNewerThan(latestConfig))
+        if (fetchResult.IsSuccess
+            || fetchResult.Config.TimeStamp > latestConfig.TimeStamp && (!fetchResult.Config.IsEmpty || latestConfig.IsEmpty))
         {
             latestConfig = fetchResult.Config;
 

@@ -101,7 +101,7 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                         httpETag: response.Headers.ETag?.Tag,
                         configJson: responseWithBody.Item2,
                         config: responseWithBody.Item3,
-                        timeStamp: ProjectConfig.GetTimeStampFrom(response)
+                        timeStamp: ProjectConfig.GenerateTimeStamp()
                     ));
 
                 case HttpStatusCode.NotModified:
@@ -111,14 +111,14 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                         return FetchResult.Failure(lastConfig, logMessage.InvariantFormattedMessage);
                     }
 
-                    return FetchResult.NotModified(lastConfig.With(ProjectConfig.GetTimeStampFrom(response)));
+                    return FetchResult.NotModified(lastConfig.With(ProjectConfig.GenerateTimeStamp()));
 
                 case HttpStatusCode.Forbidden:
                 case HttpStatusCode.NotFound:
                     logMessage = this.logger.FetchFailedDueToInvalidSdkKey();
 
                     // We update the timestamp for extra protection against flooding.
-                    return FetchResult.Failure(lastConfig.With(ProjectConfig.GetTimeStampFrom(response)), logMessage.InvariantFormattedMessage);
+                    return FetchResult.Failure(lastConfig.With(ProjectConfig.GenerateTimeStamp()), logMessage.InvariantFormattedMessage);
 
                 default:
                     logMessage = this.logger.FetchFailedDueToUnexpectedHttpResponse((int)response.StatusCode, response.ReasonPhrase);

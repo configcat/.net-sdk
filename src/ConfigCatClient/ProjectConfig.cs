@@ -1,7 +1,6 @@
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Net.Http;
 using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client;
@@ -38,20 +37,6 @@ internal sealed class ProjectConfig
         return ReferenceEquals(this, Empty) || TimeStamp + expiration < GenerateTimeStamp();
     }
 
-    public bool IsNewerThan(ProjectConfig other)
-    {
-        if (!IsEmpty)
-        {
-            return other.IsEmpty
-                || other.TimeStamp < TimeStamp
-                || other.TimeStamp == TimeStamp && HttpETag != other.HttpETag;
-        }
-        else
-        {
-            return other.IsEmpty && other.TimeStamp < TimeStamp;
-        }
-    }
-
     public static DateTime GenerateTimeStamp()
     {
         var utcNow = DateTime.UtcNow;
@@ -59,14 +44,9 @@ internal sealed class ProjectConfig
         return utcNow.AddTicks(-(utcNow.Ticks % TimeSpan.TicksPerSecond));
     }
 
-    public static DateTime GetTimeStampFrom(HttpResponseMessage response)
-    {
-        return response.Headers.Date?.UtcDateTime ?? GenerateTimeStamp();
-    }
-
     public static string Serialize(ProjectConfig config)
     {
-        return config.TimeStamp.ToHttpHeaderDate() + "\n"
+        return config.TimeStamp.ToUnixTimeStamp() + "\n"
             + config.HttpETag + "\n"
             + config.ConfigJson;
     }
@@ -90,7 +70,7 @@ internal sealed class ProjectConfig
         var endIndex = separatorIndices[0];
         var fetchTimeSpan = value.AsSpan(0, endIndex);
 
-        if (!DateTimeUtils.TryParseHttpHeaderDate(fetchTimeSpan, out var fetchTime))
+        if (!DateTimeUtils.TryParseUnixTimeStamp(fetchTimeSpan, out var fetchTime))
         {
             throw new FormatException("Invalid fetch time: " + fetchTimeSpan.ToString());
         }

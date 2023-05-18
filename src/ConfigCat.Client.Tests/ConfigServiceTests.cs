@@ -685,7 +685,7 @@ public class ConfigServiceTests
         var cachedPc = this.cachedPc.With(timeStamp: ProjectConfig.GenerateTimeStamp() - pollInterval - pollInterval);
         cache.Set(null!, cachedPc);
 
-        this.fetcherMock.Setup(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>())).ReturnsAsync(FetchResult.Success(cachedPc));
+        this.fetcherMock.Setup(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>())).ReturnsAsync(FetchResult.NotModified(cachedPc));
 
         var config = PollingModes.AutoPoll(pollInterval, maxInitWaitTime);
         var service = new AutoPollConfigService(config,

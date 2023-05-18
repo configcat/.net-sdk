@@ -55,25 +55,18 @@ internal sealed class ExternalConfigCache : ConfigCache
         }
     }
 
-    private ProjectConfig GetCore(string? serializedConfig)
+    private ProjectConfig GetCore(string? externalSerializedConfig)
     {
         lock (this.syncObj)
         {
-            if (serializedConfig is null || serializedConfig == this.cachedSerializedConfig)
+            if (externalSerializedConfig is null || externalSerializedConfig == this.cachedSerializedConfig)
             {
                 return this.cachedConfig;
             }
-        }
 
-        var config = ProjectConfig.Deserialize(serializedConfig);
+            this.cachedConfig = ProjectConfig.Deserialize(externalSerializedConfig);
+            this.cachedSerializedConfig = externalSerializedConfig;
 
-        lock (this.syncObj)
-        {
-            if (config.IsNewerThan(this.cachedConfig))
-            {
-                this.cachedConfig = config;
-                this.cachedSerializedConfig = serializedConfig;
-            }
             return this.cachedConfig;
         }
     }
@@ -112,29 +105,20 @@ internal sealed class ExternalConfigCache : ConfigCache
     {
         lock (this.syncObj)
         {
-            if (!config.IsNewerThan(this.cachedConfig))
+            if (!config.IsEmpty)
             {
-                return null;
+                this.cachedSerializedConfig = ProjectConfig.Serialize(config);
             }
-            else if (config.IsEmpty) // when config is empty, config.IsNewerThan(this.cachedConfig) returning true implies that this.cachedConfig is empty as well
+            else
             {
                 // We may have empty entries with TimeStamp > DateTime.MinValue (see the flooding prevention logic in HttpConfigFetcher).
                 // In such cases we want to preserve the TimeStamp locally but don't want to store those entries into the external cache.
-                this.cachedConfig = config;
-                return this.cachedSerializedConfig = null;
+                this.cachedSerializedConfig = null;
             }
-        }
 
-        var serializedConfig = ProjectConfig.Serialize(config);
+            this.cachedConfig = config;
 
-        lock (this.syncObj)
-        {
-            if (config.IsNewerThan(this.cachedConfig))
-            {
-                this.cachedConfig = config;
-                return this.cachedSerializedConfig = serializedConfig;
-            }
-            return null;
+            return this.cachedSerializedConfig;
         }
     }
 }

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -132,98 +131,25 @@ public class ConfigCacheTests
         var cachedConfig = isAsync ? await configCache.GetAsync(cacheKey) : configCache.Get(cacheKey);
         Assert.AreSame(ProjectConfig.Empty, cachedConfig);
 
-        // 2a. When cache is empty, setting an empty config with newer timestamp should overwrite the cache (but only locally!)
-        var config2a = ProjectConfig.Empty.With(ProjectConfig.GenerateTimeStamp());
-        await WriteCacheAsync(config2a);
+        // 2. When cache is empty, setting an empty config with newer timestamp should overwrite the cache (but only locally!)
+        var config2 = ProjectConfig.Empty.With(ProjectConfig.GenerateTimeStamp());
+        await WriteCacheAsync(config2);
         cachedConfig = await ReadCacheAsync();
 
-        Assert.AreSame(config2a, cachedConfig);
-        Assert.AreEqual(config2a, configCache.LocalCachedConfig);
-        if (externalCache is not null)
-        {
-            Assert.IsNull(externalCache.CachedValue);
-        }
-
-        // 2b. When cache is empty, setting an empty config with equal timestamp shouldn't cause any changes.
-        var config2b = config2a.With(config2a.TimeStamp);
-        await WriteCacheAsync(config2b);
-        cachedConfig = await ReadCacheAsync();
-
-        Assert.AreSame(config2a, cachedConfig);
-        Assert.AreEqual(config2a, configCache.LocalCachedConfig);
-        if (externalCache is not null)
-        {
-            Assert.IsNull(externalCache.CachedValue);
-        }
-
-        // 2c. When cache is empty, setting an empty config with older timestamp shouldn't cause any changes.
-        var config2c = config2a.With(config2a.TimeStamp - TimeSpan.FromSeconds(1));
-        await WriteCacheAsync(config2c);
-        cachedConfig = await ReadCacheAsync();
-
-        Assert.AreSame(config2a, cachedConfig);
-        Assert.AreEqual(config2a, configCache.LocalCachedConfig);
+        Assert.AreSame(config2, cachedConfig);
+        Assert.AreEqual(config2, configCache.LocalCachedConfig);
         if (externalCache is not null)
         {
             Assert.IsNull(externalCache.CachedValue);
         }
 
         // 3. When cache is empty, setting a non-empty config with any (even older) timestamp should overwrite the cache.
-        var config3 = ConfigHelper.FromString("{\"p\": {\"u\": \"http://example.com\", \"r\": 0}}", "\"ETAG\"", config2c.TimeStamp);
+        var config3 = ConfigHelper.FromString("{\"p\": {\"u\": \"http://example.com\", \"r\": 0}}", "\"ETAG\"", config2.TimeStamp - TimeSpan.FromSeconds(1));
         await WriteCacheAsync(config3);
         cachedConfig = await ReadCacheAsync();
 
         Assert.AreSame(config3, cachedConfig);
         Assert.AreEqual(config3, configCache.LocalCachedConfig);
-        if (externalCache is not null)
-        {
-            Assert.IsNotNull(externalCache.CachedValue);
-        }
-
-        // 4a. When cache is non-empty, setting a non-empty config with an older timestamp shouldn't cause any changes.
-        var config4a = config3.With(config3.TimeStamp - TimeSpan.FromSeconds(1));
-        await WriteCacheAsync(config4a);
-        cachedConfig = await ReadCacheAsync();
-
-        Assert.AreSame(config3, cachedConfig);
-        Assert.AreEqual(config3, configCache.LocalCachedConfig);
-        if (externalCache is not null)
-        {
-            Assert.IsNotNull(externalCache.CachedValue);
-        }
-
-        // 4b. When cache is non-empty, setting a non-empty config with an equal timestamp and equal etag shouldn't cause any changes.
-        var config4b = config3.With(config3.TimeStamp);
-        await WriteCacheAsync(config4b);
-        cachedConfig = await ReadCacheAsync();
-
-        Assert.AreSame(config3, cachedConfig);
-        Assert.AreEqual(config3, configCache.LocalCachedConfig);
-        if (externalCache is not null)
-        {
-            Assert.IsNotNull(externalCache.CachedValue);
-        }
-
-        // 4c. When cache is non-empty, setting a non-empty config with an equal timestamp but not equal etag should overwrite the cache.
-        //     (In such edge cases that one wins who executes update later.)
-        var config4c = new ProjectConfig(config3.ConfigJson, config3.Config, config3.TimeStamp, "\"ETAG2\"");
-        await WriteCacheAsync(config4c);
-        cachedConfig = await ReadCacheAsync();
-
-        Assert.AreSame(config4c, cachedConfig);
-        Assert.AreEqual(config4c, configCache.LocalCachedConfig);
-        if (externalCache is not null)
-        {
-            Assert.IsNotNull(externalCache.CachedValue);
-        }
-
-        // 4d. When cache is non-empty, setting a non-empty config with a newer timestamp and any (even equal) etag should overwrite the cache.
-        var config4d = config4c.With(config4c.TimeStamp + TimeSpan.FromSeconds(1));
-        await WriteCacheAsync(config4d);
-        cachedConfig = await ReadCacheAsync();
-
-        Assert.AreSame(config4d, cachedConfig);
-        Assert.AreEqual(config4d, configCache.LocalCachedConfig);
         if (externalCache is not null)
         {
             Assert.IsNotNull(externalCache.CachedValue);
@@ -246,66 +172,6 @@ public class ConfigCacheTests
                 return Task.FromResult(0);
             }
         }
-    }
-
-    [DataRow(false, false)]
-    [DataRow(false, true)]
-    [DataRow(true, false)]
-    [DataRow(true, true)]
-    [DataTestMethod]
-    public async Task ConfigCache_ShouldNeverOverwriteCacheWithOlderEntry(bool isExternal, bool isEmpty)
-    {
-        const string cacheKey = "";
-
-        FakeExternalCache? externalCache = null;
-        ConfigCache configCache = isExternal
-            ? new ExternalConfigCache(externalCache = new FakeExternalCache(), new Mock<IConfigCatLogger>().Object.AsWrapper())
-            : new InMemoryConfigCache();
-
-        long timeStampTicks = ProjectConfig.GenerateTimeStamp().Ticks;
-
-        var config = isEmpty
-            ? ProjectConfig.Empty
-            : ConfigHelper.FromString("{\"p\": {\"u\": \"http://example.com\", \"r\": 0}}", "\"ETAG\"", DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc));
-
-        using var cts = new CancellationTokenSource();
-        cts.CancelAfter(TimeSpan.FromSeconds(4));
-
-        var outOfOrderWrite = false;
-
-        var thread1 = Task.Factory.StartNew(() =>
-        {
-            while (!cts.Token.IsCancellationRequested)
-            {
-                var cachedConfigBefore = configCache.Get(cacheKey);
-
-                var timeStamp = ProjectConfig.GenerateTimeStamp();
-                Volatile.Write(ref timeStampTicks, timeStamp.Ticks);
-
-                configCache.Set(cacheKey, config.With(timeStamp));
-
-                var cachedConfigAfter = configCache.Get(cacheKey);
-
-                outOfOrderWrite = outOfOrderWrite || cachedConfigAfter.TimeStamp < cachedConfigBefore.TimeStamp;
-            }
-        }, TaskCreationOptions.LongRunning);
-
-        var thread2 = Task.Factory.StartNew(() =>
-        {
-            var random = new Random();
-
-            while (!cts.Token.IsCancellationRequested)
-            {
-                var offset = TimeSpan.FromSeconds(random.Next(3) - 1);
-                var timeStamp = new DateTime(Volatile.Read(ref timeStampTicks), DateTimeKind.Utc);
-
-                configCache.Set(cacheKey, config.With(timeStamp + offset));
-            }
-        }, TaskCreationOptions.LongRunning);
-
-        await Task.WhenAll(thread1, thread2);
-
-        Assert.IsFalse(outOfOrderWrite);
     }
 
     [DataRow(false)]

@@ -22,6 +22,7 @@ public class UtilsTest
     [DataRow("0", 621355968000000000L)]
     [DataRow("+253402300799", 3155378975990000000L)]
     [DataRow("+253402300800", -1L)]
+    [DataRow("1.0", -1L)]
     [DataRow("1x", -1L)]
     [DataTestMethod]
     public void DateTimeUtils_UnixTimeStampConversion_Works(string dateString, long ticks)

@@ -40,7 +40,7 @@ internal sealed class ProjectConfig
     public static DateTime GenerateTimeStamp()
     {
         var utcNow = DateTime.UtcNow;
-        // Remove the sub-second part as the Date HTTP header has second precision only
+        // Remove the sub-second part as we need second precision only.
         return utcNow.AddTicks(-(utcNow.Ticks % TimeSpan.TicksPerSecond));
     }
 

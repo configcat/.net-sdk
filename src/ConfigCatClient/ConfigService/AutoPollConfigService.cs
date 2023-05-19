@@ -118,10 +118,10 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
     {
         if (!IsOffline && !IsInitialized)
         {
-            var cacheConfig = this.ConfigCache.Get(base.CacheKey);
-            if (!cacheConfig.IsExpired(expiration: this.pollInterval, out _))
+            var cachedConfig = this.ConfigCache.Get(base.CacheKey);
+            if (!cachedConfig.IsExpired(expiration: this.pollInterval))
             {
-                return cacheConfig;
+                return cachedConfig;
             }
 
             WaitForInitialization();
@@ -134,10 +134,10 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
     {
         if (!IsOffline && !IsInitialized)
         {
-            var cacheConfig = await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(false);
-            if (!cacheConfig.IsExpired(expiration: this.pollInterval, out _))
+            var cachedConfig = await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(false);
+            if (!cachedConfig.IsExpired(expiration: this.pollInterval))
             {
-                return cacheConfig;
+                return cachedConfig;
             }
 
             await WaitForInitializationAsync(cancellationToken).ConfigureAwait(false);
@@ -210,7 +210,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
         if (isFirstIteration)
         {
             var latestConfig = await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(false);
-            if (latestConfig.IsExpired(expiration: this.pollInterval, out _))
+            if (latestConfig.IsExpired(expiration: this.pollInterval))
             {
                 if (!IsOffline)
                 {

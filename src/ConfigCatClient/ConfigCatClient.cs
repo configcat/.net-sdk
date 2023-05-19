@@ -26,7 +26,6 @@ public sealed class ConfigCatClient : IConfigCatClient
     private readonly LoggerWrapper logger;
     private readonly IRolloutEvaluator configEvaluator;
     private readonly IConfigService configService;
-    private readonly IConfigDeserializer configDeserializer;
     private readonly IOverrideDataSource? overrideDataSource;
     private readonly OverrideBehaviour? overrideBehaviour;
     private readonly Hooks hooks;
@@ -49,12 +48,13 @@ public sealed class ConfigCatClient : IConfigCatClient
         this.hooks.SetSender(this);
 
         this.logger = new LoggerWrapper(configuration.Logger ?? ConfigCatClientOptions.CreateDefaultLogger(), this.hooks);
-        this.configDeserializer = new ConfigDeserializer();
         this.configEvaluator = new RolloutEvaluator(this.logger);
 
         var cacheParameters = new CacheParameters
         (
-            configCache: configuration.ConfigCache ?? ConfigCatClientOptions.CreateDefaultConfigCache(),
+            configCache: configuration.ConfigCache is not null
+                ? new ExternalConfigCache(configuration.ConfigCache, this.logger)
+                : ConfigCatClientOptions.CreateDefaultConfigCache(),
             cacheKey: GetCacheKey(sdkKey)
         );
 
@@ -74,7 +74,6 @@ public sealed class ConfigCatClient : IConfigCatClient
                         $"{pollingMode.Identifier}-{Version}",
                         this.logger,
                         configuration.HttpClientHandler,
-                        this.configDeserializer,
                         configuration.IsCustomBaseUrl,
                         configuration.HttpTimeout),
                     cacheParameters,
@@ -87,7 +86,7 @@ public sealed class ConfigCatClient : IConfigCatClient
     /// <summary>
     /// For testing purposes only
     /// </summary>
-    internal ConfigCatClient(IConfigService configService, IConfigCatLogger logger, IRolloutEvaluator evaluator, IConfigDeserializer configDeserializer, Hooks? hooks = null)
+    internal ConfigCatClient(IConfigService configService, IConfigCatLogger logger, IRolloutEvaluator evaluator, Hooks? hooks = null)
     {
         if (hooks is not null)
         {
@@ -102,7 +101,6 @@ public sealed class ConfigCatClient : IConfigCatClient
         this.configService = configService;
         this.logger = new LoggerWrapper(logger, this.hooks);
         this.configEvaluator = evaluator;
-        this.configDeserializer = configDeserializer;
     }
 
     /// <summary>
@@ -606,10 +604,8 @@ public sealed class ConfigCatClient : IConfigCatClient
         SettingsWithRemoteConfig GetRemoteConfig()
         {
             var config = this.configService.GetConfig();
-            if (!this.configDeserializer.TryDeserialize(config.JsonString, config.HttpETag, out var deserialized))
-                return new SettingsWithRemoteConfig(null, config);
-
-            return new SettingsWithRemoteConfig(deserialized.Settings, config);
+            var settings = !config.IsEmpty ? config.Config.Settings : null;
+            return new SettingsWithRemoteConfig(settings, config);
         }
     }
 
@@ -640,10 +636,8 @@ public sealed class ConfigCatClient : IConfigCatClient
         async Task<SettingsWithRemoteConfig> GetRemoteConfigAsync(CancellationToken cancellationToken)
         {
             var config = await this.configService.GetConfigAsync(cancellationToken).ConfigureAwait(false);
-            if (!this.configDeserializer.TryDeserialize(config.JsonString, config.HttpETag, out var deserialized))
-                return new SettingsWithRemoteConfig(null, config);
-
-            return new SettingsWithRemoteConfig(deserialized.Settings, config);
+            var settings = !config.IsEmpty ? config.Config.Settings : null;
+            return new SettingsWithRemoteConfig(settings, config);
         }
     }
 
@@ -674,7 +668,7 @@ public sealed class ConfigCatClient : IConfigCatClient
 
     private static string GetCacheKey(string sdkKey)
     {
-        var key = $"dotnet_{ConfigCatClientOptions.ConfigFileName}_{sdkKey}";
+        var key = $"{sdkKey}_{ConfigCatClientOptions.ConfigFileName}_{ProjectConfig.SerializationFormatVersion}";
         return key.Hash();
     }
 

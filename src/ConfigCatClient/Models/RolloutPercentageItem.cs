@@ -1,23 +1,43 @@
+using System;
+
 #if USE_NEWTONSOFT_JSON
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using JsonValue = Newtonsoft.Json.Linq.JValue;
 #else
 using System.Text.Json.Serialization;
-using System.Text.Json;
 using JsonValue = System.Text.Json.JsonElement;
 #endif
 
-namespace ConfigCat.Client.Evaluation;
+namespace ConfigCat.Client;
 
 /// <summary>
-/// Percentage-based targeting rule.
+/// Percentage option.
 /// </summary>
-public record class RolloutPercentageItem
+public interface IPercentageOption
 {
     /// <summary>
     /// The order value for determining the order of evaluation of rules.
     /// </summary>
+    short Order { get; }
+
+    /// <summary>
+    /// The value associated with the targeting rule.
+    /// </summary>
+    object Value { get; }
+
+    /// <summary>
+    /// A number between 0 and 100 that represents a randomly allocated fraction of the users.
+    /// </summary>
+    int Percentage { get; }
+
+    /// <summary>
+    /// Variation ID.
+    /// </summary>
+    string? VariationId { get; set; }
+}
+
+internal sealed class RolloutPercentageItem : IPercentageOption
+{
 #if USE_NEWTONSOFT_JSON
     [JsonProperty(PropertyName = "o")]
 #else
@@ -25,9 +45,6 @@ public record class RolloutPercentageItem
 #endif
     public short Order { get; set; }
 
-    /// <summary>
-    /// The value associated with the targeting rule.
-    /// </summary>
 #if USE_NEWTONSOFT_JSON
     [JsonProperty(PropertyName = "v")]
 #else
@@ -35,9 +52,8 @@ public record class RolloutPercentageItem
 #endif
     public JsonValue Value { get; set; } = default!;
 
-    /// <summary>
-    /// A number between 0 and 100 that represents a randomly allocated fraction of the users.
-    /// </summary>
+    object IPercentageOption.Value => Value.ConvertToObject(Value.DetermineSettingType());
+
 #if USE_NEWTONSOFT_JSON
     [JsonProperty(PropertyName = "p")]
 #else
@@ -45,9 +61,6 @@ public record class RolloutPercentageItem
 #endif
     public int Percentage { get; set; }
 
-    /// <summary>
-    /// Variation ID.
-    /// </summary>
 #if USE_NEWTONSOFT_JSON
     [JsonProperty(PropertyName = "i")]
 #else

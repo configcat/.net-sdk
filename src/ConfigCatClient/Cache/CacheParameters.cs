@@ -2,13 +2,13 @@ namespace ConfigCat.Client.Cache;
 
 internal readonly struct CacheParameters
 {
-    public CacheParameters(IConfigCatCache configCache, string cacheKey)
+    public CacheParameters(ConfigCache configCache, string cacheKey)
     {
         ConfigCache = configCache;
         CacheKey = cacheKey;
     }
 
-    public IConfigCatCache ConfigCache { get; }
+    public ConfigCache ConfigCache { get; }
 
     public string CacheKey { get; }
 }

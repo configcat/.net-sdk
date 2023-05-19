@@ -12,6 +12,7 @@ using ConfigCat.Client.Cache;
 using ConfigCat.Client.ConfigService;
 using ConfigCat.Client.Configuration;
 using ConfigCat.Client.Evaluation;
+using ConfigCat.Client.Tests.Helpers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 
@@ -23,7 +24,6 @@ public class ConfigCatClientTests
     private readonly Mock<IConfigService> configServiceMock = new();
     private readonly Mock<IConfigCatLogger> loggerMock = new();
     private readonly Mock<IRolloutEvaluator> evaluatorMock = new();
-    private readonly Mock<IConfigDeserializer> configDeserializerMock = new();
     private readonly Mock<IConfigFetcher> fetcherMock = new();
 
     [TestInitialize]
@@ -32,7 +32,6 @@ public class ConfigCatClientTests
         this.configServiceMock.Reset();
         this.loggerMock.Reset();
         this.evaluatorMock.Reset();
-        this.configDeserializerMock.Reset();
         this.fetcherMock.Reset();
 
         this.loggerMock.Setup(l => l.LogLevel).Returns(LogLevel.Warning);
@@ -110,7 +109,7 @@ public class ConfigCatClientTests
             .Setup(m => m.GetConfig())
             .Throws<Exception>();
 
-        var client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, this.configDeserializerMock.Object);
+        var client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object);
 
         // Act
 
@@ -132,7 +131,7 @@ public class ConfigCatClientTests
             .Setup(m => m.GetConfigAsync(It.IsAny<CancellationToken>()))
             .Throws<Exception>();
 
-        var client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, this.configDeserializerMock.Object);
+        var client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object);
 
         // Act
 
@@ -154,7 +153,7 @@ public class ConfigCatClientTests
             .Setup(m => m.Evaluate(It.IsAny<Setting>(), It.IsAny<string>(), defaultValue, null, It.IsAny<ProjectConfig>(), It.IsAny<EvaluationDetailsFactory>()))
             .Throws<Exception>();
 
-        var client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, this.configDeserializerMock.Object, new Hooks());
+        var client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, new Hooks());
 
         var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
         client.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
@@ -183,7 +182,7 @@ public class ConfigCatClientTests
             .Setup(m => m.Evaluate(It.IsAny<Setting>(), It.IsAny<string>(), defaultValue, null, It.IsAny<ProjectConfig>(), It.IsAny<EvaluationDetailsFactory>()))
             .Throws<Exception>();
 
-        var client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, this.configDeserializerMock.Object, new Hooks());
+        var client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, new Hooks());
 
         var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
         client.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
@@ -215,7 +214,7 @@ public class ConfigCatClientTests
         var configJsonFilePath = Path.Combine("data", "sample_variationid_v5.json");
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
-            onFetch: _ => FetchResult.Success(new ProjectConfig { JsonString = File.ReadAllText(configJsonFilePath), HttpETag = "12345", TimeStamp = DateTime.UtcNow }),
+            onFetch: _ => FetchResult.Success(ConfigHelper.FromFile(configJsonFilePath, httpETag: "12345", ProjectConfig.GenerateTimeStamp())),
             configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
             {
                 return new ManualPollConfigService(this.fetcherMock.Object, cacheParams, loggerWrapper);
@@ -257,10 +256,10 @@ public class ConfigCatClientTests
 
         const string cacheKey = "123";
         var configJsonFilePath = Path.Combine("data", "sample_variationid_v5.json");
-        var timeStamp = DateTime.UtcNow;
+        var timeStamp = ProjectConfig.GenerateTimeStamp();
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
-            onFetch: _ => FetchResult.Success(new ProjectConfig { JsonString = File.ReadAllText(configJsonFilePath), HttpETag = "12345", TimeStamp = timeStamp }),
+            onFetch: _ => FetchResult.Success(ConfigHelper.FromFile(configJsonFilePath, httpETag: "12345", timeStamp)),
             configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
             {
                 return new ManualPollConfigService(this.fetcherMock.Object, cacheParams, loggerWrapper);
@@ -309,10 +308,10 @@ public class ConfigCatClientTests
 
         const string cacheKey = "123";
         var configJsonFilePath = Path.Combine("data", "sample_variationid_v5.json");
-        var timeStamp = DateTime.UtcNow;
+        var timeStamp = ProjectConfig.GenerateTimeStamp();
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
-            onFetch: _ => FetchResult.Success(new ProjectConfig { JsonString = File.ReadAllText(configJsonFilePath), HttpETag = "12345", TimeStamp = timeStamp }),
+            onFetch: _ => FetchResult.Success(ConfigHelper.FromFile(configJsonFilePath, httpETag: "12345", timeStamp)),
             configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
             {
                 return new ManualPollConfigService(this.fetcherMock.Object, cacheParams, loggerWrapper);
@@ -363,10 +362,10 @@ public class ConfigCatClientTests
 
         const string cacheKey = "123";
         var configJsonFilePath = Path.Combine("data", "sample_variationid_v5.json");
-        var timeStamp = DateTime.UtcNow;
+        var timeStamp = ProjectConfig.GenerateTimeStamp();
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
-            onFetch: _ => FetchResult.Success(new ProjectConfig { JsonString = File.ReadAllText(configJsonFilePath), HttpETag = "12345", TimeStamp = timeStamp }),
+            onFetch: _ => FetchResult.Success(ConfigHelper.FromFile(configJsonFilePath, httpETag: "12345", timeStamp)),
             configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
             {
                 return new ManualPollConfigService(this.fetcherMock.Object, cacheParams, loggerWrapper);
@@ -425,7 +424,7 @@ public class ConfigCatClientTests
             this.configServiceMock.Setup(m => m.GetConfig()).Throws(new ApplicationException(errorMessage));
         }
 
-        var client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, this.configDeserializerMock.Object);
+        var client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object);
 
         // Act
 
@@ -461,14 +460,14 @@ public class ConfigCatClientTests
 
         const string cacheKey = "123";
         var configJsonFilePath = Path.Combine("data", "sample_variationid_v5.json");
-        var timeStamp = DateTime.UtcNow;
+        var timeStamp = ProjectConfig.GenerateTimeStamp();
 
         this.evaluatorMock
             .Setup(m => m.Evaluate(It.IsAny<Setting>(), It.IsAny<string>(), defaultValue, It.IsAny<User>(), It.IsAny<ProjectConfig>(), It.IsNotNull<EvaluationDetailsFactory>()))
             .Throws(new ApplicationException(errorMessage));
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
-            onFetch: _ => FetchResult.Success(new ProjectConfig { JsonString = File.ReadAllText(configJsonFilePath), HttpETag = "12345", TimeStamp = timeStamp }),
+            onFetch: _ => FetchResult.Success(ConfigHelper.FromFile(configJsonFilePath, httpETag: "12345", timeStamp)),
             configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
             {
                 return new ManualPollConfigService(this.fetcherMock.Object, cacheParams, loggerWrapper);
@@ -523,10 +522,10 @@ public class ConfigCatClientTests
 
         const string cacheKey = "123";
         var configJsonFilePath = Path.Combine("data", "sample_variationid_v5.json");
-        var timeStamp = DateTime.UtcNow;
+        var timeStamp = ProjectConfig.GenerateTimeStamp();
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
-            onFetch: _ => FetchResult.Success(new ProjectConfig { JsonString = File.ReadAllText(configJsonFilePath), HttpETag = "12345", TimeStamp = timeStamp }),
+            onFetch: _ => FetchResult.Success(ConfigHelper.FromFile(configJsonFilePath, httpETag: "12345", timeStamp)),
             configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
             {
                 return new ManualPollConfigService(this.fetcherMock.Object, cacheParams, loggerWrapper);
@@ -596,11 +595,8 @@ public class ConfigCatClientTests
         this.configServiceMock.Setup(m => m.GetConfig()).Returns(ProjectConfig.Empty);
         this.configServiceMock.Setup(m => m.GetConfigAsync(It.IsAny<CancellationToken>())).ReturnsAsync(ProjectConfig.Empty);
         var o = new SettingsWithPreferences();
-        this.configDeserializerMock
-            .Setup(m => m.TryDeserialize(It.IsAny<string>(), It.IsAny<string>(), out o))
-            .Returns(false);
 
-        using IConfigCatClient client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, this.configDeserializerMock.Object, new Hooks());
+        using IConfigCatClient client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, new Hooks());
 
         var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
         client.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
@@ -630,7 +626,7 @@ public class ConfigCatClientTests
             .Setup(m => m.GetConfigAsync(It.IsAny<CancellationToken>()))
             .Throws<Exception>();
 
-        using IConfigCatClient client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, this.configDeserializerMock.Object, new Hooks());
+        using IConfigCatClient client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, new Hooks());
 
         var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
         client.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
@@ -659,14 +655,14 @@ public class ConfigCatClientTests
 
         const string cacheKey = "123";
         var configJsonFilePath = Path.Combine("data", "sample_variationid_v5.json");
-        var timeStamp = DateTime.UtcNow;
+        var timeStamp = ProjectConfig.GenerateTimeStamp();
 
         this.evaluatorMock
             .Setup(m => m.Evaluate(It.IsAny<Setting>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ProjectConfig>(), It.IsNotNull<EvaluationDetailsFactory>()))
             .Throws(new ApplicationException(errorMessage));
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
-            onFetch: _ => FetchResult.Success(new ProjectConfig { JsonString = File.ReadAllText(configJsonFilePath), HttpETag = "12345", TimeStamp = timeStamp }),
+            onFetch: _ => FetchResult.Success(ConfigHelper.FromFile(configJsonFilePath, httpETag: "12345", timeStamp)),
             configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
             {
                 return new ManualPollConfigService(this.fetcherMock.Object, cacheParams, loggerWrapper);
@@ -742,8 +738,7 @@ public class ConfigCatClientTests
         IConfigCatClient instance = new ConfigCatClient(
             this.configServiceMock.Object,
             this.loggerMock.Object,
-            this.evaluatorMock.Object,
-            this.configDeserializerMock.Object);
+            this.evaluatorMock.Object);
 
         // Act
 
@@ -766,8 +761,7 @@ public class ConfigCatClientTests
         IConfigCatClient instance = new ConfigCatClient(
             this.configServiceMock.Object,
             this.loggerMock.Object,
-            this.evaluatorMock.Object,
-            this.configDeserializerMock.Object);
+            this.evaluatorMock.Object);
 
         // Act
 
@@ -787,15 +781,11 @@ public class ConfigCatClientTests
 
         this.configServiceMock.Setup(m => m.GetConfigAsync(It.IsAny<CancellationToken>())).ReturnsAsync(ProjectConfig.Empty);
         var o = new SettingsWithPreferences();
-        this.configDeserializerMock
-            .Setup(m => m.TryDeserialize(It.IsAny<string>(), It.IsAny<string>(), out o))
-            .Throws<Exception>();
 
         IConfigCatClient instance = new ConfigCatClient(
             this.configServiceMock.Object,
             this.loggerMock.Object,
-            this.evaluatorMock.Object,
-            this.configDeserializerMock.Object);
+            this.evaluatorMock.Object);
 
         // Act
 
@@ -814,15 +804,11 @@ public class ConfigCatClientTests
         // Arrange
 
         this.configServiceMock.Setup(m => m.GetConfigAsync(It.IsAny<CancellationToken>())).ReturnsAsync(ProjectConfig.Empty);
-        this.configDeserializerMock
-            .Setup(m => m.TryDeserialize(It.IsAny<string>(), It.IsAny<string>(), out It.Ref<SettingsWithPreferences?>.IsAny))
-            .Returns(false);
 
         IConfigCatClient instance = new ConfigCatClient(
             this.configServiceMock.Object,
             this.loggerMock.Object,
-            this.evaluatorMock.Object,
-            this.configDeserializerMock.Object);
+            this.evaluatorMock.Object);
 
         // Act
 
@@ -841,15 +827,11 @@ public class ConfigCatClientTests
         // Arrange
 
         this.configServiceMock.Setup(m => m.GetConfig()).Returns(ProjectConfig.Empty);
-        this.configDeserializerMock
-            .Setup(m => m.TryDeserialize(It.IsAny<string>(), It.IsAny<string>(), out It.Ref<SettingsWithPreferences?>.IsAny))
-            .Returns(false);
 
         IConfigCatClient instance = new ConfigCatClient(
             this.configServiceMock.Object,
             this.loggerMock.Object,
-            this.evaluatorMock.Object,
-            this.configDeserializerMock.Object);
+            this.evaluatorMock.Object);
 
         // Act
 
@@ -875,14 +857,13 @@ public class ConfigCatClientTests
         const int delayMs = 2000;
 
         var loggerWrapper = this.loggerMock.Object.AsWrapper();
-        var configDeserializer = new ConfigDeserializer();
         var fakeHandler = new FakeHttpClientHandler(HttpStatusCode.OK, "{ }", TimeSpan.FromMilliseconds(delayMs));
-        var configFetcher = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", loggerWrapper, fakeHandler, configDeserializer, false, TimeSpan.FromMilliseconds(delayMs * 2));
+        var configFetcher = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", loggerWrapper, fakeHandler, false, TimeSpan.FromMilliseconds(delayMs * 2));
         var configCache = new InMemoryConfigCache();
         var cacheParams = new CacheParameters(configCache, cacheKey: null!);
         var configService = new LazyLoadConfigService(configFetcher, cacheParams, loggerWrapper, TimeSpan.FromSeconds(1));
         var evaluator = new RolloutEvaluator(loggerWrapper);
-        using var client = new ConfigCatClient(configService, loggerWrapper, evaluator, configDeserializer);
+        using var client = new ConfigCatClient(configService, loggerWrapper, evaluator);
 
         // Act
 
@@ -914,8 +895,7 @@ public class ConfigCatClientTests
         IConfigCatClient instance = new ConfigCatClient(
             myMock,
             this.loggerMock.Object,
-            this.evaluatorMock.Object,
-            this.configDeserializerMock.Object);
+            this.evaluatorMock.Object);
 
         // Act
 
@@ -936,8 +916,7 @@ public class ConfigCatClientTests
         IConfigCatClient instance = new ConfigCatClient(
             this.configServiceMock.Object,
             this.loggerMock.Object,
-            this.evaluatorMock.Object,
-            this.configDeserializerMock.Object);
+            this.evaluatorMock.Object);
 
         // Act
 
@@ -962,8 +941,7 @@ public class ConfigCatClientTests
         IConfigCatClient instance = new ConfigCatClient(
             this.configServiceMock.Object,
             this.loggerMock.Object,
-            this.evaluatorMock.Object,
-            this.configDeserializerMock.Object);
+            this.evaluatorMock.Object);
 
         // Act
 
@@ -988,8 +966,7 @@ public class ConfigCatClientTests
         IConfigCatClient instance = new ConfigCatClient(
             this.configServiceMock.Object,
             this.loggerMock.Object,
-            this.evaluatorMock.Object,
-            this.configDeserializerMock.Object);
+            this.evaluatorMock.Object);
 
         // Act
 
@@ -1016,8 +993,7 @@ public class ConfigCatClientTests
         IConfigCatClient instance = new ConfigCatClient(
             this.configServiceMock.Object,
             this.loggerMock.Object,
-            this.evaluatorMock.Object,
-            this.configDeserializerMock.Object);
+            this.evaluatorMock.Object);
 
         // Act
 
@@ -1044,8 +1020,7 @@ public class ConfigCatClientTests
         IConfigCatClient instance = new ConfigCatClient(
             this.configServiceMock.Object,
             this.loggerMock.Object,
-            this.evaluatorMock.Object,
-            this.configDeserializerMock.Object);
+            this.evaluatorMock.Object);
 
         // Act
 
@@ -1068,14 +1043,13 @@ public class ConfigCatClientTests
         const int delayMs = 2000;
 
         var loggerWrapper = this.loggerMock.Object.AsWrapper();
-        var configDeserializer = new ConfigDeserializer();
         var fakeHandler = new FakeHttpClientHandler(HttpStatusCode.OK, "{ }", TimeSpan.FromMilliseconds(delayMs));
-        var configFetcher = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", loggerWrapper, fakeHandler, configDeserializer, false, TimeSpan.FromMilliseconds(delayMs * 2));
+        var configFetcher = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", loggerWrapper, fakeHandler, false, TimeSpan.FromMilliseconds(delayMs * 2));
         var configCache = new InMemoryConfigCache();
         var cacheParams = new CacheParameters(configCache, cacheKey: null!);
         var configService = new ManualPollConfigService(configFetcher, cacheParams, loggerWrapper);
         var evaluator = new RolloutEvaluator(loggerWrapper);
-        using var client = new ConfigCatClient(configService, loggerWrapper, evaluator, configDeserializer);
+        using var client = new ConfigCatClient(configService, loggerWrapper, evaluator);
 
         // Act
 
@@ -1333,7 +1307,7 @@ public class ConfigCatClientTests
         Func<ProjectConfig, FetchResult> onFetch,
         Func<IConfigFetcher, CacheParameters, LoggerWrapper, IConfigService> configServiceFactory,
         out IConfigService configService,
-        out IConfigCatCache configCache)
+        out ConfigCache configCache)
     {
         return CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock, onFetch, configServiceFactory,
             evaluatorFactory: loggerWrapper => new RolloutEvaluator(loggerWrapper), hooks: null,
@@ -1348,7 +1322,7 @@ public class ConfigCatClientTests
         Func<LoggerWrapper, IRolloutEvaluator> evaluatorFactory,
         Hooks? hooks,
         out IConfigService configService,
-        out IConfigCatCache configCache)
+        out ConfigCache configCache)
     {
         fetcherMock.Setup(m => m.Fetch(It.IsAny<ProjectConfig>())).Returns(onFetch);
         fetcherMock.Setup(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>())).ReturnsAsync((ProjectConfig pc, CancellationToken _) => onFetch(pc));
@@ -1360,7 +1334,7 @@ public class ConfigCatClientTests
         var cacheParams = new CacheParameters(configCache, cacheKey);
 
         configService = configServiceFactory(fetcherMock.Object, cacheParams, loggerWrapper);
-        return new ConfigCatClient(configService, loggerMock.Object, evaluatorFactory(loggerWrapper), new ConfigDeserializer(), hooks);
+        return new ConfigCatClient(configService, loggerMock.Object, evaluatorFactory(loggerWrapper), hooks);
     }
 
     private static int ParseETagAsInt32(string? etag)
@@ -1399,7 +1373,7 @@ public class ConfigCatClientTests
         };
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
-            onFetch: cfg => FetchResult.Success(new ProjectConfig { JsonString = "{}", HttpETag = (++httpETag).ToString(CultureInfo.InvariantCulture), TimeStamp = DateTime.UtcNow }),
+            onFetch: cfg => FetchResult.Success(ConfigHelper.FromString("{}", httpETag: (++httpETag).ToString(CultureInfo.InvariantCulture), timeStamp: ProjectConfig.GenerateTimeStamp())),
             configServiceFactory, out var configService, out _);
 
         var expectedFetchCount = 0;
@@ -1526,7 +1500,7 @@ public class ConfigCatClientTests
         };
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
-            onFetch: cfg => FetchResult.Success(new ProjectConfig { JsonString = "{}", HttpETag = (++httpETag).ToString(CultureInfo.InvariantCulture), TimeStamp = DateTime.UtcNow }),
+            onFetch: cfg => FetchResult.Success(ConfigHelper.FromString("{}", httpETag: (++httpETag).ToString(CultureInfo.InvariantCulture), timeStamp: ProjectConfig.GenerateTimeStamp())),
             configServiceFactory, out var configService, out var configCache);
 
         var expectedFetchCount = 0;
@@ -1582,10 +1556,7 @@ public class ConfigCatClientTests
             {
                 // We make sure manually that the cached config is expired for the next GetConfig() call
                 var cachedConfig = configCache.Get(cacheKey);
-                cachedConfig = new ProjectConfig(
-                    cachedConfig.JsonString,
-                    cachedConfig.TimeStamp - TimeSpan.FromMilliseconds(int.MaxValue * 2.0),
-                    cachedConfig.HttpETag);
+                cachedConfig = cachedConfig.With(cachedConfig.TimeStamp - TimeSpan.FromMilliseconds(int.MaxValue * 2.0));
                 configCache.Set(cacheKey, cachedConfig);
             }
 
@@ -1661,7 +1632,7 @@ public class ConfigCatClientTests
         var configService = new ManualPollConfigService(this.fetcherMock.Object, cacheParams, loggerWrapper, hooks: hooks);
 
         // 1. Client gets created
-        var client = new ConfigCatClient(configService, this.loggerMock.Object, new RolloutEvaluator(loggerWrapper), new ConfigDeserializer(), hooks);
+        var client = new ConfigCatClient(configService, this.loggerMock.Object, new RolloutEvaluator(loggerWrapper), hooks);
 
         Assert.AreEqual(1, clientReadyEventCount);
         Assert.AreEqual(0, configChangedEvents.Count);
@@ -1677,7 +1648,7 @@ public class ConfigCatClientTests
         Assert.AreSame(errorException, errorEvents[0].Exception);
 
         // 3. Fetch succeeds
-        var config = new ProjectConfig { JsonString = File.ReadAllText(configJsonFilePath), HttpETag = "12345", TimeStamp = DateTime.UtcNow };
+        var config = ConfigHelper.FromFile(configJsonFilePath, httpETag: "12345", ProjectConfig.GenerateTimeStamp());
 
         onFetch = (_, _) => FetchResult.Success(config);
         this.fetcherMock.Reset();
@@ -1686,7 +1657,7 @@ public class ConfigCatClientTests
         await client.ForceRefreshAsync();
 
         Assert.AreEqual(1, configChangedEvents.Count);
-        Assert.AreSame(config, configChangedEvents[0].NewConfig);
+        Assert.AreSame(config.Config, configChangedEvents[0].NewConfig);
 
         // 4. All flags are evaluated
         var keys = await client.GetAllKeysAsync();
@@ -1771,7 +1742,7 @@ public class ConfigCatClientTests
         await client.ForceRefreshAsync();
 
         Assert.AreEqual(2, configChangedEvents.Count);
-        Assert.AreNotEqual(ProjectConfig.Empty, configChangedEvents[0].NewConfig);
+        Assert.IsTrue(configChangedEvents[0].NewConfig.Settings.Any());
         Assert.AreSame(configChangedEvents[0], configChangedEvents[1]);
 
         // 3. Non-existent flag is evaluated

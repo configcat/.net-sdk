@@ -1,9 +1,11 @@
 using System;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
+using ConfigCat.Client.Evaluation;
+using ConfigCat.Client.Tests.Helpers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Moq;
 
 namespace ConfigCat.Client.Tests;
 
@@ -17,7 +19,7 @@ public class HttpConfigFetcherTests
 
         var myHandler = new FakeHttpClientHandler();
 
-        var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), myHandler, Mock.Of<IConfigDeserializer>(), false,
+        var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), myHandler, false,
             TimeSpan.FromSeconds(30));
 
         // Act
@@ -36,7 +38,7 @@ public class HttpConfigFetcherTests
 
         var myHandler = new FakeHttpClientHandler();
 
-        var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), myHandler, Mock.Of<IConfigDeserializer>(), false,
+        var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), myHandler, false,
             TimeSpan.FromSeconds(30));
 
         // Act
@@ -55,10 +57,10 @@ public class HttpConfigFetcherTests
 
         var myHandler = new FakeHttpClientHandler(HttpStatusCode.Forbidden);
 
-        var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), myHandler, Mock.Of<IConfigDeserializer>(), false,
+        using var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), myHandler, false,
             TimeSpan.FromSeconds(30));
 
-        var lastConfig = new ProjectConfig("{ }", DateTime.UtcNow, "\"ETAG\"");
+        var lastConfig = ConfigHelper.FromString("{}", timeStamp: ProjectConfig.GenerateTimeStamp(), httpETag: "\"ETAG\"");
 
         // Act
 
@@ -69,7 +71,10 @@ public class HttpConfigFetcherTests
         Assert.IsTrue(actual.IsFailure);
         Assert.IsNotNull(actual.ErrorMessage);
         Assert.IsNull(actual.ErrorException);
-        Assert.AreEqual(lastConfig, actual.Config);
+        Assert.AreNotSame(lastConfig, actual.Config);
+        Assert.AreSame(lastConfig.Config, actual.Config.Config);
+        Assert.AreSame(lastConfig.HttpETag, actual.Config.HttpETag);
+        Assert.IsTrue(lastConfig.TimeStamp <= actual.Config.TimeStamp);
     }
 
     [TestMethod]
@@ -80,10 +85,10 @@ public class HttpConfigFetcherTests
         var exception = new WebException();
         var myHandler = new ExceptionThrowerHttpClientHandler(exception);
 
-        var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), myHandler, new ConfigDeserializer(), false,
+        var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), myHandler, false,
             TimeSpan.FromSeconds(30));
 
-        var lastConfig = new ProjectConfig("{ }", DateTime.UtcNow, "\"ETAG\"");
+        var lastConfig = ConfigHelper.FromString("{}", timeStamp: ProjectConfig.GenerateTimeStamp(), httpETag: "\"ETAG\"");
 
         // Act
 
@@ -104,9 +109,9 @@ public class HttpConfigFetcherTests
 
         var myHandler = new FakeHttpClientHandler(HttpStatusCode.OK, "{ }", TimeSpan.FromSeconds(1));
 
-        var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), myHandler, new ConfigDeserializer(), false, TimeSpan.FromSeconds(30));
+        var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), myHandler, false, TimeSpan.FromSeconds(30));
 
-        var lastConfig = new ProjectConfig("{ }", DateTime.UtcNow, "\"ETAG\"");
+        var lastConfig = ConfigHelper.FromString("{}", timeStamp: ProjectConfig.GenerateTimeStamp(), httpETag: "\"ETAG\"");
 
         // Act
 
@@ -131,9 +136,9 @@ public class HttpConfigFetcherTests
         var exception = new WebException();
         var myHandler = new ExceptionThrowerHttpClientHandler(exception, TimeSpan.FromSeconds(1));
 
-        var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), myHandler, Mock.Of<IConfigDeserializer>(), false, TimeSpan.FromSeconds(30));
+        var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), myHandler, false, TimeSpan.FromSeconds(30));
 
-        var lastConfig = new ProjectConfig("{ }", DateTime.UtcNow, "\"ETAG\"");
+        var lastConfig = ConfigHelper.FromString("{}", timeStamp: ProjectConfig.GenerateTimeStamp(), httpETag: "\"ETAG\"");
 
         // Act
 
@@ -151,60 +156,79 @@ public class HttpConfigFetcherTests
         Assert.AreSame(fetchResults[0].ErrorException, fetchResults[1].ErrorException);
     }
 
-    [DataRow(false, false)]
-    [DataRow(false, true)]
-    [DataRow(true, false)]
-    [DataRow(true, true)]
+    [DataRow(false, false, true)]
+    [DataRow(false, false, false)]
+    [DataRow(false, false, null)]
+    [DataRow(false, true, true)]
+    [DataRow(true, false, true)]
+    [DataRow(true, true, true)]
     [DataTestMethod]
-    public async Task HttpConfigFetcher_FetchAsync_PendingOperationShouldBeJoined(bool cancel1, bool cancel2)
+    public async Task HttpConfigFetcher_FetchAsync_PendingOperationShouldBeJoined(bool cancel1, bool cancel2, bool? bothAsync)
     {
         // Arrange
 
         const int delayMs = 2000;
         const string configContent = "{ }";
+        var configETag = new EntityTagHeaderValue("\"123\"");
 
-        var configDeserializer = new ConfigDeserializer();
-        var fakeHandler = new FakeHttpClientHandler(HttpStatusCode.OK, configContent, TimeSpan.FromMilliseconds(delayMs));
-        var configFetcher = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), fakeHandler, configDeserializer, false, TimeSpan.FromMilliseconds(delayMs * 2));
+        var fakeHandler = new FakeHttpClientHandler(HttpStatusCode.OK, configContent, TimeSpan.FromMilliseconds(delayMs), configETag);
+        var configFetcher = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), fakeHandler, false, TimeSpan.FromMilliseconds(delayMs * 2));
 
         using var cts = new CancellationTokenSource(delayMs / 4);
 
         // Act
 
         var pendingFetchBefore = configFetcher.pendingFetch;
-        var fetchTask1 = configFetcher.FetchAsync(ProjectConfig.Empty, cancel1 ? cts.Token : CancellationToken.None);
+
+        var fetchTask1 = bothAsync is true or null
+            ? configFetcher.FetchAsync(ProjectConfig.Empty, cancel1 ? cts.Token : CancellationToken.None)
+            : Task.Run(() => configFetcher.Fetch(ProjectConfig.Empty));
+
         var pendingFetchBetween = configFetcher.pendingFetch;
-        var fetchTask2 = configFetcher.FetchAsync(ProjectConfig.Empty, cancel2 ? cts.Token : CancellationToken.None);
+
+        var fetchTask2 = bothAsync is true or not null
+            ? configFetcher.FetchAsync(ProjectConfig.Empty, cancel2 ? cts.Token : CancellationToken.None)
+            : Task.Run(() => configFetcher.Fetch(ProjectConfig.Empty));
+
         var pendingFetchAfter = configFetcher.pendingFetch;
 
         // Assert
 
         Assert.IsNull(pendingFetchBefore);
-        Assert.IsNotNull(pendingFetchBetween);
-        Assert.AreEqual(pendingFetchBetween, pendingFetchAfter);
 
-        if (cancel1)
+        if (bothAsync is not false)
+        {
+            Assert.IsNotNull(pendingFetchBetween);
+            Assert.AreEqual(pendingFetchBetween, pendingFetchAfter);
+        }
+
+        if (bothAsync is not false && cancel1)
         {
             var ex = await Assert.ThrowsExceptionAsync<TaskCanceledException>(() => fetchTask1);
             Assert.AreEqual(ex.CancellationToken, cts.Token);
         }
         else
         {
-            Assert.AreEqual(configContent, (await fetchTask1).Config.JsonString);
+            var fetchResult = await fetchTask1;
+            Assert.AreEqual(configETag, new EntityTagHeaderValue(fetchResult.Config.HttpETag!));
         }
 
-        if (cancel2)
+        if (bothAsync is not false && cancel2)
         {
             var ex = await Assert.ThrowsExceptionAsync<TaskCanceledException>(() => fetchTask2);
             Assert.AreEqual(ex.CancellationToken, cts.Token);
         }
         else
         {
-            Assert.AreEqual(configContent, (await fetchTask2).Config.JsonString);
+            var fetchResult = await fetchTask2;
+            Assert.AreEqual(configETag, new EntityTagHeaderValue(fetchResult.Config.HttpETag!));
         }
 
-        await pendingFetchBetween;
+        if (bothAsync is not false)
+        {
+            await pendingFetchBetween!;
 
-        Assert.IsNull(configFetcher.pendingFetch);
+            Assert.IsNull(configFetcher.pendingFetch);
+        }
     }
 }

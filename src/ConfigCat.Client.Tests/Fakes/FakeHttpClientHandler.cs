@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -12,6 +13,7 @@ internal class FakeHttpClientHandler : HttpClientHandler
     private readonly HttpStatusCode httpStatusCode;
     private readonly string? responseContent;
     private readonly TimeSpan? delay;
+    private readonly EntityTagHeaderValue? httpETag;
 
     public byte SendInvokeCount { get; private set; } = 0;
 
@@ -19,10 +21,12 @@ internal class FakeHttpClientHandler : HttpClientHandler
 
     public SortedList<byte, HttpRequestMessage> Requests = new();
 
-    public FakeHttpClientHandler(HttpStatusCode httpStatusCode = HttpStatusCode.NotModified, string? responseContent = null, TimeSpan? delay = null)
+    public FakeHttpClientHandler(HttpStatusCode httpStatusCode = HttpStatusCode.NotModified, string? responseContent = null, TimeSpan? delay = null,
+        EntityTagHeaderValue? httpETag = null)
     {
         this.httpStatusCode = httpStatusCode;
         this.responseContent = responseContent;
+        this.httpETag = httpETag;
         this.delay = delay;
     }
 
@@ -41,6 +45,11 @@ internal class FakeHttpClientHandler : HttpClientHandler
             Content = this.responseContent is not null ? new StringContent(this.responseContent) : null,
         };
 
+        if (this.httpETag is not null)
+        {
+            response.Headers.ETag = this.httpETag;
+        }
+
         return response;
     }
 
@@ -54,11 +63,18 @@ internal class FakeHttpClientHandler : HttpClientHandler
 
         this.Requests.Add(SendInvokeCount, request);
 
-        return new HttpResponseMessage
+        var response = new HttpResponseMessage
         {
             StatusCode = this.httpStatusCode,
             Content = this.responseContent is not null ? new StringContent(this.responseContent) : null,
         };
+
+        if (this.httpETag is not null)
+        {
+            response.Headers.ETag = this.httpETag;
+        }
+
+        return response;
     }
 #endif
 

@@ -13,7 +13,7 @@ public class FlagEvaluatedEventArgs : EventArgs
     }
 
     /// <summary>
-    /// The <see cref="Client.EvaluationDetails"/> object resulted from the evaluation of a feature or setting flag.
+    /// The <see cref="Client.EvaluationDetails"/> object resulted from the evaluation of a feature flag or setting.
     /// </summary>
     public EvaluationDetails EvaluationDetails { get; }
 }

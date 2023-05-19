@@ -7,13 +7,13 @@ namespace ConfigCat.Client;
 /// </summary>
 public class ConfigChangedEventArgs : EventArgs
 {
-    internal ConfigChangedEventArgs(ProjectConfig newConfig)
+    internal ConfigChangedEventArgs(IConfig newConfig)
     {
         NewConfig = newConfig;
     }
 
     /// <summary>
-    /// The new <see cref="ProjectConfig"/> object.
+    /// The new <see cref="IConfig"/> object.
     /// </summary>
-    public ProjectConfig NewConfig { get; }
+    public IConfig NewConfig { get; }
 }

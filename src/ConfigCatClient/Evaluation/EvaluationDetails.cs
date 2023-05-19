@@ -13,7 +13,7 @@ namespace ConfigCat.Client;
 internal delegate EvaluationDetails EvaluationDetailsFactory(SettingType settingType, JsonValue value);
 
 /// <summary>
-/// The evaluated value and additional information about the evaluation of a feature or setting flag.
+/// The evaluated value and additional information about the evaluation of a feature flag or setting.
 /// </summary>
 public abstract record class EvaluationDetails
 {
@@ -50,17 +50,7 @@ public abstract record class EvaluationDetails
         }
         else
         {
-            EvaluationDetails evaluationDetails = new EvaluationDetails<object>
-            {
-                Value = settingType switch
-                {
-                    SettingType.Boolean => value.ConvertTo<bool>(),
-                    SettingType.String => value.ConvertTo<string>(),
-                    SettingType.Int => value.ConvertTo<int>(),
-                    SettingType.Double => value.ConvertTo<double>(),
-                    _ => throw new ArgumentOutOfRangeException(nameof(settingType), settingType, null)
-                }
-            };
+            EvaluationDetails evaluationDetails = new EvaluationDetails<object> { Value = value.ConvertToObject(settingType) };
             return (EvaluationDetails<TValue>)evaluationDetails;
         }
     }
@@ -130,19 +120,19 @@ public abstract record class EvaluationDetails
     }
 
     /// <summary>
-    /// Key of the feature or setting flag.
+    /// Key of the feature flag or setting.
     /// </summary>
     public string Key { get; private set; }
 
     /// <summary>
-    /// Evaluated value of the feature or setting flag.
+    /// Evaluated value of the feature flag or setting.
     /// </summary>
     public object? Value => GetValueAsObject();
 
     private protected abstract object? GetValueAsObject();
 
     /// <summary>
-    /// Variation ID of the feature or setting flag (if available).
+    /// Variation ID of the feature flag or setting (if available).
     /// </summary>
     public string? VariationId { get; set; }
 
@@ -173,14 +163,14 @@ public abstract record class EvaluationDetails
     public Exception? ErrorException { get; set; }
 
     /// <summary>
-    /// The comparison-based targeting rule which was used to select the evaluated value (if any).
+    /// The targeting rule which was used to select the evaluated value (if any).
     /// </summary>
-    public RolloutRule? MatchedEvaluationRule { get; set; }
+    public ITargetingRule? MatchedEvaluationRule { get; set; }
 
     /// <summary>
-    /// The percentage-based targeting rule which was used to select the evaluated value (if any).
+    /// The percentage option which was used to select the evaluated value (if any).
     /// </summary>
-    public RolloutPercentageItem? MatchedEvaluationPercentageRule { get; set; }
+    public IPercentageOption? MatchedEvaluationPercentageRule { get; set; }
 }
 
 /// <inheritdoc/>

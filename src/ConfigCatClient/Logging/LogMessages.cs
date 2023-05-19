@@ -96,6 +96,14 @@ internal static partial class LoggerExtensions
         LogLevel.Error, 2100, ex,
         "Secure connection could not be established. Please make sure that your application is enabled to use TLS 1.2+. For more information, see https://stackoverflow.com/a/58195987/8656352");
 
+    public static FormattableLogMessage ConfigServiceCacheReadError(this LoggerWrapper logger, Exception ex) => logger.Log(
+        LogLevel.Error, 2200, ex,
+        "Error occurred while reading the cache.");
+
+    public static FormattableLogMessage ConfigServiceCacheWriteError(this LoggerWrapper logger, Exception ex) => logger.Log(
+        LogLevel.Error, 2201, ex,
+        "Error occurred while writing the cache.");
+
     #endregion
 
     #region Common warning messages (3000-3999)

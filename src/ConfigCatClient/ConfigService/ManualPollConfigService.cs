@@ -18,8 +18,8 @@ internal sealed class ManualPollConfigService : ConfigServiceBase, IConfigServic
         return this.ConfigCache.Get(base.CacheKey);
     }
 
-    public async Task<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default)
+    public Task<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default)
     {
-        return await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(false);
+        return this.ConfigCache.GetAsync(base.CacheKey, cancellationToken);
     }
 }

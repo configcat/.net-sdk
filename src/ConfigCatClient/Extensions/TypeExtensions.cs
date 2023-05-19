@@ -1,4 +1,4 @@
-using ConfigCat.Client.Evaluation;
+using ConfigCat.Client;
 
 namespace System;
 

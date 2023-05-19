@@ -37,7 +37,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         {
             if (user is not null)
             {
-                // evaluate comparison-based rules
+                // evaluate targeting rules
 
                 if (TryEvaluateRules(setting.RolloutRules, user, evaluateLog, out var evaluateRulesResult))
                 {
@@ -55,7 +55,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                         matchedEvaluationRule: evaluateRulesResult.MatchedRule);
                 }
 
-                // evaluate percentage-based rules
+                // evaluate percentage options
 
                 if (TryEvaluatePercentageRules(setting.RolloutPercentageItems, key, user, evaluateLog, out var evaluatePercentageRulesResult))
                 {

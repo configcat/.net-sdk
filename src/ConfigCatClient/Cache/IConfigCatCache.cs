@@ -1,40 +1,40 @@
-using System.Threading.Tasks;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace ConfigCat.Client;
 
 /// <summary>
-/// Defines a cache used by the <see cref="ConfigCatClient"/>.
+/// Defines the interface used by the ConfigCat SDK to store and retrieve downloaded config JSON data.
 /// </summary>
 public interface IConfigCatCache
 {
     /// <summary>
-    /// Sets a <see cref="ProjectConfig"/> into cache.
+    /// Stores a value into the cache.
     /// </summary>
-    /// <param name="key">A string identifying the <see cref="ProjectConfig"/> value.</param>
-    /// <param name="config">The config to cache.</param>
-    void Set(string key, ProjectConfig config);
+    /// <param name="key">A string identifying the value.</param>
+    /// <param name="value">The value to cache.</param>
+    void Set(string key, string value);
 
     /// <summary>
-    /// Sets a <see cref="ProjectConfig"/> into cache.
+    /// Stores a value into the cache.
     /// </summary>
-    /// <param name="key">A string identifying the <see cref="ProjectConfig"/> value.</param>
-    /// <param name="config">The config to cache.</param>
+    /// <param name="key">A string identifying the value.</param>
+    /// <param name="value">The value to cache.</param>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
-    Task SetAsync(string key, ProjectConfig config, CancellationToken cancellationToken = default);
+    Task SetAsync(string key, string value, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets a <see cref="ProjectConfig"/> from cache.
+    /// Retrieves a value from the cache.
     /// </summary>
-    /// <param name="key">A string identifying the <see cref="ProjectConfig"/> value.</param>
-    /// <returns>The cached config or <see cref="ProjectConfig.Empty"/> if there is none.</returns>
-    ProjectConfig Get(string key);
+    /// <param name="key">A string identifying the value.</param>
+    /// <returns>The cached value or <see langword="null"/> if there is none.</returns>
+    string? Get(string key);
 
     /// <summary>
-    /// Gets a <see cref="ProjectConfig"/> from cache.
+    /// Retrieves a value from the cache.
     /// </summary>
-    /// <param name="key">A string identifying the <see cref="ProjectConfig"/> value.</param>
+    /// <param name="key">A string identifying the value.</param>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
-    /// <returns>The cached config or <see cref="ProjectConfig.Empty"/> if there is none.</returns>
-    Task<ProjectConfig> GetAsync(string key, CancellationToken cancellationToken = default);
+    /// <returns>The cached value or <see langword="null"/> if there is none.</returns>
+    Task<string?> GetAsync(string key, CancellationToken cancellationToken = default);
 }

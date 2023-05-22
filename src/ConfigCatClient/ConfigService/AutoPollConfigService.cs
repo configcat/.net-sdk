@@ -130,7 +130,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
         return this.ConfigCache.Get(base.CacheKey);
     }
 
-    public async Task<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default)
+    public async ValueTask<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default)
     {
         if (!IsOffline && !IsInitialized)
         {

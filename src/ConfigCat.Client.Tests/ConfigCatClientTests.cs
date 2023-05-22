@@ -1801,14 +1801,14 @@ public class ConfigCatClientTests
             base.Dispose(disposing);
         }
 
-        public Task<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default)
+        public ValueTask<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(ProjectConfig.Empty);
+            return new ValueTask<ProjectConfig>(ProjectConfig.Empty);
         }
 
-        public override Task<RefreshResult> RefreshConfigAsync(CancellationToken cancellationToken = default)
+        public override ValueTask<RefreshResult> RefreshConfigAsync(CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(RefreshConfig());
+            return new ValueTask<RefreshResult>(RefreshConfig());
         }
 
         public ProjectConfig GetConfig()

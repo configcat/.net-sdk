@@ -157,14 +157,14 @@ public class ConfigCacheTests
 
         Task<ProjectConfig> ReadCacheAsync()
         {
-            return isAsync ? configCache.GetAsync(cacheKey) : Task.FromResult(configCache.Get(cacheKey));
+            return isAsync ? configCache.GetAsync(cacheKey).AsTask() : Task.FromResult(configCache.Get(cacheKey));
         }
 
         Task WriteCacheAsync(ProjectConfig config)
         {
             if (isAsync)
             {
-                return configCache.SetAsync(cacheKey, config);
+                return configCache.SetAsync(cacheKey, config).AsTask();
             }
             else
             {

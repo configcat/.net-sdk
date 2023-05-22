@@ -8,11 +8,11 @@ internal interface IConfigService
 {
     ProjectConfig GetConfig();
 
-    Task<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default);
+    ValueTask<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default);
 
     RefreshResult RefreshConfig();
 
-    Task<RefreshResult> RefreshConfigAsync(CancellationToken cancellationToken = default);
+    ValueTask<RefreshResult> RefreshConfigAsync(CancellationToken cancellationToken = default);
 
     bool IsOffline { get; }
 

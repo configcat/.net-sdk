@@ -42,7 +42,7 @@ public class ConfigServiceTests
 
         this.cacheMock
             .Setup(m => m.SetAsync(It.IsAny<string>(), this.fetchedPc, It.IsAny<CancellationToken>()))
-            .Returns(Task.FromResult(0))
+            .Returns(default(ValueTask))
             .Verifiable();
 
         this.fetcherMock
@@ -118,7 +118,7 @@ public class ConfigServiceTests
 
         this.cacheMock
             .Setup(m => m.SetAsync(It.IsAny<string>(), this.fetchedPc, It.IsAny<CancellationToken>()))
-            .Returns(Task.FromResult(0))
+            .Returns(default(ValueTask))
             .Callback(() => Assert.AreEqual(3, callOrder))
             .Verifiable();
 
@@ -158,7 +158,7 @@ public class ConfigServiceTests
 
         this.cacheMock
             .Setup(m => m.SetAsync(It.IsAny<string>(), this.fetchedPc, It.IsAny<CancellationToken>()))
-            .Returns(Task.FromResult(0));
+            .Returns(default(ValueTask));
 
         using var service = new LazyLoadConfigService(
             this.fetcherMock.Object,
@@ -196,7 +196,7 @@ public class ConfigServiceTests
         this.cacheMock
             .Setup(m => m.SetAsync(It.IsAny<string>(), this.fetchedPc, It.IsAny<CancellationToken>()))
             .Callback(() => localPc = this.fetchedPc)
-            .Returns(Task.FromResult(0));
+            .Returns(default(ValueTask));
 
         var config = PollingModes.AutoPoll(TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(60));
         using var service = new AutoPollConfigService(config,
@@ -234,7 +234,7 @@ public class ConfigServiceTests
         this.cacheMock
             .Setup(m => m.SetAsync(It.IsAny<string>(), this.fetchedPc, It.IsAny<CancellationToken>()))
             .Callback(() => wd.Set())
-            .Returns(Task.FromResult(0));
+            .Returns(default(ValueTask));
 
         var config = PollingModes.AutoPoll(TimeSpan.FromSeconds(50), TimeSpan.FromSeconds(0));
         using var service = new AutoPollConfigService(config,
@@ -271,7 +271,7 @@ public class ConfigServiceTests
 
         this.cacheMock
             .Setup(m => m.SetAsync(It.IsAny<string>(), this.fetchedPc, It.IsAny<CancellationToken>()))
-            .Returns(Task.FromResult(0));
+            .Returns(default(ValueTask));
 
         var config = PollingModes.AutoPoll(TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(0));
         using var service = new AutoPollConfigService(config,
@@ -301,7 +301,7 @@ public class ConfigServiceTests
 
         this.cacheMock
             .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.FromResult(this.cachedPc));
+            .ReturnsAsync(this.cachedPc);
 
         this.fetcherMock
             .Setup(m => m.FetchAsync(this.cachedPc, It.IsAny<CancellationToken>()))
@@ -421,7 +421,7 @@ public class ConfigServiceTests
         this.cacheMock
             .Setup(m => m.SetAsync(It.IsAny<string>(), this.fetchedPc, It.IsAny<CancellationToken>()))
             .Callback(() => Assert.AreEqual(3, callOrder++))
-            .Returns(Task.FromResult(0));
+            .Returns(default(ValueTask));
 
         using var service = new ManualPollConfigService(
             this.fetcherMock.Object,
@@ -461,7 +461,7 @@ public class ConfigServiceTests
 
         this.cacheMock
             .Setup(m => m.SetAsync(It.IsAny<string>(), this.fetchedPc, It.IsAny<CancellationToken>()))
-            .Returns(Task.FromResult(0));
+            .Returns(default(ValueTask));
 
         using var service = new ManualPollConfigService(
             this.fetcherMock.Object,

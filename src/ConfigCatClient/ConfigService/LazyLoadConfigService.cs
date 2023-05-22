@@ -38,7 +38,7 @@ internal sealed class LazyLoadConfigService : ConfigServiceBase, IConfigService
         return cachedConfig;
     }
 
-    public async Task<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default)
+    public async ValueTask<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default)
     {
         var cachedConfig = await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(false);
 

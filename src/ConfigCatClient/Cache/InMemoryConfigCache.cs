@@ -15,14 +15,14 @@ internal sealed class InMemoryConfigCache : ConfigCache
         return LocalCachedConfig;
     }
 
-    public override Task<ProjectConfig> GetAsync(string key, CancellationToken cancellationToken = default)
+    public override ValueTask<ProjectConfig> GetAsync(string key, CancellationToken cancellationToken = default)
     {
         if (cancellationToken.IsCancellationRequested)
         {
-            return cancellationToken.ToTask<ProjectConfig>();
+            return new ValueTask<ProjectConfig>(cancellationToken.ToTask<ProjectConfig>());
         }
 
-        return Task.FromResult(Get(key));
+        return new ValueTask<ProjectConfig>(Get(key));
     }
 
     public override void Set(string key, ProjectConfig config)
@@ -30,18 +30,15 @@ internal sealed class InMemoryConfigCache : ConfigCache
         this.cachedConfig = config;
     }
 
-    public override Task SetAsync(string key, ProjectConfig config, CancellationToken cancellationToken = default)
+    public override ValueTask SetAsync(string key, ProjectConfig config, CancellationToken cancellationToken = default)
     {
         if (cancellationToken.IsCancellationRequested)
         {
-            return cancellationToken.ToTask<ProjectConfig>();
+            return new ValueTask(cancellationToken.ToTask<ProjectConfig>());
         }
 
         Set(key, config);
-#if NET45
-        return Task.FromResult(0);
-#else
-        return Task.CompletedTask;
-#endif
+
+        return default;
     }
 }

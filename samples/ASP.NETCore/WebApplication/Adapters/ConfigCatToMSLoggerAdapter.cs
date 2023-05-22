@@ -15,7 +15,11 @@ public class ConfigCatToMSLoggerAdapter : ConfigCat.Client.IConfigCatLogger
     }
 
     // Allow all log levels here and let MS logger do log level filtering (see appsettings.json)
-    public ConfigCat.Client.LogLevel LogLevel { get; set; } = ConfigCat.Client.LogLevel.Debug;
+    public ConfigCat.Client.LogLevel LogLevel
+    {
+        get => ConfigCat.Client.LogLevel.Debug;
+        set { }
+    }
 
     public void Log(ConfigCat.Client.LogLevel level, ConfigCat.Client.LogEventId eventId, ref ConfigCat.Client.FormattableLogMessage message, Exception? exception = null)
     {

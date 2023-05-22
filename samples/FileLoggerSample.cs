@@ -9,10 +9,17 @@ namespace SampleApplication
     {
         class MyFileLogger : IConfigCatLogger
         {
-            private readonly string filePath;
             private static readonly object SyncObj = new object();
 
-            public LogLevel LogLevel { get; set; }
+            private readonly string filePath;
+
+            private volatile LogLevel logLevel;
+
+            public LogLevel LogLevel
+            {
+                get => this.logLevel;
+                set => this.logLevel = value;
+            }
 
             public MyFileLogger(string filePath, LogLevel logLevel)
             {

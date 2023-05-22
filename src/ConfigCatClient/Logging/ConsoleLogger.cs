@@ -8,8 +8,14 @@ namespace ConfigCat.Client;
 /// </summary>
 public class ConsoleLogger : IConfigCatLogger
 {
+    private volatile LogLevel logLevel;
+
     /// <inheritdoc />
-    public LogLevel LogLevel { get; set; }
+    public LogLevel LogLevel
+    {
+        get => this.logLevel;
+        set => this.logLevel = value;
+    }
 
     /// <summary>
     /// Create a <see cref="ConsoleLogger"/> instance with Warning loglevel

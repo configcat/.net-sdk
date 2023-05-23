@@ -27,7 +27,7 @@ public abstract record class EvaluationDetails
         // NOTE: We've already checked earlier in the call chain that TValue is an allowed type (see also TypeExtensions.EnsureSupportedSettingClrType).
         Debug.Assert(typeof(TValue) == typeof(object) || typeof(TValue).ToSettingType() != SettingType.Unknown, "Type is not supported.");
 
-        // SettingType was not specified in the config.json?
+        // SettingType was not specified in the config JSON?
         if (settingType == SettingType.Unknown)
         {
             // Let's try to infer it from the JSON value.
@@ -137,17 +137,17 @@ public abstract record class EvaluationDetails
     public string? VariationId { get; set; }
 
     /// <summary>
-    /// Time of last successful download of config.json (or <see cref="DateTime.MinValue"/> if there has been no successful download yet).
+    /// Time of last successful config download (or <see cref="DateTime.MinValue"/> if there has been no successful download yet).
     /// </summary>
     public DateTime FetchTime { get; set; } = DateTime.MinValue;
 
     /// <summary>
-    /// The <see cref="User"/> object used for the evaluation (if available).
+    /// The User Object used for the evaluation (if available).
     /// </summary>
     public User? User { get; set; }
 
     /// <summary>
-    /// Indicates whether the default value passed to <see cref="IConfigCatClient.GetValue"/> or <see cref="IConfigCatClient.GetValueAsync"/>
+    /// Indicates whether the default value passed to the setting evaluation methods like <see cref="IConfigCatClient.GetValue"/>, <see cref="IConfigCatClient.GetValueDetails"/>, etc.
     /// is used as the result of the evaluation.
     /// </summary>
     public bool IsDefaultValue { get; set; }
@@ -179,7 +179,7 @@ public sealed record class EvaluationDetails<TValue> : EvaluationDetails
     internal EvaluationDetails() : this(key: null!, value: default!) { }
 
     /// <summary>
-    /// Creates an instance of <see cref="EvaluationDetails"/>.
+    /// Initializes a new instance of the <see cref="EvaluationDetails{TValue}"/> class.
     /// </summary>
     public EvaluationDetails(string key, TValue value) : base(key)
     {

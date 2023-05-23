@@ -52,7 +52,7 @@ internal sealed class LocalFileDataSource : IOverrideDataSource
 
     private void StartWatch()
     {
-        // It's better to acquire a CancellationToken here because the getter might throw if CTS got disposed of.
+        // It's better to acquire a CancellationToken here because the getter might throw if CTS got disposed.
         var cancellationToken = this.cancellationTokenSource.Token;
 
         Task.Run(async () =>

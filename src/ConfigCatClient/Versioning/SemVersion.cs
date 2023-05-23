@@ -61,9 +61,9 @@ public sealed class SemVersion : IEquatable<SemVersion>, IComparable<SemVersion>
 #if !NETSTANDARD
 #pragma warning disable CA1801 // Parameter unused
     /// <summary>
-    /// Deserialize a <see cref="SemVersion"/>.
+    /// Deserializes a <see cref="SemVersion"/>.
     /// </summary>
-    /// <exception cref="ArgumentNullException">The <paramref name="info"/> parameter is null.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="info"/> is <see langword="null"/>.</exception>
     private SemVersion(SerializationInfo info, StreamingContext context)
 #pragma warning restore CA1801 // Parameter unused
     {
@@ -78,7 +78,7 @@ public sealed class SemVersion : IEquatable<SemVersion>, IComparable<SemVersion>
 #endif
 
     /// <summary>
-    /// Constructs a new instance of the <see cref="SemVersion" /> class.
+    /// Initializes a new instance of the <see cref="SemVersion" /> class.
     /// </summary>
     /// <param name="major">The major version.</param>
     /// <param name="minor">The minor version.</param>
@@ -96,7 +96,7 @@ public sealed class SemVersion : IEquatable<SemVersion>, IComparable<SemVersion>
     }
 
     /// <summary>
-    /// Constructs a new instance of the <see cref="SemVersion"/> class from
+    /// Initializes a new instance of the <see cref="SemVersion"/> class from
     /// a <see cref="System.Version"/>.
     /// </summary>
     /// <param name="version">The <see cref="Version"/> that is used to initialize
@@ -128,9 +128,9 @@ public sealed class SemVersion : IEquatable<SemVersion>, IComparable<SemVersion>
     /// <param name="strict">If set to <see langword="true"/> minor and patch version are required,
     /// otherwise they are optional.</param>
     /// <returns>The <see cref="SemVersion"/> object.</returns>
-    /// <exception cref="ArgumentNullException">The <paramref name="version"/> is <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentException">The <paramref name="version"/> has an invalid format.</exception>
-    /// <exception cref="InvalidOperationException">The <paramref name="version"/> is missing Minor or Patch versions and <paramref name="strict"/> is <see langword="true"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="version"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="version"/> has an invalid format.</exception>
+    /// <exception cref="InvalidOperationException"><paramref name="version"/> is missing Minor or Patch versions and <paramref name="strict"/> is <see langword="true"/>.</exception>
     /// <exception cref="OverflowException">The Major, Minor, or Patch versions are larger than <code>int.MaxValue</code>.</exception>
     public static SemVersion Parse(string version, bool strict = false)
     {
@@ -235,7 +235,7 @@ public sealed class SemVersion : IEquatable<SemVersion>, IComparable<SemVersion>
     }
 
     /// <summary>
-    /// Make a copy of the current instance with changed properties.
+    /// Creates a copy of the current instance with changed properties.
     /// </summary>
     /// <param name="major">The value to replace the major version or <see langword="null"/> to leave it unchanged.</param>
     /// <param name="minor">The value to replace the minor version or <see langword="null"/> to leave it unchanged.</param>
@@ -345,7 +345,7 @@ public sealed class SemVersion : IEquatable<SemVersion>, IComparable<SemVersion>
     ///  Zero: This instance occurs in the same position in the sort order as <paramref name="obj" />.
     ///  Greater than zero: This instance follows <paramref name="obj" /> in the sort order.
     /// </returns>
-    /// <exception cref="InvalidCastException">The <paramref name="obj"/> is not a <see cref="SemVersion"/>.</exception>
+    /// <exception cref="InvalidCastException"><paramref name="obj"/> is not a <see cref="SemVersion"/>.</exception>
     public int CompareTo(object obj)
     {
         return CompareTo((SemVersion)obj);
@@ -532,7 +532,7 @@ public sealed class SemVersion : IEquatable<SemVersion>, IComparable<SemVersion>
     /// </summary>
     /// <param name="version">The semantic version.</param>
     /// <returns>The <see cref="SemVersion"/> object.</returns>
-    /// <exception cref="ArgumentNullException">The <paramref name="version"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="version"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">The version number has an invalid format.</exception>
     /// <exception cref="OverflowException">The Major, Minor, or Patch versions are larger than <code>int.MaxValue</code>.</exception>
     public static implicit operator SemVersion(string version)

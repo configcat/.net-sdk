@@ -1,7 +1,7 @@
 namespace ConfigCat.Client;
 
 /// <summary>
-/// Operator of targeting rules.
+/// Targeting rule comparison operator.
 /// </summary>
 public enum Comparator : byte
 {

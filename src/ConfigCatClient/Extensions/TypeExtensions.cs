@@ -8,7 +8,7 @@ internal static class TypeExtensions
     {
         if (type != typeof(object) && type.ToSettingType() == SettingType.Unknown)
         {
-            throw new ArgumentException($"Only the following types are supported: {typeof(string)}, {typeof(bool)}, {typeof(int)}, {typeof(long)}, {typeof(double)} and {typeof(object)}  (both nullable and non-nullable).", paramName);
+            throw new ArgumentException($"Only the following types are supported: {typeof(string)}, {typeof(bool)}, {typeof(int)}, {typeof(long)}, {typeof(double)} and {typeof(object)} (both nullable and non-nullable).", paramName);
         }
     }
 

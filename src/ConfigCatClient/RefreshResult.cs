@@ -9,18 +9,18 @@ namespace ConfigCat.Client;
 public readonly record struct RefreshResult
 {
     /// <summary>
-    /// Creates an instance which indicates that the operation was successful.
+    /// Creates an instance of the <see cref="RefreshResult"/> struct which indicates that the operation was successful.
     /// </summary>
-    /// <returns></returns>
+    /// <returns>The new <see cref="RefreshResult"/> instance.</returns>
     public static RefreshResult Success()
     {
         return default;
     }
 
     /// <summary>
-    /// Creates an instance which indicates that the operation failed.
+    /// Creates an instance of the <see cref="RefreshResult"/> struct which indicates that the operation failed.
     /// </summary>
-    /// <returns></returns>
+    /// <returns>The new <see cref="RefreshResult"/> instance.</returns>
     public static RefreshResult Failure(string errorMessage, Exception? errorException = null)
     {
         return new RefreshResult(errorMessage ?? throw new ArgumentNullException(nameof(errorMessage)), errorException);

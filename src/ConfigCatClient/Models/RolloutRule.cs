@@ -16,12 +16,12 @@ namespace ConfigCat.Client;
 public interface ITargetingRule
 {
     /// <summary>
-    /// The order value for determining the order of evaluation of rules.
+    /// A numeric value which determines the order of evaluation.
     /// </summary>
     short Order { get; }
 
     /// <summary>
-    /// The attribute that the targeting rule is based on. Could be "User ID", "Email", "Country" or any custom attribute.
+    /// The attribute that the targeting rule is based on. Can be "User ID", "Email", "Country" or any custom attribute.
     /// </summary>
     string ComparisonAttribute { get; }
 
@@ -31,7 +31,7 @@ public interface ITargetingRule
     Comparator Comparator { get; }
 
     /// <summary>
-    /// The value that the attribute is compared to. Could be a string, a number, a semantic version or a comma-separated list, depending on the comparator.
+    /// The value that the attribute is compared to. Can be a string, a number, a semantic version or a comma-separated list, depending on the comparator.
     /// </summary>
     string ComparisonValue { get; }
 

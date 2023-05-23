@@ -19,7 +19,7 @@ namespace ConfigCat.Client;
 public interface ISetting
 {
     /// <summary>
-    /// The default value of the setting.
+    /// The (fallback) value of the setting.
     /// </summary>
     object Value { get; }
 

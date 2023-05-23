@@ -14,7 +14,7 @@ using ConfigCat.Client.Utils;
 namespace ConfigCat.Client;
 
 /// <summary>
-/// Client for ConfigCat platform
+/// ConfigCat SDK client.
 /// </summary>
 public sealed class ConfigCatClient : IConfigCatClient
 {
@@ -41,51 +41,49 @@ public sealed class ConfigCatClient : IConfigCatClient
         set => this.logger.LogLevel = value;
     }
 
-    internal ConfigCatClient(string sdkKey, ConfigCatClientOptions configuration)
+    internal ConfigCatClient(string sdkKey, ConfigCatClientOptions options)
     {
         this.sdkKey = sdkKey;
-        this.hooks = configuration.Hooks;
+        this.hooks = options.Hooks;
         this.hooks.SetSender(this);
 
-        this.logger = new LoggerWrapper(configuration.Logger ?? ConfigCatClientOptions.CreateDefaultLogger(), this.hooks);
+        this.logger = new LoggerWrapper(options.Logger ?? ConfigCatClientOptions.CreateDefaultLogger(), this.hooks);
         this.configEvaluator = new RolloutEvaluator(this.logger);
 
         var cacheParameters = new CacheParameters
         (
-            configCache: configuration.ConfigCache is not null
-                ? new ExternalConfigCache(configuration.ConfigCache, this.logger)
+            configCache: options.ConfigCache is not null
+                ? new ExternalConfigCache(options.ConfigCache, this.logger)
                 : ConfigCatClientOptions.CreateDefaultConfigCache(),
             cacheKey: GetCacheKey(sdkKey)
         );
 
-        if (configuration.FlagOverrides is not null)
+        if (options.FlagOverrides is not null)
         {
-            this.overrideDataSource = configuration.FlagOverrides.BuildDataSource(this.logger);
-            this.overrideBehaviour = configuration.FlagOverrides.OverrideBehaviour;
+            this.overrideDataSource = options.FlagOverrides.BuildDataSource(this.logger);
+            this.overrideBehaviour = options.FlagOverrides.OverrideBehaviour;
         }
 
-        this.defaultUser = configuration.DefaultUser;
+        this.defaultUser = options.DefaultUser;
 
-        var pollingMode = configuration.PollingMode ?? ConfigCatClientOptions.CreateDefaultPollingMode();
+        var pollingMode = options.PollingMode ?? ConfigCatClientOptions.CreateDefaultPollingMode();
 
         this.configService = this.overrideBehaviour != OverrideBehaviour.LocalOnly
             ? DetermineConfigService(pollingMode,
-                new HttpConfigFetcher(configuration.CreateUri(sdkKey),
+                new HttpConfigFetcher(options.CreateUri(sdkKey),
                         $"{pollingMode.Identifier}-{Version}",
                         this.logger,
-                        configuration.HttpClientHandler,
-                        configuration.IsCustomBaseUrl,
-                        configuration.HttpTimeout),
+                        options.HttpClientHandler,
+                        options.IsCustomBaseUrl,
+                        options.HttpTimeout),
                     cacheParameters,
                     this.logger,
-                    configuration.Offline,
+                    options.Offline,
                     this.hooks)
             : new NullConfigService(this.logger, this.hooks);
     }
 
-    /// <summary>
-    /// For testing purposes only
-    /// </summary>
+    // For test purposes only
     internal ConfigCatClient(IConfigService configService, IConfigCatLogger logger, IRolloutEvaluator evaluator, Hooks? hooks = null)
     {
         if (hooks is not null)
@@ -112,8 +110,8 @@ public sealed class ConfigCatClient : IConfigCatClient
     /// Otherwise, the already created and configured instance is returned (in which case <paramref name="configurationAction"/> is ignored).
     /// So, please keep in mind that when you make multiple calls to this method using the same SDK Key, you may end up with multiple references to the same client object.
     /// </remarks>
-    /// <param name="sdkKey">SDK Key to access configuration. (For the moment, SDK Key can also be set using <paramref name="configurationAction"/>. This setting will, however, be ignored and <paramref name="sdkKey"/> will be used, regardless.)</param>
-    /// <param name="configurationAction">The configuration action.</param>
+    /// <param name="sdkKey">SDK Key to access the ConfigCat config.</param>
+    /// <param name="configurationAction">The action used to configure the client.</param>
     /// <exception cref="ArgumentNullException"><paramref name="sdkKey"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="sdkKey"/> is an empty string.</exception>
     public static IConfigCatClient Get(string sdkKey, Action<ConfigCatClientOptions>? configurationAction = null)
@@ -128,10 +126,10 @@ public sealed class ConfigCatClient : IConfigCatClient
             throw new ArgumentException("SDK Key cannot be empty.", nameof(sdkKey));
         }
 
-        var configuration = new ConfigCatClientOptions();
-        configurationAction?.Invoke(configuration);
+        var options = new ConfigCatClientOptions();
+        configurationAction?.Invoke(options);
 
-        var instance = Instances.GetOrCreate(sdkKey, configuration, out var instanceAlreadyCreated);
+        var instance = Instances.GetOrCreate(sdkKey, options, out var instanceAlreadyCreated);
 
         if (instanceAlreadyCreated && configurationAction is not null)
         {
@@ -144,7 +142,7 @@ public sealed class ConfigCatClient : IConfigCatClient
     /// <inheritdoc />
     ~ConfigCatClient()
     {
-        // Safeguard against situations where user forgets to dispose of the client instance.
+        // Safeguard against situations where user forgets to dispose the client instance.
 
         if (this.sdkKey is not null)
         {
@@ -199,7 +197,7 @@ public sealed class ConfigCatClient : IConfigCatClient
     }
 
     /// <summary>
-    /// Disposes of all existing <see cref="ConfigCatClient"/> instances.
+    /// Disposes all existing <see cref="ConfigCatClient"/> instances.
     /// </summary>
     /// <exception cref="AggregateException">Potential exceptions thrown by <see cref="Dispose()"/> of the individual clients.</exception>
     public static void DisposeAll()
@@ -662,7 +660,7 @@ public sealed class ConfigCatClient : IConfigCatClient
                 logger,
                 isOffline,
                 hooks),
-            _ => throw new ArgumentException("Invalid configuration type."),
+            _ => throw new ArgumentException("Invalid polling mode.", nameof(pollingMode)),
         };
     }
 

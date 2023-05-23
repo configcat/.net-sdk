@@ -16,12 +16,12 @@ namespace ConfigCat.Client;
 public interface IPercentageOption
 {
     /// <summary>
-    /// The order value for determining the order of evaluation of rules.
+    /// A numeric value which determines the order of evaluation.
     /// </summary>
     short Order { get; }
 
     /// <summary>
-    /// The value associated with the targeting rule.
+    /// The value associated with the percentage option.
     /// </summary>
     object Value { get; }
 

@@ -1,6 +1,4 @@
 using System;
-using System.CodeDom;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -8,7 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Configuration;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Moq;
 
 namespace ConfigCat.Client.Tests;
 

@@ -1,11 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using ConfigCat.Client.Evaluation;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Moq;
 
 namespace ConfigCat.Client.Tests;
 

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
@@ -463,6 +464,111 @@ public class OverrideTests
         Assert.AreEqual("modified", client.GetValue("fakeKey", string.Empty));
 
         File.Delete(SampleFileToCreate);
+    }
+
+    [DataRow(true, false, true)]
+    [DataRow(true, "", "")]
+    [DataRow(true, 0, 0)]
+    [DataRow(true, 0.0, 0.0)]
+    [DataRow("text", false, false)]
+    [DataRow("text", "", "text")]
+    [DataRow("text", 0, 0)]
+    [DataRow("text", 0.0, 0.0)]
+    [DataRow(42, false, false)]
+    [DataRow(42, "", "")]
+    [DataRow(42, 0, 42)]
+    [DataRow(42, 0.0, 0.0)]
+    [DataRow(42.0, false, false)]
+    [DataRow(42.0, "", "")]
+    [DataRow(42.0, 0, 0)]
+    [DataRow(42.0, 0.0, 42.0)]
+    [DataRow(3.14, false, false)]
+    [DataRow(3.14, "", "")]
+    [DataRow(3.14, 0, 0)]
+    [DataRow(3.14, 0.0, 3.14)]
+    [DataRow(null, false, false)]
+    [DataRow(new object[0], false, false)]
+    [DataRow(typeof(object), false, false)]
+    [DataRow(typeof(DateTime), false, false)]
+    [DataTestMethod]
+    public void OverrideValueTypeMismatchShouldBeHandledCorrectly_Dictionary(object overrideValue, object defaultValue, object expectedEvaluatedValue)
+    {
+        const string key = "flag";
+
+        var dictionary = new Dictionary<string, object>
+        {
+            [key] = overrideValue is not Type valueType ? overrideValue : Activator.CreateInstance(valueType)!
+        };
+
+        using var client = ConfigCatClient.Get("localhost", options =>
+        {
+            options.PollingMode = PollingModes.ManualPoll;
+            options.FlagOverrides = FlagOverrides.LocalDictionary(dictionary, OverrideBehaviour.LocalOnly);
+        });
+
+        var method = typeof(IConfigCatClient).GetMethod(nameof(IConfigCatClient.GetValue))!
+            .GetGenericMethodDefinition()
+            .MakeGenericMethod(defaultValue.GetType());
+
+        var actualEvaluatedValue = method.Invoke(client, new[] { key, defaultValue, null });
+
+        Assert.AreEqual(expectedEvaluatedValue, actualEvaluatedValue);
+    }
+
+    [DataRow("true", false, true)]
+    [DataRow("true", "", "")]
+    [DataRow("true", 0, 0)]
+    [DataRow("true", 0.0, 0.0)]
+    [DataRow("\"text\"", false, false)]
+    [DataRow("\"text\"", "", "text")]
+    [DataRow("\"text\"", 0, 0)]
+    [DataRow("\"text\"", 0.0, 0.0)]
+    [DataRow("42", false, false)]
+    [DataRow("42", "", "")]
+    [DataRow("42", 0, 42)]
+    [DataRow("42", 0.0, 0.0)]
+    [DataRow("42.0", false, false)]
+    [DataRow("42.0", "", "")]
+    [DataRow("42.0", 0, 0)]
+    [DataRow("42.0", 0.0, 42.0)]
+    [DataRow("3.14", false, false)]
+    [DataRow("3.14", "", "")]
+    [DataRow("3.14", 0, 0)]
+    [DataRow("3.14", 0.0, 3.14)]
+    [DataRow("null", false, false)]
+    [DataRow("[]", false, false)]
+    [DataRow("{}", false, false)]
+    [DataTestMethod]
+    public void OverrideValueTypeMismatchShouldBeHandledCorrectly_SimplifiedConfig(string overrideValueJson, object defaultValue, object expectedEvaluatedValue)
+    {
+        const string key = "flag";
+
+        var filePath = Path.GetTempFileName();
+        File.WriteAllText(filePath, $"{{ \"flags\": {{ \"{key}\": {overrideValueJson} }} }}");
+
+        try
+        {
+            using var client = ConfigCatClient.Get("localhost", options =>
+            {
+                options.PollingMode = PollingModes.ManualPoll;
+                options.FlagOverrides = FlagOverrides.LocalFile(filePath, autoReload: false, OverrideBehaviour.LocalOnly);
+            });
+
+            var method = typeof(IConfigCatClient).GetMethod(nameof(IConfigCatClient.GetValue))!
+                .GetGenericMethodDefinition()
+                .MakeGenericMethod(defaultValue.GetType());
+
+            var actualEvaluatedValue = method.Invoke(client, new[] { key, defaultValue, null });
+
+            Assert.AreEqual(expectedEvaluatedValue, actualEvaluatedValue);
+        }
+        finally
+        {
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+            }
+        }
     }
 
     private static string GetJsonContent(string value)

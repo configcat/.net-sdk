@@ -1,5 +1,7 @@
 using System;
 using System.Diagnostics;
+using ConfigCat.Client.Evaluation;
+using static System.Net.Mime.MediaTypeNames;
 
 #if USE_NEWTONSOFT_JSON
 using JsonValue = Newtonsoft.Json.Linq.JValue;
@@ -9,7 +11,7 @@ using JsonValue = System.Text.Json.JsonElement;
 
 namespace ConfigCat.Client;
 
-internal delegate EvaluationDetails EvaluationDetailsFactory(SettingType settingType, JsonValue value);
+internal delegate EvaluationDetails EvaluationDetailsFactory(Setting setting, JsonValue value);
 
 /// <summary>
 /// The evaluated value and additional information about the evaluation of a feature flag or setting.
@@ -21,12 +23,12 @@ public abstract record class EvaluationDetails
         return new EvaluationDetails<TValue> { Value = value.ConvertTo<TValue>() };
     }
 
-    internal static EvaluationDetails<TValue> Create<TValue>(SettingType settingType, JsonValue value)
+    internal static EvaluationDetails<TValue> Create<TValue>(SettingType settingType, JsonValue value, string? unsupportedTypeError)
     {
         // NOTE: We've already checked earlier in the call chain that TValue is an allowed type (see also TypeExtensions.EnsureSupportedSettingClrType).
         Debug.Assert(typeof(TValue) == typeof(object) || typeof(TValue).ToSettingType() != SettingType.Unknown, "Type is not supported.");
 
-        // SettingType was not specified in the config JSON?
+        // Setting type is not known (it's not present in the config JSON, it's an unsupported value coming from a flag override, etc.)?
         if (settingType == SettingType.Unknown)
         {
             // Let's try to infer it from the JSON value.
@@ -34,7 +36,7 @@ public abstract record class EvaluationDetails
 
             if (settingType == SettingType.Unknown)
             {
-                throw new ArgumentException($"The type of setting value '{value}' is not supported.", nameof(value));
+                throw new ArgumentException(unsupportedTypeError ?? $"Setting value '{value}' is of an unsupported type.", nameof(value));
             }
         }
 
@@ -68,7 +70,7 @@ public abstract record class EvaluationDetails
 
     internal static EvaluationDetails FromJsonValue(
         EvaluationDetailsFactory factory,
-        SettingType settingType,
+        Setting setting,
         string key,
         JsonValue value,
         string? variationId,
@@ -77,7 +79,7 @@ public abstract record class EvaluationDetails
         RolloutRule? matchedEvaluationRule = null,
         RolloutPercentageItem? matchedEvaluationPercentageRule = null)
     {
-        var instance = factory(settingType, value);
+        var instance = factory(setting, value);
 
         instance.Key = key;
         instance.VariationId = variationId;

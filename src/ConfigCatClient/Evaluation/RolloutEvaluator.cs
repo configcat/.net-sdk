@@ -46,7 +46,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
                     return EvaluationDetails.FromJsonValue(
                         detailsFactory,
-                        setting.SettingType,
+                        setting,
                         key,
                         evaluateRulesResult.Value,
                         evaluateRulesResult.VariationId,
@@ -64,7 +64,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
                     return EvaluationDetails.FromJsonValue(
                         detailsFactory,
-                        setting.SettingType,
+                        setting,
                         key,
                         evaluatePercentageRulesResult.Value,
                         evaluatePercentageRulesResult.VariationId,
@@ -85,7 +85,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
             return EvaluationDetails.FromJsonValue(
                 detailsFactory,
-                setting.SettingType,
+                setting,
                 key,
                 setting.Value,
                 setting.VariationId,

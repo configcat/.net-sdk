@@ -116,19 +116,35 @@ internal static class ObjectExtensions
     public static Setting ToSetting(this object? value)
     {
         var settingType = DetermineSettingType(value);
-        if (settingType == SettingType.Unknown)
+
+        JsonValue jsonValue;
+        string? unsupportedTypeError;
+        if (settingType != SettingType.Unknown)
         {
-            throw new ArgumentException($"Could not determine the setting type of {value ?? "(null)"}.");
+#if USE_NEWTONSOFT_JSON
+            jsonValue = new Newtonsoft.Json.Linq.JValue(value);
+#else
+            jsonValue = Text.Json.JsonSerializer.SerializeToElement(value);
+#endif
+            unsupportedTypeError = null;
+        }
+        else
+        {
+#if USE_NEWTONSOFT_JSON
+            jsonValue = JsonValue.CreateUndefined();
+#else
+            jsonValue = default;
+#endif
+            unsupportedTypeError = value is not null
+                ? $"Setting value '{value}' is of an unsupported type ({value.GetType()})."
+                : $"Setting value is null.";
         }
 
         return new Setting
         {
-#if USE_NEWTONSOFT_JSON
-            Value = new Newtonsoft.Json.Linq.JValue(value),
-#else
-            Value = Text.Json.JsonSerializer.SerializeToElement(value),
-#endif
-            SettingType = settingType
+            Value = jsonValue,
+            SettingType = settingType,
+            UnsupportedTypeError = unsupportedTypeError,
         };
     }
 

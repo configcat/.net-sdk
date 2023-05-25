@@ -100,4 +100,7 @@ internal sealed class Setting : ISetting
     [JsonPropertyName("i")]
 #endif
     public string? VariationId { get; set; }
+
+    [JsonIgnore]
+    public string? UnsupportedTypeError { get; set; }
 }

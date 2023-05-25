@@ -85,7 +85,7 @@ internal sealed class LocalFileDataSource : IOverrideDataSource
         });
     }
 
-    private async Task WatchCoreAsync(CancellationToken cancellationToken)
+    private async ValueTask WatchCoreAsync(CancellationToken cancellationToken)
     {
         var lastWriteTime = File.GetLastWriteTimeUtc(this.fullPath);
         if (lastWriteTime > this.fileLastWriteTime)

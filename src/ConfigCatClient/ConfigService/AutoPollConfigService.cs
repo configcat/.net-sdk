@@ -205,7 +205,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
         });
     }
 
-    private async Task PollCoreAsync(bool isFirstIteration, CancellationToken cancellationToken)
+    private async ValueTask PollCoreAsync(bool isFirstIteration, CancellationToken cancellationToken)
     {
         if (isFirstIteration)
         {

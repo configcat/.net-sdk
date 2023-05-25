@@ -22,7 +22,7 @@ internal static class DateTimeUtils
 
     public static bool TryParseUnixTimeStamp(ReadOnlySpan<char> span, out DateTime dateTime)
     {
-#if NET5_0_OR_GREATER || NETSTANDARD2_1
+#if NET5_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
         var slice = span;
 #else
         var slice = span.ToString();

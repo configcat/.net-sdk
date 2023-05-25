@@ -1257,6 +1257,9 @@ public class ConfigCatClientTests
 
         instanceCount1 = ConfigCatClient.Instances.GetAliveCount();
 
+        GC.KeepAlive(client1);
+        GC.KeepAlive(client2);
+
         ConfigCatClient.DisposeAll();
 
         var instanceCount2 = ConfigCatClient.Instances.GetAliveCount();
@@ -1284,6 +1287,9 @@ public class ConfigCatClientTests
             var client2 = ConfigCatClient.Get("test2", options => options.PollingMode = PollingModes.ManualPoll);
 
             instanceCount = ConfigCatClient.Instances.GetAliveCount();
+
+            GC.KeepAlive(client1);
+            GC.KeepAlive(client2);
         }
 
         // Act

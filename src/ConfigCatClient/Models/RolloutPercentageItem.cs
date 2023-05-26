@@ -68,7 +68,7 @@ internal sealed class RolloutPercentageItem : IPercentageOption
 #endif
     public string? VariationId { get; set; }
 
-    /// <inheritdoc/>>
+    /// <inheritdoc/>
     public override string ToString()
     {
         var variationIdString = !string.IsNullOrEmpty(VariationId) ? " [" + VariationId + "]" : string.Empty;

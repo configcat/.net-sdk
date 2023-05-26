@@ -118,7 +118,7 @@ internal sealed class RolloutRule : ITargetingRule
         };
     }
 
-    /// <inheritdoc/>>
+    /// <inheritdoc/>
     public override string ToString()
     {
         var variationIdString = !string.IsNullOrEmpty(VariationId) ? " [" + VariationId + "]" : string.Empty;

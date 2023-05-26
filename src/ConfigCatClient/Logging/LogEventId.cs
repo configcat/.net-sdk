@@ -33,7 +33,7 @@ public readonly struct LogEventId : IEquatable<LogEventId>
     }
 
     /// <summary>
-    /// Initializes an instance of the <see cref="LogEventId"/> struct.
+    /// Initializes a new instance of the <see cref="LogEventId"/> struct.
     /// </summary>
     /// <param name="id">The numeric identifier for the event.</param>
     public LogEventId(int id)

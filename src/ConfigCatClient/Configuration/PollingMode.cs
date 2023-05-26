@@ -3,7 +3,7 @@ using System;
 namespace ConfigCat.Client.Configuration;
 
 /// <summary>
-/// Represents the base class for the polling modes.
+/// Defines the base class for polling modes.
 /// </summary>
 public abstract class PollingMode
 {
@@ -13,14 +13,14 @@ public abstract class PollingMode
 }
 
 /// <summary>
-/// AutoPoll configuration settings object for <see cref="ConfigCatClient"/>
+/// Represents the Auto Polling mode along with its settings.
 /// </summary>
 public class AutoPoll : PollingMode
 {
     internal override string Identifier => "a";
 
     /// <summary>
-    /// Configuration refresh period.
+    /// Config refresh interval.
     /// </summary>
     public TimeSpan PollInterval { get; }
 
@@ -45,7 +45,7 @@ public class AutoPoll : PollingMode
 }
 
 /// <summary>
-/// LazyLoad configuration settings object for <see cref="ConfigCatClient"/>
+/// Represents the Lazy Loading mode along with its settings.
 /// </summary>
 public class LazyLoad : PollingMode
 {
@@ -68,7 +68,7 @@ public class LazyLoad : PollingMode
 }
 
 /// <summary>
-/// ManualPoll configuration settings object for <see cref="ConfigCatClient"/>
+/// Represents the Manual Polling mode.
 /// </summary>
 public class ManualPoll : PollingMode
 {

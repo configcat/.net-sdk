@@ -17,7 +17,7 @@
     <LangVersion>10.0</LangVersion>
     <Nullable>enable</Nullable>
     <WarningsAsErrors>nullable</WarningsAsErrors>
-    <PackageReleaseNotes>https://github.com/configcat/.net-sdk/blob/master/CHANGELOG.md</PackageReleaseNotes>
+    <PackageReleaseNotes>https://github.com/configcat/.net-sdk/releases</PackageReleaseNotes>
     <PackageTags>feature flag toggle feature-flag feature-flags featureflag featureflags feature-toggle  feature-toggles featuretoggle featuretoggles canary release remote config remoteconfig remote-config configcat configcatclient</PackageTags>
     <Description>
       Feature Flags created by developers for developers with ❤️.
@@ -33,6 +33,11 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Configurations>Debug;Release;Benchmark</Configurations>
+    <!-- Enable Source Link (for details, see https://github.com/dotnet/sourcelink/#using-sourcelink) -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Benchmark'">
@@ -76,6 +81,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="all" />
     <!--Do not remove this reference, it was added due to a SNYK security report-->
     <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
     <None Include="icon.png" Pack="true" Visible="false" PackagePath="" />

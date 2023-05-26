@@ -1257,6 +1257,9 @@ public class ConfigCatClientTests
 
         instanceCount1 = ConfigCatClient.Instances.GetAliveCount();
 
+        GC.KeepAlive(client1);
+        GC.KeepAlive(client2);
+
         ConfigCatClient.DisposeAll();
 
         var instanceCount2 = ConfigCatClient.Instances.GetAliveCount();
@@ -1284,6 +1287,9 @@ public class ConfigCatClientTests
             var client2 = ConfigCatClient.Get("test2", options => options.PollingMode = PollingModes.ManualPoll);
 
             instanceCount = ConfigCatClient.Instances.GetAliveCount();
+
+            GC.KeepAlive(client1);
+            GC.KeepAlive(client2);
         }
 
         // Act
@@ -1801,14 +1807,14 @@ public class ConfigCatClientTests
             base.Dispose(disposing);
         }
 
-        public Task<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default)
+        public ValueTask<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(ProjectConfig.Empty);
+            return new ValueTask<ProjectConfig>(ProjectConfig.Empty);
         }
 
-        public override Task<RefreshResult> RefreshConfigAsync(CancellationToken cancellationToken = default)
+        public override ValueTask<RefreshResult> RefreshConfigAsync(CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(RefreshConfig());
+            return new ValueTask<RefreshResult>(RefreshConfig());
         }
 
         public ProjectConfig GetConfig()

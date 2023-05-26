@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using ConfigCat.Client.Evaluation;
 
 namespace ConfigCat.Client.Override;
 
@@ -52,7 +51,7 @@ internal sealed class LocalFileDataSource : IOverrideDataSource
 
     private void StartWatch()
     {
-        // It's better to acquire a CancellationToken here because the getter might throw if CTS got disposed of.
+        // It's better to acquire a CancellationToken here because the getter might throw if CTS got disposed.
         var cancellationToken = this.cancellationTokenSource.Token;
 
         Task.Run(async () =>
@@ -86,7 +85,7 @@ internal sealed class LocalFileDataSource : IOverrideDataSource
         });
     }
 
-    private async Task WatchCoreAsync(CancellationToken cancellationToken)
+    private async ValueTask WatchCoreAsync(CancellationToken cancellationToken)
     {
         var lastWriteTime = File.GetLastWriteTimeUtc(this.fullPath);
         if (lastWriteTime > this.fileLastWriteTime)
@@ -109,7 +108,7 @@ internal sealed class LocalFileDataSource : IOverrideDataSource
                     if (simplified?.Entries is not null)
                     {
                         this.overrideValues = simplified.Entries.ToDictionary(kv => kv.Key, kv => kv.Value.ToSetting());
-                        return;
+                        break;
                     }
 
                     var deserialized = content.Deserialize<SettingsWithPreferences>()

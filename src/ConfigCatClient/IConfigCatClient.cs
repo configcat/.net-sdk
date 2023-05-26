@@ -6,25 +6,26 @@ using System.Threading.Tasks;
 namespace ConfigCat.Client;
 
 /// <summary>
-/// Provides client definition for <see cref="ConfigCatClient"/>
+/// Defines the public interface of the <see cref="ConfigCatClient"/> class.
 /// </summary>
 public interface IConfigCatClient : IProvidesHooks, IDisposable
 {
     /// <summary>
-    /// Sets or gets the logging level.
+    /// Gets or sets the log level (the minimum level to use for filtering log events).
     /// </summary>
     LogLevel LogLevel { get; set; }
 
     /// <summary>
-    /// Returns a value for the key. (Key for programs)
+    /// Returns the value of a feature flag or setting identified by <paramref name="key"/> synchronously.
     /// </summary>
     /// <typeparam name="T">
-    /// Setting type. Only the following types are allowed:
-    /// <see cref="string"/>, <see cref="bool"/>, <see cref="int"/>, <see cref="long"/>, <see cref="double"/> and <see cref="object"/> (both nullable and non-nullable).
+    /// The type of the value. Only the following types are allowed:
+    /// <see cref="string"/>, <see cref="bool"/>, <see cref="int"/>, <see cref="long"/>, <see cref="double"/> and <see cref="object"/> (both nullable and non-nullable).<br/>
+    /// The type must correspond to the setting type, otherwise <paramref name="defaultValue"/> will be returned.
     /// </typeparam>
-    /// <param name="key">Key for programs</param>
-    /// <param name="defaultValue">In case of failure return this value</param>
-    /// <param name="user">The user object for variation evaluation</param>
+    /// <param name="key">Key of the feature flag or setting.</param>
+    /// <param name="defaultValue">In case of failure, this value will be returned.</param>
+    /// <param name="user">The User Object to use for evaluating targeting rules and percentage options.</param>
     /// <returns>The value of the feature flag or setting.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="key"/> is an empty string.</exception>
@@ -32,17 +33,18 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     T GetValue<T>(string key, T defaultValue, User? user = null);
 
     /// <summary>
-    /// Returns a value for the key. (Key for programs)
+    /// Returns the value of a feature flag or setting identified by <paramref name="key"/> asynchronously.
     /// </summary>
     /// <typeparam name="T">
-    /// Setting type. Only the following types are allowed:
-    /// <see cref="string"/>, <see cref="bool"/>, <see cref="int"/>, <see cref="long"/>, <see cref="double"/> and <see cref="object"/> (both nullable and non-nullable).
+    /// The type of the value. Only the following types are allowed:
+    /// <see cref="string"/>, <see cref="bool"/>, <see cref="int"/>, <see cref="long"/>, <see cref="double"/> and <see cref="object"/> (both nullable and non-nullable).<br/>
+    /// The type must correspond to the setting type, otherwise <paramref name="defaultValue"/> will be returned.
     /// </typeparam>
-    /// <param name="key">Key for programs.</param>
-    /// <param name="defaultValue">In case of failure return this value.</param>
-    /// <param name="user">The user object for variation evaluation.</param>
+    /// <param name="key">Key of the feature flag or setting.</param>
+    /// <param name="defaultValue">In case of failure, this value will be returned.</param>
+    /// <param name="user">The User Object to use for evaluating targeting rules and percentage options.</param>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
-    /// <returns>The task that will evaluate the value of the feature flag or setting.</returns>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the value of the feature flag or setting.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="key"/> is an empty string.</exception>
     /// <exception cref="ArgumentException"><typeparamref name="T"/> is not an allowed type.</exception>
@@ -50,15 +52,16 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     Task<T> GetValueAsync<T>(string key, T defaultValue, User? user = null, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Returns the value along with evaluation details of a feature flag or setting by the given key.
+    /// Returns the value along with evaluation details of a feature flag or setting identified by <paramref name="key"/> synchronously.
     /// </summary>
     /// <typeparam name="T">
-    /// Setting type. Only the following types are allowed:
-    /// <see cref="string"/>, <see cref="bool"/>, <see cref="int"/>, <see cref="long"/>, <see cref="double"/> and <see cref="object"/> (both nullable and non-nullable).
+    /// The type of the value. Only the following types are allowed:
+    /// <see cref="string"/>, <see cref="bool"/>, <see cref="int"/>, <see cref="long"/>, <see cref="double"/> and <see cref="object"/> (both nullable and non-nullable).<br/>
+    /// The type must correspond to the setting type, otherwise <paramref name="defaultValue"/> will be returned.
     /// </typeparam>
-    /// <param name="key">Key for programs</param>
-    /// <param name="defaultValue">In case of failure return this value</param>
-    /// <param name="user">The user object for variation evaluation</param>
+    /// <param name="key">Key of the feature flag or setting.</param>
+    /// <param name="defaultValue">In case of failure, this value will be returned.</param>
+    /// <param name="user">The User Object to use for evaluating targeting rules and percentage options.</param>
     /// <returns>The value along with the details of evaluation of the feature flag or setting.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="key"/> is an empty string.</exception>
@@ -66,17 +69,18 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     EvaluationDetails<T> GetValueDetails<T>(string key, T defaultValue, User? user = null);
 
     /// <summary>
-    /// Returns the value along with evaluation details of a feature flag or setting by the given key.
+    /// Returns the value along with evaluation details of a feature flag or setting identified by <paramref name="key"/> asynchronously.
     /// </summary>
     /// <typeparam name="T">
-    /// Setting type. Only the following types are allowed:
-    /// <see cref="string"/>, <see cref="bool"/>, <see cref="int"/>, <see cref="long"/>, <see cref="double"/> and <see cref="object"/> (both nullable and non-nullable).
+    /// The type of the value. Only the following types are allowed:
+    /// <see cref="string"/>, <see cref="bool"/>, <see cref="int"/>, <see cref="long"/>, <see cref="double"/> and <see cref="object"/> (both nullable and non-nullable).<br/>
+    /// The type must correspond to the setting type, otherwise <paramref name="defaultValue"/> will be returned.
     /// </typeparam>
-    /// <param name="key">Key for programs</param>
-    /// <param name="defaultValue">In case of failure return this value</param>
-    /// <param name="user">The user object for variation evaluation</param>
+    /// <param name="key">Key of the feature flag or setting.</param>
+    /// <param name="defaultValue">In case of failure, this value will be returned.</param>
+    /// <param name="user">The User Object to use for evaluating targeting rules and percentage options.</param>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
-    /// <returns>The value along with the details of evaluation of the feature flag or setting.</returns>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the value along with the details of evaluation of the feature flag or setting.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="key"/> is an empty string.</exception>
     /// <exception cref="ArgumentException"><typeparamref name="T"/> is not an allowed type.</exception>
@@ -84,72 +88,74 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     Task<EvaluationDetails<T>> GetValueDetailsAsync<T>(string key, T defaultValue, User? user = null, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Returns a collection with all keys.
+    /// Returns all setting keys synchronously.
     /// </summary>
-    /// <returns>The key collection.</returns>
+    /// <returns>The collection of keys.</returns>
     IReadOnlyCollection<string> GetAllKeys();
 
     /// <summary>
-    /// Returns a collection with all keys asynchronously.
+    /// Returns all setting keys asynchronously.
     /// </summary>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
-    /// <returns>The key collection.</returns>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the collection of keys.</returns>
     Task<IReadOnlyCollection<string>> GetAllKeysAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Returns the key-value collection of all feature flags and settings synchronously.
+    /// Returns the keys and values of all feature flags and settings synchronously.
     /// </summary>
-    /// <param name="user">The user object for variation evaluation.</param>
-    /// <returns>The key-value collection.</returns>
+    /// <param name="user">The User Object to use for evaluating targeting rules and percentage options.</param>
+    /// <returns>The dictionary containing the keys and values.</returns>
     IReadOnlyDictionary<string, object?> GetAllValues(User? user = null);
 
     /// <summary>
-    /// Returns the key-value collection of all feature flags and settings asynchronously.
+    /// Returns the keys and values of all feature flags and settings asynchronously.
     /// </summary>
-    /// <param name="user">The user object for variation evaluation.</param>
+    /// <param name="user">The User Object to use for evaluating targeting rules and percentage options.</param>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
-    /// <returns>The key-value collection.</returns>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the dictionary containing the keys and values.</returns>
     Task<IReadOnlyDictionary<string, object?>> GetAllValuesAsync(User? user = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the values along with evaluation details of all feature flags and settings synchronously.
     /// </summary>
-    /// <param name="user">The user object for variation evaluation.</param>
-    /// <returns>The key-value collection.</returns>
+    /// <param name="user">The User Object to use for evaluating targeting rules and percentage options.</param>
+    /// <returns>The list of values along with evaluation details.</returns>
     IReadOnlyList<EvaluationDetails> GetAllValueDetails(User? user = null);
 
     /// <summary>
     /// Returns the values along with evaluation details of all feature flags and settings asynchronously.
     /// </summary>
-    /// <param name="user">The user object for variation evaluation.</param>
+    /// <param name="user">The User Object to use for evaluating targeting rules and percentage options.</param>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
-    /// <returns>The key-value collection.</returns>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the list of values along with evaluation details.</returns>
     Task<IReadOnlyList<EvaluationDetails>> GetAllValueDetailsAsync(User? user = null, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Refreshes the configuration.
+    /// Refreshes the locally cached config by fetching the latest version from the remote server synchronously.
     /// </summary>
+    /// <returns>The refresh result.</returns>
     RefreshResult ForceRefresh();
 
     /// <summary>
-    /// Refreshes the configuration asynchronously.
+    /// Refreshes the locally cached config by fetching the latest version from the remote server asynchronously.
     /// </summary>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the refresh result.</returns>
     Task<RefreshResult> ForceRefreshAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Sets the default user.
     /// </summary>
-    /// <param name="user">The default user object for variation evaluation.</param>
+    /// <param name="user">The default User Object to use for evaluating targeting rules and percentage options.</param>
     void SetDefaultUser(User user);
 
     /// <summary>
-    /// Sets the default user to null.
+    /// Clears the default user.
     /// </summary>
     void ClearDefaultUser();
 
     /// <summary>
-    /// True when the client is configured not to initiate HTTP requests, otherwise false.
+    /// Returns <see langword="true"/> when the client is configured not to initiate HTTP requests, otherwise <see langword="false"/>.
     /// </summary>
     bool IsOffline { get; }
 
@@ -159,7 +165,7 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     void SetOnline();
 
     /// <summary>
-    /// Configures the client to not initiate HTTP requests and work only from its cache.
+    /// Configures the client to not initiate HTTP requests and work using the locally cached config only.
     /// </summary>
     void SetOffline();
 }

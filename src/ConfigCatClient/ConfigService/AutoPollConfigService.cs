@@ -14,17 +14,17 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
     private CancellationTokenSource? timerCancellationTokenSource = new(); // used for signalling background work to stop
 
     internal AutoPollConfigService(
-        AutoPoll configuration,
+        AutoPoll options,
         IConfigFetcher configFetcher,
         CacheParameters cacheParameters,
         LoggerWrapper logger,
         bool isOffline = false,
-        Hooks? hooks = null) : this(configuration, configFetcher, cacheParameters, logger, startTimer: true, isOffline, hooks)
+        Hooks? hooks = null) : this(options, configFetcher, cacheParameters, logger, startTimer: true, isOffline, hooks)
     { }
 
     // For test purposes only
     internal AutoPollConfigService(
-        AutoPoll configuration,
+        AutoPoll options,
         IConfigFetcher configFetcher,
         CacheParameters cacheParameters,
         LoggerWrapper logger,
@@ -32,15 +32,15 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
         bool isOffline = false,
         Hooks? hooks = null) : base(configFetcher, cacheParameters, logger, isOffline, hooks)
     {
-        this.pollInterval = configuration.PollInterval;
-        this.maxInitWaitTime = configuration.MaxInitWaitTime >= TimeSpan.Zero ? configuration.MaxInitWaitTime : Timeout.InfiniteTimeSpan;
+        this.pollInterval = options.PollInterval;
+        this.maxInitWaitTime = options.MaxInitWaitTime >= TimeSpan.Zero ? options.MaxInitWaitTime : Timeout.InfiniteTimeSpan;
 
         this.initializationCancellationTokenSource.Token.Register(this.Hooks.RaiseClientReady, useSynchronizationContext: false);
-        if (configuration.MaxInitWaitTime > TimeSpan.Zero)
+        if (options.MaxInitWaitTime > TimeSpan.Zero)
         {
-            this.initializationCancellationTokenSource.CancelAfter(configuration.MaxInitWaitTime);
+            this.initializationCancellationTokenSource.CancelAfter(options.MaxInitWaitTime);
         }
-        else if (configuration.MaxInitWaitTime == TimeSpan.Zero)
+        else if (options.MaxInitWaitTime == TimeSpan.Zero)
         {
             this.initializationCancellationTokenSource.Cancel();
         }
@@ -87,7 +87,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
         {
             // Since SignalInitialization and Dispose are not synchronized,
             // in extreme conditions a call to SignalInitialization may slip past the disposal of initializationCancellationTokenSource.
-            // In such cases we get an ObjectDisposedException here, which means that the config service has been disposed of in the meantime.
+            // In such cases we get an ObjectDisposedException here, which means that the config service has been disposed in the meantime.
             // Thus, we can safely swallow this exception.
         }
     }
@@ -130,7 +130,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
         return this.ConfigCache.Get(base.CacheKey);
     }
 
-    public async Task<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default)
+    public async ValueTask<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default)
     {
         if (!IsOffline && !IsInitialized)
         {
@@ -205,7 +205,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
         });
     }
 
-    private async Task PollCoreAsync(bool isFirstIteration, CancellationToken cancellationToken)
+    private async ValueTask PollCoreAsync(bool isFirstIteration, CancellationToken cancellationToken)
     {
         if (isFirstIteration)
         {

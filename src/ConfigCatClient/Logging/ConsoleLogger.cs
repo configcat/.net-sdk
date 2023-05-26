@@ -4,22 +4,28 @@ using System.Globalization;
 namespace ConfigCat.Client;
 
 /// <summary>
-/// Write log messages into <see cref="Console"/>
+/// An implementation of <see cref="IConfigCatLogger"/> which writes log messages into <see cref="Console"/>.
 /// </summary>
 public class ConsoleLogger : IConfigCatLogger
 {
+    private volatile LogLevel logLevel;
+
     /// <inheritdoc />
-    public LogLevel LogLevel { get; set; }
+    public LogLevel LogLevel
+    {
+        get => this.logLevel;
+        set => this.logLevel = value;
+    }
 
     /// <summary>
-    /// Create a <see cref="ConsoleLogger"/> instance with Warning loglevel
+    /// Initializes a new instance of the <see cref="ConsoleLogger"/> class with <see cref="LogLevel.Warning"/>.
     /// </summary>
     public ConsoleLogger() : this(LogLevel.Warning) { }
 
     /// <summary>
-    /// Create a <see cref="ConsoleLogger"/> instance
+    /// Initializes a new instance of the <see cref="ConsoleLogger"/> class with the specified log level.
     /// </summary>
-    /// <param name="logLevel">Log level</param>
+    /// <param name="logLevel">Log level (the minimum level to use for filtering log events).</param>
     public ConsoleLogger(LogLevel logLevel)
     {
         LogLevel = logLevel;

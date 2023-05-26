@@ -14,7 +14,7 @@ internal static class RolloutEvaluatorExtensions
     {
         var logDefaultValue = defaultValue is not null ? Convert.ToString(defaultValue, CultureInfo.InvariantCulture) : null;
         return (EvaluationDetails<T>)evaluator.Evaluate(setting, key, logDefaultValue, user, remoteConfig,
-            static (settingType, value) => EvaluationDetails.Create<T>(settingType, value));
+            static (setting, value) => EvaluationDetails.Create<T>(setting.SettingType, value, setting.UnsupportedTypeError));
     }
 
     public static EvaluationDetails<T> Evaluate<T>(this IRolloutEvaluator evaluator, IReadOnlyDictionary<string, Setting>? settings, string key, T defaultValue, User? user,
@@ -42,7 +42,7 @@ internal static class RolloutEvaluatorExtensions
     {
         var logDefaultValue = defaultValue is not null ? Convert.ToString(defaultValue, CultureInfo.InvariantCulture) : null;
         return evaluator.Evaluate(setting, key, logDefaultValue, user, remoteConfig,
-            static (settingType, value) => EvaluationDetails.Create(settingType, value));
+            static (setting, value) => EvaluationDetails.Create(setting.SettingType, value));
     }
 
     public static EvaluationDetails[] EvaluateAll(this IRolloutEvaluator evaluator, IReadOnlyDictionary<string, Setting>? settings, User? user,

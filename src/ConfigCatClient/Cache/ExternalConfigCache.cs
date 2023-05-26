@@ -42,7 +42,7 @@ internal sealed class ExternalConfigCache : ConfigCache
         }
     }
 
-    public override async Task<ProjectConfig> GetAsync(string key, CancellationToken cancellationToken = default)
+    public override async ValueTask<ProjectConfig> GetAsync(string key, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -86,7 +86,7 @@ internal sealed class ExternalConfigCache : ConfigCache
         }
     }
 
-    public override async Task SetAsync(string key, ProjectConfig config, CancellationToken cancellationToken = default)
+    public override async ValueTask SetAsync(string key, ProjectConfig config, CancellationToken cancellationToken = default)
     {
         try
         {

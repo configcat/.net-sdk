@@ -5,7 +5,7 @@ using ConfigCat.Client.Cache;
 namespace ConfigCat.Client.Configuration;
 
 /// <summary>
-/// Represents the ConfigCat SDK's configuration options.
+/// Options used to configure the ConfigCat SDK.
 /// </summary>
 public class ConfigCatClientOptions : IProvidesHooks
 {
@@ -16,7 +16,8 @@ public class ConfigCatClientOptions : IProvidesHooks
     internal static readonly Uri BaseUrlEu = new("https://cdn-eu.configcat.com");
 
     /// <summary>
-    /// Logger instance. If not set, <see cref="ConsoleLogger"/> with Warning log level will be used by default.
+    /// The logger implementation to use for performing logging.
+    /// If not set, <see cref="ConsoleLogger"/> with <see cref="LogLevel.Warning"/> will be used by default.<br/>
     /// If you want to use custom logging instead, you can provide an implementation of <see cref="IConfigCatLogger"/>.
     /// </summary>
     public IConfigCatLogger? Logger { get; set; }
@@ -24,7 +25,8 @@ public class ConfigCatClientOptions : IProvidesHooks
     internal static IConfigCatLogger CreateDefaultLogger() => new ConsoleLogger(LogLevel.Warning);
 
     /// <summary>
-    /// Cache instance. If not set, <see cref="InMemoryConfigCache"/> will be used by default.
+    /// The cache implementation to use for storing and retrieving downloaded config data.
+    /// If not set, <see cref="InMemoryConfigCache"/> will be used by default.<br/>
     /// If you want to use custom caching instead, you can provide an implementation of <see cref="IConfigCatCache"/>.
     /// </summary>
     public IConfigCatCache? ConfigCache { get; set; }
@@ -32,7 +34,7 @@ public class ConfigCatClientOptions : IProvidesHooks
     internal static ConfigCache CreateDefaultConfigCache() => new InMemoryConfigCache();
 
     /// <summary>
-    /// Polling mode.
+    /// The polling mode to use.
     /// If not set, <see cref="PollingModes.AutoPoll"/> will be used by default.
     /// </summary>
     public PollingMode? PollingMode { get; set; }
@@ -40,14 +42,16 @@ public class ConfigCatClientOptions : IProvidesHooks
     internal static PollingMode CreateDefaultPollingMode() => PollingModes.AutoPoll();
 
     /// <summary>
-    /// <see cref="System.Net.Http.HttpClientHandler"/> to provide network credentials and proxy settings.
+    /// An optional <see cref="System.Net.Http.HttpClientHandler"/> for providing network credentials and proxy settings.
     /// </summary>
     public HttpClientHandler? HttpClientHandler { get; set; }
 
     private Uri baseUrl = BaseUrlGlobal;
 
     /// <summary>
-    /// You can set a BaseUrl if you want to use a proxy server between your application and ConfigCat.
+    /// The base URL of the remote server providing the latest version of the config.
+    /// Defaults to the URL of the ConfigCat CDN.<br/>
+    /// If you want to use a proxy server between your application and ConfigCat, you need to set this property to the proxy URL.
     /// </summary>
     public Uri BaseUrl
     {
@@ -58,7 +62,7 @@ public class ConfigCatClientOptions : IProvidesHooks
     internal bool IsCustomBaseUrl => BaseUrl != BaseUrlGlobal && BaseUrl != BaseUrlEu;
 
     /// <summary>
-    /// Set this parameter to be in sync with the Data Governance preference on the Dashboard:
+    /// Set this property to be in sync with the Data Governance preference on the Dashboard:
     /// https://app.configcat.com/organization/data-governance (only Organization Admins have access).
     /// Defaults to <see cref="DataGovernance.Global"/>.
     /// </summary>
@@ -70,12 +74,12 @@ public class ConfigCatClientOptions : IProvidesHooks
     public TimeSpan HttpTimeout { get; set; } = TimeSpan.FromSeconds(30);
 
     /// <summary>
-    /// Feature flag and setting overrides.
+    /// The flag override to use. If not set, no flag override will be used.
     /// </summary>
     public FlagOverrides? FlagOverrides { get; set; }
 
     /// <summary>
-    /// The default user, used as fallback when there's no user parameter is passed to the <see cref="ConfigCatClient.GetValue{T}(string, T, User)"/>, <see cref="ConfigCatClient.GetAllValues(User)"/>, etc. methods.
+    /// The default user, used as fallback when there's no user parameter is passed to the setting evaluation methods like <see cref="IConfigCatClient.GetValue"/>, <see cref="IConfigCatClient.GetValueDetails"/>, etc.
     /// </summary>
     public User? DefaultUser { get; set; }
 

@@ -19,7 +19,7 @@ namespace ConfigCat.Client;
 public interface ISetting
 {
     /// <summary>
-    /// The default value of the setting.
+    /// The (fallback) value of the setting.
     /// </summary>
     object Value { get; }
 
@@ -100,4 +100,7 @@ internal sealed class Setting : ISetting
     [JsonPropertyName("i")]
 #endif
     public string? VariationId { get; set; }
+
+    [JsonIgnore]
+    public string? UnsupportedTypeError { get; set; }
 }

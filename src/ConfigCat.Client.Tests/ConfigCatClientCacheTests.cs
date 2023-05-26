@@ -1,7 +1,5 @@
 using System;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using ConfigCat.Client.Configuration;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 

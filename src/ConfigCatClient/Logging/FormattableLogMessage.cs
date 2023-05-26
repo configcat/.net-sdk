@@ -22,7 +22,7 @@ public struct FormattableLogMessage : IFormattable
     }
 
     /// <summary>
-    /// Constructs a <see cref="FormattableLogMessage"/> from a plain log message.
+    /// Initializes a new instance of the <see cref="FormattableLogMessage"/> struct from a plain log message.
     /// </summary>
     public FormattableLogMessage(string message)
     {
@@ -33,7 +33,7 @@ public struct FormattableLogMessage : IFormattable
     }
 
     /// <summary>
-    /// Constructs a <see cref="FormattableLogMessage"/> from a log message format and the corresponding named arguments.
+    /// Initializes a new instance of the <see cref="FormattableLogMessage"/> struct from a log message format and the corresponding named arguments.
     /// </summary>
     public FormattableLogMessage(string format, string[] argNames, object?[] argValues)
     {

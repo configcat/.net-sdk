@@ -8,34 +8,34 @@ using System.Text.Json.Serialization;
 namespace ConfigCat.Client;
 
 /// <summary>
-/// Object for variation evaluation
+/// User Object. Contains user attributes which are used for evaluating targeting rules and percentage options.
 /// </summary>
 public class User
 {
     internal const string DefaultIdentifierValue = "";
 
     /// <summary>
-    /// Unique identifier for the User or Session. e.g. Email address, Primary key, Session Id
+    /// The unique identifier of the user or session (e.g. email address, primary key, session ID, etc.)
     /// </summary>
     public string Identifier { get; private set; }
 
     /// <summary>
-    /// Optional parameter for easier targeting rule definitions
+    /// Email address of the user.
     /// </summary>
     public string? Email { get; set; }
 
     /// <summary>
-    /// Optional parameter for easier targeting rule definitions
+    /// Country of the user.
     /// </summary>
     public string? Country { get; set; }
 
     /// <summary>
-    /// Optional dictionary for custom attributes of the User for advanced targeting rule definitions. e.g. User role, Subscription type
+    /// Custom attributes of the user for advanced targeting rule definitions (e.g. user role, subscription type, etc.)
     /// </summary>
     public IDictionary<string, string?> Custom { get; set; }
 
     /// <summary>
-    /// Serve all user attributes
+    /// Returns all attributes of the user.
     /// </summary>
     [JsonIgnore]
     public IReadOnlyDictionary<string, string?> AllAttributes
@@ -65,9 +65,9 @@ public class User
     }
 
     /// <summary>
-    /// Create an instance of User
+    /// Initializes a new instance of the <see cref="User"/> class.
     /// </summary>
-    /// <param name="identifier">Unique identifier for the User</param>
+    /// <param name="identifier">The unique identifier of the user or session.</param>
     public User(string identifier)
     {
         Identifier = string.IsNullOrEmpty(identifier) ? DefaultIdentifierValue : identifier;

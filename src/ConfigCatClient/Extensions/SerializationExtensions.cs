@@ -1,7 +1,6 @@
-using System;
 #if USE_NEWTONSOFT_JSON
-using Newtonsoft.Json;
 using System.IO;
+using Newtonsoft.Json;
 #else
 using System.Text.Json;
 using System.Text.Json.Serialization;

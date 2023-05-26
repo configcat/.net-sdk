@@ -9,7 +9,7 @@ internal sealed class ConfigCatClientCache
 {
     internal readonly Dictionary<string, WeakReference<ConfigCatClient>> instances = new();
 
-    public ConfigCatClient GetOrCreate(string sdkKey, ConfigCatClientOptions configuration, out bool instanceAlreadyCreated)
+    public ConfigCatClient GetOrCreate(string sdkKey, ConfigCatClientOptions options, out bool instanceAlreadyCreated)
     {
         lock (this.instances)
         {
@@ -18,14 +18,14 @@ internal sealed class ConfigCatClientCache
             if (!this.instances.TryGetValue(sdkKey, out var weakRef))
             {
                 instanceAlreadyCreated = false;
-                instance = new ConfigCatClient(sdkKey, configuration);
+                instance = new ConfigCatClient(sdkKey, options);
                 weakRef = new WeakReference<ConfigCatClient>(instance);
                 this.instances.Add(sdkKey, weakRef);
             }
             else if (!weakRef.TryGetTarget(out instance))
             {
                 instanceAlreadyCreated = false;
-                instance = new ConfigCatClient(sdkKey, configuration);
+                instance = new ConfigCatClient(sdkKey, options);
                 weakRef.SetTarget(instance);
             }
             else

@@ -10,7 +10,7 @@ internal abstract class ConfigCache
     public abstract ProjectConfig LocalCachedConfig { get; }
 
     public abstract void Set(string key, ProjectConfig config);
-    public abstract Task SetAsync(string key, ProjectConfig config, CancellationToken cancellationToken = default);
+    public abstract ValueTask SetAsync(string key, ProjectConfig config, CancellationToken cancellationToken = default);
     public abstract ProjectConfig Get(string key);
-    public abstract Task<ProjectConfig> GetAsync(string key, CancellationToken cancellationToken = default);
+    public abstract ValueTask<ProjectConfig> GetAsync(string key, CancellationToken cancellationToken = default);
 }

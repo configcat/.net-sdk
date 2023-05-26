@@ -1,7 +1,7 @@
 namespace ConfigCat.Client;
 
 /// <summary>
-/// Describes how the overrides should behave.
+/// Specifies the behaviours for flag overrides.
 /// </summary>
 public enum OverrideBehaviour
 {

@@ -4,37 +4,38 @@ using System.Threading.Tasks;
 namespace ConfigCat.Client;
 
 /// <summary>
-/// Defines the interface used by the ConfigCat SDK to store and retrieve downloaded config JSON data.
+/// Defines the interface used by the ConfigCat SDK to store and retrieve downloaded config data.
 /// </summary>
 public interface IConfigCatCache
 {
     /// <summary>
-    /// Stores a value into the cache.
+    /// Stores a data item into the cache synchronously.
     /// </summary>
-    /// <param name="key">A string identifying the value.</param>
-    /// <param name="value">The value to cache.</param>
+    /// <param name="key">A string identifying the data item.</param>
+    /// <param name="value">The data item to cache.</param>
     void Set(string key, string value);
 
     /// <summary>
-    /// Stores a value into the cache.
+    /// Stores a data item into the cache asynchronously.
     /// </summary>
-    /// <param name="key">A string identifying the value.</param>
-    /// <param name="value">The value to cache.</param>
+    /// <param name="key">A string identifying the data item.</param>
+    /// <param name="value">The data item to cache.</param>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     Task SetAsync(string key, string value, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Retrieves a value from the cache.
+    /// Retrieves a data item from the cache synchronously.
     /// </summary>
-    /// <param name="key">A string identifying the value.</param>
-    /// <returns>The cached value or <see langword="null"/> if there is none.</returns>
+    /// <param name="key">A string identifying the data item.</param>
+    /// <returns>The cached data item or <see langword="null"/> if there is none.</returns>
     string? Get(string key);
 
     /// <summary>
-    /// Retrieves a value from the cache.
+    /// Retrieves a data item from the cache asynchronously.
     /// </summary>
-    /// <param name="key">A string identifying the value.</param>
+    /// <param name="key">A string identifying the data item.</param>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
-    /// <returns>The cached value or <see langword="null"/> if there is none.</returns>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the cached data item or <see langword="null"/> if there is none.</returns>
     Task<string?> GetAsync(string key, CancellationToken cancellationToken = default);
 }

@@ -1,6 +1,5 @@
 using System;
 using System.Diagnostics;
-using ConfigCat.Client.Evaluation;
 
 #if USE_NEWTONSOFT_JSON
 using JsonValue = Newtonsoft.Json.Linq.JValue;
@@ -10,7 +9,7 @@ using JsonValue = System.Text.Json.JsonElement;
 
 namespace ConfigCat.Client;
 
-internal delegate EvaluationDetails EvaluationDetailsFactory(SettingType settingType, JsonValue value);
+internal delegate EvaluationDetails EvaluationDetailsFactory(Setting setting, JsonValue value);
 
 /// <summary>
 /// The evaluated value and additional information about the evaluation of a feature flag or setting.
@@ -22,12 +21,12 @@ public abstract record class EvaluationDetails
         return new EvaluationDetails<TValue> { Value = value.ConvertTo<TValue>() };
     }
 
-    internal static EvaluationDetails<TValue> Create<TValue>(SettingType settingType, JsonValue value)
+    internal static EvaluationDetails<TValue> Create<TValue>(SettingType settingType, JsonValue value, string? unsupportedTypeError)
     {
         // NOTE: We've already checked earlier in the call chain that TValue is an allowed type (see also TypeExtensions.EnsureSupportedSettingClrType).
         Debug.Assert(typeof(TValue) == typeof(object) || typeof(TValue).ToSettingType() != SettingType.Unknown, "Type is not supported.");
 
-        // SettingType was not specified in the config.json?
+        // Setting type is not known (it's not present in the config JSON, it's an unsupported value coming from a flag override, etc.)?
         if (settingType == SettingType.Unknown)
         {
             // Let's try to infer it from the JSON value.
@@ -35,7 +34,7 @@ public abstract record class EvaluationDetails
 
             if (settingType == SettingType.Unknown)
             {
-                throw new ArgumentException($"The type of setting value '{value}' is not supported.", nameof(value));
+                throw new ArgumentException(unsupportedTypeError ?? $"Setting value '{value}' is of an unsupported type.", nameof(value));
             }
         }
 
@@ -69,7 +68,7 @@ public abstract record class EvaluationDetails
 
     internal static EvaluationDetails FromJsonValue(
         EvaluationDetailsFactory factory,
-        SettingType settingType,
+        Setting setting,
         string key,
         JsonValue value,
         string? variationId,
@@ -78,7 +77,7 @@ public abstract record class EvaluationDetails
         RolloutRule? matchedEvaluationRule = null,
         RolloutPercentageItem? matchedEvaluationPercentageRule = null)
     {
-        var instance = factory(settingType, value);
+        var instance = factory(setting, value);
 
         instance.Key = key;
         instance.VariationId = variationId;
@@ -137,17 +136,17 @@ public abstract record class EvaluationDetails
     public string? VariationId { get; set; }
 
     /// <summary>
-    /// Time of last successful download of config.json (or <see cref="DateTime.MinValue"/> if there has been no successful download yet).
+    /// Time of last successful config download (or <see cref="DateTime.MinValue"/> if there has been no successful download yet).
     /// </summary>
     public DateTime FetchTime { get; set; } = DateTime.MinValue;
 
     /// <summary>
-    /// The <see cref="User"/> object used for the evaluation (if available).
+    /// The User Object used for the evaluation (if available).
     /// </summary>
     public User? User { get; set; }
 
     /// <summary>
-    /// Indicates whether the default value passed to <see cref="IConfigCatClient.GetValue"/> or <see cref="IConfigCatClient.GetValueAsync"/>
+    /// Indicates whether the default value passed to the setting evaluation methods like <see cref="IConfigCatClient.GetValue"/>, <see cref="IConfigCatClient.GetValueDetails"/>, etc.
     /// is used as the result of the evaluation.
     /// </summary>
     public bool IsDefaultValue { get; set; }
@@ -179,7 +178,7 @@ public sealed record class EvaluationDetails<TValue> : EvaluationDetails
     internal EvaluationDetails() : this(key: null!, value: default!) { }
 
     /// <summary>
-    /// Creates an instance of <see cref="EvaluationDetails"/>.
+    /// Initializes a new instance of the <see cref="EvaluationDetails{TValue}"/> class.
     /// </summary>
     public EvaluationDetails(string key, TValue value) : base(key)
     {

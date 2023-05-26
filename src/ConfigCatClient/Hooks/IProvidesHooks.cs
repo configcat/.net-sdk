@@ -18,7 +18,7 @@ public interface IProvidesHooks
     event EventHandler<FlagEvaluatedEventArgs>? FlagEvaluated;
 
     /// <summary>
-    /// Occurs after the configuration has been updated.
+    /// Occurs after the locally cached config has been updated.
     /// </summary>
     event EventHandler<ConfigChangedEventArgs>? ConfigChanged;
 

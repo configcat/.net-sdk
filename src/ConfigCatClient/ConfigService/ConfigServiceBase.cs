@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
@@ -107,7 +106,7 @@ internal abstract class ConfigServiceBase : IDisposable
         return new ConfigWithFetchResult(latestConfig, fetchResult);
     }
 
-    public virtual async Task<RefreshResult> RefreshConfigAsync(CancellationToken cancellationToken = default)
+    public virtual async ValueTask<RefreshResult> RefreshConfigAsync(CancellationToken cancellationToken = default)
     {
         if (!IsOffline)
         {

@@ -1,5 +1,3 @@
-using System;
-
 namespace ConfigCat.Client;
 
 internal sealed class NullHooks : Hooks

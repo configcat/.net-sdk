@@ -16,11 +16,11 @@ internal sealed class NullConfigService : IConfigService
 
     public ProjectConfig GetConfig() => ProjectConfig.Empty;
 
-    public Task<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default) => Task.FromResult(ProjectConfig.Empty);
+    public ValueTask<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default) => new ValueTask<ProjectConfig>(ProjectConfig.Empty);
 
     public RefreshResult RefreshConfig() { return RefreshResult.Failure($"Client is configured to use the {nameof(OverrideBehaviour.LocalOnly)} override behavior, which prevents making HTTP requests."); }
 
-    public Task<RefreshResult> RefreshConfigAsync(CancellationToken cancellationToken = default) => Task.FromResult(RefreshConfig());
+    public ValueTask<RefreshResult> RefreshConfigAsync(CancellationToken cancellationToken = default) => new ValueTask<RefreshResult>(RefreshConfig());
 
     public bool IsOffline => true;
 

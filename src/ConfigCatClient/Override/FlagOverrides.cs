@@ -5,7 +5,7 @@ using ConfigCat.Client.Override;
 namespace ConfigCat.Client;
 
 /// <summary>
-/// Describes feature flag and setting overrides.
+/// Represents a flag override along with its settings. Also provides static factory methods for defining flag overrides.
 /// </summary>
 public class FlagOverrides
 {
@@ -29,11 +29,9 @@ public class FlagOverrides
     }
 
     /// <summary>
-    /// The override behaviour. It can be used to set preference on whether the local values should
-    /// override the remote values, or use local values only when a remote value doesn't exist,
-    /// or use it for local only mode.
+    /// The override behaviour.
     /// </summary>
-    public OverrideBehaviour OverrideBehaviour { get; private set; }
+    public OverrideBehaviour OverrideBehaviour { get; }
 
     internal IOverrideDataSource BuildDataSource(LoggerWrapper logger)
     {
@@ -47,31 +45,37 @@ public class FlagOverrides
     }
 
     /// <summary>
-    /// Creates an override descriptor that uses a local file data source.
+    /// Creates an instance of the <see cref="FlagOverrides"/> class that uses a local file data source.
     /// </summary>
     /// <param name="filePath">Path to the file.</param>
-    /// <param name="autoReload">When it's true, the file will be reloaded when it gets modified.</param>
-    /// <param name="overrideBehaviour">the override behaviour. It can be used to set preference on whether the local values should override the remote values, or use local values only when a remote value doesn't exist, or use it for local only mode.</param>
-    /// <returns>The override descriptor.</returns>
+    /// <param name="autoReload">If set to <see langword="true"/>, the file will be reloaded when it gets modified.</param>
+    /// <param name="overrideBehaviour">The override behaviour. Specifies whether the local values should override the remote values
+    /// or local values should only be used when a remote value doesn't exist or the local values should be used only.</param>
+    /// <returns>The new <see cref="FlagOverrides"/> instance.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="filePath"/> is <see langword="null"/>.</exception>
     public static FlagOverrides LocalFile(string filePath, bool autoReload, OverrideBehaviour overrideBehaviour) =>
-        new(filePath, autoReload, overrideBehaviour);
+        new(filePath ?? throw new ArgumentNullException(nameof(filePath)), autoReload, overrideBehaviour);
 
     /// <summary>
-    /// Creates an override descriptor that uses a dictionary data source.
+    /// Creates an instance of the <see cref="FlagOverrides"/> class that uses a dictionary data source.
     /// </summary>
-    /// <param name="dictionary">Dictionary that contains the overrides.</param>
-    /// <param name="overrideBehaviour">the override behaviour. It can be used to set preference on whether the local values should override the remote values, or use local values only when a remote value doesn't exist, or use it for local only mode.</param>
-    /// <returns>The override descriptor.</returns>
+    /// <param name="dictionary">The dictionary that contains the overrides.</param>
+    /// <param name="overrideBehaviour">The override behaviour. Specifies whether the local values should override the remote values
+    /// or local values should only be used when a remote value doesn't exist or the local values should be used only.</param>
+    /// <returns>The new <see cref="FlagOverrides"/> instance.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is <see langword="null"/>.</exception>
     public static FlagOverrides LocalDictionary(IDictionary<string, object> dictionary, OverrideBehaviour overrideBehaviour) =>
-        new(dictionary, false, overrideBehaviour);
+        new(dictionary ?? throw new ArgumentNullException(nameof(dictionary)), false, overrideBehaviour);
 
     /// <summary>
-    /// Creates an override descriptor that uses a dictionary data source.
+    /// Creates an instance of the <see cref="FlagOverrides"/> class that uses a dictionary data source.
     /// </summary>
-    /// <param name="dictionary">Dictionary that contains the overrides.</param>
-    /// <param name="watchChanges">Indicates whether the SDK should track the input dictionary for changes.</param>
-    /// <param name="overrideBehaviour">the override behaviour. It can be used to set preference on whether the local values should override the remote values, or use local values only when a remote value doesn't exist, or use it for local only mode.</param>
-    /// <returns>The override descriptor.</returns>
+    /// <param name="dictionary">The dictionary that contains the overrides.</param>
+    /// <param name="watchChanges">If set to <see langword="true"/>, the input dictionary will be tracked for changes.</param>
+    /// <param name="overrideBehaviour">The override behaviour. Specifies whether the local values should override the remote values
+    /// or local values should only be used when a remote value doesn't exist or the local values should be used only.</param>
+    /// <returns>The new <see cref="FlagOverrides"/> instance.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is <see langword="null"/>.</exception>
     public static FlagOverrides LocalDictionary(IDictionary<string, object> dictionary, bool watchChanges, OverrideBehaviour overrideBehaviour) =>
-        new(dictionary, watchChanges, overrideBehaviour);
+        new(dictionary ?? throw new ArgumentNullException(nameof(dictionary)), watchChanges, overrideBehaviour);
 }

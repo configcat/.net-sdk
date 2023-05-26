@@ -1,5 +1,5 @@
 environment:
-  build_version: 7.2.0
+  build_version: 8.0.0
 version: $(build_version)-{build}
 image: Visual Studio 2022
 configuration: Release
@@ -11,10 +11,10 @@ dotnet_csproj:
   patch: true
   file: '**\*.csproj'
   version: $(build_version)
-  package_version: $(build_version)
+  package_version: $(build_version)-preview1
   assembly_version: $(build_version)
   file_version: $(build_version)
-  informational_version: $(build_version)
+  informational_version: $(build_version)-preview1
 install:
 - cmd: dotnet tool install -g InheritDocTool
 build_script: 

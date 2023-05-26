@@ -11,20 +11,20 @@ dotnet_csproj:
   patch: true
   file: '**\*.csproj'
   version: $(build_version)
-  package_version: $(build_version)-preview1
+  package_version: $(build_version)
   assembly_version: $(build_version)
   file_version: $(build_version)
-  informational_version: $(build_version)-preview1
+  informational_version: $(build_version)
 install:
 - cmd: dotnet tool install -g InheritDocTool
 build_script: 
 - cmd: echo __BUILD__
 - dotnet restore src/ConfigCatClient.sln
-- dotnet build -c %configuration% src/ConfigCatClient.sln 
+- dotnet build -c %configuration% /p:ContinuousIntegrationBuild=true src/ConfigCatClient.sln 
 after_build:
 - cmd: echo __PACK__
 - inheritdoc -o
-- dotnet pack -c %configuration% /p:PackageOutputPath=..\..\artifacts /p:ContinuousIntegrationBuild=true src\ConfigCatClient\ConfigCatClient.csproj
+- dotnet pack -c %configuration% --no-build /p:PackageOutputPath=..\..\artifacts src\ConfigCatClient\ConfigCatClient.csproj
 test_script:
 - dotnet test src\ConfigCat.Client.Tests\ConfigCat.Client.Tests.csproj -f net45 -c %configuration% --no-build
 - dotnet test src\ConfigCat.Client.Tests\ConfigCat.Client.Tests.csproj -f net461 -c %configuration% --no-build

@@ -13,7 +13,7 @@ public static class PollingModes
     /// </summary>
     /// <param name="pollInterval">
     /// Config refresh interval.
-    /// Specifies how much time must pass between two operations refreshing the locally cached config by fetching the latest version from the remote server.<br/>
+    /// Specifies how frequently the locally cached config will be refreshed by fetching the latest version from the remote server.<br/>
     /// (Default value is 60 seconds. Minimum value is 1 second. Maximum value is <see cref="int.MaxValue"/> milliseconds.)
     /// </param>
     /// <param name="maxInitWaitTime">

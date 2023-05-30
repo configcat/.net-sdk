@@ -43,7 +43,6 @@ using ConfigCat.Client;
 var client = ConfigCatClient.Get("#YOUR-SDK-KEY#");
 ```
 
-> We strongly recommend using the *ConfigCat Client* as a Singleton object in your application.
 > You can acquire singleton client instances for your SDK keys using the `ConfigCatClient.Get(sdkKey: <sdkKey>)` static factory method.
 (However, please keep in mind that subsequent calls to `ConfigCatClient.Get()` with the *same SDK Key* return a *shared* client instance, which was set up by the first call.)
 

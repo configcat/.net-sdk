@@ -18,6 +18,11 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// <summary>
     /// Returns the value of a feature flag or setting identified by <paramref name="key"/> synchronously.
     /// </summary>
+    /// <remarks>
+    /// It is important to provide an argument for the <paramref name="defaultValue"/> parameter, specifically for the <typeparamref name="T"/> generic type parameter,
+    /// that matches the type of the feature flag or setting you are evaluating.<br/>
+    /// Please refer to <see href="https://configcat.com/docs/sdk-reference/dotnet/#setting-type-mapping">this table</see> for the corresponding types.
+    /// </remarks>
     /// <typeparam name="T">
     /// The type of the value. Only the following types are allowed:
     /// <see cref="string"/>, <see cref="bool"/>, <see cref="int"/>, <see cref="long"/>, <see cref="double"/> and <see cref="object"/> (both nullable and non-nullable).<br/>
@@ -35,6 +40,11 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// <summary>
     /// Returns the value of a feature flag or setting identified by <paramref name="key"/> asynchronously.
     /// </summary>
+    /// <remarks>
+    /// It is important to provide an argument for the <paramref name="defaultValue"/> parameter, specifically for the <typeparamref name="T"/> generic type parameter,
+    /// that matches the type of the feature flag or setting you are evaluating.<br/>
+    /// Please refer to <see href="https://configcat.com/docs/sdk-reference/dotnet/#setting-type-mapping">this table</see> for the corresponding types.
+    /// </remarks>
     /// <typeparam name="T">
     /// The type of the value. Only the following types are allowed:
     /// <see cref="string"/>, <see cref="bool"/>, <see cref="int"/>, <see cref="long"/>, <see cref="double"/> and <see cref="object"/> (both nullable and non-nullable).<br/>
@@ -54,6 +64,11 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// <summary>
     /// Returns the value along with evaluation details of a feature flag or setting identified by <paramref name="key"/> synchronously.
     /// </summary>
+    /// <remarks>
+    /// It is important to provide an argument for the <paramref name="defaultValue"/> parameter, specifically for the <typeparamref name="T"/> generic type parameter,
+    /// that matches the type of the feature flag or setting you are evaluating.<br/>
+    /// Please refer to <see href="https://configcat.com/docs/sdk-reference/dotnet/#setting-type-mapping">this table</see> for the corresponding types.
+    /// </remarks>
     /// <typeparam name="T">
     /// The type of the value. Only the following types are allowed:
     /// <see cref="string"/>, <see cref="bool"/>, <see cref="int"/>, <see cref="long"/>, <see cref="double"/> and <see cref="object"/> (both nullable and non-nullable).<br/>
@@ -71,6 +86,11 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// <summary>
     /// Returns the value along with evaluation details of a feature flag or setting identified by <paramref name="key"/> asynchronously.
     /// </summary>
+    /// <remarks>
+    /// It is important to provide an argument for the <paramref name="defaultValue"/> parameter, specifically for the <typeparamref name="T"/> generic type parameter,
+    /// that matches the type of the feature flag or setting you are evaluating.<br/>
+    /// Please refer to <see href="https://configcat.com/docs/sdk-reference/dotnet/#setting-type-mapping">this table</see> for the corresponding types.
+    /// </remarks>
     /// <typeparam name="T">
     /// The type of the value. Only the following types are allowed:
     /// <see cref="string"/>, <see cref="bool"/>, <see cref="int"/>, <see cref="long"/>, <see cref="double"/> and <see cref="object"/> (both nullable and non-nullable).<br/>

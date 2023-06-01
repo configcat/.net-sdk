@@ -20,7 +20,7 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// </summary>
     /// <remarks>
     /// It is important to provide an argument for the <paramref name="defaultValue"/> parameter, specifically for the <typeparamref name="T"/> generic type parameter,
-    /// that matches the type of the feature flag or setting you are evaluating.
+    /// that matches the type of the feature flag or setting you are evaluating.<br/>
     /// Please refer to <see href="https://configcat.com/docs/sdk-reference/dotnet/#setting-type-mapping">this table</see> for the corresponding types.
     /// </remarks>
     /// <typeparam name="T">
@@ -42,7 +42,7 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// </summary>
     /// <remarks>
     /// It is important to provide an argument for the <paramref name="defaultValue"/> parameter, specifically for the <typeparamref name="T"/> generic type parameter,
-    /// that matches the type of the feature flag or setting you are evaluating.
+    /// that matches the type of the feature flag or setting you are evaluating.<br/>
     /// Please refer to <see href="https://configcat.com/docs/sdk-reference/dotnet/#setting-type-mapping">this table</see> for the corresponding types.
     /// </remarks>
     /// <typeparam name="T">
@@ -66,7 +66,7 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// </summary>
     /// <remarks>
     /// It is important to provide an argument for the <paramref name="defaultValue"/> parameter, specifically for the <typeparamref name="T"/> generic type parameter,
-    /// that matches the type of the feature flag or setting you are evaluating.
+    /// that matches the type of the feature flag or setting you are evaluating.<br/>
     /// Please refer to <see href="https://configcat.com/docs/sdk-reference/dotnet/#setting-type-mapping">this table</see> for the corresponding types.
     /// </remarks>
     /// <typeparam name="T">
@@ -88,7 +88,7 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// </summary>
     /// <remarks>
     /// It is important to provide an argument for the <paramref name="defaultValue"/> parameter, specifically for the <typeparamref name="T"/> generic type parameter,
-    /// that matches the type of the feature flag or setting you are evaluating.
+    /// that matches the type of the feature flag or setting you are evaluating.<br/>
     /// Please refer to <see href="https://configcat.com/docs/sdk-reference/dotnet/#setting-type-mapping">this table</see> for the corresponding types.
     /// </remarks>
     /// <typeparam name="T">

@@ -18,7 +18,7 @@ public enum LogLevel
     /// </summary>
     Error = 1,
     /// <summary>
-    /// Warning and Error events should be logged. Information and Debug events are discarded.
+    /// Warning and Error events are logged. Information and Debug events are discarded.
     /// </summary>
     Warning = 2,
     /// <summary>

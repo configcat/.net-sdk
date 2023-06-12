@@ -8,16 +8,15 @@ internal static class DateTimeUtils
     public static string ToUnixTimeStamp(this DateTime dateTime)
     {
 #if !NET45
-        var seconds = new DateTimeOffset(dateTime).ToUnixTimeSeconds();
+        var milliseconds = new DateTimeOffset(dateTime).ToUnixTimeMilliseconds();
 #else
-        // Based on: https://github.com/dotnet/runtime/blob/v6.0.13/src/libraries/System.Private.CoreLib/src/System/DateTimeOffset.cs#L607
+        // Based on: https://github.com/dotnet/runtime/blob/v6.0.13/src/libraries/System.Private.CoreLib/src/System/DateTimeOffset.cs#L629
 
-        const long unixEpochSeconds = 62_135_596_800L;
-
-        var seconds = dateTime.Ticks / TimeSpan.TicksPerSecond - unixEpochSeconds;
+        const long unixEpochMilliseconds = 62_135_596_800_000L;
+        var milliseconds = dateTime.Ticks / TimeSpan.TicksPerMillisecond - unixEpochMilliseconds;
 #endif
 
-        return seconds.ToString(CultureInfo.InvariantCulture);
+        return milliseconds.ToString(CultureInfo.InvariantCulture);
     }
 
     public static bool TryParseUnixTimeStamp(ReadOnlySpan<char> span, out DateTime dateTime)
@@ -28,33 +27,33 @@ internal static class DateTimeUtils
         var slice = span.ToString();
 #endif
 
-        if (!long.TryParse(slice, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var seconds))
+        if (!long.TryParse(slice, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var milliseconds))
         {
             dateTime = default;
             return false;
         }
 
 #if !NET45
-        try { dateTime = DateTimeOffset.FromUnixTimeSeconds(seconds).UtcDateTime; }
+        try { dateTime = DateTimeOffset.FromUnixTimeMilliseconds(milliseconds).UtcDateTime; }
         catch (ArgumentOutOfRangeException)
         {
             dateTime = default;
             return false;
         }
 #else
-        // Based on: https://github.com/dotnet/runtime/blob/v6.0.13/src/libraries/System.Private.CoreLib/src/System/DateTimeOffset.cs#L431
+        // Based on: https://github.com/dotnet/runtime/blob/v6.0.13/src/libraries/System.Private.CoreLib/src/System/DateTimeOffset.cs#L443
 
-        const long unixEpochSeconds = 62_135_596_800L;
-        const long unixMinSeconds = 0 / TimeSpan.TicksPerSecond - unixEpochSeconds;
-        const long unixMaxSeconds = 3_155_378_975_999_999_999L / TimeSpan.TicksPerSecond - unixEpochSeconds;
+        const long unixEpochMilliseconds = 62_135_596_800_000L;
+        const long unixMinMilliseconds = 0 / TimeSpan.TicksPerMillisecond - unixEpochMilliseconds;
+        const long unixMaxMilliseconds = 3_155_378_975_999_999_999L / TimeSpan.TicksPerMillisecond - unixEpochMilliseconds;
 
-        if (seconds < unixMinSeconds || seconds > unixMaxSeconds)
+        if (milliseconds < unixMinMilliseconds || milliseconds > unixMaxMilliseconds)
         {
             dateTime = default;
             return false;
         }
 
-        long ticks = (seconds + unixEpochSeconds) * TimeSpan.TicksPerSecond;
+        var ticks = (milliseconds + unixEpochMilliseconds) * TimeSpan.TicksPerMillisecond;
         dateTime = new DateTime(ticks, DateTimeKind.Utc);
 #endif
 

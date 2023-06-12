@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace ConfigCat.Client;
 
 /// <summary>
-/// Contains the result of a <see cref="IConfigCatClient.ForceRefresh"/> or <see cref="IConfigCatClient.ForceRefreshAsync"/> operation.
+/// Contains the result of an <see cref="IConfigCatClient.ForceRefresh"/> or <see cref="IConfigCatClient.ForceRefreshAsync"/> operation.
 /// </summary>
 public readonly record struct RefreshResult
 {

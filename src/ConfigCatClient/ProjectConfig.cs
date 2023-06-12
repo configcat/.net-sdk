@@ -7,7 +7,7 @@ namespace ConfigCat.Client;
 
 internal sealed class ProjectConfig
 {
-    internal const string SerializationFormatVersion = "v1";
+    internal const string SerializationFormatVersion = "v2";
 
     public static readonly ProjectConfig Empty = new(null, null, DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc), null);
 
@@ -40,8 +40,8 @@ internal sealed class ProjectConfig
     public static DateTime GenerateTimeStamp()
     {
         var utcNow = DateTime.UtcNow;
-        // Remove the sub-second part as we need second precision only.
-        return utcNow.AddTicks(-(utcNow.Ticks % TimeSpan.TicksPerSecond));
+        // Remove the sub-millisecond part as we need millisecond precision only.
+        return utcNow.AddTicks(-(utcNow.Ticks % TimeSpan.TicksPerMillisecond));
     }
 
     public static string Serialize(ProjectConfig config)

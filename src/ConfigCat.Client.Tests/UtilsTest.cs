@@ -17,11 +17,12 @@ public class UtilsTest
         Assert.AreEqual(expected, bytes.ToHexString());
     }
 
-    [DataRow("-62135596801", -1L)]
-    [DataRow("-62135596800", 0L)]
+    [DataRow("-62135596800001", -1L)]
+    [DataRow("-62135596800000", 0L)]
     [DataRow("0", 621355968000000000L)]
-    [DataRow("+253402300799", 3155378975990000000L)]
-    [DataRow("+253402300800", -1L)]
+    [DataRow("+253402300799999", 3155378975999990000L)]
+    [DataRow("+253402300800000", -1L)]
+    [DataRow(".0", -1L)]
     [DataRow("1.0", -1L)]
     [DataRow("1x", -1L)]
     [DataTestMethod]

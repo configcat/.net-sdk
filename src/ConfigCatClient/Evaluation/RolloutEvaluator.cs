@@ -5,11 +5,6 @@ using System.Globalization;
 using System.Linq;
 
 using static System.FormattableString;
-#if USE_NEWTONSOFT_JSON
-using JsonValue = Newtonsoft.Json.Linq.JValue;
-#else
-using JsonValue = System.Text.Json.JsonElement;
-#endif
 
 namespace ConfigCat.Client.Evaluation;
 
@@ -22,8 +17,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         this.logger = logger;
     }
 
-    public EvaluationDetails Evaluate(Setting setting, string key, string? logDefaultValue, User? user,
-        ProjectConfig? remoteConfig, EvaluationDetailsFactory detailsFactory)
+    public EvaluateResult Evaluate(Setting setting, string key, string? logDefaultValue, User? user)
     {
         var evaluateLog = new EvaluateLogger
         {
@@ -35,42 +29,28 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
         try
         {
+            EvaluateResult evaluateResult;
+
             if (user is not null)
             {
                 // evaluate targeting rules
 
-                if (TryEvaluateRules(setting.RolloutRules, user, evaluateLog, out var evaluateRulesResult))
+                if (TryEvaluateRules(setting.RolloutRules, user, evaluateLog, out evaluateResult))
                 {
-                    evaluateLog.ReturnValue = evaluateRulesResult.Value.ToString();
-                    evaluateLog.VariationId = evaluateRulesResult.VariationId;
+                    evaluateLog.ReturnValue = evaluateResult.Value.ToString();
+                    evaluateLog.VariationId = evaluateResult.VariationId;
 
-                    return EvaluationDetails.FromJsonValue(
-                        detailsFactory,
-                        setting,
-                        key,
-                        evaluateRulesResult.Value,
-                        evaluateRulesResult.VariationId,
-                        fetchTime: remoteConfig?.TimeStamp,
-                        user,
-                        matchedEvaluationRule: evaluateRulesResult.MatchedRule);
+                    return evaluateResult;
                 }
 
                 // evaluate percentage options
 
-                if (TryEvaluatePercentageRules(setting.RolloutPercentageItems, key, user, evaluateLog, out var evaluatePercentageRulesResult))
+                if (TryEvaluatePercentageRules(setting.RolloutPercentageItems, key, user, evaluateLog, out evaluateResult))
                 {
-                    evaluateLog.ReturnValue = evaluatePercentageRulesResult.Value.ToString();
-                    evaluateLog.VariationId = evaluatePercentageRulesResult.VariationId;
+                    evaluateLog.ReturnValue = evaluateResult.Value.ToString();
+                    evaluateLog.VariationId = evaluateResult.VariationId;
 
-                    return EvaluationDetails.FromJsonValue(
-                        detailsFactory,
-                        setting,
-                        key,
-                        evaluatePercentageRulesResult.Value,
-                        evaluatePercentageRulesResult.VariationId,
-                        fetchTime: remoteConfig?.TimeStamp,
-                        user,
-                        matchedEvaluationPercentageRule: evaluatePercentageRulesResult.MatchedRule);
+                    return evaluateResult;
                 }
             }
             else if (setting.RolloutRules.Any() || setting.RolloutPercentageItems.Any())
@@ -83,14 +63,8 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             evaluateLog.ReturnValue = setting.Value.ToString();
             evaluateLog.VariationId = setting.VariationId;
 
-            return EvaluationDetails.FromJsonValue(
-                detailsFactory,
-                setting,
-                key,
-                setting.Value,
-                setting.VariationId,
-                fetchTime: remoteConfig?.TimeStamp,
-                user);
+            evaluateResult = new EvaluateResult(setting.Value, setting.VariationId);
+            return evaluateResult;
         }
         finally
         {
@@ -98,7 +72,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         }
     }
 
-    private static bool TryEvaluatePercentageRules(ICollection<RolloutPercentageItem> rolloutPercentageItems, string key, User user, EvaluateLogger evaluateLog, out EvaluateResult<RolloutPercentageItem> result)
+    private static bool TryEvaluatePercentageRules(ICollection<RolloutPercentageItem> rolloutPercentageItems, string key, User user, EvaluateLogger evaluateLog, out EvaluateResult result)
     {
         if (rolloutPercentageItems.Count > 0)
         {
@@ -120,7 +94,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                     evaluateLog.Log(Invariant($"  - % option: [IF {bucket} > {hashScale} THEN '{percentageRule.Value}'] => no match"));
                     continue;
                 }
-                result = new EvaluateResult<RolloutPercentageItem>(percentageRule.Value, percentageRule.VariationId, percentageRule);
+                result = new EvaluateResult(percentageRule.Value, percentageRule.VariationId, matchedPercentageOption: percentageRule);
                 evaluateLog.Log(Invariant($"  - % option: [IF {bucket} > {hashScale} THEN '{percentageRule.Value}'] => MATCH, applying % option"));
                 return true;
             }
@@ -130,14 +104,14 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return false;
     }
 
-    private static bool TryEvaluateRules(ICollection<RolloutRule> rules, User user, EvaluateLogger logger, out EvaluateResult<RolloutRule> result)
+    private static bool TryEvaluateRules(ICollection<RolloutRule> rules, User user, EvaluateLogger logger, out EvaluateResult result)
     {
         if (rules.Count > 0)
         {
             logger.Log(Invariant($"Applying the first targeting rule that matches the User '{user.Serialize()}':"));
             foreach (var rule in rules.OrderBy(o => o.Order))
             {
-                result = new EvaluateResult<RolloutRule>(rule.Value, rule.VariationId, rule);
+                result = new EvaluateResult(rule.Value, rule.VariationId, matchedTargetingRule: rule);
 
                 var l = Invariant($"  - rule: [IF User.{rule.ComparisonAttribute} {RolloutRule.FormatComparator(rule.Comparator)} '{rule.ComparisonValue}' THEN {rule.Value}] => ");
                 if (!user.AllAttributes.ContainsKey(rule.ComparisonAttribute))
@@ -379,19 +353,5 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         }
 
         return false;
-    }
-
-    private readonly struct EvaluateResult<TRule>
-    {
-        public EvaluateResult(JsonValue value, string? variationId, TRule matchedRule)
-        {
-            Value = value;
-            VariationId = variationId;
-            MatchedRule = matchedRule;
-        }
-
-        public JsonValue Value { get; }
-        public string? VariationId { get; }
-        public TRule MatchedRule { get; }
     }
 }

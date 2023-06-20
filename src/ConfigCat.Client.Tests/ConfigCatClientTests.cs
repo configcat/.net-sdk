@@ -150,7 +150,7 @@ public class ConfigCatClientTests
         const string defaultValue = "Victory for the Firstborn!";
 
         this.evaluatorMock
-            .Setup(m => m.Evaluate(It.IsAny<Setting>(), It.IsAny<string>(), defaultValue, null, It.IsAny<ProjectConfig>(), It.IsAny<EvaluationDetailsFactory>()))
+            .Setup(m => m.Evaluate(It.IsAny<Setting>(), It.IsAny<string>(), defaultValue, null))
             .Throws<Exception>();
 
         var client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, new Hooks());
@@ -179,7 +179,7 @@ public class ConfigCatClientTests
         const string defaultValue = "Victory for the Firstborn!";
 
         this.evaluatorMock
-            .Setup(m => m.Evaluate(It.IsAny<Setting>(), It.IsAny<string>(), defaultValue, null, It.IsAny<ProjectConfig>(), It.IsAny<EvaluationDetailsFactory>()))
+            .Setup(m => m.Evaluate(It.IsAny<Setting>(), It.IsAny<string>(), defaultValue, null))
             .Throws<Exception>();
 
         var client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, new Hooks());
@@ -463,7 +463,7 @@ public class ConfigCatClientTests
         var timeStamp = ProjectConfig.GenerateTimeStamp();
 
         this.evaluatorMock
-            .Setup(m => m.Evaluate(It.IsAny<Setting>(), It.IsAny<string>(), defaultValue, It.IsAny<User>(), It.IsAny<ProjectConfig>(), It.IsNotNull<EvaluationDetailsFactory>()))
+            .Setup(m => m.Evaluate(It.IsAny<Setting>(), It.IsAny<string>(), defaultValue, It.IsAny<User>()))
             .Throws(new ApplicationException(errorMessage));
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
@@ -658,7 +658,7 @@ public class ConfigCatClientTests
         var timeStamp = ProjectConfig.GenerateTimeStamp();
 
         this.evaluatorMock
-            .Setup(m => m.Evaluate(It.IsAny<Setting>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ProjectConfig>(), It.IsNotNull<EvaluationDetailsFactory>()))
+            .Setup(m => m.Evaluate(It.IsAny<Setting>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<User>()))
             .Throws(new ApplicationException(errorMessage));
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,

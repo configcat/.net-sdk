@@ -13,8 +13,8 @@ internal static class RolloutEvaluatorExtensions
         ProjectConfig? remoteConfig)
     {
         var logDefaultValue = defaultValue is not null ? Convert.ToString(defaultValue, CultureInfo.InvariantCulture) : null;
-        return (EvaluationDetails<T>)evaluator.Evaluate(setting, key, logDefaultValue, user, remoteConfig,
-            static (setting, value) => EvaluationDetails.Create<T>(setting.SettingType, value, setting.UnsupportedTypeError));
+        var evaluateResult = evaluator.Evaluate(setting, key, logDefaultValue, user);
+        return EvaluationDetails.FromEvaluateResult<T>(key, evaluateResult, setting.SettingType, setting.UnsupportedTypeError, fetchTime: remoteConfig?.TimeStamp, user);
     }
 
     public static EvaluationDetails<T> Evaluate<T>(this IRolloutEvaluator evaluator, IReadOnlyDictionary<string, Setting>? settings, string key, T defaultValue, User? user,
@@ -41,8 +41,8 @@ internal static class RolloutEvaluatorExtensions
         ProjectConfig? remoteConfig)
     {
         var logDefaultValue = defaultValue is not null ? Convert.ToString(defaultValue, CultureInfo.InvariantCulture) : null;
-        return evaluator.Evaluate(setting, key, logDefaultValue, user, remoteConfig,
-            static (setting, value) => EvaluationDetails.Create(setting.SettingType, value));
+        var evaluateResult = evaluator.Evaluate(setting, key, logDefaultValue, user);
+        return EvaluationDetails.FromEvaluateResult(key, evaluateResult, setting.SettingType, setting.UnsupportedTypeError, fetchTime: remoteConfig?.TimeStamp, user);
     }
 
     public static EvaluationDetails[] EvaluateAll(this IRolloutEvaluator evaluator, IReadOnlyDictionary<string, Setting>? settings, User? user,

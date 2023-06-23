@@ -419,7 +419,6 @@ public sealed class ConfigCatClient : IConfigCatClient
     public IReadOnlyDictionary<string, object?> GetAllValues(User? user = null)
     {
         const string defaultReturnValue = "empty dictionary";
-        IReadOnlyDictionary<string, object?> result;
         EvaluationDetails[]? evaluationDetailsArray = null;
         user ??= this.defaultUser;
         try
@@ -430,14 +429,14 @@ public sealed class ConfigCatClient : IConfigCatClient
             {
                 throw new AggregateException(exceptions);
             }
-            result = evaluationDetailsArray.ToDictionary(details => details.Key, details => details.Value);
         }
         catch (Exception ex)
         {
             this.logger.SettingEvaluationError(nameof(GetAllValues), defaultReturnValue, ex);
             evaluationDetailsArray ??= ArrayUtils.EmptyArray<EvaluationDetails>();
-            result = new Dictionary<string, object?>();
         }
+
+        var result = evaluationDetailsArray.ToDictionary(details => details.Key, details => details.Value);
 
         foreach (var evaluationDetails in evaluationDetailsArray)
         {
@@ -451,7 +450,6 @@ public sealed class ConfigCatClient : IConfigCatClient
     public async Task<IReadOnlyDictionary<string, object?>> GetAllValuesAsync(User? user = null, CancellationToken cancellationToken = default)
     {
         const string defaultReturnValue = "empty dictionary";
-        IReadOnlyDictionary<string, object?> result;
         EvaluationDetails[]? evaluationDetailsArray = null;
         user ??= this.defaultUser;
         try
@@ -462,7 +460,6 @@ public sealed class ConfigCatClient : IConfigCatClient
             {
                 throw new AggregateException(exceptions);
             }
-            result = evaluationDetailsArray.ToDictionary(details => details.Key, details => details.Value);
         }
         catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
         {
@@ -472,8 +469,9 @@ public sealed class ConfigCatClient : IConfigCatClient
         {
             this.logger.SettingEvaluationError(nameof(GetAllValuesAsync), defaultReturnValue, ex);
             evaluationDetailsArray ??= ArrayUtils.EmptyArray<EvaluationDetails>();
-            result = new Dictionary<string, object?>();
         }
+
+        var result = evaluationDetailsArray.ToDictionary(details => details.Key, details => details.Value);
 
         foreach (var evaluationDetails in evaluationDetailsArray)
         {

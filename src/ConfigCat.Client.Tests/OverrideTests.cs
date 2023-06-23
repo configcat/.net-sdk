@@ -1,8 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+#if USE_NEWTONSOFT_JSON
+using JsonValue = Newtonsoft.Json.Linq.JValue;
+#else
+using JsonValue = System.Text.Json.JsonElement;
+#endif
 
 namespace ConfigCat.Client.Tests;
 
@@ -511,8 +518,16 @@ public class OverrideTests
             .MakeGenericMethod(defaultValue.GetType());
 
         var actualEvaluatedValue = method.Invoke(client, new[] { key, defaultValue, null });
+        var actualEvaluatedValues = client.GetAllValues(user: null);
 
         Assert.AreEqual(expectedEvaluatedValue, actualEvaluatedValue);
+
+        var overrideValueSettingType = overrideValue.DetermineSettingType();
+        var expectedEvaluatedValues = new KeyValuePair<string, object?>[]
+        {
+             new(key, overrideValueSettingType != SettingType.Unknown ? overrideValue : null)
+        };
+        CollectionAssert.AreEquivalent(expectedEvaluatedValues, actualEvaluatedValues.ToArray());
     }
 
     [DataRow("true", false, true)]
@@ -542,6 +557,13 @@ public class OverrideTests
     public void OverrideValueTypeMismatchShouldBeHandledCorrectly_SimplifiedConfig(string overrideValueJson, object defaultValue, object expectedEvaluatedValue)
     {
         const string key = "flag";
+        var overrideValue =
+#if USE_NEWTONSOFT_JSON
+            overrideValueJson.Deserialize<Newtonsoft.Json.Linq.JToken>();
+#else
+            overrideValueJson.Deserialize<System.Text.Json.JsonElement>();
+#endif
+
 
         var filePath = Path.GetTempFileName();
         File.WriteAllText(filePath, $"{{ \"flags\": {{ \"{key}\": {overrideValueJson} }} }}");
@@ -559,8 +581,17 @@ public class OverrideTests
                 .MakeGenericMethod(defaultValue.GetType());
 
             var actualEvaluatedValue = method.Invoke(client, new[] { key, defaultValue, null });
+            var actualEvaluatedValues = client.GetAllValues(user: null);
 
             Assert.AreEqual(expectedEvaluatedValue, actualEvaluatedValue);
+            var overrideValueSettingType = overrideValue.DetermineSettingType();
+            var expectedEvaluatedValues = new KeyValuePair<string, object?>[]
+            {
+                new(key, overrideValueSettingType != SettingType.Unknown
+                    ? (overrideValue is JsonValue jsonValue ? jsonValue.ConvertToObject(overrideValueSettingType) : overrideValue)
+                    : null)
+            };
+            CollectionAssert.AreEquivalent(expectedEvaluatedValues, actualEvaluatedValues.ToArray());
         }
         finally
         {

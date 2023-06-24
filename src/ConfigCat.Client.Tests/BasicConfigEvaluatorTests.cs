@@ -51,7 +51,7 @@ public class BasicConfigEvaluatorTests : ConfigEvaluatorTestsBase
         Assert.AreEqual(3.1415, actual);
     }
 
-    private delegate EvaluationDetails<object> EvaluateDelegate(IRolloutEvaluator evaluator, IReadOnlyDictionary<string, Setting> settings, string key, object defaultValue, User user,
+    private delegate EvaluationDetails<object> EvaluateDelegate(IRolloutEvaluator evaluator, Dictionary<string, Setting> settings, string key, object defaultValue, User user,
         ProjectConfig remoteConfig, LoggerWrapper logger);
 
     private static readonly MethodInfo EvaluateMethodDefinition = new EvaluateDelegate(RolloutEvaluatorExtensions.Evaluate).Method.GetGenericMethodDefinition();

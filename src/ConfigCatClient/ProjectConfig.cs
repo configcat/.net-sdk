@@ -11,7 +11,7 @@ internal sealed class ProjectConfig
 
     public static readonly ProjectConfig Empty = new(null, null, DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc), null);
 
-    public ProjectConfig(string? configJson, SettingsWithPreferences? config, DateTime timeStamp, string? httpETag)
+    public ProjectConfig(string? configJson, Config? config, DateTime timeStamp, string? httpETag)
     {
         Debug.Assert(!(configJson is null ^ config is null), $"{nameof(configJson)} and {nameof(config)} must be both null or both not null.");
 
@@ -24,7 +24,7 @@ internal sealed class ProjectConfig
     public ProjectConfig With(DateTime timeStamp) => new ProjectConfig(ConfigJson, Config, timeStamp, HttpETag);
 
     public string? ConfigJson { get; }
-    public SettingsWithPreferences? Config { get; }
+    public Config? Config { get; }
     public DateTime TimeStamp { get; }
     public string? HttpETag { get; }
 
@@ -82,11 +82,11 @@ internal sealed class ProjectConfig
         index = endIndex + 1;
         var configJsonSpan = value.AsSpan(index);
 
-        SettingsWithPreferences? config;
+        Config? config;
         string? configJson;
         if (configJsonSpan.Length > 0)
         {
-            config = configJsonSpan.DeserializeOrDefault<SettingsWithPreferences>();
+            config = configJsonSpan.DeserializeOrDefault<Config>();
             if (config is null)
             {
                 throw new FormatException("Invalid config JSON content: " + configJsonSpan.ToString());

@@ -44,111 +44,99 @@ internal static class ObjectExtensions
         return value.GetTypeCode() is TypeCode.Single or TypeCode.Double;
     }
 
-    public static SettingType DetermineSettingType(this JsonValue value)
+    internal static SettingValue ToSettingValue(this JsonValue value, out SettingType settingType)
     {
 #if USE_NEWTONSOFT_JSON
-        return value.Type switch
+        switch (value.Type)
         {
-            Newtonsoft.Json.Linq.JTokenType.String =>
-                SettingType.String,
-            Newtonsoft.Json.Linq.JTokenType.Boolean =>
-                SettingType.Boolean,
-            Newtonsoft.Json.Linq.JTokenType.Integer when IsWithinAllowedIntRange(value) =>
-                SettingType.Int,
-            Newtonsoft.Json.Linq.JTokenType.Float when IsWithinAllowedDoubleRange(value) =>
-                SettingType.Double,
-            _ =>
-                SettingType.Unknown,
-        };
+            case Newtonsoft.Json.Linq.JTokenType.String:
+                settingType = SettingType.String;
+                return new SettingValue { StringValue = value.ConvertTo<string>() };
+
+            case Newtonsoft.Json.Linq.JTokenType.Boolean:
+                settingType = SettingType.Boolean;
+                return new SettingValue { BoolValue = value.ConvertTo<bool>() };
+
+            case Newtonsoft.Json.Linq.JTokenType.Integer when IsWithinAllowedIntRange(value):
+                settingType = SettingType.Int;
+                return new SettingValue { IntValue = value.ConvertTo<int>() };
+
+            case Newtonsoft.Json.Linq.JTokenType.Float when IsWithinAllowedDoubleRange(value):
+                settingType = SettingType.Double;
+                return new SettingValue { DoubleValue = value.ConvertTo<double>() };
+        }
 #else
-        return value.ValueKind switch
+        switch (value.ValueKind)
         {
-            Text.Json.JsonValueKind.String =>
-                SettingType.String,
-            Text.Json.JsonValueKind.False or
-            Text.Json.JsonValueKind.True =>
-                SettingType.Boolean,
-            Text.Json.JsonValueKind.Number when value.TryGetInt32(out var _) =>
-                SettingType.Int,
-            Text.Json.JsonValueKind.Number when value.TryGetDouble(out var _) =>
-                SettingType.Double,
-            _ =>
-                SettingType.Unknown,
-        };
+            case Text.Json.JsonValueKind.String:
+                settingType = SettingType.String;
+                return new SettingValue { StringValue = value.ConvertTo<string>() };
+
+            case Text.Json.JsonValueKind.False or Text.Json.JsonValueKind.True:
+                settingType = SettingType.Boolean;
+                return new SettingValue { BoolValue = value.ConvertTo<bool>() };
+
+            case Text.Json.JsonValueKind.Number when value.TryGetInt32(out var _):
+                settingType = SettingType.Int;
+                return new SettingValue { IntValue = value.ConvertTo<int>() };
+
+            case Text.Json.JsonValueKind.Number when value.TryGetDouble(out var _):
+                settingType = SettingType.Double;
+                return new SettingValue { DoubleValue = value.ConvertTo<double>() };
+        }
 #endif
+
+        settingType = Setting.UnknownType;
+        return new SettingValue { UnsupportedValue = value };
     }
 
-    public static SettingType DetermineSettingType(this object? value)
+    public static SettingValue ToSettingValue(this object? value, out SettingType settingType)
     {
-        if (value is null)
+        if (value is not null)
         {
-            return SettingType.Unknown;
+            switch (Type.GetTypeCode(value.GetType()))
+            {
+                case TypeCode.String:
+                    settingType = SettingType.String;
+                    return new SettingValue { StringValue = (string)value };
+
+                case TypeCode.Boolean:
+                    settingType = SettingType.Boolean;
+                    return new SettingValue { BoolValue = (bool)value };
+
+                case TypeCode.SByte or TypeCode.Byte or TypeCode.Int16 or TypeCode.UInt16 or TypeCode.Int32:
+                case TypeCode.UInt32 or TypeCode.Int64 or TypeCode.UInt64 when IsWithinAllowedIntRange((IConvertible)value):
+                    settingType = SettingType.Int;
+                    return new SettingValue { IntValue = ((IConvertible)value).ToInt32(CultureInfo.InvariantCulture) };
+
+                case TypeCode.Single or TypeCode.Double when IsWithinAllowedDoubleRange((IConvertible)value):
+                    settingType = SettingType.Double;
+                    return new SettingValue { DoubleValue = ((IConvertible)value).ToDouble(CultureInfo.InvariantCulture) };
+            }
         }
 
-        if (value is JsonValue jsonValue)
-        {
-            return jsonValue.DetermineSettingType();
-        }
-
-        return Type.GetTypeCode(value.GetType()) switch
-        {
-            TypeCode.String =>
-                SettingType.String,
-            TypeCode.Boolean =>
-                SettingType.Boolean,
-            TypeCode.SByte or
-            TypeCode.Byte or
-            TypeCode.Int16 or
-            TypeCode.UInt16 or
-            TypeCode.Int32 or
-            TypeCode.UInt32 or
-            TypeCode.Int64 or
-            TypeCode.UInt64 when IsWithinAllowedIntRange((IConvertible)value) =>
-                SettingType.Int,
-            TypeCode.Single or
-            TypeCode.Double when IsWithinAllowedDoubleRange((IConvertible)value) =>
-                SettingType.Double,
-            _ =>
-                SettingType.Unknown,
-        };
+        settingType = Setting.UnknownType;
+        return new SettingValue { UnsupportedValue = value };
     }
 
     public static Setting ToSetting(this object? value)
     {
-        var settingType = DetermineSettingType(value);
-
-        JsonValue jsonValue;
-        string? unsupportedTypeError;
-        if (settingType != SettingType.Unknown)
+        var setting = new Setting
         {
-#if USE_NEWTONSOFT_JSON
-            jsonValue = new Newtonsoft.Json.Linq.JValue(value);
-#else
-            jsonValue = Text.Json.JsonSerializer.SerializeToElement(value);
-#endif
-            unsupportedTypeError = null;
-        }
-        else
-        {
-#if USE_NEWTONSOFT_JSON
-            jsonValue = JsonValue.CreateUndefined();
-#else
-            jsonValue = default;
-#endif
-            unsupportedTypeError = value is not null
-                ? $"Setting value '{value}' is of an unsupported type ({value.GetType()})."
-                : $"Setting value is null.";
-        }
-
-        return new Setting
-        {
-            Value = jsonValue,
-            SettingType = settingType,
-            UnsupportedTypeError = unsupportedTypeError,
+            Value = value is JsonValue jsonValue
+                ? jsonValue.ToSettingValue(out var settingType)
+                : value.ToSettingValue(out settingType),
         };
+
+        if (settingType != Setting.UnknownType)
+        {
+            setting.SettingType = settingType;
+        }
+
+        return setting;
     }
 
-    public static TValue ConvertTo<TValue>(this JsonValue value)
+    private static TValue ConvertTo<TValue>(this JsonValue value)
     {
         Debug.Assert(typeof(TValue) != typeof(object), "Conversion to object is not supported.");
 
@@ -161,15 +149,17 @@ internal static class ObjectExtensions
 #endif
     }
 
-    public static object ConvertToObject(this JsonValue value, SettingType settingType)
-    {
-        return settingType switch
-        {
-            SettingType.Boolean => value.ConvertTo<bool>(),
-            SettingType.String => value.ConvertTo<string>(),
-            SettingType.Int => value.ConvertTo<int>(),
-            SettingType.Double => value.ConvertTo<double>(),
-            _ => throw new ArgumentOutOfRangeException(nameof(settingType), settingType, null)
-        };
-    }
+    private static readonly object BoxedTrue = true;
+    private static readonly object BoxedFalse = false;
+
+    public static object AsCachedObject(this bool value) => value ? BoxedTrue : BoxedFalse;
+
+    // In generic methods, we can't cast from/to the generic type directly even if we know that the conversion would be ok, that is,
+    // something like (TValue)BoolValue won't work, we'd need (TValue)(object)BoolValue, which would mean boxing (memory allocation).
+    // However, using the following trick involving delegates we can avoid boxing (see also https://stackoverflow.com/a/45508419).
+
+    public static readonly Delegate BoxedIntToLong = new Func<object, long>(value => (int)value);
+    public static readonly Delegate BoxedIntToNullableLong = new Func<object, long?>(value => (int)value);
+
+    public static TTo Cast<TFrom, TTo>(this TFrom from, Delegate conversion) => ((Func<TFrom, TTo>)conversion)(from);
 }

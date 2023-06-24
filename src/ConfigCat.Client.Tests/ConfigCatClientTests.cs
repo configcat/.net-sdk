@@ -150,7 +150,7 @@ public class ConfigCatClientTests
         const string defaultValue = "Victory for the Firstborn!";
 
         this.evaluatorMock
-            .Setup(m => m.Evaluate(It.IsAny<Setting>(), It.IsAny<string>(), defaultValue, null))
+            .Setup(m => m.Evaluate(in It.Ref<EvaluateContext>.IsAny))
             .Throws<Exception>();
 
         var client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, new Hooks());
@@ -179,7 +179,7 @@ public class ConfigCatClientTests
         const string defaultValue = "Victory for the Firstborn!";
 
         this.evaluatorMock
-            .Setup(m => m.Evaluate(It.IsAny<Setting>(), It.IsAny<string>(), defaultValue, null))
+            .Setup(m => m.Evaluate(in It.Ref<EvaluateContext>.IsAny))
             .Throws<Exception>();
 
         var client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, new Hooks());
@@ -463,7 +463,7 @@ public class ConfigCatClientTests
         var timeStamp = ProjectConfig.GenerateTimeStamp();
 
         this.evaluatorMock
-            .Setup(m => m.Evaluate(It.IsAny<Setting>(), It.IsAny<string>(), defaultValue, It.IsAny<User>()))
+            .Setup(m => m.Evaluate(in It.Ref<EvaluateContext>.IsAny))
             .Throws(new ApplicationException(errorMessage));
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
@@ -594,7 +594,7 @@ public class ConfigCatClientTests
 
         this.configServiceMock.Setup(m => m.GetConfig()).Returns(ProjectConfig.Empty);
         this.configServiceMock.Setup(m => m.GetConfigAsync(It.IsAny<CancellationToken>())).ReturnsAsync(ProjectConfig.Empty);
-        var o = new SettingsWithPreferences();
+        var o = new Config();
 
         using IConfigCatClient client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, new Hooks());
 
@@ -658,7 +658,7 @@ public class ConfigCatClientTests
         var timeStamp = ProjectConfig.GenerateTimeStamp();
 
         this.evaluatorMock
-            .Setup(m => m.Evaluate(It.IsAny<Setting>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<User>()))
+            .Setup(m => m.Evaluate(in It.Ref<EvaluateContext>.IsAny))
             .Throws(new ApplicationException(errorMessage));
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
@@ -780,7 +780,7 @@ public class ConfigCatClientTests
         // Arrange
 
         this.configServiceMock.Setup(m => m.GetConfigAsync(It.IsAny<CancellationToken>())).ReturnsAsync(ProjectConfig.Empty);
-        var o = new SettingsWithPreferences();
+        var o = new Config();
 
         IConfigCatClient instance = new ConfigCatClient(
             this.configServiceMock.Object,

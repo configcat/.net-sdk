@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using ConfigCat.Client.Versioning;
@@ -10,6 +9,9 @@ namespace ConfigCat.Client.Evaluation;
 
 internal sealed class RolloutEvaluator : IRolloutEvaluator
 {
+    public const string InvalidValuePlaceholder = "<invalid value>";
+    public const string InvalidOperatorPlaceholder = "<invalid operator>";
+
     private readonly LoggerWrapper logger;
 
     public RolloutEvaluator(LoggerWrapper logger)
@@ -17,25 +19,23 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         this.logger = logger;
     }
 
-    public EvaluateResult Evaluate(Setting setting, string key, string? logDefaultValue, User? user)
+    public EvaluateResult Evaluate(in EvaluateContext context)
     {
-        var evaluateLog = new EvaluateLogger
-        {
-            ReturnValue = logDefaultValue,
-            User = user,
-            KeyName = key,
-            VariationId = null
-        };
+        var evaluateLog = context.Log;
 
         try
         {
             EvaluateResult evaluateResult;
 
-            if (user is not null)
+            var setting = context.Setting;
+            var targetingRules = setting.TargetingRules;
+            var percentageOptions = setting.PercentageOptions;
+
+            if (context.User is not null)
             {
                 // evaluate targeting rules
 
-                if (TryEvaluateRules(setting.RolloutRules, user, evaluateLog, out evaluateResult))
+                if (TryEvaluateRules(targetingRules, context, out evaluateResult))
                 {
                     evaluateLog.ReturnValue = evaluateResult.Value.ToString();
                     evaluateLog.VariationId = evaluateResult.VariationId;
@@ -45,7 +45,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
                 // evaluate percentage options
 
-                if (TryEvaluatePercentageRules(setting.RolloutPercentageItems, key, user, evaluateLog, out evaluateResult))
+                if (TryEvaluatePercentageRules(percentageOptions, context, out evaluateResult))
                 {
                     evaluateLog.ReturnValue = evaluateResult.Value.ToString();
                     evaluateLog.VariationId = evaluateResult.VariationId;
@@ -53,17 +53,18 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                     return evaluateResult;
                 }
             }
-            else if (setting.RolloutRules.Any() || setting.RolloutPercentageItems.Any())
+            else if (targetingRules.Length > 0 || percentageOptions.Length > 0)
             {
-                this.logger.TargetingIsNotPossible(key);
+                this.logger.TargetingIsNotPossible(context.Key);
             }
 
             // regular evaluate
 
-            evaluateLog.ReturnValue = setting.Value.ToString();
+            evaluateResult = new EvaluateResult(setting.Value, setting.VariationId);
+
+            evaluateLog.ReturnValue = evaluateResult.Value.ToString();
             evaluateLog.VariationId = setting.VariationId;
 
-            evaluateResult = new EvaluateResult(setting.Value, setting.VariationId);
             return evaluateResult;
         }
         finally
@@ -72,20 +73,23 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         }
     }
 
-    private static bool TryEvaluatePercentageRules(ICollection<RolloutPercentageItem> rolloutPercentageItems, string key, User user, EvaluateLogger evaluateLog, out EvaluateResult result)
+    private static bool TryEvaluatePercentageRules(PercentageOption[] percentageOptions, in EvaluateContext context, out EvaluateResult result)
     {
-        if (rolloutPercentageItems.Count > 0)
+        if (percentageOptions.Length > 0)
         {
-            var hashCandidate = key + user.Identifier;
+            var evaluateLog = context.Log;
+            var user = context.User!;
 
-            var hashValue = hashCandidate.Hash().Substring(0, 7);
+            var hashCandidate = context.Key + user.Identifier;
+
+            var hashValue = hashCandidate.Sha1().Substring(0, 7);
 
             var hashScale = int.Parse(hashValue, NumberStyles.HexNumber) % 100;
             evaluateLog.Log(Invariant($"Applying the % option that matches the User's pseudo-random '{hashScale}' (this value is sticky and consistent across all SDKs):"));
 
             var bucket = 0;
 
-            foreach (var percentageRule in rolloutPercentageItems.OrderBy(o => o.Order))
+            foreach (var percentageRule in percentageOptions)
             {
                 bucket += percentageRule.Percentage;
 
@@ -94,8 +98,8 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                     evaluateLog.Log(Invariant($"  - % option: [IF {bucket} > {hashScale} THEN '{percentageRule.Value}'] => no match"));
                     continue;
                 }
-                result = new EvaluateResult(percentageRule.Value, percentageRule.VariationId, matchedPercentageOption: percentageRule);
                 evaluateLog.Log(Invariant($"  - % option: [IF {bucket} > {hashScale} THEN '{percentageRule.Value}'] => MATCH, applying % option"));
+                result = new EvaluateResult(percentageRule.Value, percentageRule.VariationId, matchedPercentageOption: percentageRule);
                 return true;
             }
         }
@@ -104,101 +108,86 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return false;
     }
 
-    private static bool TryEvaluateRules(ICollection<RolloutRule> rules, User user, EvaluateLogger logger, out EvaluateResult result)
+    private static bool TryEvaluateRules(TargetingRule[] targetingRules, in EvaluateContext context, out EvaluateResult result)
     {
-        if (rules.Count > 0)
+        if (targetingRules.Length > 0)
         {
-            logger.Log(Invariant($"Applying the first targeting rule that matches the User '{user.Serialize()}':"));
-            foreach (var rule in rules.OrderBy(o => o.Order))
-            {
-                result = new EvaluateResult(rule.Value, rule.VariationId, matchedTargetingRule: rule);
+            var evaluateLog = context.Log;
+            var user = context.User!;
 
-                var l = Invariant($"  - rule: [IF User.{rule.ComparisonAttribute} {RolloutRule.FormatComparator(rule.Comparator)} '{rule.ComparisonValue}' THEN {rule.Value}] => ");
+            evaluateLog.Log(Invariant($"Applying the first targeting rule that matches the User '{user.Serialize()}':"));
+            foreach (var targetingRule in targetingRules)
+            {
+                var rule = targetingRule.Conditions.First().ComparisonCondition ?? throw new InvalidOperationException();
+
+                // TODO: how to handle this?
+                if (rule.ComparisonAttribute is null)
+                {
+                    continue;
+                }
+
+                var l = Invariant($"  - rule: [IF User.{rule.ComparisonAttribute} {ToDisplayText(rule.Comparator)} '{rule.GetComparisonValue()}' THEN {targetingRule.SimpleValueOrDefault()}] => ");
                 if (!user.AllAttributes.ContainsKey(rule.ComparisonAttribute))
                 {
-                    logger.Log(l + "no match");
+                    evaluateLog.Log(l + "no match");
                     continue;
                 }
 
                 var comparisonAttributeValue = user.AllAttributes[rule.ComparisonAttribute]!;
                 if (string.IsNullOrEmpty(comparisonAttributeValue))
                 {
-                    logger.Log(l + "no match");
+                    evaluateLog.Log(l + "no match");
                     continue;
                 }
 
                 switch (rule.Comparator)
                 {
-                    case Comparator.In:
-
-                        if (rule.ComparisonValue
-                            .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                            .Select(t => t.Trim())
-                            .Contains(comparisonAttributeValue))
-                        {
-                            logger.Log(l + "MATCH, applying rule");
-
-                            return true;
-                        }
-
-                        logger.Log(l + "no match");
-
-                        break;
-
-                    case Comparator.NotIn:
-
-                        if (!rule.ComparisonValue
-                           .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                           .Select(t => t.Trim())
-                           .Contains(comparisonAttributeValue))
-                        {
-                            logger.Log(l + "MATCH, applying rule");
-
-                            return true;
-                        }
-
-                        logger.Log(l + "no match");
-
-                        break;
                     case Comparator.Contains:
 
-                        if (comparisonAttributeValue.Contains(rule.ComparisonValue))
+                        if (rule.StringListValue!.Any(value => comparisonAttributeValue.Contains(value)))
                         {
-                            logger.Log(l + "MATCH, applying rule");
+                            evaluateLog.Log(l + "MATCH, applying rule");
 
+                            result = new EvaluateResult(targetingRule.SimpleValueOrDefault(), targetingRule.SimpleValue?.VariationId, matchedTargetingRule: targetingRule);
                             return true;
                         }
 
-                        logger.Log(l + "no match");
+                        evaluateLog.Log(l + "no match");
 
                         break;
                     case Comparator.NotContains:
 
-                        if (!comparisonAttributeValue.Contains(rule.ComparisonValue))
+                        if (!rule.StringListValue!.Any(value => comparisonAttributeValue.Contains(value)))
                         {
-                            logger.Log(l + "MATCH, applying rule");
+                            evaluateLog.Log(l + "MATCH, applying rule");
 
+                            result = new EvaluateResult(targetingRule.SimpleValueOrDefault(), targetingRule.SimpleValue?.VariationId, matchedTargetingRule: targetingRule);
                             return true;
                         }
 
-                        logger.Log(l + "no match");
+                        evaluateLog.Log(l + "no match");
 
                         break;
-                    case Comparator.SemVerIn:
-                    case Comparator.SemVerNotIn:
+                    case Comparator.SemVerOneOf:
+                    case Comparator.SemVerNotOneOf:
                     case Comparator.SemVerLessThan:
                     case Comparator.SemVerLessThanEqual:
                     case Comparator.SemVerGreaterThan:
                     case Comparator.SemVerGreaterThanEqual:
+                        // TODO: handle value list
+                        var stringValue = rule.Comparator is Comparator.SemVerOneOf or Comparator.SemVerNotOneOf
+                            ? string.Join(", ", rule.StringListValue!)
+                            : rule.StringValue!;
 
-                        if (EvaluateSemVer(comparisonAttributeValue, rule.ComparisonValue, rule.Comparator))
+                        if (EvaluateSemVer(comparisonAttributeValue, stringValue, rule.Comparator))
                         {
-                            logger.Log(l + "MATCH, applying rule");
+                            evaluateLog.Log(l + "MATCH, applying rule");
 
+                            result = new EvaluateResult(targetingRule.SimpleValueOrDefault(), targetingRule.SimpleValue?.VariationId, matchedTargetingRule: targetingRule);
                             return true;
                         }
 
-                        logger.Log(l + "no match");
+                        evaluateLog.Log(l + "no match");
 
                         break;
 
@@ -209,42 +198,41 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                     case Comparator.NumberGreaterThan:
                     case Comparator.NumberGreaterThanEqual:
 
-                        if (EvaluateNumber(comparisonAttributeValue, rule.ComparisonValue, rule.Comparator))
+                        if (EvaluateNumber(comparisonAttributeValue, rule.DoubleValue!.Value, rule.Comparator))
                         {
-                            logger.Log(l + "MATCH, applying rule");
+                            evaluateLog.Log(l + "MATCH, applying rule");
 
+                            result = new EvaluateResult(targetingRule.SimpleValueOrDefault(), targetingRule.SimpleValue?.VariationId, matchedTargetingRule: targetingRule);
                             return true;
                         }
 
-                        logger.Log(l + "no match");
+                        evaluateLog.Log(l + "no match");
 
                         break;
                     case Comparator.SensitiveOneOf:
-                        if (rule.ComparisonValue
-                            .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                            .Select(t => t.Trim())
-                            .Contains(comparisonAttributeValue.Hash()))
+                        // TODO: handle missing configJsonSalt
+                        if (rule.StringListValue!.Contains(HashComparisonAttribute(comparisonAttributeValue, context)))
                         {
-                            logger.Log(l + "MATCH, applying rule");
+                            evaluateLog.Log(l + "MATCH, applying rule");
 
+                            result = new EvaluateResult(targetingRule.SimpleValueOrDefault(), targetingRule.SimpleValue?.VariationId, matchedTargetingRule: targetingRule);
                             return true;
                         }
 
-                        logger.Log(l + "no match");
+                        evaluateLog.Log(l + "no match");
 
                         break;
                     case Comparator.SensitiveNotOneOf:
-                        if (!rule.ComparisonValue
-                           .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                           .Select(t => t.Trim())
-                           .Contains(comparisonAttributeValue.Hash()))
+                        // TODO: handle missing configJsonSalt
+                        if (!rule.StringListValue!.Contains(HashComparisonAttribute(comparisonAttributeValue, context)))
                         {
-                            logger.Log(l + "MATCH, applying rule");
+                            evaluateLog.Log(l + "MATCH, applying rule");
 
+                            result = new EvaluateResult(targetingRule.SimpleValueOrDefault(), targetingRule.SimpleValue?.VariationId, matchedTargetingRule: targetingRule);
                             return true;
                         }
 
-                        logger.Log(l + "no match");
+                        evaluateLog.Log(l + "no match");
 
                         break;
                     default:
@@ -257,10 +245,9 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return false;
     }
 
-    private static bool EvaluateNumber(string s1, string s2, Comparator comparator)
+    private static bool EvaluateNumber(string s1, double d2, Comparator comparator)
     {
-        if (!double.TryParse(s1.Replace(',', '.'), NumberStyles.Any, CultureInfo.InvariantCulture, out var d1)
-            || !double.TryParse(s2.Replace(',', '.'), NumberStyles.Any, CultureInfo.InvariantCulture, out var d2))
+        if (!double.TryParse(s1.Replace(',', '.'), NumberStyles.Any, CultureInfo.InvariantCulture, out var d1))
         {
             return false;
         }
@@ -284,7 +271,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
         switch (comparator)
         {
-            case Comparator.SemVerIn:
+            case Comparator.SemVerOneOf:
 
                 var rsvi = s2
                     .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
@@ -301,7 +288,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
                 return !rsvi.Contains(null) && rsvi.Any(v => v!.PrecedenceMatches(v1));
 
-            case Comparator.SemVerNotIn:
+            case Comparator.SemVerNotOneOf:
 
                 var rsvni = s2
                     .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
@@ -353,5 +340,44 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         }
 
         return false;
+    }
+
+    private static string HashComparisonAttribute(string comparisonValue, in EvaluateContext context)
+    {
+        return (comparisonValue + context.Setting.ConfigJsonSalt + context.Key).Sha256();
+    }
+
+    private static string ToDisplayText(Comparator comparator)
+    {
+        return comparator switch
+        {
+            Comparator.Contains => "CONTAINS ANY OF",
+            Comparator.NotContains => "NOT CONTAINS ANY OF",
+            Comparator.SemVerOneOf => "IS ONE OF (semver)",
+            Comparator.SemVerNotOneOf => "IS NOT ONE OF (semver)",
+            Comparator.SemVerLessThan => "< (semver)",
+            Comparator.SemVerLessThanEqual => "<= (semver)",
+            Comparator.SemVerGreaterThan => "> (semver)",
+            Comparator.SemVerGreaterThanEqual => ">= (semver)",
+            Comparator.NumberEqual => "= (number)",
+            Comparator.NumberNotEqual => "!= (number)",
+            Comparator.NumberLessThan => "< (number)",
+            Comparator.NumberLessThanEqual => "<= (number)",
+            Comparator.NumberGreaterThan => "> (number)",
+            Comparator.NumberGreaterThanEqual => ">= (number)",
+            Comparator.SensitiveOneOf => "IS ONE OF (hashed)",
+            Comparator.SensitiveNotOneOf => "IS NOT ONE OF (hashed)",
+            Comparator.DateTimeBefore => "BEFORE (UTC datetime)",
+            Comparator.DateTimeAfter => "AFTER (UTC datetime)",
+            Comparator.SensitiveTextEquals => "EQUALS (hashed)",
+            Comparator.SensitiveTextNotEquals => "NOT EQUALS (hashed)",
+            Comparator.SensitiveTextStartsWith => "STARTS WITH ANY OF (hashed)",
+            Comparator.SensitiveTextNotStartsWith => "NOT STARTS WITH ANY OF (hashed)",
+            Comparator.SensitiveTextEndsWith => "ENDS WITH ANY OF (hashed)",
+            Comparator.SensitiveTextNotEndsWith => "NOT ENDS WITH ANY OF (hashed)",
+            Comparator.SensitiveArrayContains => "ARRAY CONTAINS (hashed)",
+            Comparator.SensitiveArrayNotContains => "ARRAY NOT CONTAINS (hashed)",
+            _ => InvalidOperatorPlaceholder
+        };
     }
 }

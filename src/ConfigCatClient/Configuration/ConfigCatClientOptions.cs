@@ -9,7 +9,7 @@ namespace ConfigCat.Client.Configuration;
 /// </summary>
 public class ConfigCatClientOptions : IProvidesHooks
 {
-    internal const string ConfigFileName = "config_v5.json";
+    internal const string ConfigFileName = "config_v6.json";
 
     internal static readonly Uri BaseUrlGlobal = new("https://cdn-global.configcat.com");
 

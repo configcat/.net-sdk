@@ -149,7 +149,7 @@ internal abstract class ConfigServiceBase : IDisposable
     {
         this.Logger.Debug("config changed");
 
-        this.Hooks.RaiseConfigChanged(newConfig.Config ?? new SettingsWithPreferences());
+        this.Hooks.RaiseConfigChanged(newConfig.Config ?? new Config());
     }
 
     public bool IsOffline

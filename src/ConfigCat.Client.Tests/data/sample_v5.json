@@ -1,334 +1,536 @@
-﻿{
+{
+  "p": {
+    "s": "kSBpFzVdEHN7QbjOPhKkB2FHKaSXCGo8D55r0lqxhss="
+  },
   "f": {
     "stringDefaultCat": {
-      "v": "Cat",
       "t": 1,
-      "p": [],
-      "r": []
+      "v": {
+        "s": "Cat"
+      }
     },
     "stringIsInDogDefaultCat": {
-      "v": "Cat",
       "t": 1,
-      "p": [],
       "r": [
         {
-          "o": 0,
-          "a": "Email",
-          "t": 0,
-          "c": "a@configcat.com, b@configcat.com",
-          "v": "Dog"
+          "c": [
+            {
+              "t": {
+                "a": "Email",
+                "c": 16,
+                "l": [
+                  "206b33d71717cc9d3b74834fe2e6e1b195f052b4cc614d80571eafb1ad831fd5",
+                  "2aa6bbf5d735ca9ace441fb4641478701bd6f364122e83b3d0bf5f54fddd550c"
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "Dog"
+            }
+          }
         },
         {
-          "o": 1,
-          "a": "Custom1",
-          "t": 0,
-          "c": "admin",
-          "v": "Dog"
+          "c": [
+            {
+              "t": {
+                "a": "Custom1",
+                "c": 16,
+                "l": [
+                  "5e7d81d60e0e5b55e2ffbdfe052b02b24afdaae16626e64ae6f3d183772cf9ec"
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "Dog"
+            }
+          }
         }
-      ]
+      ],
+      "v": {
+        "s": "Cat"
+      }
     },
     "stringIsNotInDogDefaultCat": {
-      "v": "Cat",
       "t": 1,
-      "p": [],
       "r": [
         {
-          "o": 0,
-          "a": "Email",
-          "t": 1,
-          "c": "a@configcat.com,b@configcat.com",
-          "v": "Dog"
+          "c": [
+            {
+              "t": {
+                "a": "Email",
+                "c": 17,
+                "l": [
+                  "f117c6948de816414d68207e8c9fe562b5c53b0e0d3af1b5abcc36f1e0955997",
+                  "56a3573e5aa9c408bdb83878dd038e78d555aea31f98d99f0b2b8c2867463b7c"
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "Dog"
+            }
+          }
         }
-      ]
+      ],
+      "v": {
+        "s": "Cat"
+      }
     },
     "stringContainsDogDefaultCat": {
-      "v": "Cat",
       "t": 1,
-      "p": [],
       "r": [
         {
-          "o": 0,
-          "a": "Email",
-          "t": 2,
-          "c": "@configcat.com",
-          "v": "Dog"
+          "c": [
+            {
+              "t": {
+                "a": "Email",
+                "c": 2,
+                "l": [
+                  "@configcat.com"
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "Dog"
+            }
+          }
         }
-      ]
+      ],
+      "v": {
+        "s": "Cat"
+      }
     },
     "stringNotContainsDogDefaultCat": {
-      "v": "Cat",
       "t": 1,
-      "p": [],
       "r": [
         {
-          "o": 0,
-          "a": "Email",
-          "t": 3,
-          "c": "@configcat.com",
-          "v": "Dog"
+          "c": [
+            {
+              "t": {
+                "a": "Email",
+                "c": 3,
+                "l": [
+                  "@configcat.com"
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "Dog"
+            }
+          }
         }
-      ]
+      ],
+      "v": {
+        "s": "Cat"
+      }
     },
     "string25Cat25Dog25Falcon25Horse": {
-      "v": "Chicken",
       "t": 1,
       "p": [
         {
-          "o": 0,
-          "v": "Cat",
-          "p": 25
+          "p": 25,
+          "v": {
+            "s": "Cat"
+          }
         },
         {
-          "o": 1,
-          "v": "Dog",
-          "p": 25
+          "p": 25,
+          "v": {
+            "s": "Dog"
+          }
         },
         {
-          "o": 2,
-          "v": "Falcon",
-          "p": 25
+          "p": 25,
+          "v": {
+            "s": "Falcon"
+          }
         },
         {
-          "o": 3,
-          "v": "Horse",
-          "p": 25
+          "p": 25,
+          "v": {
+            "s": "Horse"
+          }
         }
       ],
-      "r": []
+      "v": {
+        "s": "Chicken"
+      }
     },
     "string75Cat0Dog25Falcon0Horse": {
-      "v": "Chicken",
       "t": 1,
       "p": [
         {
-          "o": 0,
-          "v": "Cat",
-          "p": 75
+          "p": 75,
+          "v": {
+            "s": "Cat"
+          }
         },
         {
-          "o": 1,
-          "v": "Dog",
-          "p": 0
+          "p": 0,
+          "v": {
+            "s": "Dog"
+          }
         },
         {
-          "o": 2,
-          "v": "Falcon",
-          "p": 25
+          "p": 25,
+          "v": {
+            "s": "Falcon"
+          }
         },
         {
-          "o": 3,
-          "v": "Horse",
-          "p": 0
+          "p": 0,
+          "v": {
+            "s": "Horse"
+          }
         }
       ],
-      "r": []
+      "v": {
+        "s": "Chicken"
+      }
     },
     "string25Cat25Dog25Falcon25HorseAdvancedRules": {
-      "v": "Chicken",
       "t": 1,
-      "p": [
-        {
-          "o": 0,
-          "v": "Cat",
-          "p": 25
-        },
-        {
-          "o": 1,
-          "v": "Dog",
-          "p": 25
-        },
-        {
-          "o": 2,
-          "v": "Falcon",
-          "p": 25
-        },
-        {
-          "o": 3,
-          "v": "Horse",
-          "p": 25
-        }
-      ],
       "r": [
         {
-          "o": 0,
-          "a": "Country",
-          "t": 0,
-          "c": "Hungary, United Kingdom",
-          "v": "Dolphin"
+          "c": [
+            {
+              "t": {
+                "a": "Country",
+                "c": 16,
+                "l": [
+                  "4af88801ac46795aac6d8e412d87eaaae27e02954464932c4d98175b3eafba9b",
+                  "825a2eb2bdc769ad45059625349b889ee32b6a86d636b96e79de4133326d030d"
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "Dolphin"
+            }
+          }
         },
         {
-          "o": 1,
-          "a": "Custom1",
-          "t": 2,
-          "c": "admi",
-          "v": "Lion"
+          "c": [
+            {
+              "t": {
+                "a": "Custom1",
+                "c": 2,
+                "l": [
+                  "admi"
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "Lion"
+            }
+          }
         },
         {
-          "o": 2,
-          "a": "Email",
-          "t": 2,
-          "c": "@configcat.com",
-          "v": "Kitten"
+          "c": [
+            {
+              "t": {
+                "a": "Email",
+                "c": 2,
+                "l": [
+                  "@configcat.com"
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "Kitten"
+            }
+          }
         }
-      ]
+      ],
+      "p": [
+        {
+          "p": 25,
+          "v": {
+            "s": "Cat"
+          }
+        },
+        {
+          "p": 25,
+          "v": {
+            "s": "Dog"
+          }
+        },
+        {
+          "p": 25,
+          "v": {
+            "s": "Falcon"
+          }
+        },
+        {
+          "p": 25,
+          "v": {
+            "s": "Horse"
+          }
+        }
+      ],
+      "v": {
+        "s": "Chicken"
+      }
     },
     "boolDefaultTrue": {
-      "v": true,
       "t": 0,
-      "p": [],
-      "r": []
+      "v": {
+        "b": true
+      }
     },
     "boolDefaultFalse": {
-      "v": false,
       "t": 0,
-      "p": [],
-      "r": []
+      "v": {
+        "b": false
+      }
     },
     "bool30TrueAdvancedRules": {
-      "v": true,
       "t": 0,
-      "p": [
-        {
-          "o": 0,
-          "v": true,
-          "p": 30
-        },
-        {
-          "o": 1,
-          "v": false,
-          "p": 70
-        }
-      ],
       "r": [
         {
-          "o": 0,
-          "a": "Email",
-          "t": 0,
-          "c": "a@configcat.com, b@configcat.com",
-          "v": false
+          "c": [
+            {
+              "t": {
+                "a": "Email",
+                "c": 16,
+                "l": [
+                  "3209f667a750966e68e6f6357515b30564f5ac510d347a04cdf2f538715d3dd8",
+                  "4632d76e9719686ebefd5ac89084019f4cd6c31e2b2d25ca2aaf566a68137d29"
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "b": false
+            }
+          }
         },
         {
-          "o": 1,
-          "a": "Country",
-          "t": 2,
-          "c": "United",
-          "v": false
+          "c": [
+            {
+              "t": {
+                "a": "Country",
+                "c": 2,
+                "l": [
+                  "United"
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "b": false
+            }
+          }
         }
-      ]
+      ],
+      "p": [
+        {
+          "p": 30,
+          "v": {
+            "b": true
+          }
+        },
+        {
+          "p": 70,
+          "v": {
+            "b": false
+          }
+        }
+      ],
+      "v": {
+        "b": true
+      }
     },
     "integer25One25Two25Three25FourAdvancedRules": {
-      "v": -1,
       "t": 2,
-      "p": [
-        {
-          "o": 0,
-          "v": 1,
-          "p": 25
-        },
-        {
-          "o": 1,
-          "v": 2,
-          "p": 25
-        },
-        {
-          "o": 2,
-          "v": 3,
-          "p": 25
-        },
-        {
-          "o": 3,
-          "v": 4,
-          "p": 25
-        }
-      ],
       "r": [
         {
-          "o": 0,
-          "a": "Email",
-          "t": 2,
-          "c": "@configcat.com",
-          "v": 5
+          "c": [
+            {
+              "t": {
+                "a": "Email",
+                "c": 2,
+                "l": [
+                  "@configcat.com"
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "i": 5
+            }
+          }
         }
-      ]
+      ],
+      "p": [
+        {
+          "p": 25,
+          "v": {
+            "i": 1
+          }
+        },
+        {
+          "p": 25,
+          "v": {
+            "i": 2
+          }
+        },
+        {
+          "p": 25,
+          "v": {
+            "i": 3
+          }
+        },
+        {
+          "p": 25,
+          "v": {
+            "i": 4
+          }
+        }
+      ],
+      "v": {
+        "i": -1
+      }
     },
     "integerDefaultOne": {
-      "v": 1,
       "t": 2,
-      "p": [],
-      "r": []
+      "v": {
+        "i": 1
+      }
     },
     "doubleDefaultPi": {
-      "v": 3.1415,
       "t": 3,
-      "p": [],
-      "r": []
+      "v": {
+        "d": 3.1415
+      }
     },
     "double25Pi25E25Gr25Zero": {
-      "v": -1.0,
       "t": 3,
-      "p": [
-        {
-          "o": 0,
-          "v": 3.1415,
-          "p": 25
-        },
-        {
-          "o": 1,
-          "v": 2.7182,
-          "p": 25
-        },
-        {
-          "o": 2,
-          "v": 1.61803,
-          "p": 25
-        },
-        {
-          "o": 3,
-          "v": 0.0,
-          "p": 25
-        }
-      ],
       "r": [
         {
-          "o": 0,
-          "a": "Email",
-          "t": 2,
-          "c": "@configcat.com",
-          "v": 5.561
+          "c": [
+            {
+              "t": {
+                "a": "Email",
+                "c": 2,
+                "l": [
+                  "@configcat.com"
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "d": 5.561
+            }
+          }
         }
-      ]
+      ],
+      "p": [
+        {
+          "p": 25,
+          "v": {
+            "d": 3.1415
+          }
+        },
+        {
+          "p": 25,
+          "v": {
+            "d": 2.7182
+          }
+        },
+        {
+          "p": 25,
+          "v": {
+            "d": 1.61803
+          }
+        },
+        {
+          "p": 25,
+          "v": {
+            "d": 0
+          }
+        }
+      ],
+      "v": {
+        "d": -1
+      }
     },
     "keySampleText": {
-      "v": "Cat",
       "t": 1,
-      "p": [
-        {
-          "o": 0,
-          "v": "Falcon",
-          "p": 50
-        },
-        {
-          "o": 1,
-          "v": "Horse",
-          "p": 50
-        }
-      ],
       "r": [
         {
-          "o": 0,
-          "a": "Country",
-          "t": 0,
-          "c": "Hungary,Bahamas",
-          "v": "Dog"
+          "c": [
+            {
+              "t": {
+                "a": "Country",
+                "c": 16,
+                "l": [
+                  "569d4810dfac9d6a4b4196aaddf5ba3e8ef0a653cfa15054529e0e9ed76f5f25",
+                  "a7d55166218ec2c197cc4b14723cc96f00cfbee0d734cb57769bb33d30387c71"
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "Dog"
+            }
+          }
         },
         {
-          "o": 1,
-          "a": "SubscriptionType",
-          "t": 0,
-          "c": "unlimited",
-          "v": "Lion"
+          "c": [
+            {
+              "t": {
+                "a": "SubscriptionType",
+                "c": 16,
+                "l": [
+                  "ddd689eb98271df997e28f75dbe9a134af7235b1d6d84d7d6773cb48556103a6"
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "Lion"
+            }
+          }
         }
-      ]
+      ],
+      "p": [
+        {
+          "p": 50,
+          "v": {
+            "s": "Falcon"
+          }
+        },
+        {
+          "p": 50,
+          "v": {
+            "s": "Horse"
+          }
+        }
+      ],
+      "v": {
+        "s": "Cat"
+      }
     }
   }
 }

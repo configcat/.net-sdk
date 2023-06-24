@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Linq;
 using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client.Evaluation;
@@ -13,11 +12,11 @@ internal static class RolloutEvaluatorExtensions
         ProjectConfig? remoteConfig)
     {
         var logDefaultValue = defaultValue is not null ? Convert.ToString(defaultValue, CultureInfo.InvariantCulture) : null;
-        var evaluateResult = evaluator.Evaluate(setting, key, logDefaultValue, user);
-        return EvaluationDetails.FromEvaluateResult<T>(key, evaluateResult, setting.SettingType, setting.UnsupportedTypeError, fetchTime: remoteConfig?.TimeStamp, user);
+        var evaluateResult = evaluator.Evaluate(new EvaluateContext(key, setting, logDefaultValue, user));
+        return EvaluationDetails.FromEvaluateResult<T>(key, evaluateResult, setting.SettingType, fetchTime: remoteConfig?.TimeStamp, user);
     }
 
-    public static EvaluationDetails<T> Evaluate<T>(this IRolloutEvaluator evaluator, IReadOnlyDictionary<string, Setting>? settings, string key, T defaultValue, User? user,
+    public static EvaluationDetails<T> Evaluate<T>(this IRolloutEvaluator evaluator, Dictionary<string, Setting>? settings, string key, T defaultValue, User? user,
         ProjectConfig? remoteConfig, LoggerWrapper logger)
     {
         FormattableLogMessage logMessage;
@@ -30,7 +29,8 @@ internal static class RolloutEvaluatorExtensions
 
         if (!settings.TryGetValue(key, out var setting))
         {
-            logMessage = logger.SettingEvaluationFailedDueToMissingKey(key, nameof(defaultValue), defaultValue, KeysToString(settings));
+            var availableKeys = new StringListFormatter(settings.Keys).ToString();
+            logMessage = logger.SettingEvaluationFailedDueToMissingKey(key, nameof(defaultValue), defaultValue, availableKeys);
             return EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: remoteConfig?.TimeStamp, user, logMessage.InvariantFormattedMessage);
         }
 
@@ -41,11 +41,11 @@ internal static class RolloutEvaluatorExtensions
         ProjectConfig? remoteConfig)
     {
         var logDefaultValue = defaultValue is not null ? Convert.ToString(defaultValue, CultureInfo.InvariantCulture) : null;
-        var evaluateResult = evaluator.Evaluate(setting, key, logDefaultValue, user);
-        return EvaluationDetails.FromEvaluateResult(key, evaluateResult, setting.SettingType, setting.UnsupportedTypeError, fetchTime: remoteConfig?.TimeStamp, user);
+        var evaluateResult = evaluator.Evaluate(new EvaluateContext(key, setting, logDefaultValue, user));
+        return EvaluationDetails.FromEvaluateResult<object>(key, evaluateResult, setting.SettingType, fetchTime: remoteConfig?.TimeStamp, user);
     }
 
-    public static EvaluationDetails[] EvaluateAll(this IRolloutEvaluator evaluator, IReadOnlyDictionary<string, Setting>? settings, User? user,
+    public static EvaluationDetails[] EvaluateAll(this IRolloutEvaluator evaluator, Dictionary<string, Setting>? settings, User? user,
         ProjectConfig? remoteConfig, LoggerWrapper logger, string defaultReturnValue, out IReadOnlyList<Exception>? exceptions)
     {
         if (!CheckSettingsAvailable(settings, logger, defaultReturnValue))
@@ -79,7 +79,7 @@ internal static class RolloutEvaluatorExtensions
         return evaluationDetailsArray;
     }
 
-    internal static bool CheckSettingsAvailable([NotNullWhen(true)] IReadOnlyDictionary<string, Setting>? settings, LoggerWrapper logger, string defaultReturnValue)
+    internal static bool CheckSettingsAvailable([NotNullWhen(true)] Dictionary<string, Setting>? settings, LoggerWrapper logger, string defaultReturnValue)
     {
         if (settings is null)
         {
@@ -88,10 +88,5 @@ internal static class RolloutEvaluatorExtensions
         }
 
         return true;
-    }
-
-    private static string KeysToString(IReadOnlyDictionary<string, Setting> settings)
-    {
-        return string.Join(", ", settings.Keys.Select(s => $"'{s}'").ToArray());
     }
 }

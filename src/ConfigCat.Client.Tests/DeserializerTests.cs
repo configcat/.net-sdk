@@ -19,7 +19,7 @@ public class DeserializerTests
             return settings;
         };
 
-        Assert.IsNotNull("{\"p\": {\"u\": \"http://example.com\", \"r\": 0}}".DeserializeOrDefault<SettingsWithPreferences>());
+        Assert.IsNotNull("{\"p\": {\"u\": \"http://example.com\", \"r\": 0}}".DeserializeOrDefault<Config>());
     }
 
     [DataRow(false)]

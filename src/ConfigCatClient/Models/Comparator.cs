@@ -1,97 +1,137 @@
 namespace ConfigCat.Client;
 
 /// <summary>
-/// Targeting rule comparison operator.
+/// Comparison condition operator.
 /// </summary>
 public enum Comparator : byte
 {
     /// <summary>
-    /// Does the comparison value interpreted as a comma-separated list of strings contain the comparison attribute?
-    /// </summary>
-    In = 0,
-
-    /// <summary>
-    /// Does the comparison value interpreted as a comma-separated list of strings not contain the comparison attribute?
-    /// </summary>
-    NotIn = 1,
-
-    /// <summary>
-    /// Is the comparison value contained by the comparison attribute as a substring?
+    /// CONTAINS ANY OF - Does the comparison attribute contain any of the comparison values as a substring?
     /// </summary>
     Contains = 2,
 
     /// <summary>
-    /// Is the comparison value not contained by the comparison attribute as a substring?
+    /// NOT CONTAINS ANY OF - Does the comparison attribute not contain any of the comparison values as a substring?
     /// </summary>
     NotContains = 3,
 
     /// <summary>
-    /// Does the comparison value interpreted as a comma-separated list of semantic versions contain the comparison attribute?
+    /// IS ONE OF (semver) - Is the comparison attribute interpreted as a semantic version equal to any of the comparison values?
     /// </summary>
-    SemVerIn = 4,
+    SemVerOneOf = 4,
 
     /// <summary>
-    /// Does the comparison value interpreted as a comma-separated list of semantic versions not contain the comparison attribute?
+    /// IS NOT ONE OF (semver) - Is the comparison attribute interpreted as a semantic version not equal to any of the comparison values?
     /// </summary>
-    SemVerNotIn = 5,
+    SemVerNotOneOf = 5,
 
     /// <summary>
-    /// Is the comparison value interpreted as a semantic version less than the comparison attribute?
+    /// &lt; (semver) - Is the comparison attribute interpreted as a semantic version less than the comparison value?
     /// </summary>
     SemVerLessThan = 6,
 
     /// <summary>
-    /// Is the comparison value interpreted as a semantic version less than or equal to the comparison attribute?
+    /// &lt;= (semver) - Is the comparison attribute interpreted as a semantic version less than or equal to the comparison value?
     /// </summary>
     SemVerLessThanEqual = 7,
 
     /// <summary>
-    /// Is the comparison value interpreted as a semantic version greater than the comparison attribute?
+    /// &gt; (semver) - Is the comparison attribute interpreted as a semantic version greater than the comparison value?
     /// </summary>
     SemVerGreaterThan = 8,
 
     /// <summary>
-    /// Is the comparison value interpreted as a semantic version greater than or equal to the comparison attribute?
+    /// &gt;= (semver) - Is the comparison attribute interpreted as a semantic version greater than or equal to the comparison value?
     /// </summary>
     SemVerGreaterThanEqual = 9,
 
     /// <summary>
-    /// Is the comparison value interpreted as a number equal to the comparison attribute?
+    /// = (number) - Is the comparison attribute interpreted as a decimal number equal to the comparison value?
     /// </summary>
     NumberEqual = 10,
 
     /// <summary>
-    /// Is the comparison value interpreted as a number not equal to the comparison attribute?
+    /// != (number) - Is the comparison attribute interpreted as a decimal number not equal to the comparison value?
     /// </summary>
     NumberNotEqual = 11,
 
     /// <summary>
-    /// Is the comparison value interpreted as a number less than the comparison attribute?
+    /// &lt; (number)  - Is the comparison attribute interpreted as a decimal number less than the comparison value?
     /// </summary>
     NumberLessThan = 12,
 
     /// <summary>
-    /// Is the comparison value interpreted as a number less than or equal to the comparison attribute?
+    /// &lt;= (number) - Is the comparison attribute interpreted as a decimal number less than or equal to the comparison value?
     /// </summary>
     NumberLessThanEqual = 13,
 
     /// <summary>
-    /// Is the comparison value interpreted as a number greater than the comparison attribute?
+    /// &gt; (number) - Is the comparison attribute interpreted as a decimal number greater than the comparison value?
     /// </summary>
     NumberGreaterThan = 14,
 
     /// <summary>
-    /// Is the comparison value interpreted as a number greater than or equal to the comparison attribute?
+    /// &gt;= (number) - Is the comparison attribute interpreted as a decimal number greater than or equal to the comparison value?
     /// </summary>
     NumberGreaterThanEqual = 15,
 
     /// <summary>
-    /// Does the comparison value interpreted as a comma-separated list of hashes of strings contain the hash of the comparison attribute?
+    /// IS ONE OF (hashed) - Is the comparison attribute equal to any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values)?
     /// </summary>
     SensitiveOneOf = 16,
 
     /// <summary>
-    /// Does the comparison value interpreted as a comma-separated list of hashes of strings not contain the hash of the comparison attribute?
+    /// IS NOT ONE OF (hashed) - Is the comparison attribute not equal to any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values)?
     /// </summary>
-    SensitiveNotOneOf = 17
+    SensitiveNotOneOf = 17,
+
+    /// <summary>
+    /// BEFORE (UTC datetime) - Is the comparison attribute interpreted as the seconds elapsed since <see href="https://en.wikipedia.org/wiki/Unix_time">Unix Epoch</see> less than the comparison value?
+    /// </summary>
+    DateTimeBefore = 18,
+
+    /// <summary>
+    /// AFTER (UTC datetime) - Is the comparison attribute interpreted as the seconds elapsed since <see href="https://en.wikipedia.org/wiki/Unix_time">Unix Epoch</see> greater than the comparison value?
+    /// </summary>
+    DateTimeAfter = 19,
+
+    /// <summary>
+    /// EQUALS (hashed) - Is the comparison attribute equal to the comparison value (where the comparison is performed using the salted SHA256 hashes of the values)?
+    /// </summary>
+    SensitiveTextEquals = 20,
+
+    /// <summary>
+    /// NOT EQUALS (hashed) - Is the comparison attribute not equal to the comparison value (where the comparison is performed using the salted SHA256 hashes of the values)?
+    /// </summary>
+    SensitiveTextNotEquals = 21,
+
+    /// <summary>
+    /// STARTS WITH ANY OF (hashed) - Does the comparison attribute start with any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values)?
+    /// </summary>
+    SensitiveTextStartsWith = 22,
+
+    /// <summary>
+    /// NOT STARTS WITH ANY OF (hashed) - Does the comparison attribute not start with any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values)?
+    /// </summary>
+    SensitiveTextNotStartsWith = 23,
+
+    /// <summary>
+    /// ENDS WITH ANY OF (hashed) - Does the comparison attribute end with any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values)?
+    /// </summary>
+    SensitiveTextEndsWith = 24,
+
+    /// <summary>
+    /// NOT ENDS WITH ANY OF (hashed) - Does the comparison attribute not end with any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values)?
+    /// </summary>
+    SensitiveTextNotEndsWith = 25,
+
+    /// <summary>
+    /// ARRAY CONTAINS (hashed) - Does the comparison attribute interpreted as a comma-separated list contain the comparison value (where the comparison is performed using the salted SHA256 hashes of the values)?
+    /// </summary>
+    SensitiveArrayContains = 26,
+
+    /// <summary>
+    /// ARRAY NOT CONTAINS (hashed) - Does the comparison attribute interpreted as a comma-separated list contain the comparison value (where the comparison is performed using the salted SHA256 hashes of the values)?
+    /// </summary>
+    SensitiveArrayNotContains = 27,
 }

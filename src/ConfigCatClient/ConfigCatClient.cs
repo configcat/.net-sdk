@@ -673,7 +673,7 @@ public sealed class ConfigCatClient : IConfigCatClient
     internal static string GetCacheKey(string sdkKey)
     {
         var key = $"{sdkKey}_{ConfigCatClientOptions.ConfigFileName}_{ProjectConfig.SerializationFormatVersion}";
-        return key.Hash();
+        return key.Sha1();
     }
 
     /// <inheritdoc />

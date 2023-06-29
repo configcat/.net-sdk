@@ -18,13 +18,16 @@ internal readonly struct StringListFormatter : IFormattable
         this.getOmittedItemsText = getOmittedItemsText;
     }
 
+    private static string GetSeparator(string? format) => format == "a" ? "' -> '" : "', '";
+
 #if NET6_0_OR_GREATER
-    public void AppendWith(StringBuilder.AppendInterpolatedStringHandler handler)
+    public void AppendWith(StringBuilder.AppendInterpolatedStringHandler handler, string? format = null)
     {
         if (this.collection is { Count: > 0 })
         {
             var i = 0;
             var n = this.maxLength > 0 && this.collection.Count > this.maxLength ? this.maxLength : this.collection.Count;
+            var separator = GetSeparator(format);
             var currentSeparator = string.Empty;
 
             handler.AppendLiteral("'");
@@ -32,7 +35,7 @@ internal readonly struct StringListFormatter : IFormattable
             {
                 handler.AppendLiteral(currentSeparator);
                 handler.AppendLiteral(item);
-                currentSeparator = "', '";
+                currentSeparator = separator;
 
                 if (++i >= n)
                 {
@@ -66,7 +69,7 @@ internal readonly struct StringListFormatter : IFormattable
                 appendix = string.Empty;
             }
 
-            return "'" + string.Join("', '", items) + "'" + appendix;
+            return "'" + string.Join(GetSeparator(format), items) + "'" + appendix;
         }
 
         return string.Empty;

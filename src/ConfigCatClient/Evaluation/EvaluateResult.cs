@@ -4,12 +4,15 @@ internal readonly struct EvaluateResult
 {
     public EvaluateResult(SettingValueContainer selectedValue, TargetingRule? matchedTargetingRule = null, PercentageOption? matchedPercentageOption = null)
     {
-        this.SelectedValue = selectedValue;
+        this.selectedValue = selectedValue;
         this.MatchedTargetingRule = matchedTargetingRule;
         this.MatchedPercentageOption = matchedPercentageOption;
     }
 
-    public readonly SettingValueContainer SelectedValue;
+    private readonly SettingValueContainer selectedValue;
+    public SettingValue Value => this.selectedValue.Value;
+    public string? VariationId => this.selectedValue.VariationId;
+
     public readonly TargetingRule? MatchedTargetingRule;
     public readonly PercentageOption? MatchedPercentageOption;
 }

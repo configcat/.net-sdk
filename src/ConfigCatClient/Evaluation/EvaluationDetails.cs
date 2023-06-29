@@ -27,15 +27,15 @@ public abstract record class EvaluationDetails
                     + $"Please use a default value which corresponds to the setting type {settingType}.");
             }
 
-            instance = new EvaluationDetails<TValue>(key, evaluateResult.SelectedValue.Value.GetValue<TValue>(settingType));
+            instance = new EvaluationDetails<TValue>(key, evaluateResult.Value.GetValue<TValue>(settingType));
         }
         else
         {
-            EvaluationDetails evaluationDetails = new EvaluationDetails<object>(key, evaluateResult.SelectedValue.Value.GetValue(settingType)!);
+            EvaluationDetails evaluationDetails = new EvaluationDetails<object>(key, evaluateResult.Value.GetValue(settingType)!);
             instance = (EvaluationDetails<TValue>)evaluationDetails;
         }
 
-        instance.VariationId = evaluateResult.SelectedValue.VariationId;
+        instance.VariationId = evaluateResult.VariationId;
         if (fetchTime is not null)
         {
             instance.FetchTime = fetchTime.Value;

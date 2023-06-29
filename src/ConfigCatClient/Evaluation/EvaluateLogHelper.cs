@@ -58,6 +58,11 @@ internal static class EvaluateLogHelper
             : builder.AppendComparisonCondition(comparisonAttribute, comparator, (object?)null);
     }
 
+    public static IndentedTextBuilder AppendPrerequisiteFlagCondition(this IndentedTextBuilder builder, string? prerequisiteFlagKey, PrerequisiteFlagComparator comparator, object? comparisonValue)
+    {
+        return builder.Append($"Flag '{prerequisiteFlagKey}' {comparator.ToDisplayText()} '{comparisonValue ?? InvalidValuePlaceholder}'");
+    }
+
     public static IndentedTextBuilder AppendSegmentCondition(this IndentedTextBuilder builder, SegmentComparator comparator, Segment? segment)
     {
         var segmentName = segment?.Name ??
@@ -128,6 +133,16 @@ internal static class EvaluateLogHelper
             Comparator.SensitiveTextNotEndsWith => "NOT ENDS WITH ANY OF (hashed)",
             Comparator.SensitiveArrayContains => "ARRAY CONTAINS (hashed)",
             Comparator.SensitiveArrayNotContains => "ARRAY NOT CONTAINS (hashed)",
+            _ => InvalidOperatorPlaceholder
+        };
+    }
+
+    public static string ToDisplayText(this PrerequisiteFlagComparator comparator)
+    {
+        return comparator switch
+        {
+            PrerequisiteFlagComparator.Equals => "EQUALS",
+            PrerequisiteFlagComparator.NotEquals => "NOT EQUALS",
             _ => InvalidOperatorPlaceholder
         };
     }

@@ -10,6 +10,7 @@ namespace ConfigCat.Client.Evaluation;
 internal sealed class RolloutEvaluator : IRolloutEvaluator
 {
     private const string MissingUserObjectError = "cannot evaluate, User Object is missing";
+    private const string CircularDependencyError = "cannot evaluate, circular dependency detected";
 
     private readonly LoggerWrapper logger;
 
@@ -41,7 +42,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         try
         {
             var result = EvaluateSetting(ref context);
-            returnValue = result.SelectedValue.Value.GetValue(context.Setting.SettingType, throwIfInvalid: false) ?? EvaluateLogHelper.InvalidValuePlaceholder;
+            returnValue = result.Value.GetValue(context.Setting.SettingType, throwIfInvalid: false) ?? EvaluateLogHelper.InvalidValuePlaceholder;
             return result;
         }
         catch
@@ -264,8 +265,10 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                     newLineBeforeThen = conditions.Length > 1;
                     break;
 
-                case PrerequisiteFlagCondition:
-                    throw new NotImplementedException(); // TODO
+                case PrerequisiteFlagCondition prerequisiteFlagCondition:
+                    conditionResult = EvaluatePrerequisiteFlagCondition(prerequisiteFlagCondition, ref context, out error);
+                    newLineBeforeThen = error is null || conditions.Length > 1;
+                    break;
 
                 case SegmentCondition segmentCondition:
                     conditionResult = EvaluateSegmentCondition(segmentCondition, ref context, out error);
@@ -519,6 +522,94 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             Comparator.NumberGreaterThanEqual => number >= number2,
             _ => throw new ArgumentOutOfRangeException(nameof(comparator), comparator, null)
         };
+    }
+
+    private bool EvaluatePrerequisiteFlagCondition(PrerequisiteFlagCondition condition, ref EvaluateContext context, out string? error)
+    {
+        error = null;
+
+        var logBuilder = context.LogBuilder;
+
+        var prerequisiteFlagKey = condition.PrerequisiteFlagKey;
+        var comparator = condition.Comparator;
+
+        Setting? prerequisiteFlag = null;
+        object? comparisonValue = null;
+
+        if (prerequisiteFlagKey is not { Length: > 0 })
+        {
+            // TODO: error handling - prerequisite flag is not specified or invalid
+        }
+        else if (!context.Settings.TryGetValue(prerequisiteFlagKey, out prerequisiteFlag))
+        {
+            // TODO: error handling - prerequisite flag reference is invalid
+        }
+        else if ((comparisonValue = condition.ComparisonValue.GetValue(throwIfInvalid: false)) is null)
+        {
+            // TODO: error handling - comparison value is invalid (not available/multiple values specified)
+        }
+        else if (comparisonValue.GetType().ToSettingType() != prerequisiteFlag.SettingType)
+        {
+            // TODO: error handling - comparison value and prereq flag types mismatch
+            comparisonValue = null;
+        }
+
+        logBuilder?.AppendPrerequisiteFlagCondition(prerequisiteFlagKey, comparator, comparisonValue);
+
+        if (comparisonValue is null)
+        {
+            return false;
+        }
+
+        context.VisitedFlags.Add(context.Key);
+        if (context.VisitedFlags.Contains(prerequisiteFlagKey!))
+        {
+            context.VisitedFlags.Add(prerequisiteFlagKey!);
+            var dependencyCycle = new StringListFormatter(context.VisitedFlags).ToString("a", CultureInfo.InvariantCulture);
+            this.logger.CircularDependencyDetected(context.Key, dependencyCycle);
+
+            context.VisitedFlags.RemoveRange(context.VisitedFlags.Count - 2, 2);
+            error = CircularDependencyError;
+            return false;
+        }
+
+        var prerequisiteFlagContext = new EvaluateContext(prerequisiteFlagKey!, prerequisiteFlag!, ref context);
+
+        logBuilder?
+            .NewLine("(")
+            .IncreaseIndent()
+            .NewLine().Append($"Evaluating prerequisite flag '{prerequisiteFlagKey}':");
+
+        // TODO: how to handle prereq flags w.r.t. flag overrides (when flag override setting depends on downloaded config setting or vice versa)?
+
+        var prerequisiteFlagEvaluateResult = EvaluateSetting(ref prerequisiteFlagContext);
+
+        context.VisitedFlags.RemoveAt(context.VisitedFlags.Count - 1);
+
+        var prerequisiteFlagValue = prerequisiteFlagEvaluateResult.Value.GetValue(prerequisiteFlag!.SettingType, throwIfInvalid: false);
+
+        var result = comparator switch
+        {
+            PrerequisiteFlagComparator.Equals => prerequisiteFlagValue is not null
+                ? prerequisiteFlagValue.Equals(comparisonValue)
+                : false, // TODO: error handling - how to handle when prereq flag evaluates to an invalid value?
+
+            PrerequisiteFlagComparator.NotEquals => prerequisiteFlagValue is not null
+                ? !prerequisiteFlagValue.Equals(comparisonValue)
+                : false, // TODO: error handling - how to handle when prereq flag evaluates to an invalid value?
+
+            _ => throw new InvalidOperationException(), // TODO: error handling - comparator was not set
+        };
+
+        logBuilder?
+            .NewLine().Append($"Prerequisite flag evaluation result: '{prerequisiteFlagValue ?? EvaluateLogHelper.InvalidValuePlaceholder}'.")
+            .NewLine("Condition (")
+                .AppendPrerequisiteFlagCondition(prerequisiteFlagKey, comparator, comparisonValue)
+                .Append(") evaluates to ").AppendEvaluationResult(result).Append(".")
+            .DecreaseIndent()
+            .NewLine(")");
+
+        return result;
     }
 
     private bool EvaluateSegmentCondition(SegmentCondition condition, ref EvaluateContext context, out string? error)

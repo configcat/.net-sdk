@@ -37,6 +37,11 @@ internal static partial class LoggerExtensions
         $"Error occurred in the `{methodName}` method.",
         "METHOD_NAME");
 
+    public static FormattableLogMessage CircularDependencyDetected(this LoggerWrapper logger, string key, string dependencyCycle) => logger.LogInterpolated(
+        LogLevel.Error, 2003, // TODO: this should be a 1xxx error (or should this be an error instead of a warning in the first place?)
+        $"Cannot evaluate targeting rules for '{key}' (circular dependency detected between the following depending flags: {dependencyCycle}). Please check your feature flag definition and eliminate the circular dependency.",
+        "KEY", "DEPENDENCY_CYCLE");
+
     public static FormattableLogMessage FetchFailedDueToInvalidSdkKey(this LoggerWrapper logger) => logger.Log(
         LogLevel.Error, 1100,
         "Your SDK Key seems to be wrong. You can find the valid SDK Key at https://app.configcat.com/sdkkey");

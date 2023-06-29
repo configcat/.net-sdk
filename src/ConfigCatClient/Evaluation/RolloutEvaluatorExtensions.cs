@@ -7,14 +7,6 @@ namespace ConfigCat.Client.Evaluation;
 
 internal static class RolloutEvaluatorExtensions
 {
-    public static EvaluationDetails<T> Evaluate<T>(this IRolloutEvaluator evaluator, Setting setting, string key, T defaultValue, User? user,
-        ProjectConfig? remoteConfig)
-    {
-        var evaluateContext = new EvaluateContext(key, setting, defaultValue.ToSettingValue(out _), user);
-        var evaluateResult = evaluator.Evaluate(ref evaluateContext);
-        return EvaluationDetails.FromEvaluateResult<T>(key, evaluateResult, setting.SettingType, fetchTime: remoteConfig?.TimeStamp, user);
-    }
-
     public static EvaluationDetails<T> Evaluate<T>(this IRolloutEvaluator evaluator, Dictionary<string, Setting>? settings, string key, T defaultValue, User? user,
         ProjectConfig? remoteConfig, LoggerWrapper logger)
     {
@@ -33,14 +25,11 @@ internal static class RolloutEvaluatorExtensions
             return EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: remoteConfig?.TimeStamp, user, logMessage.InvariantFormattedMessage);
         }
 
-        return evaluator.Evaluate(setting, key, defaultValue, user, remoteConfig);
-    }
+        // TODO: error handling - what to do when setting is null?
 
-    public static EvaluationDetails Evaluate(this IRolloutEvaluator evaluator, Setting setting, string key, User? user, ProjectConfig? remoteConfig)
-    {
-        var evaluateContext = new EvaluateContext(key, setting, default, user);
+        var evaluateContext = new EvaluateContext(key, setting, defaultValue.ToSettingValue(out _), user, settings);
         var evaluateResult = evaluator.Evaluate(ref evaluateContext);
-        return EvaluationDetails.FromEvaluateResult<object>(key, evaluateResult, setting.SettingType, fetchTime: remoteConfig?.TimeStamp, user);
+        return EvaluationDetails.FromEvaluateResult<T>(key, evaluateResult, setting.SettingType, fetchTime: remoteConfig?.TimeStamp, user);
     }
 
     public static EvaluationDetails[] EvaluateAll(this IRolloutEvaluator evaluator, Dictionary<string, Setting>? settings, User? user,
@@ -56,12 +45,14 @@ internal static class RolloutEvaluatorExtensions
         List<Exception>? exceptionList = null;
 
         var index = 0;
-        foreach (var kvp in settings)
+        foreach (var kvp in settings) // TODO: error handling - what to do when setting is null?
         {
             EvaluationDetails evaluationDetails;
             try
             {
-                evaluationDetails = evaluator.Evaluate(kvp.Value, kvp.Key, user, remoteConfig);
+                var evaluateContext = new EvaluateContext(kvp.Key, kvp.Value, defaultValue: default, user, settings);
+                var evaluateResult = evaluator.Evaluate(ref evaluateContext);
+                evaluationDetails = EvaluationDetails.FromEvaluateResult<object>(kvp.Key, evaluateResult, kvp.Value.SettingType, fetchTime: remoteConfig?.TimeStamp, user);
             }
             catch (Exception ex)
             {

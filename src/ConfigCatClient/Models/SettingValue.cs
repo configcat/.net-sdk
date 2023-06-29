@@ -126,6 +126,6 @@ internal struct SettingValue
     {
         return GetValue(throwIfInvalid: false) is { } value
             ? Convert.ToString(value, CultureInfo.InvariantCulture)!
-            : RolloutEvaluator.InvalidValuePlaceholder;
+            : EvaluateLogHelper.InvalidValuePlaceholder;
     }
 }

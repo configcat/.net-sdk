@@ -3,9 +3,12 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace ConfigCat.Client.Tests;
 
 [TestClass]
-public class SemanticVersionConfigEvaluatorTests : ConfigEvaluatorTestsBase
+public class SemanticVersionConfigEvaluatorTests : ConfigEvaluatorTestsBase<SemanticVersionConfigEvaluatorTests.Descriptor>
 {
-    protected override string SampleJsonFileName => "sample_semantic_v5.json";
+    public class Descriptor : IMatrixTestDescriptor
+    {
+        public string SampleJsonFileName => "sample_semantic_v5.json";
 
-    protected override string MatrixResultFileName => "testmatrix_semantic.csv";
+        public string MatrixResultFileName => "testmatrix_semantic.csv";
+    }
 }

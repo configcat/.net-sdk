@@ -7,11 +7,14 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace ConfigCat.Client.Tests;
 
 [TestClass]
-public class BasicConfigEvaluatorTests : ConfigEvaluatorTestsBase
+public class BasicConfigEvaluatorTests : ConfigEvaluatorTestsBase<BasicConfigEvaluatorTests.Descriptor>
 {
-    protected override string SampleJsonFileName => "sample_v5.json";
+    public class Descriptor : IMatrixTestDescriptor
+    {
+        public string SampleJsonFileName => "sample_v5.json";
 
-    protected override string MatrixResultFileName => "testmatrix.csv";
+        public string MatrixResultFileName => "testmatrix.csv";
+    }
 
     [TestMethod]
     public void GetValue_WithSimpleKey_ShouldReturnCat()
@@ -45,7 +48,7 @@ public class BasicConfigEvaluatorTests : ConfigEvaluatorTestsBase
         {
             Email = "c@configcat.com",
             Country = "United Kingdom",
-            Custom = new Dictionary<string, string?> { { "Custom1", "admin" } }
+            Custom = { { "Custom1", "admin" } }
         }, null, this.Logger).Value;
 
         Assert.AreEqual(3.1415, actual);

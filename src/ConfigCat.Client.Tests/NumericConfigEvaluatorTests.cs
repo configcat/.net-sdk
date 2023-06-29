@@ -3,9 +3,12 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace ConfigCat.Client.Tests;
 
 [TestClass]
-public class NumericConfigEvaluatorTests : ConfigEvaluatorTestsBase
+public class NumericConfigEvaluatorTests : ConfigEvaluatorTestsBase<NumericConfigEvaluatorTests.Descriptor>
 {
-    protected override string SampleJsonFileName => "sample_number_v5.json";
+    public class Descriptor : IMatrixTestDescriptor
+    {
+        public string SampleJsonFileName => "sample_number_v5.json";
 
-    protected override string MatrixResultFileName => "testmatrix_number.csv";
+        public string MatrixResultFileName => "testmatrix_number.csv";
+    }
 }

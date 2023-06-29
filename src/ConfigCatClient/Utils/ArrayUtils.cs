@@ -42,4 +42,37 @@ internal static class ArrayUtils
         return new string(chars);
 #endif
     }
+
+    public static bool Equals(this byte[] bytes, ReadOnlySpan<char> hexString)
+    {
+        if (bytes.Length * 2 != hexString.Length)
+        {
+            return false;
+        }
+
+        for (int i = 0, j = 0; i < bytes.Length; i++)
+        {
+            int hi, lo;
+            if ((hi = GetDigitValue(hexString[j++])) < 0
+                || (lo = GetDigitValue(hexString[j++])) < 0)
+            {
+                throw new FormatException();
+            }
+
+            var decodedByte = (byte)(hi << 4 | lo);
+            if (decodedByte != bytes[i])
+            {
+                return false;
+            }
+        }
+
+        return true;
+
+        static int GetDigitValue(char digit) => digit switch
+        {
+            >= '0' and <= '9' => digit - 0x30,
+            >= 'a' and <= 'f' => digit - 0x57,
+            _ => -1,
+        };
+    }
 }

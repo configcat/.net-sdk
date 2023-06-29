@@ -1,17 +1,14 @@
 using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using ConfigCat.Client.Utils;
 using ConfigCat.Client.Versioning;
-
-using static System.FormattableString;
 
 namespace ConfigCat.Client.Evaluation;
 
 internal sealed class RolloutEvaluator : IRolloutEvaluator
 {
-    public const string InvalidValuePlaceholder = "<invalid value>";
-    public const string InvalidOperatorPlaceholder = "<invalid operator>";
-
     private readonly LoggerWrapper logger;
 
     public RolloutEvaluator(LoggerWrapper logger)
@@ -19,225 +16,121 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         this.logger = logger;
     }
 
-    public EvaluateResult Evaluate(in EvaluateContext context)
+    public EvaluateResult Evaluate(ref EvaluateContext context)
     {
-        var evaluateLog = context.Log;
+        ref var logBuilder = ref context.LogBuilder;
 
-        try
+        // Building the evaluation log is relatively expensive, so let's not do it if it wouldn't be logged anyway.
+        if (this.logger.IsEnabled(LogLevel.Info))
         {
-            EvaluateResult evaluateResult;
+            logBuilder = new IndentedTextBuilder();
 
-            var setting = context.Setting;
-            var targetingRules = setting.TargetingRules;
-            var percentageOptions = setting.PercentageOptions;
+            logBuilder.Append($"Evaluating '{context.Key}'");
 
             if (context.User is not null)
             {
-                // evaluate targeting rules
-
-                if (TryEvaluateRules(targetingRules, context, out evaluateResult))
-                {
-                    evaluateLog.ReturnValue = evaluateResult.Value.ToString();
-                    evaluateLog.VariationId = evaluateResult.VariationId;
-
-                    return evaluateResult;
-                }
-
-                // evaluate percentage options
-
-                if (TryEvaluatePercentageRules(percentageOptions, context, out evaluateResult))
-                {
-                    evaluateLog.ReturnValue = evaluateResult.Value.ToString();
-                    evaluateLog.VariationId = evaluateResult.VariationId;
-
-                    return evaluateResult;
-                }
-            }
-            else if (targetingRules.Length > 0 || percentageOptions.Length > 0)
-            {
-                this.logger.TargetingIsNotPossible(context.Key);
+                logBuilder.Append($" for User '{context.UserAttributes.Serialize()}'");
             }
 
-            // regular evaluate
+            logBuilder.IncreaseIndent();
+        }
 
-            evaluateResult = new EvaluateResult(setting.Value, setting.VariationId);
-
-            evaluateLog.ReturnValue = evaluateResult.Value.ToString();
-            evaluateLog.VariationId = setting.VariationId;
-
-            return evaluateResult;
+        object? returnValue = null;
+        try
+        {
+            var result = EvaluateSetting(ref context);
+            returnValue = result.SelectedValue.Value.GetValue(context.Setting.SettingType, throwIfInvalid: false) ?? EvaluateLogHelper.InvalidValuePlaceholder;
+            return result;
+        }
+        catch
+        {
+            returnValue = context.DefaultValue.GetValue(context.Setting.SettingType, throwIfInvalid: false);
+            throw;
         }
         finally
         {
-            this.logger.SettingEvaluated(evaluateLog);
+            if (logBuilder is not null)
+            {
+                logBuilder.NewLine().Append($"Returning '{returnValue}'.");
+
+                logBuilder.DecreaseIndent();
+
+                this.logger.SettingEvaluated(logBuilder.ToString());
+            }
         }
     }
 
-    private static bool TryEvaluatePercentageRules(PercentageOption[] percentageOptions, in EvaluateContext context, out EvaluateResult result)
+    private EvaluateResult EvaluateSetting(ref EvaluateContext context)
     {
-        if (percentageOptions.Length > 0)
+        var targetingRules = context.Setting.TargetingRules;
+        if (targetingRules.Length > 0 && TryEvaluateTargetingRules(targetingRules, ref context, out var evaluateResult))
         {
-            var evaluateLog = context.Log;
-            var user = context.User!;
+            return evaluateResult;
+        }
 
-            var hashCandidate = context.Key + user.Identifier;
+        var percentageOptions = context.Setting.PercentageOptions;
+        if (percentageOptions.Length > 0 && TryEvaluatePercentageOptions(percentageOptions, targetingRule: null, ref context, out evaluateResult))
+        {
+            return evaluateResult;
+        }
 
-            var hashValue = hashCandidate.Sha1().Substring(0, 7);
+        evaluateResult = new EvaluateResult(context.Setting);
+        return evaluateResult;
+    }
 
-            var hashScale = int.Parse(hashValue, NumberStyles.HexNumber) % 100;
-            evaluateLog.Log(Invariant($"Applying the % option that matches the User's pseudo-random '{hashScale}' (this value is sticky and consistent across all SDKs):"));
+    private bool TryEvaluateTargetingRules(TargetingRule[] targetingRules, ref EvaluateContext context, out EvaluateResult result)
+    {
+        var logBuilder = context.LogBuilder;
 
-            var bucket = 0;
+        logBuilder?.NewLine("Evaluating targeting rules and applying the first match if any:");
 
-            foreach (var percentageRule in percentageOptions)
+        for (var i = 0; i < targetingRules.Length; i++)
+        {
+            var targetingRule = targetingRules[i]; // TODO: error handling - what to do when item is null?
+
+            var conditions = targetingRule.Conditions;
+
+            const string targetingRuleIgnoredMessage = "The current targeting rule is ignored and the evaluation continues with the next rule.";
+
+            if (!TryEvaluateConditions(conditions, targetingRule, ref context, out var isMatch))
             {
-                bucket += percentageRule.Percentage;
+                logBuilder?
+                    .IncreaseIndent()
+                    .NewLine(targetingRuleIgnoredMessage)
+                    .DecreaseIndent();
+                continue;
+            }
+            else if (!isMatch)
+            {
+                continue;
+            }
 
-                if (hashScale >= bucket)
-                {
-                    evaluateLog.Log(Invariant($"  - % option: [IF {bucket} > {hashScale} THEN '{percentageRule.Value}'] => no match"));
-                    continue;
-                }
-                evaluateLog.Log(Invariant($"  - % option: [IF {bucket} > {hashScale} THEN '{percentageRule.Value}'] => MATCH, applying % option"));
-                result = new EvaluateResult(percentageRule.Value, percentageRule.VariationId, matchedPercentageOption: percentageRule);
+            if (targetingRule.SimpleValue is { } simpleValue)
+            {
+                result = new EvaluateResult(simpleValue, matchedTargetingRule: targetingRule);
                 return true;
             }
-        }
 
-        result = default;
-        return false;
-    }
-
-    private static bool TryEvaluateRules(TargetingRule[] targetingRules, in EvaluateContext context, out EvaluateResult result)
-    {
-        if (targetingRules.Length > 0)
-        {
-            var evaluateLog = context.Log;
-            var user = context.User!;
-
-            evaluateLog.Log(Invariant($"Applying the first targeting rule that matches the User '{user.Serialize()}':"));
-            foreach (var targetingRule in targetingRules)
+            var percentageOptions = targetingRule.PercentageOptions;
+            if (percentageOptions is not { Length: > 0 })
             {
-                var rule = targetingRule.Conditions.First().ComparisonCondition ?? throw new InvalidOperationException();
+                // TODO: error handling - percentage options are expected but the list of percentage options are missing or both of simple value and percentage options are specified
+                throw new InvalidOperationException();
+            }
 
-                // TODO: how to handle this?
-                if (rule.ComparisonAttribute is null)
-                {
-                    continue;
-                }
+            logBuilder?.IncreaseIndent();
 
-                var l = Invariant($"  - rule: [IF User.{rule.ComparisonAttribute} {ToDisplayText(rule.Comparator)} '{rule.GetComparisonValue()}' THEN {targetingRule.SimpleValueOrDefault()}] => ");
-                if (!user.AllAttributes.ContainsKey(rule.ComparisonAttribute))
-                {
-                    evaluateLog.Log(l + "no match");
-                    continue;
-                }
-
-                var comparisonAttributeValue = user.AllAttributes[rule.ComparisonAttribute]!;
-                if (string.IsNullOrEmpty(comparisonAttributeValue))
-                {
-                    evaluateLog.Log(l + "no match");
-                    continue;
-                }
-
-                switch (rule.Comparator)
-                {
-                    case Comparator.Contains:
-
-                        if (rule.StringListValue!.Any(value => comparisonAttributeValue.Contains(value)))
-                        {
-                            evaluateLog.Log(l + "MATCH, applying rule");
-
-                            result = new EvaluateResult(targetingRule.SimpleValueOrDefault(), targetingRule.SimpleValue?.VariationId, matchedTargetingRule: targetingRule);
-                            return true;
-                        }
-
-                        evaluateLog.Log(l + "no match");
-
-                        break;
-                    case Comparator.NotContains:
-
-                        if (!rule.StringListValue!.Any(value => comparisonAttributeValue.Contains(value)))
-                        {
-                            evaluateLog.Log(l + "MATCH, applying rule");
-
-                            result = new EvaluateResult(targetingRule.SimpleValueOrDefault(), targetingRule.SimpleValue?.VariationId, matchedTargetingRule: targetingRule);
-                            return true;
-                        }
-
-                        evaluateLog.Log(l + "no match");
-
-                        break;
-                    case Comparator.SemVerOneOf:
-                    case Comparator.SemVerNotOneOf:
-                    case Comparator.SemVerLessThan:
-                    case Comparator.SemVerLessThanEqual:
-                    case Comparator.SemVerGreaterThan:
-                    case Comparator.SemVerGreaterThanEqual:
-                        // TODO: handle value list
-                        var stringValue = rule.Comparator is Comparator.SemVerOneOf or Comparator.SemVerNotOneOf
-                            ? string.Join(", ", rule.StringListValue!)
-                            : rule.StringValue!;
-
-                        if (EvaluateSemVer(comparisonAttributeValue, stringValue, rule.Comparator))
-                        {
-                            evaluateLog.Log(l + "MATCH, applying rule");
-
-                            result = new EvaluateResult(targetingRule.SimpleValueOrDefault(), targetingRule.SimpleValue?.VariationId, matchedTargetingRule: targetingRule);
-                            return true;
-                        }
-
-                        evaluateLog.Log(l + "no match");
-
-                        break;
-
-                    case Comparator.NumberEqual:
-                    case Comparator.NumberNotEqual:
-                    case Comparator.NumberLessThan:
-                    case Comparator.NumberLessThanEqual:
-                    case Comparator.NumberGreaterThan:
-                    case Comparator.NumberGreaterThanEqual:
-
-                        if (EvaluateNumber(comparisonAttributeValue, rule.DoubleValue!.Value, rule.Comparator))
-                        {
-                            evaluateLog.Log(l + "MATCH, applying rule");
-
-                            result = new EvaluateResult(targetingRule.SimpleValueOrDefault(), targetingRule.SimpleValue?.VariationId, matchedTargetingRule: targetingRule);
-                            return true;
-                        }
-
-                        evaluateLog.Log(l + "no match");
-
-                        break;
-                    case Comparator.SensitiveOneOf:
-                        // TODO: handle missing configJsonSalt
-                        if (rule.StringListValue!.Contains(HashComparisonAttribute(comparisonAttributeValue, context)))
-                        {
-                            evaluateLog.Log(l + "MATCH, applying rule");
-
-                            result = new EvaluateResult(targetingRule.SimpleValueOrDefault(), targetingRule.SimpleValue?.VariationId, matchedTargetingRule: targetingRule);
-                            return true;
-                        }
-
-                        evaluateLog.Log(l + "no match");
-
-                        break;
-                    case Comparator.SensitiveNotOneOf:
-                        // TODO: handle missing configJsonSalt
-                        if (!rule.StringListValue!.Contains(HashComparisonAttribute(comparisonAttributeValue, context)))
-                        {
-                            evaluateLog.Log(l + "MATCH, applying rule");
-
-                            result = new EvaluateResult(targetingRule.SimpleValueOrDefault(), targetingRule.SimpleValue?.VariationId, matchedTargetingRule: targetingRule);
-                            return true;
-                        }
-
-                        evaluateLog.Log(l + "no match");
-
-                        break;
-                    default:
-                        break;
-                }
+            if (TryEvaluatePercentageOptions(percentageOptions, targetingRule, ref context, out result))
+            {
+                logBuilder?.DecreaseIndent();
+                return true;
+            }
+            else
+            {
+                logBuilder?
+                    .NewLine(targetingRuleIgnoredMessage)
+                    .DecreaseIndent();
+                continue;
             }
         }
 
@@ -245,139 +138,378 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return false;
     }
 
-    private static bool EvaluateNumber(string s1, double d2, Comparator comparator)
+    private bool TryEvaluatePercentageOptions(PercentageOption[] percentageOptions, TargetingRule? targetingRule, ref EvaluateContext context, out EvaluateResult result)
     {
-        if (!double.TryParse(s1.Replace(',', '.'), NumberStyles.Any, CultureInfo.InvariantCulture, out var d1))
+        var logBuilder = context.LogBuilder;
+
+        if (context.User is null)
         {
+            logBuilder?.NewLine("Skipping % options because the User Object is missing.");
+
+            if (!context.IsMissingUserObjectLogged)
+            {
+                this.logger.UserObjectIsMissing(context.Key);
+                context.IsMissingUserObjectLogged = true;
+            }
+
+            result = default;
+            return false;
+        }
+
+        string? percentageOptionsAttributeValue;
+        var percentageOptionsAttributeName = context.Setting.PercentageOptionsAttribute;
+        if (percentageOptionsAttributeName is null)
+        {
+            percentageOptionsAttributeName = nameof(User.Identifier);
+            percentageOptionsAttributeValue = context.User.Identifier;
+        }
+        else if (!context.UserAttributes!.TryGetValue(percentageOptionsAttributeName, out percentageOptionsAttributeValue))
+        {
+            // TODO: error handling - how to handle when percentageOptionsAttributeName is empty?
+
+            logBuilder?.NewLine().Append($"Skipping % options because the User.{percentageOptionsAttributeName} attribute is missing.");
+
+            if (!context.IsMissingUserObjectAttributeLogged)
+            {
+                this.logger.UserObjectAttributeIsMissing(context.Key, percentageOptionsAttributeName);
+                context.IsMissingUserObjectAttributeLogged = true;
+            }
+
+            result = default;
+            return false;
+        }
+
+        logBuilder?.NewLine().Append($"Evaluating % options based on the User.{percentageOptionsAttributeName} attribute:");
+
+        if (percentageOptions.Sum(option => option.Percentage) != 100)
+        {
+            // TODO: error handling - sum of percentage options is not 100
+            throw new InvalidOperationException();
+        }
+
+        var sha1 = (context.Key + percentageOptionsAttributeValue).Sha1();
+
+        // NOTE: this is equivalent to hashValue = int.Parse(sha1.ToHexString().Substring(0, 7), NumberStyles.HexNumber) % 100;
+        var hashValue =
+            ((sha1[0] << 20)
+            | (sha1[1] << 12)
+            | (sha1[2] << 4)
+            | (sha1[3] >> 4)) % 100;
+
+        logBuilder?.NewLine().Append($"- Computing hash in the [0..99] range from User.{percentageOptionsAttributeName} => {hashValue} (this value is sticky and consistent across all SDKs)");
+
+        var bucket = 0;
+
+        for (var i = 0; i < percentageOptions.Length; i++)
+        {
+            var percentageOption = percentageOptions[i]; // TODO: error handling - what to do when item is null?
+
+            bucket += percentageOption.Percentage;
+
+            if (hashValue >= bucket)
+            {
+                continue;
+            }
+
+            var percentageOptionValue = percentageOption.Value.GetValue(context.Setting.SettingType, throwIfInvalid: false);
+            logBuilder?.NewLine().Append($"- Hash value {hashValue} selects % option {i + 1} ({percentageOption.Percentage}%), '{percentageOptionValue ?? EvaluateLogHelper.InvalidValuePlaceholder}'.");
+
+            result = new EvaluateResult(percentageOption, matchedTargetingRule: targetingRule, matchedPercentageOption: percentageOption);
+            return true;
+        }
+
+        throw new InvalidOperationException();  // execution should never get here
+    }
+
+    private bool TryEvaluateConditions(ConditionWrapper[] conditions, TargetingRule targetingRule, ref EvaluateContext context, out bool result)
+    {
+        result = true;
+
+        var logBuilder = context.LogBuilder;
+        string? error = null;
+        var newLineBeforeThen = false;
+
+        logBuilder?.NewLine("- ");
+
+        for (var i = 0; i < conditions.Length; i++)
+        {
+            // TODO: error handling - what to do when the condition is invalid (not available/multiple values specified)?
+            var condition = conditions[i].GetCondition();
+
+            if (i > 0)
+            {
+                logBuilder?.IncreaseIndent();
+            }
+
+            bool conditionResult;
+            var prefix = i == 0 ? "IF " : "AND ";
+
+            switch (condition)
+            {
+                case ComparisonCondition comparisonCondition:
+                    conditionResult = EvaluateComparisonCondition(comparisonCondition, prefix, ref context, out error);
+                    newLineBeforeThen = conditions.Length > 1;
+                    break;
+
+                case PrerequisiteFlagCondition:
+                    throw new NotImplementedException(); // TODO
+
+                case SegmentCondition:
+                    throw new NotImplementedException(); // TODO
+
+                default:
+                    throw new InvalidOperationException(); // execution should never get here
+            }
+
+            if (conditions.Length > 1)
+            {
+                logBuilder?.AppendConditionConsequence(conditionResult);
+            }
+
+            if (i > 0)
+            {
+                logBuilder?.DecreaseIndent();
+            }
+
+            if (!conditionResult)
+            {
+                result = false;
+                break;
+            }
+            else
+            {
+                Debug.Assert(error is null, "Unexpected error reported by condition evaluation.");
+            }
+        }
+
+        logBuilder?.AppendTargetingRuleConsequence(targetingRule, error, result, newLineBeforeThen);
+
+        return error is null;
+    }
+
+    private bool EvaluateComparisonCondition(ComparisonCondition condition, string conditionPrefix, ref EvaluateContext context, out string? error)
+    {
+        error = null;
+        bool canEvaluate;
+
+        var logBuilder = context.LogBuilder;
+
+        var userAttributeName = condition.ComparisonAttribute;
+        userAttributeName = userAttributeName is { Length: > 0 } ? userAttributeName : null;
+        string? userAttributeValue = null;
+
+        if (context.User is null)
+        {
+            if (!context.IsMissingUserObjectLogged)
+            {
+                this.logger.UserObjectIsMissing(context.Key);
+                context.IsMissingUserObjectLogged = true;
+            }
+
+            error = "cannot evaluate, User Object is missing";
+            canEvaluate = false;
+        }
+        else if (userAttributeName is null)
+        {
+            // TODO: error handling - comparison attribute is not specified
+            canEvaluate = false;
+        }
+        else
+        {
+            canEvaluate = context.UserAttributes!.TryGetValue(userAttributeName, out userAttributeValue) && userAttributeValue.Length > 0;
+        }
+
+        logBuilder?.NewLine(conditionPrefix);
+
+        // TODO: revise when to trim userAttributeValue/comparisonValue
+
+        var comparator = condition.Comparator;
+        switch (comparator)
+        {
+            case Comparator.SensitiveOneOf:
+            case Comparator.SensitiveNotOneOf:
+                logBuilder?.AppendComparisonCondition(userAttributeName, comparator, condition.StringListValue, isSensitive: true);
+                // TODO: error handling - missing configJsonSalt
+                return canEvaluate
+                    && EvaluateSensitiveOneOf(userAttributeValue!, condition.StringListValue, context.Key, context.Setting.ConfigJsonSalt!, negate: comparator == Comparator.SensitiveNotOneOf);
+
+            case Comparator.Contains:
+            case Comparator.NotContains:
+                logBuilder?.AppendComparisonCondition(userAttributeName, comparator, condition.StringListValue);
+                return canEvaluate
+                    && EvaluateContains(userAttributeValue!, condition.StringListValue, negate: comparator == Comparator.NotContains);
+
+            case Comparator.SemVerOneOf:
+            case Comparator.SemVerNotOneOf:
+                logBuilder?.AppendComparisonCondition(userAttributeName, comparator, condition.StringListValue);
+                return canEvaluate
+                    && SemVersion.TryParse(userAttributeValue!.Trim(), out var version, strict: true)
+                    && EvaluateSemVerOneOf(version, condition.StringListValue, negate: comparator == Comparator.SemVerNotOneOf);
+
+            case Comparator.SemVerLessThan:
+            case Comparator.SemVerLessThanEqual:
+            case Comparator.SemVerGreaterThan:
+            case Comparator.SemVerGreaterThanEqual:
+                logBuilder?.AppendComparisonCondition(userAttributeName, comparator, condition.StringValue);
+                return canEvaluate
+                    && SemVersion.TryParse(userAttributeValue!.Trim(), out version, strict: true)
+                    && EvaluateSemVerRelation(version, comparator, condition.StringValue);
+
+            case Comparator.NumberEqual:
+            case Comparator.NumberNotEqual:
+            case Comparator.NumberLessThan:
+            case Comparator.NumberLessThanEqual:
+            case Comparator.NumberGreaterThan:
+            case Comparator.NumberGreaterThanEqual:
+                logBuilder?.AppendComparisonCondition(userAttributeName, comparator, condition.DoubleValue);
+                return canEvaluate
+                    && double.TryParse(userAttributeValue!.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out var number)
+                    && EvaluateNumberRelation(number, condition.Comparator, condition.DoubleValue);
+
+            case Comparator.DateTimeBefore:
+            case Comparator.DateTimeAfter:
+            case Comparator.SensitiveTextEquals:
+            case Comparator.SensitiveTextNotEquals:
+            case Comparator.SensitiveTextStartsWith:
+            case Comparator.SensitiveTextEndsWith:
+            case Comparator.SensitiveArrayContains:
+            case Comparator.SensitiveArrayNotContains:
+                throw new NotImplementedException(); // TODO
+
+            default:
+                logBuilder?.AppendComparisonCondition(userAttributeName, comparator, condition.GetComparisonValue(throwIfInvalid: false));
+                // TODO: error handling - comparator was not set
+                throw new InvalidOperationException();
+        }
+    }
+
+    private static bool EvaluateSensitiveOneOf(string text, string[]? comparisonValues, string key, string configJsonSalt, bool negate)
+    {
+        if (comparisonValues is null)
+        {
+            // TODO: error handling - what to do when comparison value is invalid (not available/multiple values specified)?
+            return false;
+        }
+
+        var hash = HashComparisonValue(text, key, configJsonSalt);
+
+        for (var i = 0; i < comparisonValues.Length; i++)
+        {
+            if (hash.Equals(hexString: comparisonValues[i].AsSpan().Trim()))  // TODO: error handling - what to do when item is null?
+            {
+                return !negate;
+            }
+        }
+
+        return negate;
+    }
+
+    private static bool EvaluateContains(string text, string[]? comparisonValues, bool negate)
+    {
+        if (comparisonValues is null)
+        {
+            // TODO: error handling - what to do when comparison value is invalid (not available/multiple values specified)?
+            return false;
+        }
+
+        for (var i = 0; i < comparisonValues.Length; i++)
+        {
+            if (text.Contains(comparisonValues[i]))  // TODO: error handling - what to do when item is null?
+            {
+                return !negate;
+            }
+        }
+
+        return negate;
+    }
+
+    private static bool EvaluateSemVerOneOf(SemVersion version, string[]? comparisonValues, bool negate)
+    {
+        if (comparisonValues is null)
+        {
+            // TODO: error handling - what to do when comparison value is invalid (not available/multiple values specified)?
+            return false;
+        }
+
+        var result = false;
+
+        for (var i = 0; i < comparisonValues.Length; i++)
+        {
+            var item = comparisonValues[i]; // TODO: error handling - what to do when item is null?
+
+            // NOTE: Previous versions of the evaluation algorithm ignore empty comparison values
+            // so we keep this behavior for backward compatibility.
+            if (item.Length == 0)
+            {
+                continue;
+            }
+
+            // TODO: error handling - what to do when item is invalid?
+            if (!SemVersion.TryParse(item, out var version2, strict: true))
+            {
+                return false;
+            }
+
+            if (!result && version.PrecedenceMatches(version2))
+            {
+                // NOTE: Previous versions of the evaluation algorithm require that
+                // all the comparison values are empty or valid, that is, we can't stop when finding a match,
+                // so we keep this behavior for backward compatibility.
+                result = true;
+            }
+        }
+
+        return result ^ negate;
+    }
+
+    private static bool EvaluateSemVerRelation(SemVersion version, Comparator comparator, string? comparisonValue)
+    {
+        if (comparisonValue is null)
+        {
+            // TODO: error handling - what to do when comparison value is invalid (not available/multiple values specified)?
+            return false;
+        }
+
+        // TODO: should we trim comparisonValue?
+        if (!SemVersion.TryParse(comparisonValue.Trim(), out var version2, strict: true)) // TODO: error handling - what to do when item is invalid?
+        {
+            return false;
+        }
+
+        var comparisonResult = version.CompareByPrecedence(version2);
+
+        return comparator switch
+        {
+            Comparator.SemVerLessThan => comparisonResult < 0,
+            Comparator.SemVerLessThanEqual => comparisonResult <= 0,
+            Comparator.SemVerGreaterThan => comparisonResult > 0,
+            Comparator.SemVerGreaterThanEqual => comparisonResult >= 0,
+            _ => throw new ArgumentOutOfRangeException(nameof(comparator), comparator, null)
+        };
+    }
+
+    private static bool EvaluateNumberRelation(double number, Comparator comparator, double? comparisonValue)
+    {
+        if (comparisonValue is not { } number2)
+        {
+            // TODO: error handling - what to do when comparison value is invalid (not available/multiple values specified)?
             return false;
         }
 
         return comparator switch
         {
-            Comparator.NumberEqual => d1 == d2,
-            Comparator.NumberNotEqual => d1 != d2,
-            Comparator.NumberLessThan => d1 < d2,
-            Comparator.NumberLessThanEqual => d1 <= d2,
-            Comparator.NumberGreaterThan => d1 > d2,
-            Comparator.NumberGreaterThanEqual => d1 >= d2,
-            _ => false
+            Comparator.NumberEqual => number == number2,
+            Comparator.NumberNotEqual => number != number2,
+            Comparator.NumberLessThan => number < number2,
+            Comparator.NumberLessThanEqual => number <= number2,
+            Comparator.NumberGreaterThan => number > number2,
+            Comparator.NumberGreaterThanEqual => number >= number2,
+            _ => throw new ArgumentOutOfRangeException(nameof(comparator), comparator, null)
         };
     }
 
-    private static bool EvaluateSemVer(string s1, string s2, Comparator comparator)
+    private static byte[] HashComparisonValue(string value, string key, string configJsonSalt)
     {
-        if (!SemVersion.TryParse(s1?.Trim(), out SemVersion v1, true)) return false;
-        s2 = string.IsNullOrWhiteSpace(s2) ? string.Empty : s2.Trim();
-
-        switch (comparator)
-        {
-            case Comparator.SemVerOneOf:
-
-                var rsvi = s2
-                    .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                    .Select(s =>
-                    {
-                        if (SemVersion.TryParse(s.Trim(), out SemVersion ns, true))
-                        {
-                            return ns;
-                        }
-
-                        return null;
-                    })
-                    .ToList();
-
-                return !rsvi.Contains(null) && rsvi.Any(v => v!.PrecedenceMatches(v1));
-
-            case Comparator.SemVerNotOneOf:
-
-                var rsvni = s2
-                    .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                    .Select(s =>
-                    {
-                        if (SemVersion.TryParse(s?.Trim(), out SemVersion ns, true))
-                        {
-                            return ns;
-                        }
-
-                        return null;
-                    })
-                    .ToList();
-
-                return !rsvni.Contains(null) && !rsvni.Any(v => v!.PrecedenceMatches(v1));
-
-            case Comparator.SemVerLessThan:
-
-                if (SemVersion.TryParse(s2, out SemVersion v20, true))
-                {
-                    return v1.CompareByPrecedence(v20) < 0;
-                }
-
-                break;
-            case Comparator.SemVerLessThanEqual:
-
-                if (SemVersion.TryParse(s2, out SemVersion v21, true))
-                {
-                    return v1.CompareByPrecedence(v21) <= 0;
-                }
-
-                break;
-            case Comparator.SemVerGreaterThan:
-
-                if (SemVersion.TryParse(s2, out SemVersion v22, true))
-                {
-                    return v1.CompareByPrecedence(v22) > 0;
-                }
-
-                break;
-            case Comparator.SemVerGreaterThanEqual:
-
-                if (SemVersion.TryParse(s2, out SemVersion v23, true))
-                {
-                    return v1.CompareByPrecedence(v23) >= 0;
-                }
-
-                break;
-        }
-
-        return false;
-    }
-
-    private static string HashComparisonAttribute(string comparisonValue, in EvaluateContext context)
-    {
-        return (comparisonValue + context.Setting.ConfigJsonSalt + context.Key).Sha256();
-    }
-
-    private static string ToDisplayText(Comparator comparator)
-    {
-        return comparator switch
-        {
-            Comparator.Contains => "CONTAINS ANY OF",
-            Comparator.NotContains => "NOT CONTAINS ANY OF",
-            Comparator.SemVerOneOf => "IS ONE OF (semver)",
-            Comparator.SemVerNotOneOf => "IS NOT ONE OF (semver)",
-            Comparator.SemVerLessThan => "< (semver)",
-            Comparator.SemVerLessThanEqual => "<= (semver)",
-            Comparator.SemVerGreaterThan => "> (semver)",
-            Comparator.SemVerGreaterThanEqual => ">= (semver)",
-            Comparator.NumberEqual => "= (number)",
-            Comparator.NumberNotEqual => "!= (number)",
-            Comparator.NumberLessThan => "< (number)",
-            Comparator.NumberLessThanEqual => "<= (number)",
-            Comparator.NumberGreaterThan => "> (number)",
-            Comparator.NumberGreaterThanEqual => ">= (number)",
-            Comparator.SensitiveOneOf => "IS ONE OF (hashed)",
-            Comparator.SensitiveNotOneOf => "IS NOT ONE OF (hashed)",
-            Comparator.DateTimeBefore => "BEFORE (UTC datetime)",
-            Comparator.DateTimeAfter => "AFTER (UTC datetime)",
-            Comparator.SensitiveTextEquals => "EQUALS (hashed)",
-            Comparator.SensitiveTextNotEquals => "NOT EQUALS (hashed)",
-            Comparator.SensitiveTextStartsWith => "STARTS WITH ANY OF (hashed)",
-            Comparator.SensitiveTextNotStartsWith => "NOT STARTS WITH ANY OF (hashed)",
-            Comparator.SensitiveTextEndsWith => "ENDS WITH ANY OF (hashed)",
-            Comparator.SensitiveTextNotEndsWith => "NOT ENDS WITH ANY OF (hashed)",
-            Comparator.SensitiveArrayContains => "ARRAY CONTAINS (hashed)",
-            Comparator.SensitiveArrayNotContains => "ARRAY NOT CONTAINS (hashed)",
-            _ => InvalidOperatorPlaceholder
-        };
+        return (value + configJsonSalt + key).Sha256();
     }
 }

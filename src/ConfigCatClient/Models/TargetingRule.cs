@@ -83,8 +83,6 @@ internal sealed class TargetingRule : ITargetingRule
         set => ModelHelper.SetOneOf(ref this.then, value);
     }
 
-    public SettingValue SimpleValueOrDefault() => SimpleValue?.Value ?? default;
-
     ISettingValueContainer? ITargetingRule.SimpleValue => SimpleValue;
 
     // TODO

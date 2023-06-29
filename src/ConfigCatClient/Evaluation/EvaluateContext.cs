@@ -1,23 +1,35 @@
+using System.Collections.Generic;
+using ConfigCat.Client.Utils;
+
 namespace ConfigCat.Client.Evaluation;
 
-internal readonly struct EvaluateContext
+internal struct EvaluateContext
 {
-    public EvaluateContext(string key, Setting setting, string? logDefaultValue, User? user)
+    public EvaluateContext(string key, Setting setting, SettingValue defaultValue, User? user)
     {
-        Key = key;
-        Setting = setting;
-        User = user;
-        Log = new EvaluateLogger
-        {
-            ReturnValue = logDefaultValue,
-            User = user,
-            KeyName = key,
-            VariationId = null
-        };
+        this.Key = key;
+        this.Setting = setting;
+        this.DefaultValue = defaultValue;
+        this.User = user;
+        this.userAttributes = null;
+        this.visitedFlags = null;
+        this.IsMissingUserObjectLogged = this.IsMissingUserObjectAttributeLogged = false;
+        this.LogBuilder = null; // initialized by RolloutEvaluator.Evaluate
     }
 
-    public string Key { get; }
-    public Setting Setting { get; }
-    public User? User { get; }
-    public EvaluateLogger Log { get; }
+    public readonly string Key;
+    public readonly Setting Setting;
+    public readonly SettingValue DefaultValue;
+    public readonly User? User;
+
+    private IReadOnlyDictionary<string, string>? userAttributes;
+    public IReadOnlyDictionary<string, string>? UserAttributes => this.userAttributes ??= this.User?.GetAllAttributes();
+
+    private List<string>? visitedFlags;
+    public List<string> VisitedFlags => this.visitedFlags ??= new List<string>();
+
+    public bool IsMissingUserObjectLogged;
+    public bool IsMissingUserObjectAttributeLogged;
+
+    public IndentedTextBuilder? LogBuilder;
 }

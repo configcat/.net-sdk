@@ -3,9 +3,12 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace ConfigCat.Client.Tests;
 
 [TestClass]
-public class SensitiveEvaluatorTests : ConfigEvaluatorTestsBase
+public class SensitiveEvaluatorTests : ConfigEvaluatorTestsBase<SensitiveEvaluatorTests.Descriptor>
 {
-    protected override string SampleJsonFileName => "sample_sensitive_v5.json";
+    public class Descriptor : IMatrixTestDescriptor
+    {
+        public string SampleJsonFileName => "sample_sensitive_v5.json";
 
-    protected override string MatrixResultFileName => "testmatrix_sensitive.csv";
+        public string MatrixResultFileName => "testmatrix_sensitive.csv";
+    }
 }

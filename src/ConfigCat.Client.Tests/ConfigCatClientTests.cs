@@ -150,7 +150,7 @@ public class ConfigCatClientTests
         const string defaultValue = "Victory for the Firstborn!";
 
         this.evaluatorMock
-            .Setup(m => m.Evaluate(in It.Ref<EvaluateContext>.IsAny))
+            .Setup(m => m.Evaluate(ref It.Ref<EvaluateContext>.IsAny))
             .Throws<Exception>();
 
         var client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, new Hooks());
@@ -179,7 +179,7 @@ public class ConfigCatClientTests
         const string defaultValue = "Victory for the Firstborn!";
 
         this.evaluatorMock
-            .Setup(m => m.Evaluate(in It.Ref<EvaluateContext>.IsAny))
+            .Setup(m => m.Evaluate(ref It.Ref<EvaluateContext>.IsAny))
             .Throws<Exception>();
 
         var client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, new Hooks());
@@ -240,8 +240,8 @@ public class ConfigCatClientTests
         Assert.AreSame(user, actual.User);
         Assert.IsNotNull(actual.ErrorMessage);
         Assert.IsNull(actual.ErrorException);
-        Assert.IsNull(actual.MatchedEvaluationRule);
-        Assert.IsNull(actual.MatchedEvaluationPercentageRule);
+        Assert.IsNull(actual.MatchedTargetingRule);
+        Assert.IsNull(actual.MatchedPercentageOption);
     }
 
     [DataRow(false)]
@@ -292,8 +292,8 @@ public class ConfigCatClientTests
         Assert.IsNull(actual.User);
         Assert.IsNull(actual.ErrorMessage);
         Assert.IsNull(actual.ErrorException);
-        Assert.IsNull(actual.MatchedEvaluationRule);
-        Assert.IsNull(actual.MatchedEvaluationPercentageRule);
+        Assert.IsNull(actual.MatchedTargetingRule);
+        Assert.IsNull(actual.MatchedPercentageOption);
     }
 
     [DataRow(false)]
@@ -346,8 +346,8 @@ public class ConfigCatClientTests
         Assert.AreSame(user, actual.User);
         Assert.IsNull(actual.ErrorMessage);
         Assert.IsNull(actual.ErrorException);
-        Assert.IsNotNull(actual.MatchedEvaluationRule);
-        Assert.IsNull(actual.MatchedEvaluationPercentageRule);
+        Assert.IsNotNull(actual.MatchedTargetingRule);
+        Assert.IsNull(actual.MatchedPercentageOption);
     }
 
     [DataRow(false)]
@@ -400,8 +400,8 @@ public class ConfigCatClientTests
         Assert.AreSame(user, actual.User);
         Assert.IsNull(actual.ErrorMessage);
         Assert.IsNull(actual.ErrorException);
-        Assert.IsNull(actual.MatchedEvaluationRule);
-        Assert.IsNotNull(actual.MatchedEvaluationPercentageRule);
+        Assert.IsNull(actual.MatchedTargetingRule);
+        Assert.IsNotNull(actual.MatchedPercentageOption);
     }
 
     [DataRow(false)]
@@ -443,8 +443,8 @@ public class ConfigCatClientTests
         Assert.IsNull(actual.User);
         Assert.AreEqual(errorMessage, actual.ErrorMessage);
         Assert.IsInstanceOfType(actual.ErrorException, typeof(ApplicationException));
-        Assert.IsNull(actual.MatchedEvaluationRule);
-        Assert.IsNull(actual.MatchedEvaluationPercentageRule);
+        Assert.IsNull(actual.MatchedTargetingRule);
+        Assert.IsNull(actual.MatchedPercentageOption);
     }
 
     [DataRow(false)]
@@ -463,7 +463,7 @@ public class ConfigCatClientTests
         var timeStamp = ProjectConfig.GenerateTimeStamp();
 
         this.evaluatorMock
-            .Setup(m => m.Evaluate(in It.Ref<EvaluateContext>.IsAny))
+            .Setup(m => m.Evaluate(ref It.Ref<EvaluateContext>.IsAny))
             .Throws(new ApplicationException(errorMessage));
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
@@ -506,8 +506,8 @@ public class ConfigCatClientTests
         Assert.AreSame(user, actual.User);
         Assert.AreEqual(errorMessage, actual.ErrorMessage);
         Assert.IsInstanceOfType(actual.ErrorException, typeof(ApplicationException));
-        Assert.IsNull(actual.MatchedEvaluationRule);
-        Assert.IsNull(actual.MatchedEvaluationPercentageRule);
+        Assert.IsNull(actual.MatchedTargetingRule);
+        Assert.IsNull(actual.MatchedPercentageOption);
 
         Assert.AreEqual(1, flagEvaluatedEvents.Count);
         Assert.AreSame(actual, flagEvaluatedEvents[0].EvaluationDetails);
@@ -575,8 +575,8 @@ public class ConfigCatClientTests
             Assert.AreSame(user, actualDetails.User);
             Assert.IsNull(actualDetails.ErrorMessage);
             Assert.IsNull(actualDetails.ErrorException);
-            Assert.IsNotNull(actualDetails.MatchedEvaluationRule);
-            Assert.IsNull(actualDetails.MatchedEvaluationPercentageRule);
+            Assert.IsNotNull(actualDetails.MatchedTargetingRule);
+            Assert.IsNull(actualDetails.MatchedPercentageOption);
 
             var flagEvaluatedDetails = flagEvaluatedEvents.Select(e => e.EvaluationDetails).FirstOrDefault(details => details.Key == expectedItem.Key);
 
@@ -658,7 +658,7 @@ public class ConfigCatClientTests
         var timeStamp = ProjectConfig.GenerateTimeStamp();
 
         this.evaluatorMock
-            .Setup(m => m.Evaluate(in It.Ref<EvaluateContext>.IsAny))
+            .Setup(m => m.Evaluate(ref It.Ref<EvaluateContext>.IsAny))
             .Throws(new ApplicationException(errorMessage));
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
@@ -707,8 +707,8 @@ public class ConfigCatClientTests
             Assert.AreSame(user, actualDetails.User);
             Assert.AreEqual(errorMessage, actualDetails.ErrorMessage);
             Assert.IsInstanceOfType(actualDetails.ErrorException, typeof(ApplicationException));
-            Assert.IsNull(actualDetails.MatchedEvaluationRule);
-            Assert.IsNull(actualDetails.MatchedEvaluationPercentageRule);
+            Assert.IsNull(actualDetails.MatchedTargetingRule);
+            Assert.IsNull(actualDetails.MatchedPercentageOption);
 
             var flagEvaluatedDetails = flagEvaluatedEvents.Select(e => e.EvaluationDetails).FirstOrDefault(details => details.Key == key);
 

@@ -18,7 +18,7 @@ public class User
     /// <summary>
     /// The unique identifier of the user or session (e.g. email address, primary key, session ID, etc.)
     /// </summary>
-    public string Identifier { get; private set; }
+    public string Identifier { get; }
 
     /// <summary>
     /// Email address of the user.
@@ -30,39 +30,48 @@ public class User
     /// </summary>
     public string? Country { get; set; }
 
+    private IDictionary<string, string>? custom;
+
     /// <summary>
     /// Custom attributes of the user for advanced targeting rule definitions (e.g. user role, subscription type, etc.)
     /// </summary>
-    public IDictionary<string, string?> Custom { get; set; }
+    public IDictionary<string, string> Custom
+    {
+        get => this.custom ??= new Dictionary<string, string>();
+        set => this.custom = value;
+    }
 
     /// <summary>
     /// Returns all attributes of the user.
     /// </summary>
-    [JsonIgnore]
-    public IReadOnlyDictionary<string, string?> AllAttributes
+    public IReadOnlyDictionary<string, string> GetAllAttributes()
     {
-        get
+        var result = new Dictionary<string, string>();
+
+        result[nameof(Identifier)] = Identifier;
+
+        if (Email is not null)
         {
-            var result = new Dictionary<string, string?>
-            {
-                { nameof(Identifier), Identifier},
-                { nameof(Email), Email},
-                { nameof(Country),  Country},
-            };
+            result[nameof(Email)] = Email;
+        }
 
-            if (Custom is not { Count: > 0 })
-                return result;
+        if (Country is not null)
+        {
+            result[nameof(Country)] = Country;
+        }
 
-            foreach (var item in Custom)
+        if (this.custom is { Count: > 0 })
+        {
+            foreach (var item in this.custom)
             {
-                if (item.Key is not (nameof(Identifier) or nameof(Email) or nameof(Country)))
+                if (item.Value is not null && item.Key is not (nameof(Identifier) or nameof(Email) or nameof(Country)))
                 {
                     result.Add(item.Key, item.Value);
                 }
             }
-
-            return result;
         }
+
+        return result;
     }
 
     /// <summary>
@@ -72,7 +81,6 @@ public class User
     public User(string identifier)
     {
         Identifier = string.IsNullOrEmpty(identifier) ? DefaultIdentifierValue : identifier;
-        Custom = new Dictionary<string, string?>(capacity: 0);
     }
 
     /// <inheritdoc/>

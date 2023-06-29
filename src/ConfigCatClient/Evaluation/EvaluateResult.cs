@@ -2,16 +2,14 @@ namespace ConfigCat.Client.Evaluation;
 
 internal readonly struct EvaluateResult
 {
-    public EvaluateResult(SettingValue value, string? variationId, TargetingRule? matchedTargetingRule = null, PercentageOption? matchedPercentageOption = null)
+    public EvaluateResult(SettingValueContainer selectedValue, TargetingRule? matchedTargetingRule = null, PercentageOption? matchedPercentageOption = null)
     {
-        Value = value;
-        VariationId = variationId;
-        MatchedTargetingRule = matchedTargetingRule;
-        MatchedPercentageOption = matchedPercentageOption;
+        this.SelectedValue = selectedValue;
+        this.MatchedTargetingRule = matchedTargetingRule;
+        this.MatchedPercentageOption = matchedPercentageOption;
     }
 
-    public SettingValue Value { get; }
-    public string? VariationId { get; }
-    public TargetingRule? MatchedTargetingRule { get; }
-    public PercentageOption? MatchedPercentageOption { get; }
+    public readonly SettingValueContainer SelectedValue;
+    public readonly TargetingRule? MatchedTargetingRule;
+    public readonly PercentageOption? MatchedPercentageOption;
 }

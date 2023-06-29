@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client.Evaluation;
@@ -11,8 +10,8 @@ internal static class RolloutEvaluatorExtensions
     public static EvaluationDetails<T> Evaluate<T>(this IRolloutEvaluator evaluator, Setting setting, string key, T defaultValue, User? user,
         ProjectConfig? remoteConfig)
     {
-        var logDefaultValue = defaultValue is not null ? Convert.ToString(defaultValue, CultureInfo.InvariantCulture) : null;
-        var evaluateResult = evaluator.Evaluate(new EvaluateContext(key, setting, logDefaultValue, user));
+        var evaluateContext = new EvaluateContext(key, setting, defaultValue.ToSettingValue(out _), user);
+        var evaluateResult = evaluator.Evaluate(ref evaluateContext);
         return EvaluationDetails.FromEvaluateResult<T>(key, evaluateResult, setting.SettingType, fetchTime: remoteConfig?.TimeStamp, user);
     }
 
@@ -37,11 +36,10 @@ internal static class RolloutEvaluatorExtensions
         return evaluator.Evaluate(setting, key, defaultValue, user, remoteConfig);
     }
 
-    public static EvaluationDetails Evaluate(this IRolloutEvaluator evaluator, Setting setting, string key, object? defaultValue, User? user,
-        ProjectConfig? remoteConfig)
+    public static EvaluationDetails Evaluate(this IRolloutEvaluator evaluator, Setting setting, string key, User? user, ProjectConfig? remoteConfig)
     {
-        var logDefaultValue = defaultValue is not null ? Convert.ToString(defaultValue, CultureInfo.InvariantCulture) : null;
-        var evaluateResult = evaluator.Evaluate(new EvaluateContext(key, setting, logDefaultValue, user));
+        var evaluateContext = new EvaluateContext(key, setting, default, user);
+        var evaluateResult = evaluator.Evaluate(ref evaluateContext);
         return EvaluationDetails.FromEvaluateResult<object>(key, evaluateResult, setting.SettingType, fetchTime: remoteConfig?.TimeStamp, user);
     }
 
@@ -63,13 +61,13 @@ internal static class RolloutEvaluatorExtensions
             EvaluationDetails evaluationDetails;
             try
             {
-                evaluationDetails = evaluator.Evaluate(kvp.Value, kvp.Key, defaultValue: null, user, remoteConfig);
+                evaluationDetails = evaluator.Evaluate(kvp.Value, kvp.Key, user, remoteConfig);
             }
             catch (Exception ex)
             {
                 exceptionList ??= new List<Exception>();
                 exceptionList.Add(ex);
-                evaluationDetails = EvaluationDetails.FromDefaultValue(kvp.Key, defaultValue: (object?)null, fetchTime: remoteConfig?.TimeStamp, user, ex.Message, ex);
+                evaluationDetails = EvaluationDetails.FromDefaultValue<object?>(kvp.Key, defaultValue: null, fetchTime: remoteConfig?.TimeStamp, user, ex.Message, ex);
             }
 
             evaluationDetailsArray[index++] = evaluationDetails;

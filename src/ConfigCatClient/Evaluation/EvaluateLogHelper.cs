@@ -5,10 +5,17 @@ namespace ConfigCat.Client.Evaluation;
 
 internal static class EvaluateLogHelper
 {
+    public const string InvalidNamePlaceholder = "<invalid name>";
     public const string InvalidOperatorPlaceholder = "<invalid operator>";
+    public const string InvalidReferencePlaceholder = "<invalid reference>";
     public const string InvalidValuePlaceholder = "<invalid value>";
 
     private const int StringListMaxLength = 10;
+
+    public static IndentedTextBuilder AppendEvaluationResult(this IndentedTextBuilder builder, bool result)
+    {
+        return builder.Append(result ? "true" : "false");
+    }
 
     public static IndentedTextBuilder AppendComparisonCondition(this IndentedTextBuilder builder, string? comparisonAttribute, Comparator comparator, object? comparisonValue)
     {
@@ -51,9 +58,17 @@ internal static class EvaluateLogHelper
             : builder.AppendComparisonCondition(comparisonAttribute, comparator, (object?)null);
     }
 
+    public static IndentedTextBuilder AppendSegmentCondition(this IndentedTextBuilder builder, SegmentComparator comparator, Segment? segment)
+    {
+        var segmentName = segment?.Name ??
+            (segment is null ? InvalidReferencePlaceholder : InvalidNamePlaceholder);
+        return builder.Append($"User {comparator.ToDisplayText()} '{segmentName}'");
+    }
+
     public static IndentedTextBuilder AppendConditionConsequence(this IndentedTextBuilder builder, bool result)
     {
-        return builder.Append(" => ").Append(result ? "true" : "false, skipping the remaining AND conditions");
+        builder.Append(" => ").AppendEvaluationResult(result);
+        return result ? builder : builder.Append(", skipping the remaining AND conditions");
     }
 
     public static IndentedTextBuilder AppendTargetingRuleConsequence(this IndentedTextBuilder builder, TargetingRule targetingRule, string? error, bool isMatch, bool newLine)
@@ -113,6 +128,16 @@ internal static class EvaluateLogHelper
             Comparator.SensitiveTextNotEndsWith => "NOT ENDS WITH ANY OF (hashed)",
             Comparator.SensitiveArrayContains => "ARRAY CONTAINS (hashed)",
             Comparator.SensitiveArrayNotContains => "ARRAY NOT CONTAINS (hashed)",
+            _ => InvalidOperatorPlaceholder
+        };
+    }
+
+    public static string ToDisplayText(this SegmentComparator comparator)
+    {
+        return comparator switch
+        {
+            SegmentComparator.IsIn => "IS IN SEGMENT",
+            SegmentComparator.IsNotIn => "IS NOT IN SEGMENT",
             _ => InvalidOperatorPlaceholder
         };
     }

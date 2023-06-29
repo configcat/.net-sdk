@@ -9,6 +9,8 @@ namespace ConfigCat.Client.Evaluation;
 
 internal sealed class RolloutEvaluator : IRolloutEvaluator
 {
+    private const string MissingUserObjectError = "cannot evaluate, User Object is missing";
+
     private readonly LoggerWrapper logger;
 
     public RolloutEvaluator(LoggerWrapper logger)
@@ -92,7 +94,8 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
             const string targetingRuleIgnoredMessage = "The current targeting rule is ignored and the evaluation continues with the next rule.";
 
-            if (!TryEvaluateConditions(conditions, targetingRule, ref context, out var isMatch))
+            // TODO: error handling - condition.GetCondition() - what to do when the condition is invalid (not available/multiple values specified)?
+            if (!TryEvaluateConditions(conditions, static condition => condition.GetCondition()!, targetingRule, contextSalt: context.Key, ref context, out var isMatch))
             {
                 logBuilder?
                     .IncreaseIndent()
@@ -221,7 +224,8 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         throw new InvalidOperationException();  // execution should never get here
     }
 
-    private bool TryEvaluateConditions(ConditionWrapper[] conditions, TargetingRule targetingRule, ref EvaluateContext context, out bool result)
+    private bool TryEvaluateConditions<TCondition>(TCondition[] conditions, Func<TCondition, ICondition> getCondition, TargetingRule? targetingRule,
+        string contextSalt, ref EvaluateContext context, out bool result)
     {
         result = true;
 
@@ -233,43 +237,51 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
         for (var i = 0; i < conditions.Length; i++)
         {
-            // TODO: error handling - what to do when the condition is invalid (not available/multiple values specified)?
-            var condition = conditions[i].GetCondition();
+            var condition = getCondition(conditions[i]); // TODO: error handling - what to do when item is null?
 
-            if (i > 0)
+            if (logBuilder is not null)
             {
-                logBuilder?.IncreaseIndent();
+                if (i == 0)
+                {
+                    logBuilder
+                        .Append("IF ")
+                        .IncreaseIndent();
+                }
+                else
+                {
+                    logBuilder
+                        .IncreaseIndent()
+                        .NewLine("AND ");
+                }
             }
 
             bool conditionResult;
-            var prefix = i == 0 ? "IF " : "AND ";
 
             switch (condition)
             {
                 case ComparisonCondition comparisonCondition:
-                    conditionResult = EvaluateComparisonCondition(comparisonCondition, prefix, ref context, out error);
+                    conditionResult = EvaluateComparisonCondition(comparisonCondition, contextSalt, ref context, out error);
                     newLineBeforeThen = conditions.Length > 1;
                     break;
 
                 case PrerequisiteFlagCondition:
                     throw new NotImplementedException(); // TODO
 
-                case SegmentCondition:
-                    throw new NotImplementedException(); // TODO
+                case SegmentCondition segmentCondition:
+                    conditionResult = EvaluateSegmentCondition(segmentCondition, ref context, out error);
+                    newLineBeforeThen = error is null || conditions.Length > 1;
+                    break;
 
                 default:
                     throw new InvalidOperationException(); // execution should never get here
             }
 
-            if (conditions.Length > 1)
+            if (targetingRule is null || conditions.Length > 1)
             {
                 logBuilder?.AppendConditionConsequence(conditionResult);
             }
 
-            if (i > 0)
-            {
-                logBuilder?.DecreaseIndent();
-            }
+            logBuilder?.DecreaseIndent();
 
             if (!conditionResult)
             {
@@ -282,12 +294,15 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             }
         }
 
-        logBuilder?.AppendTargetingRuleConsequence(targetingRule, error, result, newLineBeforeThen);
+        if (targetingRule is not null)
+        {
+            logBuilder?.AppendTargetingRuleConsequence(targetingRule, error, result, newLineBeforeThen);
+        }
 
         return error is null;
     }
 
-    private bool EvaluateComparisonCondition(ComparisonCondition condition, string conditionPrefix, ref EvaluateContext context, out string? error)
+    private bool EvaluateComparisonCondition(ComparisonCondition condition, string contextSalt, ref EvaluateContext context, out string? error)
     {
         error = null;
         bool canEvaluate;
@@ -306,7 +321,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                 context.IsMissingUserObjectLogged = true;
             }
 
-            error = "cannot evaluate, User Object is missing";
+            error = MissingUserObjectError;
             canEvaluate = false;
         }
         else if (userAttributeName is null)
@@ -319,8 +334,6 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             canEvaluate = context.UserAttributes!.TryGetValue(userAttributeName, out userAttributeValue) && userAttributeValue.Length > 0;
         }
 
-        logBuilder?.NewLine(conditionPrefix);
-
         // TODO: revise when to trim userAttributeValue/comparisonValue
 
         var comparator = condition.Comparator;
@@ -331,7 +344,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                 logBuilder?.AppendComparisonCondition(userAttributeName, comparator, condition.StringListValue, isSensitive: true);
                 // TODO: error handling - missing configJsonSalt
                 return canEvaluate
-                    && EvaluateSensitiveOneOf(userAttributeValue!, condition.StringListValue, context.Key, context.Setting.ConfigJsonSalt!, negate: comparator == Comparator.SensitiveNotOneOf);
+                    && EvaluateSensitiveOneOf(userAttributeValue!, condition.StringListValue, context.Setting.ConfigJsonSalt!, contextSalt, negate: comparator == Comparator.SensitiveNotOneOf);
 
             case Comparator.Contains:
             case Comparator.NotContains:
@@ -383,7 +396,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         }
     }
 
-    private static bool EvaluateSensitiveOneOf(string text, string[]? comparisonValues, string key, string configJsonSalt, bool negate)
+    private static bool EvaluateSensitiveOneOf(string text, string[]? comparisonValues, string configJsonSalt, string contextSalt, bool negate)
     {
         if (comparisonValues is null)
         {
@@ -391,7 +404,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             return false;
         }
 
-        var hash = HashComparisonValue(text, key, configJsonSalt);
+        var hash = HashComparisonValue(text, configJsonSalt, contextSalt);
 
         for (var i = 0; i < comparisonValues.Length; i++)
         {
@@ -508,8 +521,67 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         };
     }
 
-    private static byte[] HashComparisonValue(string value, string key, string configJsonSalt)
+    private bool EvaluateSegmentCondition(SegmentCondition condition, ref EvaluateContext context, out string? error)
     {
-        return (value + configJsonSalt + key).Sha256();
+        error = null;
+
+        var logBuilder = context.LogBuilder;
+
+        var comparator = condition.Comparator;
+        var segment = condition.Segment;
+
+        logBuilder?.AppendSegmentCondition(comparator, segment);
+
+        if (context.User is null)
+        {
+            if (!context.IsMissingUserObjectLogged)
+            {
+                this.logger.UserObjectIsMissing(context.Key);
+                context.IsMissingUserObjectLogged = true;
+            }
+
+            error = MissingUserObjectError;
+            return false;
+        }
+        else if (segment is null)
+        {
+            // TODO: error handling - segment reference is invalid
+            return false;
+        }
+        else if (segment.Name is not { Length: > 0 })
+        {
+            // TODO: error handling - segment name is not specified
+            return false;
+        }
+
+        logBuilder?
+            .NewLine("(")
+            .IncreaseIndent()
+            .NewLine().Append($"Evaluating segment '{segment.Name}':");
+
+        var success = TryEvaluateConditions(segment.Conditions, static condition => condition, targetingRule: null, contextSalt: segment.Name, ref context, out var segmentResult);
+        Debug.Assert(success, "Unexpected failure when evaluating segment conditions.");
+
+        var result = comparator switch
+        {
+            SegmentComparator.IsIn => segmentResult,
+            SegmentComparator.IsNotIn => !segmentResult,
+            _ => throw new InvalidOperationException(), // TODO: error handling - comparator was not set
+        };
+
+        logBuilder?
+            .NewLine().Append($"Segment evaluation result: User {(segmentResult ? SegmentComparator.IsIn : SegmentComparator.IsNotIn).ToDisplayText()}.")
+            .NewLine("Condition (")
+                .AppendSegmentCondition(comparator, segment)
+                .Append(") evaluates to ").AppendEvaluationResult(result).Append(".")
+            .DecreaseIndent()
+            .NewLine(")");
+
+        return result;
+    }
+
+    private static byte[] HashComparisonValue(string value, string configJsonSalt, string contextSalt)
+    {
+        return (value + configJsonSalt + contextSalt).Sha256();
     }
 }

@@ -1,0 +1,16 @@
+Identifier;Email;Country;Custom1;boolTrueIn202304;stringEqualsDogDefaultCat;stringDoseNotEqualDogDefaultCat;stringStartsWithDogDefaultCat;stringNotStartsWithDogDefaultCat;stringEndsWithDogDefaultCat;stringNotEndsWithDogDefaultCat;arrayContainsDogDefaultCat;arrayDoesNotContainDogDefaultCat;arrayContainsCaseCheckDogDefaultCat;arrayDoesNotContainCaseCheckDogDefaultCat;customPercentageAttribute;missingPercentageAttribute;countryPercentageAttribute
+##null##;;;;False;Cat;Cat;Cat;Cat;Cat;Cat;Cat;Cat;Cat;Cat;Chicken;Chicken;Chicken
+;;;;False;Cat;Cat;Cat;Cat;Cat;Cat;Cat;Cat;Cat;Cat;Chicken;Chicken;Chicken
+a@configcat.com;a@configcat.com;##null##;##null##;False;Dog;Dog;Dog;Cat;Dog;Cat;Cat;Cat;Cat;Cat;Chicken;NotFound;Chicken
+b@configcat.com;b@configcat.com;Hungary;0;False;Cat;Cat;Cat;Dog;Dog;Cat;Cat;Dog;Cat;Dog;Horse;NotFound;Falcon
+c@configcat.com;c@configcat.com;United Kingdom;1680307199.9;False;Cat;Dog;Cat;Dog;Dog;Cat;Cat;Dog;Cat;Dog;Falcon;NotFound;Falcon
+anna@configcat.com;anna@configcat.com;Hungary;1681118000.56;True;Cat;Dog;Dog;Cat;Dog;Cat;Cat;Dog;Cat;Dog;Falcon;NotFound;Falcon
+bogjobber@verizon.net;bogjobber@verizon.net;##null##;1682899200.1;False;Cat;Dog;Cat;Dog;Cat;Dog;Cat;Dog;Cat;Dog;Horse;Chicken;Chicken
+cliffordj@aol.com;cliffordj@aol.com;Austria;1682999200;False;Cat;Dog;Cat;Dog;Cat;Dog;Cat;Dog;Cat;Dog;Falcon;Chicken;Falcon
+reader@configcat.com;reader@configcat.com;Bahamas;read,execute;False;Cat;Dog;Cat;Dog;Dog;Cat;Dog;Dog;Cat;Dog;Falcon;NotFound;Falcon
+writer@configcat.com;writer@configcat.com;Belgium;write, execute;False;Cat;Dog;Cat;Dog;Dog;Cat;Cat;Cat;Cat;Dog;Horse;NotFound;Horse
+reader@configcat.com;reader@configcat.com;Canada;execute, Read;False;Cat;Dog;Cat;Dog;Dog;Cat;Cat;Dog;Dog;Dog;Horse;NotFound;Horse
+writer@configcat.com;writer@configcat.com;China;Write;False;Cat;Dog;Cat;Dog;Dog;Cat;Cat;Dog;Cat;Cat;Falcon;NotFound;Horse
+admin@configcat.com;admin@configcat.com;France;read, write,execute;False;Cat;Dog;Dog;Cat;Dog;Cat;Dog;Cat;Cat;Dog;Falcon;NotFound;Horse
+user@configcat.com;user@configcat.com;Greece;,execute;False;Cat;Dog;Cat;Dog;Dog;Cat;Cat;Dog;Cat;Dog;Falcon;NotFound;Horse
+user@configcat.com;user@configcat.com;Monaco;,null, ,,nil, None;False;Cat;Dog;Cat;Dog;Dog;Cat;Cat;Dog;Cat;Dog;Falcon;NotFound;Horse

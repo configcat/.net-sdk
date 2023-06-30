@@ -1,0 +1,180 @@
+{
+  "p": {
+    "u": "https://test-cdn-eu.configcat.com",
+    "r": 0,
+    "s": "80xCU/SlDz1lCiWFaxIBjyJeJecWjq46T4eu6GtozkM="
+  },
+  "s": [
+    {
+      "n": "Beta Users",
+      "r": [
+        {
+          "a": "Email",
+          "c": 16,
+          "l": [
+            "9189c42f6035bd1d2df5eda347a4f62926d27c80540a7aa6cc72cc75bc6757ff",
+            "7bc62ac49420ab89a585ecdab4362e487d46bfd2ba489f1be6ee76ef44ecc117"
+          ]
+        }
+      ]
+    },
+    {
+      "n": "Developers",
+      "r": [
+        {
+          "a": "Email",
+          "c": 16,
+          "l": [
+            "dced693332873c8f43f4074f02bb9b054fb4fbed07817ec83335e602aa957202",
+            "a7cdf54e74b5527bd2617889ec47f6d29b825ccfc97ff00832886bcb735abded"
+          ]
+        }
+      ]
+    },
+    {
+      "n": "Not Beta Users",
+      "r": [
+        {
+          "a": "Email",
+          "c": 17,
+          "l": [
+            "d026361fe4152dfb7c922e76179d6f7148b5b2f20318a5962dad175e04038c86",
+            "ee1de9404985d593dd5d205cf73135e3d81f234935df5a3219d2f4fce0ef68bf"
+          ]
+        }
+      ]
+    },
+    {
+      "n": "Not Developers",
+      "r": [
+        {
+          "a": "Email",
+          "c": 17,
+          "l": [
+            "fefe1b9ccaa174845b4174f544920bca786dabe224f9f32438ef7fc942806151",
+            "da5a4d73241d0a4688621e4fe5122f66a01a257e10664b082df2db487fd9af4d"
+          ]
+        }
+      ]
+    },
+    {
+      "n": "United",
+      "r": [
+        {
+          "a": "Country",
+          "c": 2,
+          "l": [
+            "United"
+          ]
+        }
+      ]
+    },
+    {
+      "n": "Not States",
+      "r": [
+        {
+          "a": "Country",
+          "c": 3,
+          "l": [
+            "States"
+          ]
+        }
+      ]
+    }
+  ],
+  "f": {
+    "countrySegment": {
+      "t": 1,
+      "r": [
+        {
+          "c": [
+            {
+              "s": {
+                "s": 4,
+                "c": 0
+              }
+            },
+            {
+              "s": {
+                "s": 5,
+                "c": 0
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "A"
+            },
+            "i": "9b7e6414"
+          }
+        }
+      ],
+      "v": {
+        "s": "Z"
+      },
+      "i": "f71b6d96"
+    },
+    "developerAndBetaUserSegment": {
+      "t": 0,
+      "r": [
+        {
+          "c": [
+            {
+              "s": {
+                "s": 1,
+                "c": 0
+              }
+            },
+            {
+              "s": {
+                "s": 0,
+                "c": 1
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "b": true
+            },
+            "i": "ddc50638"
+          }
+        }
+      ],
+      "v": {
+        "b": false
+      },
+      "i": "6427f4b8"
+    },
+    "notDeveloperAndNotBetaUserSegment": {
+      "t": 0,
+      "r": [
+        {
+          "c": [
+            {
+              "s": {
+                "s": 2,
+                "c": 0
+              }
+            },
+            {
+              "s": {
+                "s": 3,
+                "c": 1
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "b": true
+            },
+            "i": "77081d42"
+          }
+        }
+      ],
+      "v": {
+        "b": false
+      },
+      "i": "a14eaf13"
+    }
+  }
+}

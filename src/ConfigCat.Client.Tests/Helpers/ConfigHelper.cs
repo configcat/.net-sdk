@@ -14,4 +14,11 @@ internal static class ConfigHelper
     {
         return FromString(File.ReadAllText(configJsonFilePath), httpETag, timeStamp);
     }
+
+    public static string GetSampleJson(string fileName)
+    {
+        using Stream stream = File.OpenRead(Path.Combine("data", fileName));
+        using StreamReader reader = new(stream);
+        return reader.ReadToEnd();
+    }
 }

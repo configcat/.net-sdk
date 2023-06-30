@@ -346,7 +346,7 @@ public class OverrideTests
 
         var fakeHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK);
 
-        using var client = ConfigCatClient.Get("localhost", options =>
+        using var client = ConfigCatClient.Get("localhost-123456789012/1234567890123456789012", options =>
         {
             options.FlagOverrides = FlagOverrides.LocalDictionary(dict, OverrideBehaviour.LocalOverRemote);
             options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, GetJsonContent("false"));
@@ -370,7 +370,7 @@ public class OverrideTests
 
         var fakeHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK);
 
-        using var client = ConfigCatClient.Get("localhost", options =>
+        using var client = ConfigCatClient.Get("localhost-123456789012/1234567890123456789012", options =>
         {
             options.FlagOverrides = FlagOverrides.LocalDictionary(dict, OverrideBehaviour.LocalOverRemote);
             options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, GetJsonContent("false"));
@@ -394,7 +394,7 @@ public class OverrideTests
 
         var fakeHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK);
 
-        using var client = ConfigCatClient.Get("localhost", options =>
+        using var client = ConfigCatClient.Get("localhost-123456789012/1234567890123456789012", options =>
         {
             options.FlagOverrides = FlagOverrides.LocalDictionary(dict, OverrideBehaviour.RemoteOverLocal);
             options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, GetJsonContent("false"));
@@ -418,7 +418,7 @@ public class OverrideTests
 
         var fakeHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK);
 
-        using var client = ConfigCatClient.Get("localhost", options =>
+        using var client = ConfigCatClient.Get("localhost-123456789012/1234567890123456789012", options =>
         {
             options.FlagOverrides = FlagOverrides.LocalDictionary(dict, OverrideBehaviour.RemoteOverLocal);
             options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, GetJsonContent("false"));

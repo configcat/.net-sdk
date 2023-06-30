@@ -83,7 +83,7 @@ public class ConfigCatClientTests
     [DoNotParallelize]
     public void CreateAnInstance_WhenLoggerIsNull_ShouldCreateAnInstance()
     {
-        using var client = ConfigCatClient.Get("hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf", options =>
+        using var client = ConfigCatClient.Get("hsdrTr4sxbHdSgdhHRZds3/GsdrTr4sxbHdSgdhHRZds3", options =>
         {
             options.Logger = null;
         });
@@ -95,7 +95,7 @@ public class ConfigCatClientTests
     [DoNotParallelize]
     public void CreateAnInstance_WithSdkKey_ShouldCreateAnInstance()
     {
-        using var _ = ConfigCatClient.Get("hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf");
+        using var _ = ConfigCatClient.Get("hsdrTr4sxbHdSgdhHRZds3/GsdrTr4sxbHdSgdhHRZds3");
     }
 
     [TestMethod]
@@ -149,6 +149,10 @@ public class ConfigCatClientTests
 
         const string defaultValue = "Victory for the Firstborn!";
 
+        this.configServiceMock
+            .Setup(m => m.GetConfig())
+            .Throws<Exception>();
+
         this.evaluatorMock
             .Setup(m => m.Evaluate(ref It.Ref<EvaluateContext>.IsAny))
             .Throws<Exception>();
@@ -177,6 +181,10 @@ public class ConfigCatClientTests
         // Arrange
 
         const string defaultValue = "Victory for the Firstborn!";
+
+        this.configServiceMock
+            .Setup(m => m.GetConfigAsync(It.IsAny<CancellationToken>()))
+            .Throws<Exception>();
 
         this.evaluatorMock
             .Setup(m => m.Evaluate(ref It.Ref<EvaluateContext>.IsAny))
@@ -623,6 +631,10 @@ public class ConfigCatClientTests
         // Arrange
 
         this.configServiceMock
+            .Setup(m => m.GetConfig())
+            .Throws<Exception>();
+
+        this.configServiceMock
             .Setup(m => m.GetConfigAsync(It.IsAny<CancellationToken>()))
             .Throws<Exception>();
 
@@ -779,7 +791,7 @@ public class ConfigCatClientTests
     {
         // Arrange
 
-        this.configServiceMock.Setup(m => m.GetConfigAsync(It.IsAny<CancellationToken>())).ReturnsAsync(ProjectConfig.Empty);
+        this.configServiceMock.Setup(m => m.GetConfig()).Returns(ProjectConfig.Empty);
         var o = new Config();
 
         IConfigCatClient instance = new ConfigCatClient(
@@ -1160,11 +1172,11 @@ public class ConfigCatClientTests
 
         // Act
 
-        using var client1 = ConfigCatClient.Get("test", Configure);
+        using var client1 = ConfigCatClient.Get("test-67890123456789012/1234567890123456789012", Configure);
         var warnings1 = warnings.ToArray();
 
         warnings.Clear();
-        using var client2 = ConfigCatClient.Get("test", passConfigureToSecondGet ? Configure : null);
+        using var client2 = ConfigCatClient.Get("test-67890123456789012/1234567890123456789012", passConfigureToSecondGet ? Configure : null);
         var warnings2 = warnings.ToArray();
 
         // Assert
@@ -1189,7 +1201,7 @@ public class ConfigCatClientTests
     {
         // Arrange
 
-        var client1 = ConfigCatClient.Get("test", options => options.PollingMode = PollingModes.ManualPoll);
+        var client1 = ConfigCatClient.Get("test-67890123456789012/1234567890123456789012", options => options.PollingMode = PollingModes.ManualPoll);
 
         // Act
 
@@ -1211,7 +1223,7 @@ public class ConfigCatClientTests
     {
         // Arrange
 
-        var client1 = ConfigCatClient.Get("test", options => options.PollingMode = PollingModes.ManualPoll);
+        var client1 = ConfigCatClient.Get("test-67890123456789012/1234567890123456789012", options => options.PollingMode = PollingModes.ManualPoll);
 
         // Act
 
@@ -1221,7 +1233,7 @@ public class ConfigCatClientTests
 
         var instanceCount2 = ConfigCatClient.Instances.GetAliveCount();
 
-        var client2 = ConfigCatClient.Get("test", options => options.PollingMode = PollingModes.ManualPoll);
+        var client2 = ConfigCatClient.Get("test-67890123456789012/1234567890123456789012", options => options.PollingMode = PollingModes.ManualPoll);
 
         var instanceCount3 = ConfigCatClient.Instances.GetAliveCount();
 
@@ -1248,8 +1260,8 @@ public class ConfigCatClientTests
     {
         // Arrange
 
-        var client1 = ConfigCatClient.Get("test1", options => options.PollingMode = PollingModes.AutoPoll());
-        var client2 = ConfigCatClient.Get("test2", options => options.PollingMode = PollingModes.ManualPoll);
+        var client1 = ConfigCatClient.Get("test1-7890123456789012/1234567890123456789012", options => options.PollingMode = PollingModes.AutoPoll());
+        var client2 = ConfigCatClient.Get("test2-7890123456789012/1234567890123456789012", options => options.PollingMode = PollingModes.ManualPoll);
 
         // Act
 
@@ -1283,8 +1295,8 @@ public class ConfigCatClientTests
             // because that could interfere with this test: when raising the event, the service acquires a strong reference to the client,
             // which would temporarily prevent the client from being GCd. This could break the test in the case of unlucky timing.
             // Setting maxInitWaitTime to zero prevents this because then the event is raised immediately at creation.
-            var client1 = ConfigCatClient.Get("test1", options => options.PollingMode = PollingModes.AutoPoll(maxInitWaitTime: TimeSpan.Zero));
-            var client2 = ConfigCatClient.Get("test2", options => options.PollingMode = PollingModes.ManualPoll);
+            var client1 = ConfigCatClient.Get("test1-7890123456789012/1234567890123456789012", options => options.PollingMode = PollingModes.AutoPoll(maxInitWaitTime: TimeSpan.Zero));
+            var client2 = ConfigCatClient.Get("test2-7890123456789012/1234567890123456789012", options => options.PollingMode = PollingModes.ManualPoll);
 
             instanceCount = ConfigCatClient.Instances.GetAliveCount();
 

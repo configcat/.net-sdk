@@ -51,11 +51,16 @@ internal static class EvaluateLogHelper
         }
     }
 
-    public static IndentedTextBuilder AppendComparisonCondition(this IndentedTextBuilder builder, string? comparisonAttribute, Comparator comparator, double? comparisonValue)
+    public static IndentedTextBuilder AppendComparisonCondition(this IndentedTextBuilder builder, string? comparisonAttribute, Comparator comparator, double? comparisonValue, bool isDateTime = false)
     {
-        return comparisonValue is not null
-            ? builder.Append($"User.{comparisonAttribute} {comparator.ToDisplayText()} '{comparisonValue.Value}'")
-            : builder.AppendComparisonCondition(comparisonAttribute, comparator, (object?)null);
+        if (comparisonValue is null)
+        {
+            return builder.AppendComparisonCondition(comparisonAttribute, comparator, (object?)null);
+        }
+
+        return isDateTime && DateTimeUtils.TryConvertFromUnixTimeSeconds(comparisonValue.Value, out var dateTime)
+            ? builder.Append($"User.{comparisonAttribute} {comparator.ToDisplayText()} '{comparisonValue.Value}' ({dateTime:yyyy-MM-dd'T'HH:mm:ss.fffK})")
+            : builder.Append($"User.{comparisonAttribute} {comparator.ToDisplayText()} '{comparisonValue.Value}'");
     }
 
     public static IndentedTextBuilder AppendPrerequisiteFlagCondition(this IndentedTextBuilder builder, string? prerequisiteFlagKey, PrerequisiteFlagComparator comparator, object? comparisonValue)

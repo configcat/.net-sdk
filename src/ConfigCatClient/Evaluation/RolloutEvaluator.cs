@@ -342,12 +342,37 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         var comparator = condition.Comparator;
         switch (comparator)
         {
+            case Comparator.SensitiveTextEquals:
+            case Comparator.SensitiveTextNotEquals:
+                logBuilder?.AppendComparisonCondition(userAttributeName, comparator, condition.StringValue, isSensitive: true);
+                // TODO: error handling - missing configJsonSalt
+                return canEvaluate
+                    && EvaluateSensitiveTextEquals(userAttributeValue!, condition.StringValue,
+                        context.Setting.ConfigJsonSalt!, contextSalt, negate: comparator == Comparator.SensitiveTextNotEquals);
+
             case Comparator.SensitiveOneOf:
             case Comparator.SensitiveNotOneOf:
                 logBuilder?.AppendComparisonCondition(userAttributeName, comparator, condition.StringListValue, isSensitive: true);
                 // TODO: error handling - missing configJsonSalt
                 return canEvaluate
-                    && EvaluateSensitiveOneOf(userAttributeValue!, condition.StringListValue, context.Setting.ConfigJsonSalt!, contextSalt, negate: comparator == Comparator.SensitiveNotOneOf);
+                    && EvaluateSensitiveOneOf(userAttributeValue!, condition.StringListValue,
+                        context.Setting.ConfigJsonSalt!, contextSalt, negate: comparator == Comparator.SensitiveNotOneOf);
+
+            case Comparator.SensitiveTextStartsWith:
+            case Comparator.SensitiveTextNotStartsWith:
+                logBuilder?.AppendComparisonCondition(userAttributeName, comparator, condition.StringListValue, isSensitive: true);
+                // TODO: error handling - missing configJsonSalt
+                return canEvaluate
+                    && EvaluateSensitiveTextSliceEquals(userAttributeValue!, condition.StringListValue,
+                        context.Setting.ConfigJsonSalt!, contextSalt, startsWith: true, negate: comparator == Comparator.SensitiveTextNotStartsWith);
+
+            case Comparator.SensitiveTextEndsWith:
+            case Comparator.SensitiveTextNotEndsWith:
+                logBuilder?.AppendComparisonCondition(userAttributeName, comparator, condition.StringListValue, isSensitive: true);
+                // TODO: error handling - missing configJsonSalt
+                return canEvaluate
+                    && EvaluateSensitiveTextSliceEquals(userAttributeValue!, condition.StringListValue,
+                        context.Setting.ConfigJsonSalt!, contextSalt, startsWith: false, negate: comparator == Comparator.SensitiveTextNotEndsWith);
 
             case Comparator.Contains:
             case Comparator.NotContains:
@@ -384,19 +409,37 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
             case Comparator.DateTimeBefore:
             case Comparator.DateTimeAfter:
-            case Comparator.SensitiveTextEquals:
-            case Comparator.SensitiveTextNotEquals:
-            case Comparator.SensitiveTextStartsWith:
-            case Comparator.SensitiveTextEndsWith:
+                logBuilder?.AppendComparisonCondition(userAttributeName, comparator, condition.DoubleValue);
+                return canEvaluate
+                    && double.TryParse(userAttributeValue!.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out number)
+                    && EvaluateDateTimeRelation(number, condition.DoubleValue, before: comparator == Comparator.DateTimeBefore);
+
             case Comparator.SensitiveArrayContains:
             case Comparator.SensitiveArrayNotContains:
-                throw new NotImplementedException(); // TODO
+                logBuilder?.AppendComparisonCondition(userAttributeName, comparator, condition.StringValue, isSensitive: true);
+                // TODO: error handling - missing configJsonSalt
+                return canEvaluate
+                    && EvaluateSensitiveArrayContains(userAttributeValue!, condition.StringValue,
+                        context.Setting.ConfigJsonSalt!, contextSalt, negate: comparator == Comparator.SensitiveArrayNotContains);
 
             default:
                 logBuilder?.AppendComparisonCondition(userAttributeName, comparator, condition.GetComparisonValue(throwIfInvalid: false));
                 // TODO: error handling - comparator was not set
                 throw new InvalidOperationException();
         }
+    }
+
+    private static bool EvaluateSensitiveTextEquals(string text, string? comparisonValue, string configJsonSalt, string contextSalt, bool negate)
+    {
+        if (comparisonValue is null)
+        {
+            // TODO: error handling - what to do when comparison value is invalid (not available/multiple values specified)?
+            return false;
+        }
+
+        var hash = HashComparisonValue(text.AsSpan(), configJsonSalt, contextSalt);
+
+        return hash.Equals(hexString: comparisonValue.AsSpan()) ^ negate;
     }
 
     private static bool EvaluateSensitiveOneOf(string text, string[]? comparisonValues, string configJsonSalt, string contextSalt, bool negate)
@@ -407,11 +450,51 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             return false;
         }
 
-        var hash = HashComparisonValue(text, configJsonSalt, contextSalt);
+        var hash = HashComparisonValue(text.AsSpan(), configJsonSalt, contextSalt);
 
         for (var i = 0; i < comparisonValues.Length; i++)
         {
             if (hash.Equals(hexString: comparisonValues[i].AsSpan().Trim()))  // TODO: error handling - what to do when item is null?
+            {
+                return !negate;
+            }
+        }
+
+        return negate;
+    }
+
+    private static bool EvaluateSensitiveTextSliceEquals(string text, string[]? comparisonValues, string configJsonSalt, string contextSalt, bool startsWith, bool negate)
+    {
+        if (comparisonValues is null)
+        {
+            // TODO: error handling - what to do when comparison value is invalid (not available/multiple values specified)?
+            return false;
+        }
+
+        for (var i = 0; i < comparisonValues.Length; i++)
+        {
+            var item = comparisonValues[i]; // TODO: error handling - what to do when item is null?
+
+            ReadOnlySpan<char> hash2;
+
+            var index = item.IndexOf('_');
+            if (index < 0
+                || !int.TryParse(item.AsSpan(0, index).ToParsable(), NumberStyles.None, CultureInfo.InvariantCulture, out var sliceLength)
+                || (hash2 = item.AsSpan(index + 1)).IsEmpty)
+            {
+                // TODO:  error handling - what to do when item is not in the expected format?
+                return false;
+            }
+
+            if (text.Length < sliceLength)
+            {
+                continue;
+            }
+
+            var slice = startsWith ? text.AsSpan(0, sliceLength) : text.AsSpan(text.Length - sliceLength);
+
+            var hash = HashComparisonValue(slice, configJsonSalt, contextSalt);
+            if (hash.Equals(hexString: hash2))
             {
                 return !negate;
             }
@@ -522,6 +605,58 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             Comparator.NumberGreaterThanEqual => number >= number2,
             _ => throw new ArgumentOutOfRangeException(nameof(comparator), comparator, null)
         };
+    }
+
+    private static bool EvaluateDateTimeRelation(double number, double? comparisonValue, bool before)
+    {
+        if (comparisonValue is not { } number2)
+        {
+            // TODO: error handling - what to do when comparison value is invalid (not available/multiple values specified)?
+
+            // If the user object property is not a valid unix timestamp, or the config.json is not containing a valid unix timestamp,
+            // we should log a warning message and treat the rule as if it was evaluated to false (so we skip the rule at all and we can go for the next rule).
+            // We should treat the value as valid if a valid unix timestamp is passed as a string and can be converted to a double or it is passed as a double/number directly.
+            // TODO: warning message? (if we log a warning message, then we also should in the case of e.g. number comparisons)
+
+            return false;
+        }
+
+        return before ? number < number2 : number > number2;
+    }
+
+    private static bool EvaluateSensitiveArrayContains(string csvText, string? comparisonValue, string configJsonSalt, string contextSalt, bool negate)
+    {
+        if (comparisonValue is null)
+        {
+            // TODO: error handling - what to do when comparison value is invalid (not available/multiple values specified)?
+            return false;
+        }
+
+        int index;
+        for (var startIndex = 0; startIndex < csvText.Length; startIndex = index + 1)
+        {
+            index = csvText.IndexOf(',', startIndex);
+            if (index < 0)
+            {
+                index = csvText.Length;
+            }
+
+            var slice = csvText.AsSpan(startIndex, index - startIndex).Trim();
+            if (slice.IsEmpty)
+            {
+                // TODO: error handling - what to do with empty/whitespace items?
+                continue;
+            }
+
+            var hash = HashComparisonValue(slice, configJsonSalt, contextSalt);
+
+            if (hash.Equals(hexString: comparisonValue.AsSpan()))
+            {
+                return !negate;
+            }
+        }
+
+        return negate;
     }
 
     private bool EvaluatePrerequisiteFlagCondition(PrerequisiteFlagCondition condition, ref EvaluateContext context, out string? error)
@@ -671,8 +806,8 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return result;
     }
 
-    private static byte[] HashComparisonValue(string value, string configJsonSalt, string contextSalt)
+    private static byte[] HashComparisonValue(ReadOnlySpan<char> value, string configJsonSalt, string contextSalt)
     {
-        return (value + configJsonSalt + contextSalt).Sha256();
+        return string.Concat(value.ToConcatenable(), configJsonSalt, contextSalt).Sha256();
     }
 }

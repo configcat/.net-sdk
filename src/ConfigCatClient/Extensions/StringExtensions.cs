@@ -41,4 +41,19 @@ internal static class StringExtensions
         return s.ToString();
 #endif
     }
+
+    public static
+#if NET5_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
+        ReadOnlySpan<char>
+#else
+        string
+#endif
+        ToParsable(this ReadOnlySpan<char> s)
+    {
+#if NET5_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
+        return s;
+#else
+        return s.ToString();
+#endif
+    }
 }

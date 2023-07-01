@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- HACK: we need to access the internals of ConfigCat.Client, so we use an assembly name
+         to which the interals are made visible by ConfigCat.Client. -->
+    <AssemblyName>ConfigCatClientTests</AssemblyName>
+    <RootNamespace>ConfigCat.Client.Benchmarks.New</RootNamespace>
+    <TargetFrameworks>net48;net6.0</TargetFrameworks>
+    <LangVersion>10.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <WarningsAsErrors>nullable</WarningsAsErrors>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\src\ConfigCatClient.snk</AssemblyOriginatorKeyFile>
+    <DefineConstants>BENCHMARK_OLD;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ConfigCat.Client" Version="8.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\NewVersionLib\BenchmarkHelper.Shared.cs" Link="BenchmarkHelper.Shared.cs" />
+    <Compile Include="..\NewVersionLib\ConfigHelper.cs" Link="ConfigHelper.cs" />
+    <Compile Include="..\..\src\ConfigCat.Client.Tests\MatrixTestRunnerBase.cs" Link="MatrixTestRunnerBase.cs" />
+    <Compile Include="..\NewVersionLib\NullLogger.cs" Link="NullLogger.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="data\sample_v5_old.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

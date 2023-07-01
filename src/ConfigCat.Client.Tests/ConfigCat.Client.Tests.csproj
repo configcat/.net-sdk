@@ -8,7 +8,7 @@
     <LangVersion>10.0</LangVersion>
     <Nullable>enable</Nullable>
     <WarningsAsErrors>nullable</WarningsAsErrors>
-    <AssemblyOriginatorKeyFile>strongname.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>..\ConfigCatClient.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net45' ">

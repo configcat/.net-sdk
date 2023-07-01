@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyName>ConfigCatClientBenchmarks</AssemblyName>
+    <RootNamespace>ConfigCat.Client.Benchmarks.New</RootNamespace>
+    <TargetFrameworks>net48;net6.0</TargetFrameworks>
+    <LangVersion>10.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <WarningsAsErrors>nullable</WarningsAsErrors>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\src\ConfigCatClient.snk</AssemblyOriginatorKeyFile>
+    <DefineConstants>BENCHMARK_NEW;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ConfigCatClient\ConfigCatClient.csproj">
+      <AdditionalProperties>Configuration=Benchmark</AdditionalProperties>
+    </ProjectReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\src\ConfigCat.Client.Tests\MatrixTestRunnerBase.cs" Link="MatrixTestRunnerBase.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\src\ConfigCat.Client.Tests\data\*" Link="data\%(Filename)%(Extension)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  
+</Project>

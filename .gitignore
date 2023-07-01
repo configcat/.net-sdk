@@ -288,6 +288,7 @@ __pycache__/
 *.xsd.cs
 
 # Custom
+BenchmarkDotNet.Artifacts*/
 coverage.xml
 .DS_Store
 .vscode

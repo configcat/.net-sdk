@@ -57,6 +57,44 @@ public class ConfigCatClientTests
         using var _ = ConfigCatClient.Get(sdkKey!);
     }
 
+    [DataRow("sdk-key-90123456789012", false, false)]
+    [DataRow("sdk-key-9012345678901/1234567890123456789012", false, false)]
+    [DataRow("sdk-key-90123456789012/123456789012345678901", false, false)]
+    [DataRow("sdk-key-90123456789012/12345678901234567890123", false, false)]
+    [DataRow("sdk-key-901234567890123/1234567890123456789012", false, false)]
+    [DataRow("sdk-key-90123456789012/1234567890123456789012", false, true)]
+    [DataRow("configcat-sdk-1/sdk-key-90123456789012", false, false)]
+    [DataRow("configcat-sdk-1/sdk-key-9012345678901/1234567890123456789012", false, false)]
+    [DataRow("configcat-sdk-1/sdk-key-90123456789012/123456789012345678901", false, false)]
+    [DataRow("configcat-sdk-1/sdk-key-90123456789012/12345678901234567890123", false, false)]
+    [DataRow("configcat-sdk-1/sdk-key-901234567890123/1234567890123456789012", false, false)]
+    [DataRow("configcat-sdk-1/sdk-key-90123456789012/1234567890123456789012", false, true)]
+    [DataRow("configcat-sdk-2/sdk-key-90123456789012/1234567890123456789012", false, false)]
+    [DataRow("configcat-proxy/", false, false)]
+    [DataRow("configcat-proxy/", true, false)]
+    [DataRow("configcat-proxy/sdk-key-90123456789012", false, false)]
+    [DataRow("configcat-proxy/sdk-key-90123456789012", true, true)]
+    [DataTestMethod]
+    [DoNotParallelize]
+    public void SdkKeyFormat_ShouldBeValidated(string sdkKey, bool customBaseUrl, bool isValid)
+    {
+        Action<ConfigCatClientOptions>? configureOptions = customBaseUrl
+            ? o => o.BaseUrl = new Uri("https://my-configcat-proxy")
+            : null;
+
+        if (isValid)
+        {
+            using var _ = ConfigCatClient.Get(sdkKey, configureOptions);
+        }
+        else
+        {
+            Assert.ThrowsException<ArgumentException>(() =>
+            {
+                using var _ = ConfigCatClient.Get(sdkKey, configureOptions);
+            });
+        }
+    }
+
     [ExpectedException(typeof(ArgumentOutOfRangeException))]
     [TestMethod]
     [DoNotParallelize]

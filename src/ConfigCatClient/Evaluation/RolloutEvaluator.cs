@@ -9,8 +9,10 @@ namespace ConfigCat.Client.Evaluation;
 
 internal sealed class RolloutEvaluator : IRolloutEvaluator
 {
-    private const string MissingUserObjectError = "cannot evaluate, User Object is missing";
-    private const string CircularDependencyError = "cannot evaluate, circular dependency detected";
+    internal const string MissingUserObjectError = "cannot evaluate, User Object is missing";
+    internal const string CircularDependencyError = "cannot evaluate, circular dependency detected";
+
+    internal const string TargetingRuleIgnoredMessage = "The current targeting rule is ignored and the evaluation continues with the next rule.";
 
     private readonly LoggerWrapper logger;
 
@@ -93,14 +95,12 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
             var conditions = targetingRule.Conditions;
 
-            const string targetingRuleIgnoredMessage = "The current targeting rule is ignored and the evaluation continues with the next rule.";
-
             // TODO: error handling - condition.GetCondition() - what to do when the condition is invalid (not available/multiple values specified)?
             if (!TryEvaluateConditions(conditions, static condition => condition.GetCondition()!, targetingRule, contextSalt: context.Key, ref context, out var isMatch))
             {
                 logBuilder?
                     .IncreaseIndent()
-                    .NewLine(targetingRuleIgnoredMessage)
+                    .NewLine(TargetingRuleIgnoredMessage)
                     .DecreaseIndent();
                 continue;
             }
@@ -132,7 +132,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             else
             {
                 logBuilder?
-                    .NewLine(targetingRuleIgnoredMessage)
+                    .NewLine(TargetingRuleIgnoredMessage)
                     .DecreaseIndent();
                 continue;
             }

@@ -419,24 +419,26 @@ public sealed class ConfigCatClient : IConfigCatClient
     public IReadOnlyDictionary<string, object?> GetAllValues(User? user = null)
     {
         const string defaultReturnValue = "empty dictionary";
-        EvaluationDetails[]? evaluationDetailsArray = null;
+        Dictionary<string, object?> result;
+        EvaluationDetails[]? evaluationDetailsArray;
+        IReadOnlyList<Exception>? evaluationExceptions;
         user ??= this.defaultUser;
         try
         {
             var settings = GetSettings();
-            evaluationDetailsArray = this.configEvaluator.EvaluateAll(settings.Value, user, settings.RemoteConfig, this.logger, defaultReturnValue, out var exceptions);
-            if (exceptions is { Count: > 0 })
-            {
-                throw new AggregateException(exceptions);
-            }
+            evaluationDetailsArray = this.configEvaluator.EvaluateAll(settings.Value, user, settings.RemoteConfig, this.logger, defaultReturnValue, out evaluationExceptions);
+            result = evaluationDetailsArray.ToDictionary(details => details.Key, details => details.Value);
         }
         catch (Exception ex)
         {
             this.logger.SettingEvaluationError(nameof(GetAllValues), defaultReturnValue, ex);
-            evaluationDetailsArray ??= ArrayUtils.EmptyArray<EvaluationDetails>();
+            return new Dictionary<string, object?>();
         }
 
-        var result = evaluationDetailsArray.ToDictionary(details => details.Key, details => details.Value);
+        if (evaluationExceptions is { Count: > 0 })
+        {
+            this.logger.SettingEvaluationError(nameof(GetAllValues), "evaluation result", new AggregateException(evaluationExceptions));
+        }
 
         foreach (var evaluationDetails in evaluationDetailsArray)
         {
@@ -450,16 +452,15 @@ public sealed class ConfigCatClient : IConfigCatClient
     public async Task<IReadOnlyDictionary<string, object?>> GetAllValuesAsync(User? user = null, CancellationToken cancellationToken = default)
     {
         const string defaultReturnValue = "empty dictionary";
-        EvaluationDetails[]? evaluationDetailsArray = null;
+        Dictionary<string, object?> result;
+        EvaluationDetails[]? evaluationDetailsArray;
+        IReadOnlyList<Exception>? evaluationExceptions;
         user ??= this.defaultUser;
         try
         {
             var settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(false);
-            evaluationDetailsArray = this.configEvaluator.EvaluateAll(settings.Value, user, settings.RemoteConfig, this.logger, defaultReturnValue, out var exceptions);
-            if (exceptions is { Count: > 0 })
-            {
-                throw new AggregateException(exceptions);
-            }
+            evaluationDetailsArray = this.configEvaluator.EvaluateAll(settings.Value, user, settings.RemoteConfig, this.logger, defaultReturnValue, out evaluationExceptions);
+            result = evaluationDetailsArray.ToDictionary(details => details.Key, details => details.Value);
         }
         catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
         {
@@ -468,10 +469,13 @@ public sealed class ConfigCatClient : IConfigCatClient
         catch (Exception ex)
         {
             this.logger.SettingEvaluationError(nameof(GetAllValuesAsync), defaultReturnValue, ex);
-            evaluationDetailsArray ??= ArrayUtils.EmptyArray<EvaluationDetails>();
+            return new Dictionary<string, object?>();
         }
 
-        var result = evaluationDetailsArray.ToDictionary(details => details.Key, details => details.Value);
+        if (evaluationExceptions is { Count: > 0 })
+        {
+            this.logger.SettingEvaluationError(nameof(GetAllValuesAsync), "evaluation result", new AggregateException(evaluationExceptions));
+        }
 
         foreach (var evaluationDetails in evaluationDetailsArray)
         {
@@ -485,21 +489,23 @@ public sealed class ConfigCatClient : IConfigCatClient
     public IReadOnlyList<EvaluationDetails> GetAllValueDetails(User? user = null)
     {
         const string defaultReturnValue = "empty list";
-        EvaluationDetails[]? evaluationDetailsArray = null;
+        EvaluationDetails[]? evaluationDetailsArray;
+        IReadOnlyList<Exception>? evaluationExceptions;
         user ??= this.defaultUser;
         try
         {
             var settings = GetSettings();
-            evaluationDetailsArray = this.configEvaluator.EvaluateAll(settings.Value, user, settings.RemoteConfig, this.logger, defaultReturnValue, out var exceptions);
-            if (exceptions is { Count: > 0 })
-            {
-                throw new AggregateException(exceptions);
-            }
+            evaluationDetailsArray = this.configEvaluator.EvaluateAll(settings.Value, user, settings.RemoteConfig, this.logger, defaultReturnValue, out evaluationExceptions);
         }
         catch (Exception ex)
         {
             this.logger.SettingEvaluationError(nameof(GetAllValueDetails), defaultReturnValue, ex);
-            evaluationDetailsArray ??= ArrayUtils.EmptyArray<EvaluationDetails>();
+            return ArrayUtils.EmptyArray<EvaluationDetails>();
+        }
+
+        if (evaluationExceptions is { Count: > 0 })
+        {
+            this.logger.SettingEvaluationError(nameof(GetAllValueDetails), "evaluation result", new AggregateException(evaluationExceptions));
         }
 
         foreach (var evaluationDetails in evaluationDetailsArray)
@@ -514,16 +520,13 @@ public sealed class ConfigCatClient : IConfigCatClient
     public async Task<IReadOnlyList<EvaluationDetails>> GetAllValueDetailsAsync(User? user = null, CancellationToken cancellationToken = default)
     {
         const string defaultReturnValue = "empty list";
-        EvaluationDetails[]? evaluationDetailsArray = null;
+        EvaluationDetails[]? evaluationDetailsArray;
+        IReadOnlyList<Exception>? evaluationExceptions;
         user ??= this.defaultUser;
         try
         {
             var settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(false);
-            evaluationDetailsArray = this.configEvaluator.EvaluateAll(settings.Value, user, settings.RemoteConfig, this.logger, defaultReturnValue, out var exceptions);
-            if (exceptions is { Count: > 0 })
-            {
-                throw new AggregateException(exceptions);
-            }
+            evaluationDetailsArray = this.configEvaluator.EvaluateAll(settings.Value, user, settings.RemoteConfig, this.logger, defaultReturnValue, out evaluationExceptions);
         }
         catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
         {
@@ -532,7 +535,12 @@ public sealed class ConfigCatClient : IConfigCatClient
         catch (Exception ex)
         {
             this.logger.SettingEvaluationError(nameof(GetAllValueDetailsAsync), defaultReturnValue, ex);
-            evaluationDetailsArray ??= ArrayUtils.EmptyArray<EvaluationDetails>();
+            return ArrayUtils.EmptyArray<EvaluationDetails>();
+        }
+
+        if (evaluationExceptions is { Count: > 0 })
+        {
+            this.logger.SettingEvaluationError(nameof(GetAllValueDetailsAsync), "evaluation result", new AggregateException(evaluationExceptions));
         }
 
         foreach (var evaluationDetails in evaluationDetailsArray)

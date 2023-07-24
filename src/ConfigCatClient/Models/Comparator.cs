@@ -16,12 +16,12 @@ public enum Comparator : byte
     NotIn = 1,
 
     /// <summary>
-    /// Does the comparison value contain the comparison attribute as a substring?
+    /// Is the comparison value contained by the comparison attribute as a substring?
     /// </summary>
     Contains = 2,
 
     /// <summary>
-    /// Does the comparison value not contain the comparison attribute as a substring?
+    /// Is the comparison value not contained by the comparison attribute as a substring?
     /// </summary>
     NotContains = 3,
 

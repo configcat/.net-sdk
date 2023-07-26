@@ -564,7 +564,6 @@ public class OverrideTests
             overrideValueJson.Deserialize<System.Text.Json.JsonElement>();
 #endif
 
-
         var filePath = Path.GetTempFileName();
         File.WriteAllText(filePath, $"{{ \"flags\": {{ \"{key}\": {overrideValueJson} }} }}");
 

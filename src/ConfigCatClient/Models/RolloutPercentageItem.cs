@@ -33,7 +33,7 @@ public interface IPercentageOption
     /// <summary>
     /// Variation ID.
     /// </summary>
-    string? VariationId { get; set; }
+    string? VariationId { get; }
 }
 
 internal sealed class RolloutPercentageItem : IPercentageOption

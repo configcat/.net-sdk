@@ -18,7 +18,7 @@ namespace ConfigCat.Client;
 /// </summary>
 public sealed class ConfigCatClient : IConfigCatClient
 {
-    private static readonly string Version = typeof(ConfigCatClient).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion;
+    private static readonly string Version = typeof(ConfigCatClient).GetTypeInfo().Assembly.GetName().Version!.ToString(fieldCount: 3);
 
     internal static readonly ConfigCatClientCache Instances = new();
 

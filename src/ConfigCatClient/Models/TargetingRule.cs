@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using ConfigCat.Client.Utils;
+using ConfigCat.Client.Evaluation;
 
 #if USE_NEWTONSOFT_JSON
 using Newtonsoft.Json;
@@ -85,14 +86,6 @@ internal sealed class TargetingRule : ITargetingRule
 
     ISettingValueContainer? ITargetingRule.SimpleValue => SimpleValue;
 
-    // TODO
-    ///// <inheritdoc/>
-    //public override string ToString()
-    //{
-    //    var variationIdString = !string.IsNullOrEmpty(VariationId) ? " [" + VariationId + "]" : string.Empty;
-    //    return $"({Order + 1}) {(Order > 0 ? "ELSE " : string.Empty)}IF user's {ComparisonAttribute} {FormatComparator(Comparator)} '{ComparisonValue}' => {Value}{variationIdString}";
-    //}
-
     internal void OnConfigDeserialized(Config config)
     {
         foreach (var condition in Conditions)
@@ -102,5 +95,12 @@ internal sealed class TargetingRule : ITargetingRule
                 segmentCondition.OnConfigDeserialized(config);
             }
         }
+    }
+
+    public override string ToString()
+    {
+        return new IndentedTextBuilder()
+            .AppendTargetingRule(this)
+            .ToString();
     }
 }

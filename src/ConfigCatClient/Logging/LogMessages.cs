@@ -37,11 +37,6 @@ internal static partial class LoggerExtensions
         $"Error occurred in the `{methodName}` method.",
         "METHOD_NAME");
 
-    public static FormattableLogMessage CircularDependencyDetected(this LoggerWrapper logger, string key, string dependencyCycle) => logger.LogInterpolated(
-        LogLevel.Error, 2003, // TODO: this should be a 1xxx error (or should this be an error instead of a warning in the first place?)
-        $"Cannot evaluate targeting rules for '{key}' (circular dependency detected between the following depending flags: {dependencyCycle}). Please check your feature flag definition and eliminate the circular dependency.",
-        "KEY", "DEPENDENCY_CYCLE");
-
     public static FormattableLogMessage FetchFailedDueToInvalidSdkKey(this LoggerWrapper logger) => logger.Log(
         LogLevel.Error, 1100,
         "Your SDK Key seems to be wrong. You can find the valid SDK Key at https://app.configcat.com/sdkkey");
@@ -128,8 +123,23 @@ internal static partial class LoggerExtensions
 
     public static FormattableLogMessage UserObjectAttributeIsMissing(this LoggerWrapper logger, string key, string attributeName) => logger.LogInterpolated(
         LogLevel.Warning, 3003,
-        $"Cannot evaluate % options for setting '{key}' (`{attributeName}` attribute of User Object is missing). You should set the User.{attributeName} attribute in order to make targeting work properly. Read more: https://configcat.com/docs/advanced/user-object/",
+        $"Cannot evaluate % options for setting '{key}' (the User.{attributeName} attribute is missing). You should set the User.{attributeName} attribute in order to make targeting work properly. Read more: https://configcat.com/docs/advanced/user-object/",
         "KEY", "ATTRIBUTE_NAME", "ATTRIBUTE_NAME");
+
+    public static FormattableLogMessage UserObjectAttributeIsMissing(this LoggerWrapper logger, string condition, string key, string attributeName) => logger.LogInterpolated(
+        LogLevel.Warning, 3003,
+        $"Cannot evaluate condition ({condition}) for setting '{key}' (the User.{attributeName} attribute is missing). You should set the User.{attributeName} attribute in order to make targeting work properly. Read more: https://configcat.com/docs/advanced/user-object/",
+        "CONDITION", "KEY", "ATTRIBUTE_NAME", "ATTRIBUTE_NAME");
+
+    public static FormattableLogMessage UserObjectAttributeIsInvalid(this LoggerWrapper logger, string condition, string key, string reason, string attributeName, string @operator) => logger.LogInterpolated(
+        LogLevel.Warning, 3004,
+        $"Cannot evaluate condition ({condition}) for setting '{key}' ({reason}). Please check the User.{attributeName} attribute and make sure that its value corresponds to the {@operator} operator.",
+        "CONDITION", "KEY", "REASON", "ATTRIBUTE_NAME", "OPERATOR");
+
+    public static FormattableLogMessage CircularDependencyDetected(this LoggerWrapper logger, string condition, string key, string dependencyCycle) => logger.LogInterpolated(
+        LogLevel.Warning, 3005,
+        $"Cannot evaluate condition ({condition}) for setting '{key}' (circular dependency detected between the following depending flags: {dependencyCycle}). Please check your feature flag definition and eliminate the circular dependency.",
+        "CONDITION", "KEY", "DEPENDENCY_CYCLE");
 
     public static FormattableLogMessage ConfigServiceCannotInitiateHttpCalls(this LoggerWrapper logger) => logger.Log(
         LogLevel.Warning, 3200,

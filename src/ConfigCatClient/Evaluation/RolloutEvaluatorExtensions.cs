@@ -25,8 +25,6 @@ internal static class RolloutEvaluatorExtensions
             return EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: remoteConfig?.TimeStamp, user, logMessage.InvariantFormattedMessage);
         }
 
-        // TODO: error handling - what to do when setting is null?
-
         var evaluateContext = new EvaluateContext(key, setting, defaultValue.ToSettingValue(out _), user, settings);
         var evaluateResult = evaluator.Evaluate(ref evaluateContext);
         return EvaluationDetails.FromEvaluateResult<T>(key, evaluateResult, setting.SettingType, fetchTime: remoteConfig?.TimeStamp, user);
@@ -45,7 +43,7 @@ internal static class RolloutEvaluatorExtensions
         List<Exception>? exceptionList = null;
 
         var index = 0;
-        foreach (var kvp in settings) // TODO: error handling - what to do when setting is null?
+        foreach (var kvp in settings)
         {
             EvaluationDetails evaluationDetails;
             try

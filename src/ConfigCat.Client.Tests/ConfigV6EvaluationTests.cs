@@ -107,19 +107,19 @@ public class ConfigV6EvaluationTests
 
         Assert.AreEqual(4, logEvents.Count);
 
-        Assert.AreEqual(3, logEvents.Count(evt => evt.EventId == 2003));
+        Assert.AreEqual(3, logEvents.Count(evt => evt.EventId == 3005));
 
-        Assert.IsTrue(logEvents.Any(evt => evt.Level == LogLevel.Error
-            && (string?)evt.Message.ArgValues[0] == "key1"
-            && (string?)evt.Message.ArgValues[1] == "'key1' -> 'key1'"));
+        Assert.IsTrue(logEvents.Any(evt => evt.Level == LogLevel.Warning
+            && (string?)evt.Message.ArgValues[1] == "key1"
+            && (string?)evt.Message.ArgValues[2] == "'key1' -> 'key1'"));
 
-        Assert.IsTrue(logEvents.Any(evt => evt.Level == LogLevel.Error
-            && (string?)evt.Message.ArgValues[0] == "key2"
-            && (string?)evt.Message.ArgValues[1] == "'key1' -> 'key2' -> 'key1'"));
+        Assert.IsTrue(logEvents.Any(evt => evt.Level == LogLevel.Warning
+            && (string?)evt.Message.ArgValues[1] == "key2"
+            && (string?)evt.Message.ArgValues[2] == "'key1' -> 'key2' -> 'key1'"));
 
-        Assert.IsTrue(logEvents.Any(evt => evt.Level == LogLevel.Error
-            && (string?)evt.Message.ArgValues[0] == "key3"
-            && (string?)evt.Message.ArgValues[1] == "'key1' -> 'key3' -> 'key3'"));
+        Assert.IsTrue(logEvents.Any(evt => evt.Level == LogLevel.Warning
+            && (string?)evt.Message.ArgValues[1] == "key3"
+            && (string?)evt.Message.ArgValues[2] == "'key1' -> 'key3' -> 'key3'"));
 
         var evaluateLogEvent = logEvents.FirstOrDefault(evt => evt.Level == LogLevel.Info && evt.EventId == 5000);
         Assert.IsNotNull(evaluateLogEvent);

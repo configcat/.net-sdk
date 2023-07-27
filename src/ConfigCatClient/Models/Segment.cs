@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using ConfigCat.Client.Utils;
+using ConfigCat.Client.Evaluation;
 
 #if USE_NEWTONSOFT_JSON
 using Newtonsoft.Json;
@@ -57,4 +58,11 @@ internal sealed class Segment : ISegment
     IReadOnlyList<IComparisonCondition> ISegment.Conditions => this.conditionsReadOnly ??= this.conditions is { Length: > 0 }
         ? new ReadOnlyCollection<IComparisonCondition>(this.conditions)
         : ArrayUtils.EmptyArray<IComparisonCondition>();
+
+    public override string ToString()
+    {
+        return new IndentedTextBuilder()
+            .AppendSegment(this)
+            .ToString();
+    }
 }

@@ -1,5 +1,6 @@
 using System;
 using ConfigCat.Client.Utils;
+using ConfigCat.Client.Evaluation;
 
 #if USE_NEWTONSOFT_JSON
 using Newtonsoft.Json;
@@ -64,4 +65,11 @@ internal sealed class PrerequisiteFlagCondition : IPrerequisiteFlagCondition
     public SettingValue ComparisonValue { get; set; }
 
     object IPrerequisiteFlagCondition.ComparisonValue => ComparisonValue.GetValue()!;
+
+    public override string ToString()
+    {
+        return new IndentedTextBuilder()
+            .AppendPrerequisiteFlagCondition(this)
+            .ToString();
+    }
 }

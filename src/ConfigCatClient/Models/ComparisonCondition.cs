@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics.CodeAnalysis;
 using ConfigCat.Client.Utils;
+using ConfigCat.Client.Evaluation;
 
 #if USE_NEWTONSOFT_JSON
 using Newtonsoft.Json;
@@ -105,5 +105,12 @@ internal sealed class ComparisonCondition : IComparisonCondition
         return ModelHelper.IsValidOneOf(this.comparisonValue)
             ? this.comparisonValue
             : (!throwIfInvalid ? null : throw new InvalidOperationException("Comparison value is missing or invalid."));
+    }
+
+    public override string ToString()
+    {
+        return new IndentedTextBuilder()
+            .AppendComparisonCondition(this)
+            .ToString();
     }
 }

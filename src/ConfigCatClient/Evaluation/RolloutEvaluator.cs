@@ -1,7 +1,7 @@
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Linq;
 using ConfigCat.Client.Utils;
 using ConfigCat.Client.Versioning;
 
@@ -10,6 +10,8 @@ namespace ConfigCat.Client.Evaluation;
 internal sealed class RolloutEvaluator : IRolloutEvaluator
 {
     internal const string MissingUserObjectError = "cannot evaluate, User Object is missing";
+    internal const string MissingUserAttributeError = "cannot evaluate, the User.{0} attribute is missing";
+    internal const string InvalidUserAttributeError = "cannot evaluate, the User.{0} attribute is invalid ({1})";
     internal const string CircularDependencyError = "cannot evaluate, circular dependency detected";
 
     internal const string TargetingRuleIgnoredMessage = "The current targeting rule is ignored and the evaluation continues with the next rule.";
@@ -91,11 +93,9 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
         for (var i = 0; i < targetingRules.Length; i++)
         {
-            var targetingRule = targetingRules[i]; // TODO: error handling - what to do when item is null?
-
+            var targetingRule = targetingRules[i];
             var conditions = targetingRule.Conditions;
 
-            // TODO: error handling - condition.GetCondition() - what to do when the condition is invalid (not available/multiple values specified)?
             if (!TryEvaluateConditions(conditions, static condition => condition.GetCondition()!, targetingRule, contextSalt: context.Key, ref context, out var isMatch))
             {
                 logBuilder?
@@ -118,8 +118,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             var percentageOptions = targetingRule.PercentageOptions;
             if (percentageOptions is not { Length: > 0 })
             {
-                // TODO: error handling - percentage options are expected but the list of percentage options are missing or both of simple value and percentage options are specified
-                throw new InvalidOperationException();
+                throw new InvalidOperationException("Targeting rule THEN part is missing or invalid.");
             }
 
             logBuilder?.IncreaseIndent();
@@ -169,8 +168,6 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         }
         else if (!context.UserAttributes!.TryGetValue(percentageOptionsAttributeName, out percentageOptionsAttributeValue))
         {
-            // TODO: error handling - how to handle when percentageOptionsAttributeName is empty?
-
             logBuilder?.NewLine().Append($"Skipping % options because the User.{percentageOptionsAttributeName} attribute is missing.");
 
             if (!context.IsMissingUserObjectAttributeLogged)
@@ -184,12 +181,6 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         }
 
         logBuilder?.NewLine().Append($"Evaluating % options based on the User.{percentageOptionsAttributeName} attribute:");
-
-        if (percentageOptions.Sum(option => option.Percentage) != 100)
-        {
-            // TODO: error handling - sum of percentage options is not 100
-            throw new InvalidOperationException();
-        }
 
         var sha1 = (context.Key + percentageOptionsAttributeValue).Sha1();
 
@@ -206,7 +197,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
         for (var i = 0; i < percentageOptions.Length; i++)
         {
-            var percentageOption = percentageOptions[i]; // TODO: error handling - what to do when item is null?
+            var percentageOption = percentageOptions[i];
 
             bucket += percentageOption.Percentage;
 
@@ -222,7 +213,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             return true;
         }
 
-        throw new InvalidOperationException();  // execution should never get here
+        throw new InvalidOperationException("Sum of percentage option percentages are less than 100).");
     }
 
     private bool TryEvaluateConditions<TCondition>(TCondition[] conditions, Func<TCondition, ICondition> getCondition, TargetingRule? targetingRule,
@@ -238,7 +229,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
         for (var i = 0; i < conditions.Length; i++)
         {
-            var condition = getCondition(conditions[i]); // TODO: error handling - what to do when item is null?
+            var condition = getCondition(conditions[i]);
 
             if (logBuilder is not null)
             {
@@ -276,7 +267,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                     break;
 
                 default:
-                    throw new InvalidOperationException(); // execution should never get here
+                    throw new InvalidOperationException("Condition is missing or invalid.");
             }
 
             if (targetingRule is null || conditions.Length > 1)
@@ -308,13 +299,9 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
     private bool EvaluateComparisonCondition(ComparisonCondition condition, string contextSalt, ref EvaluateContext context, out string? error)
     {
         error = null;
-        bool canEvaluate;
 
         var logBuilder = context.LogBuilder;
-
-        var userAttributeName = condition.ComparisonAttribute;
-        userAttributeName = userAttributeName is { Length: > 0 } ? userAttributeName : null;
-        string? userAttributeValue = null;
+        logBuilder?.AppendComparisonCondition(condition);
 
         if (context.User is null)
         {
@@ -325,76 +312,64 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             }
 
             error = MissingUserObjectError;
-            canEvaluate = false;
-        }
-        else if (userAttributeName is null)
-        {
-            // TODO: error handling - comparison attribute is not specified
-            canEvaluate = false;
-        }
-        else
-        {
-            canEvaluate = context.UserAttributes!.TryGetValue(userAttributeName, out userAttributeValue) && userAttributeValue.Length > 0;
+            return false;
         }
 
-        // TODO: revise when to trim userAttributeValue/comparisonValue
+        var userAttributeName = condition.ComparisonAttribute ?? throw new InvalidOperationException("Comparison attribute name is missing.");
+
+        if (!(context.UserAttributes!.TryGetValue(userAttributeName, out var userAttributeValue) && userAttributeValue.Length > 0))
+        {
+            this.logger.UserObjectAttributeIsMissing(condition.ToString(), context.Key, userAttributeName);
+            error = string.Format(CultureInfo.InvariantCulture, MissingUserAttributeError, userAttributeName);
+            return false;
+        }
 
         var comparator = condition.Comparator;
         switch (comparator)
         {
             case Comparator.SensitiveTextEquals:
             case Comparator.SensitiveTextNotEquals:
-                logBuilder?.AppendComparisonCondition(userAttributeName, comparator, condition.StringValue, isSensitive: true);
-                // TODO: error handling - missing configJsonSalt
-                return canEvaluate
-                    && EvaluateSensitiveTextEquals(userAttributeValue!, condition.StringValue,
-                        context.Setting.ConfigJsonSalt!, contextSalt, negate: comparator == Comparator.SensitiveTextNotEquals);
+                return EvaluateSensitiveTextEquals(userAttributeValue!, condition.StringValue,
+                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, negate: comparator == Comparator.SensitiveTextNotEquals);
 
             case Comparator.SensitiveOneOf:
             case Comparator.SensitiveNotOneOf:
-                logBuilder?.AppendComparisonCondition(userAttributeName, comparator, condition.StringListValue, isSensitive: true);
-                // TODO: error handling - missing configJsonSalt
-                return canEvaluate
-                    && EvaluateSensitiveOneOf(userAttributeValue!, condition.StringListValue,
-                        context.Setting.ConfigJsonSalt!, contextSalt, negate: comparator == Comparator.SensitiveNotOneOf);
+                return EvaluateSensitiveOneOf(userAttributeValue!, condition.StringListValue,
+                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, negate: comparator == Comparator.SensitiveNotOneOf);
 
             case Comparator.SensitiveTextStartsWith:
             case Comparator.SensitiveTextNotStartsWith:
-                logBuilder?.AppendComparisonCondition(userAttributeName, comparator, condition.StringListValue, isSensitive: true);
-                // TODO: error handling - missing configJsonSalt
-                return canEvaluate
-                    && EvaluateSensitiveTextSliceEquals(userAttributeValue!, condition.StringListValue,
-                        context.Setting.ConfigJsonSalt!, contextSalt, startsWith: true, negate: comparator == Comparator.SensitiveTextNotStartsWith);
+                return EvaluateSensitiveTextSliceEquals(userAttributeValue!, condition.StringListValue,
+                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, startsWith: true, negate: comparator == Comparator.SensitiveTextNotStartsWith);
 
             case Comparator.SensitiveTextEndsWith:
             case Comparator.SensitiveTextNotEndsWith:
-                logBuilder?.AppendComparisonCondition(userAttributeName, comparator, condition.StringListValue, isSensitive: true);
-                // TODO: error handling - missing configJsonSalt
-                return canEvaluate
-                    && EvaluateSensitiveTextSliceEquals(userAttributeValue!, condition.StringListValue,
-                        context.Setting.ConfigJsonSalt!, contextSalt, startsWith: false, negate: comparator == Comparator.SensitiveTextNotEndsWith);
+                return EvaluateSensitiveTextSliceEquals(userAttributeValue!, condition.StringListValue,
+                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, startsWith: false, negate: comparator == Comparator.SensitiveTextNotEndsWith);
 
             case Comparator.Contains:
             case Comparator.NotContains:
-                logBuilder?.AppendComparisonCondition(userAttributeName, comparator, condition.StringListValue);
-                return canEvaluate
-                    && EvaluateContains(userAttributeValue!, condition.StringListValue, negate: comparator == Comparator.NotContains);
+                return EvaluateContains(userAttributeValue!, condition.StringListValue, negate: comparator == Comparator.NotContains);
 
             case Comparator.SemVerOneOf:
             case Comparator.SemVerNotOneOf:
-                logBuilder?.AppendComparisonCondition(userAttributeName, comparator, condition.StringListValue);
-                return canEvaluate
-                    && SemVersion.TryParse(userAttributeValue!.Trim(), out var version, strict: true)
-                    && EvaluateSemVerOneOf(version, condition.StringListValue, negate: comparator == Comparator.SemVerNotOneOf);
+                if (!SemVersion.TryParse(userAttributeValue!.Trim(), out var version, strict: true))
+                {
+                    error = HandleInvalidSemVerUserAttribute(condition, context.Key, userAttributeName, userAttributeValue);
+                    return false;
+                }
+                return EvaluateSemVerOneOf(version, condition.StringListValue, negate: comparator == Comparator.SemVerNotOneOf);
 
             case Comparator.SemVerLessThan:
             case Comparator.SemVerLessThanEqual:
             case Comparator.SemVerGreaterThan:
             case Comparator.SemVerGreaterThanEqual:
-                logBuilder?.AppendComparisonCondition(userAttributeName, comparator, condition.StringValue);
-                return canEvaluate
-                    && SemVersion.TryParse(userAttributeValue!.Trim(), out version, strict: true)
-                    && EvaluateSemVerRelation(version, comparator, condition.StringValue);
+                if (!SemVersion.TryParse(userAttributeValue!.Trim(), out version, strict: true))
+                {
+                    error = HandleInvalidSemVerUserAttribute(condition, context.Key, userAttributeName, userAttributeValue);
+                    return false;
+                }
+                return EvaluateSemVerRelation(version, comparator, condition.StringValue);
 
             case Comparator.NumberEqual:
             case Comparator.NumberNotEqual:
@@ -402,40 +377,35 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             case Comparator.NumberLessThanEqual:
             case Comparator.NumberGreaterThan:
             case Comparator.NumberGreaterThanEqual:
-                logBuilder?.AppendComparisonCondition(userAttributeName, comparator, condition.DoubleValue);
-                return canEvaluate
-                    && double.TryParse(userAttributeValue!.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out var number)
-                    && EvaluateNumberRelation(number, condition.Comparator, condition.DoubleValue);
+                if (!double.TryParse(userAttributeValue!.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out var number))
+                {
+                    error = HandleInvalidNumberUserAttribute(condition, context.Key, userAttributeName, userAttributeValue);
+                    return false;
+                }
+                return EvaluateNumberRelation(number, condition.Comparator, condition.DoubleValue);
 
             case Comparator.DateTimeBefore:
             case Comparator.DateTimeAfter:
-                logBuilder?.AppendComparisonCondition(userAttributeName, comparator, condition.DoubleValue);
-                return canEvaluate
-                    && double.TryParse(userAttributeValue!.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out number)
-                    && EvaluateDateTimeRelation(number, condition.DoubleValue, before: comparator == Comparator.DateTimeBefore);
+                if (!double.TryParse(userAttributeValue!.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out number))
+                {
+                    error = HandleInvalidNumberUserAttribute(condition, context.Key, userAttributeName, userAttributeValue, isDateTime: true);
+                    return false;
+                }
+                return EvaluateDateTimeRelation(number, condition.DoubleValue, before: comparator == Comparator.DateTimeBefore);
 
             case Comparator.SensitiveArrayContains:
             case Comparator.SensitiveArrayNotContains:
-                logBuilder?.AppendComparisonCondition(userAttributeName, comparator, condition.StringValue, isSensitive: true);
-                // TODO: error handling - missing configJsonSalt
-                return canEvaluate
-                    && EvaluateSensitiveArrayContains(userAttributeValue!, condition.StringValue,
-                        context.Setting.ConfigJsonSalt!, contextSalt, negate: comparator == Comparator.SensitiveArrayNotContains);
+                return EvaluateSensitiveArrayContains(userAttributeValue!, condition.StringValue,
+                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, negate: comparator == Comparator.SensitiveArrayNotContains);
 
             default:
-                logBuilder?.AppendComparisonCondition(userAttributeName, comparator, condition.GetComparisonValue(throwIfInvalid: false));
-                // TODO: error handling - comparator was not set
-                throw new InvalidOperationException();
+                throw new InvalidOperationException("Comparison operator is invalid.");
         }
     }
 
     private static bool EvaluateSensitiveTextEquals(string text, string? comparisonValue, string configJsonSalt, string contextSalt, bool negate)
     {
-        if (comparisonValue is null)
-        {
-            // TODO: error handling - what to do when comparison value is invalid (not available/multiple values specified)?
-            return false;
-        }
+        EnsureComparisonValue(comparisonValue);
 
         var hash = HashComparisonValue(text.AsSpan(), configJsonSalt, contextSalt);
 
@@ -444,17 +414,13 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
     private static bool EvaluateSensitiveOneOf(string text, string[]? comparisonValues, string configJsonSalt, string contextSalt, bool negate)
     {
-        if (comparisonValues is null)
-        {
-            // TODO: error handling - what to do when comparison value is invalid (not available/multiple values specified)?
-            return false;
-        }
+        EnsureComparisonValue(comparisonValues);
 
         var hash = HashComparisonValue(text.AsSpan(), configJsonSalt, contextSalt);
 
         for (var i = 0; i < comparisonValues.Length; i++)
         {
-            if (hash.Equals(hexString: comparisonValues[i].AsSpan().Trim()))  // TODO: error handling - what to do when item is null?
+            if (hash.Equals(hexString: EnsureComparisonValue(comparisonValues[i]).AsSpan()))
             {
                 return !negate;
             }
@@ -465,15 +431,11 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
     private static bool EvaluateSensitiveTextSliceEquals(string text, string[]? comparisonValues, string configJsonSalt, string contextSalt, bool startsWith, bool negate)
     {
-        if (comparisonValues is null)
-        {
-            // TODO: error handling - what to do when comparison value is invalid (not available/multiple values specified)?
-            return false;
-        }
+        EnsureComparisonValue(comparisonValues);
 
         for (var i = 0; i < comparisonValues.Length; i++)
         {
-            var item = comparisonValues[i]; // TODO: error handling - what to do when item is null?
+            var item = EnsureComparisonValue(comparisonValues[i]);
 
             ReadOnlySpan<char> hash2;
 
@@ -482,8 +444,8 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                 || !int.TryParse(item.AsSpan(0, index).ToParsable(), NumberStyles.None, CultureInfo.InvariantCulture, out var sliceLength)
                 || (hash2 = item.AsSpan(index + 1)).IsEmpty)
             {
-                // TODO:  error handling - what to do when item is not in the expected format?
-                return false;
+                EnsureComparisonValue<string>(null);
+                break; // execution should never get here (this is just for keeping the compiler happy)
             }
 
             if (text.Length < sliceLength)
@@ -505,15 +467,11 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
     private static bool EvaluateContains(string text, string[]? comparisonValues, bool negate)
     {
-        if (comparisonValues is null)
-        {
-            // TODO: error handling - what to do when comparison value is invalid (not available/multiple values specified)?
-            return false;
-        }
+        EnsureComparisonValue(comparisonValues);
 
         for (var i = 0; i < comparisonValues.Length; i++)
         {
-            if (text.Contains(comparisonValues[i]))  // TODO: error handling - what to do when item is null?
+            if (text.Contains(EnsureComparisonValue(comparisonValues[i])))
             {
                 return !negate;
             }
@@ -524,36 +482,33 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
     private static bool EvaluateSemVerOneOf(SemVersion version, string[]? comparisonValues, bool negate)
     {
-        if (comparisonValues is null)
-        {
-            // TODO: error handling - what to do when comparison value is invalid (not available/multiple values specified)?
-            return false;
-        }
+        EnsureComparisonValue(comparisonValues);
 
         var result = false;
 
         for (var i = 0; i < comparisonValues.Length; i++)
         {
-            var item = comparisonValues[i]; // TODO: error handling - what to do when item is null?
+            var item = EnsureComparisonValue(comparisonValues[i]);
 
-            // NOTE: Previous versions of the evaluation algorithm ignore empty comparison values
-            // so we keep this behavior for backward compatibility.
+            // NOTE: Previous versions of the evaluation algorithm ignore empty comparison values.
+            // We keep this behavior for backward compatibility.
             if (item.Length == 0)
             {
                 continue;
             }
 
-            // TODO: error handling - what to do when item is invalid?
-            if (!SemVersion.TryParse(item, out var version2, strict: true))
+            if (!SemVersion.TryParse(item.Trim(), out var version2, strict: true))
             {
+                // NOTE: Previous versions of the evaluation algorithm ignored invalid comparison values.
+                // We keep this behavior for backward compatibility.
                 return false;
             }
 
             if (!result && version.PrecedenceMatches(version2))
             {
                 // NOTE: Previous versions of the evaluation algorithm require that
-                // all the comparison values are empty or valid, that is, we can't stop when finding a match,
-                // so we keep this behavior for backward compatibility.
+                // all the comparison values are empty or valid, that is, we can't stop when finding a match.
+                // We keep this behavior for backward compatibility.
                 result = true;
             }
         }
@@ -563,14 +518,9 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
     private static bool EvaluateSemVerRelation(SemVersion version, Comparator comparator, string? comparisonValue)
     {
-        if (comparisonValue is null)
-        {
-            // TODO: error handling - what to do when comparison value is invalid (not available/multiple values specified)?
-            return false;
-        }
+        EnsureComparisonValue(comparisonValue);
 
-        // TODO: should we trim comparisonValue?
-        if (!SemVersion.TryParse(comparisonValue.Trim(), out var version2, strict: true)) // TODO: error handling - what to do when item is invalid?
+        if (!SemVersion.TryParse(comparisonValue.Trim(), out var version2, strict: true))
         {
             return false;
         }
@@ -589,11 +539,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
     private static bool EvaluateNumberRelation(double number, Comparator comparator, double? comparisonValue)
     {
-        if (comparisonValue is not { } number2)
-        {
-            // TODO: error handling - what to do when comparison value is invalid (not available/multiple values specified)?
-            return false;
-        }
+        var number2 = EnsureComparisonValue(comparisonValue).Value;
 
         return comparator switch
         {
@@ -609,28 +555,14 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
     private static bool EvaluateDateTimeRelation(double number, double? comparisonValue, bool before)
     {
-        if (comparisonValue is not { } number2)
-        {
-            // TODO: error handling - what to do when comparison value is invalid (not available/multiple values specified)?
-
-            // If the user object property is not a valid unix timestamp, or the config.json is not containing a valid unix timestamp,
-            // we should log a warning message and treat the rule as if it was evaluated to false (so we skip the rule at all and we can go for the next rule).
-            // We should treat the value as valid if a valid unix timestamp is passed as a string and can be converted to a double or it is passed as a double/number directly.
-            // TODO: warning message? (if we log a warning message, then we also should in the case of e.g. number comparisons)
-
-            return false;
-        }
+        var number2 = EnsureComparisonValue(comparisonValue).Value;
 
         return before ? number < number2 : number > number2;
     }
 
     private static bool EvaluateSensitiveArrayContains(string csvText, string? comparisonValue, string configJsonSalt, string contextSalt, bool negate)
     {
-        if (comparisonValue is null)
-        {
-            // TODO: error handling - what to do when comparison value is invalid (not available/multiple values specified)?
-            return false;
-        }
+        EnsureComparisonValue(comparisonValue);
 
         int index;
         for (var startIndex = 0; startIndex < csvText.Length; startIndex = index + 1)
@@ -642,12 +574,6 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             }
 
             var slice = csvText.AsSpan(startIndex, index - startIndex).Trim();
-            if (slice.IsEmpty)
-            {
-                // TODO: error handling - what to do with empty/whitespace items?
-                continue;
-            }
-
             var hash = HashComparisonValue(slice, configJsonSalt, contextSalt);
 
             if (hash.Equals(hexString: comparisonValue.AsSpan()))
@@ -664,36 +590,18 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         error = null;
 
         var logBuilder = context.LogBuilder;
+        logBuilder?.AppendPrerequisiteFlagCondition(condition);
 
         var prerequisiteFlagKey = condition.PrerequisiteFlagKey;
-        var comparator = condition.Comparator;
-
-        Setting? prerequisiteFlag = null;
-        object? comparisonValue = null;
-
-        if (prerequisiteFlagKey is not { Length: > 0 })
+        if (prerequisiteFlagKey is null || !context.Settings.TryGetValue(prerequisiteFlagKey, out var prerequisiteFlag))
         {
-            // TODO: error handling - prerequisite flag is not specified or invalid
-        }
-        else if (!context.Settings.TryGetValue(prerequisiteFlagKey, out prerequisiteFlag))
-        {
-            // TODO: error handling - prerequisite flag reference is invalid
-        }
-        else if ((comparisonValue = condition.ComparisonValue.GetValue(throwIfInvalid: false)) is null)
-        {
-            // TODO: error handling - comparison value is invalid (not available/multiple values specified)
-        }
-        else if (comparisonValue.GetType().ToSettingType() != prerequisiteFlag.SettingType)
-        {
-            // TODO: error handling - comparison value and prereq flag types mismatch
-            comparisonValue = null;
+            throw new InvalidOperationException("Prerequisite flag key is missing or invalid.");
         }
 
-        logBuilder?.AppendPrerequisiteFlagCondition(prerequisiteFlagKey, comparator, comparisonValue);
-
-        if (comparisonValue is null)
+        var comparisonValue = condition.ComparisonValue.GetValue(throwIfInvalid: false);
+        if (comparisonValue is null || comparisonValue.GetType().ToSettingType() != prerequisiteFlag.SettingType)
         {
-            return false;
+            EnsureComparisonValue<string>(null);
         }
 
         context.VisitedFlags.Add(context.Key);
@@ -701,7 +609,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         {
             context.VisitedFlags.Add(prerequisiteFlagKey!);
             var dependencyCycle = new StringListFormatter(context.VisitedFlags).ToString("a", CultureInfo.InvariantCulture);
-            this.logger.CircularDependencyDetected(context.Key, dependencyCycle);
+            this.logger.CircularDependencyDetected(condition.ToString(), context.Key, dependencyCycle);
 
             context.VisitedFlags.RemoveRange(context.VisitedFlags.Count - 2, 2);
             error = CircularDependencyError;
@@ -715,31 +623,24 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             .IncreaseIndent()
             .NewLine().Append($"Evaluating prerequisite flag '{prerequisiteFlagKey}':");
 
-        // TODO: how to handle prereq flags w.r.t. flag overrides (when flag override setting depends on downloaded config setting or vice versa)?
-
         var prerequisiteFlagEvaluateResult = EvaluateSetting(ref prerequisiteFlagContext);
 
         context.VisitedFlags.RemoveAt(context.VisitedFlags.Count - 1);
 
         var prerequisiteFlagValue = prerequisiteFlagEvaluateResult.Value.GetValue(prerequisiteFlag!.SettingType, throwIfInvalid: false);
 
+        var comparator = condition.Comparator;
         var result = comparator switch
         {
-            PrerequisiteFlagComparator.Equals => prerequisiteFlagValue is not null
-                ? prerequisiteFlagValue.Equals(comparisonValue)
-                : false, // TODO: error handling - how to handle when prereq flag evaluates to an invalid value?
-
-            PrerequisiteFlagComparator.NotEquals => prerequisiteFlagValue is not null
-                ? !prerequisiteFlagValue.Equals(comparisonValue)
-                : false, // TODO: error handling - how to handle when prereq flag evaluates to an invalid value?
-
-            _ => throw new InvalidOperationException(), // TODO: error handling - comparator was not set
+            PrerequisiteFlagComparator.Equals => prerequisiteFlagValue is not null && prerequisiteFlagValue.Equals(comparisonValue),
+            PrerequisiteFlagComparator.NotEquals => prerequisiteFlagValue is not null && !prerequisiteFlagValue.Equals(comparisonValue),
+            _ => throw new InvalidOperationException("Comparison operator is invalid.")
         };
 
         logBuilder?
             .NewLine().Append($"Prerequisite flag evaluation result: '{prerequisiteFlagValue ?? EvaluateLogHelper.InvalidValuePlaceholder}'.")
             .NewLine("Condition (")
-                .AppendPrerequisiteFlagCondition(prerequisiteFlagKey, comparator, comparisonValue)
+                .AppendPrerequisiteFlagCondition(condition)
                 .Append(") evaluates to ").AppendEvaluationResult(result).Append(".")
             .DecreaseIndent()
             .NewLine(")");
@@ -752,11 +653,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         error = null;
 
         var logBuilder = context.LogBuilder;
-
-        var comparator = condition.Comparator;
-        var segment = condition.Segment;
-
-        logBuilder?.AppendSegmentCondition(comparator, segment);
+        logBuilder?.AppendSegmentCondition(condition);
 
         if (context.User is null)
         {
@@ -769,15 +666,12 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             error = MissingUserObjectError;
             return false;
         }
-        else if (segment is null)
+
+        var segment = condition.Segment ?? throw new InvalidOperationException("Segment reference is invalid.");
+
+        if (segment.Name is not { Length: > 0 })
         {
-            // TODO: error handling - segment reference is invalid
-            return false;
-        }
-        else if (segment.Name is not { Length: > 0 })
-        {
-            // TODO: error handling - segment name is not specified
-            return false;
+            throw new InvalidOperationException("Segment name is missing.");
         }
 
         logBuilder?
@@ -785,20 +679,20 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             .IncreaseIndent()
             .NewLine().Append($"Evaluating segment '{segment.Name}':");
 
-        var success = TryEvaluateConditions(segment.Conditions, static condition => condition, targetingRule: null, contextSalt: segment.Name, ref context, out var segmentResult);
-        Debug.Assert(success, "Unexpected failure when evaluating segment conditions.");
+        TryEvaluateConditions(segment.Conditions, static condition => condition, targetingRule: null, contextSalt: segment.Name, ref context, out var segmentResult);
 
+        var comparator = condition.Comparator;
         var result = comparator switch
         {
             SegmentComparator.IsIn => segmentResult,
             SegmentComparator.IsNotIn => !segmentResult,
-            _ => throw new InvalidOperationException(), // TODO: error handling - comparator was not set
+            _ => throw new InvalidOperationException("Comparison operator is invalid.")
         };
 
         logBuilder?
             .NewLine().Append($"Segment evaluation result: User {(segmentResult ? SegmentComparator.IsIn : SegmentComparator.IsNotIn).ToDisplayText()}.")
             .NewLine("Condition (")
-                .AppendSegmentCondition(comparator, segment)
+                .AppendSegmentCondition(condition)
                 .Append(") evaluates to ").AppendEvaluationResult(result).Append(".")
             .DecreaseIndent()
             .NewLine(")");
@@ -809,5 +703,32 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
     private static byte[] HashComparisonValue(ReadOnlySpan<char> value, string configJsonSalt, string contextSalt)
     {
         return string.Concat(value.ToConcatenable(), configJsonSalt, contextSalt).Sha256();
+    }
+
+    private static string EnsureConfigJsonSalt([NotNull] string? value)
+    {
+        return value ?? throw new InvalidOperationException("Config JSON salt is missing.");
+    }
+
+    [return: NotNull]
+    private static T EnsureComparisonValue<T>([NotNull] T? value)
+    {
+        return value ?? throw new InvalidOperationException("Comparison value is missing or invalid.");
+    }
+
+    private string HandleInvalidSemVerUserAttribute(ComparisonCondition condition, string key, string userAttributeName, string userAttributeValue)
+    {
+        var reason = $"'{userAttributeValue}' is not a valid semantic version";
+        this.logger.UserObjectAttributeIsInvalid(condition.ToString(), key, reason, userAttributeName, condition.Comparator.ToDisplayText());
+        return string.Format(CultureInfo.InvariantCulture, InvalidUserAttributeError, userAttributeName, reason);
+    }
+
+    private string HandleInvalidNumberUserAttribute(ComparisonCondition condition, string key, string userAttributeName, string userAttributeValue, bool isDateTime = false)
+    {
+        var reason = isDateTime
+            ? $"'{userAttributeValue}' is not a valid Unix timestamp (number of seconds elapsed since Unix epoch)"
+            : $"'{userAttributeValue}' is not a valid decimal number";
+        this.logger.UserObjectAttributeIsInvalid(condition.ToString(), key, reason, userAttributeName, condition.Comparator.ToDisplayText());
+        return string.Format(CultureInfo.InvariantCulture, InvalidUserAttributeError, userAttributeName, reason);
     }
 }

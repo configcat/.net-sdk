@@ -1,3 +1,6 @@
+using ConfigCat.Client.Evaluation;
+using ConfigCat.Client.Utils;
+
 #if USE_NEWTONSOFT_JSON
 using Newtonsoft.Json;
 #else
@@ -26,11 +29,10 @@ internal sealed class PercentageOption : SettingValueContainer, IPercentageOptio
 #endif
     public int Percentage { get; set; }
 
-    // TODO
-    ///// <inheritdoc/>
-    //public override string ToString()
-    //{
-    //    var variationIdString = !string.IsNullOrEmpty(VariationId) ? " [" + VariationId + "]" : string.Empty;
-    //    return $"({Order + 1}) {Percentage}% percent of users => {Value}{variationIdString}";
-    //}
+    public override string ToString()
+    {
+        return new IndentedTextBuilder()
+            .AppendPercentageOption(this)
+            .ToString();
+    }
 }

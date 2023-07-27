@@ -1,5 +1,6 @@
 using System;
 using ConfigCat.Client.Utils;
+using ConfigCat.Client.Evaluation;
 
 #if USE_NEWTONSOFT_JSON
 using Newtonsoft.Json;
@@ -61,5 +62,12 @@ internal sealed class SegmentCondition : ISegmentCondition
         {
             Segment = segments[SegmentIndex];
         }
+    }
+
+    public override string ToString()
+    {
+        return new IndentedTextBuilder()
+            .AppendSegmentCondition(this)
+            .ToString();
     }
 }

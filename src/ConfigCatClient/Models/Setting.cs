@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using ConfigCat.Client.Utils;
+using ConfigCat.Client.Evaluation;
 
 #if USE_NEWTONSOFT_JSON
 using Newtonsoft.Json;
@@ -114,5 +115,12 @@ internal sealed class Setting : SettingValueContainer, ISetting
         {
             targetingRule.OnConfigDeserialized(config);
         }
+    }
+
+    public override string ToString()
+    {
+        return new IndentedTextBuilder()
+            .AppendSetting(this)
+            .ToString();
     }
 }

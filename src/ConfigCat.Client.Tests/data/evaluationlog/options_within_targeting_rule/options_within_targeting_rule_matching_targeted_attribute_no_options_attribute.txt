@@ -1,0 +1,6 @@
+INFO [5000] Evaluating 'stringContainsString75Cat0Dog25Falcon0HorseDefaultCat' for User '{"Identifier": "12345", "Email": "joe@configcat.com", "Country": null, "Custom": null}'
+  Evaluating targeting rules and applying the first match if any:
+  - IF User.Email CONTAINS ANY OF ['@configcat.com'] THEN % options => MATCH, applying rule
+    Skipping % options because the User.Country attribute is missing.
+    The current targeting rule is ignored and the evaluation continues with the next rule.
+  Returning 'Cat'.

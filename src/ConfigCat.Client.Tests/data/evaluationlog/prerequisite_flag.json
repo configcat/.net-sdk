@@ -1,0 +1,17 @@
+{
+  "sdkKey": "configcat-sdk-1/XUbbCFZX_0mOU_uQ_XYGMg/FfwncdJg1kq0lBqxhYC_7g",
+  "baseUrl": "https://test-cdn-eu.configcat.com",
+  "tests": [
+    {
+      "key": "dependentFeature",
+      "defaultValue": "default",
+      "user": {
+        "Identifier": "12345",
+        "Email": "kate@configcat.com",
+        "Country": "USA"
+      },
+      "returnValue": "Horse",
+      "expectedLog": "prerequisite_flag.txt"
+    }
+  ]
+}

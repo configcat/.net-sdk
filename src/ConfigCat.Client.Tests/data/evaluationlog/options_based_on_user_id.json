@@ -1,0 +1,20 @@
+{
+  "sdkKey": "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A",
+  "tests": [
+    {
+      "key": "string75Cat0Dog25Falcon0Horse",
+      "defaultValue": "default",
+      "returnValue": "Chicken",
+      "expectedLog": "options_user_attribute_no_user.txt"
+    },
+    {
+      "key": "string75Cat0Dog25Falcon0Horse",
+      "defaultValue": "default",
+      "user": {
+        "Identifier": "12345"
+      },
+      "returnValue": "Cat",
+      "expectedLog": "options_user_attribute_user.txt"
+    }
+  ]
+}

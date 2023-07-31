@@ -1,0 +1,36 @@
+{
+  "sdkKey": "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A",
+  "tests": [
+    {
+      "key": "boolDefaultFalse",
+      "defaultValue": true,
+      "returnValue": false,
+      "expectedLog": "off_flag.txt"
+    },
+    {
+      "key": "boolDefaultTrue",
+      "defaultValue": false,
+      "returnValue": true,
+      "expectedLog": "on_flag.txt"
+    },
+    {
+      "key": "stringDefaultCat",
+      "defaultValue": "Default",
+      "returnValue": "Cat",
+      "expectedLog": "text_setting.txt"
+    },
+    {
+      "key": "integerDefaultOne",
+      "defaultValue": 0,
+      "returnValue": 1,
+      "expectedLog": "int_setting.txt"
+    },
+    {
+      "testName": "double_setting",
+      "key": "doubleDefaultPi",
+      "defaultValue": 0.0,
+      "returnValue": 3.1415,
+      "expectedLog": "double_setting.txt"
+    }
+  ]
+}

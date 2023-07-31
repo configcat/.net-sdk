@@ -1,0 +1,32 @@
+{
+  "sdkKey": "PKDVCLf-Hq-h-kCzMp-L7Q/LcYz135LE0qbcacz2mgXnA",
+  "tests": [
+    {
+      "key": "featureWithSegmentTargeting",
+      "defaultValue": false,
+      "returnValue": false,
+      "expectedLog": "segment_no_user.txt"
+    },
+    {
+      "key": "featureWithSegmentTargeting",
+      "defaultValue": false,
+      "user": {
+        "Identifier": "12345",
+        "Email": "jane@example.com"
+      },
+      "returnValue": true,
+      "expectedLog": "segment_matching.txt"
+    },
+        {
+      "key": "featureWithNegatedSegmentTargeting",
+      "defaultValue": false,
+      "user": {
+        "Identifier": "12345",
+        "Email": "jane@example.com"
+      },
+      "returnValue": false,
+      "expectedLog": "segment_no_matching.txt"
+    }
+
+  ]
+}

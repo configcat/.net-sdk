@@ -1,0 +1,4 @@
+INFO [5000] Evaluating 'string75Cat0Dog25Falcon0HorseCustomAttr' for User '{"Identifier": "12345", "Email": null, "Country": null, "Custom": null}'
+  Skipping % options because the User.Country attribute is missing.
+  The current targeting rule is ignored and the evaluation continues with the next rule.
+  Returning 'Chicken'.

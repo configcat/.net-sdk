@@ -1,0 +1,40 @@
+{
+  "sdkKey": "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A",
+  "tests": [
+    {
+      "key": "stringIsInDogDefaultCat",
+      "defaultValue": "default",
+      "returnValue": "Cat",
+      "expectedLog": "2_rules_no_user.txt"
+    },
+    {
+      "key": "stringIsInDogDefaultCat",
+      "defaultValue": "default",
+      "user": {
+        "Identifier": "12345"
+      },
+      "returnValue": "Cat",
+      "expectedLog": "2_rules_no_targeted_attribute.txt"
+    },
+    {
+      "key": "stringIsInDogDefaultCat",
+      "defaultValue": "default",
+      "user": {
+        "Identifier": "12345",
+        "Custom1": "user"
+      },
+      "returnValue": "Cat",
+      "expectedLog": "2_rules_not_matching_targeted_attribute.txt"
+    },
+    {
+      "key": "stringIsInDogDefaultCat",
+      "defaultValue": "default",
+      "user": {
+        "Identifier": "12345",
+        "Custom1": "admin"
+      },
+      "returnValue": "Dog",
+      "expectedLog": "2_rules_matching_targeted_attribute.txt"
+    }
+  ]
+}

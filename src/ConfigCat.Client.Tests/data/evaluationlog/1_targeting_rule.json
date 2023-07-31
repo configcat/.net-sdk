@@ -1,0 +1,40 @@
+{
+  "sdkKey": "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A",
+  "tests": [
+    {
+      "key": "stringContainsDogDefaultCat",
+      "defaultValue": "default",
+      "returnValue": "Cat",
+      "expectedLog": "1_rule_no_user.txt"
+    },
+    {
+      "key": "stringContainsDogDefaultCat",
+      "defaultValue": "default",
+      "user": {
+        "Identifier": "12345"
+      },
+      "returnValue": "Cat",
+      "expectedLog": "1_rule_no_targeted_attribute.txt"
+    },
+    {
+      "key": "stringContainsDogDefaultCat",
+      "defaultValue": "default",
+      "user": {
+        "Identifier": "12345",
+        "Email": "joe@example.com"
+      },
+      "returnValue": "Cat",
+      "expectedLog": "1_rule_not_matching_targeted_attribute.txt"
+    },
+    {
+      "key": "stringContainsDogDefaultCat",
+      "defaultValue": "default",
+      "user": {
+        "Identifier": "12345",
+        "Email": "joe@configcat.com"
+      },
+      "returnValue": "Dog",
+      "expectedLog": "1_rule_matching_targeted_attribute.txt"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+WARNING [3001] Cannot evaluate targeting rules and % options for setting 'stringContainsString75Cat0Dog25Falcon0HorseDefaultCat' (User Object is missing). You should pass a User Object to the evaluation methods like `get_value()` in order to make targeting work properly. Read more: https://configcat.com/docs/advanced/user-object/
+INFO [5000] Evaluating 'stringContainsString75Cat0Dog25Falcon0HorseDefaultCat'
+  Evaluating targeting rules and applying the first match if any:
+  - IF User.Email CONTAINS ANY OF ['@configcat.com'] THEN % options => cannot evaluate, User Object is missing
+    The current targeting rule is ignored and the evaluation continues with the next rule.
+  Returning 'Cat'.

@@ -1,11 +1,11 @@
-INFO [5000] Evaluating 'featureWithSegmentTargeting' for User '{"Identifier": "12345", "Email": "jane@example.com", "Country": null, "Custom": null}'
+INFO [5000] Evaluating 'featureWithSegmentTargeting' for User '{"Identifier":"12345","Email":"jane@example.com"}'
   Evaluating targeting rules and applying the first match if any:
   - IF User IS IN SEGMENT 'Beta users'
     (
       Evaluating segment 'Beta users':
-      - IF User.Email IS ONE OF (hashed) ['26fc71b9ce...', 'daaa967a93...'] => True
+      - IF User.Email IS ONE OF (hashed) [<2 hashed values>] => true
       Segment evaluation result: User IS IN SEGMENT.
-      Condition (User IS IN SEGMENT 'Beta users') evaluates to True.
+      Condition (User IS IN SEGMENT 'Beta users') evaluates to true.
     )
     THEN 'True' => MATCH, applying rule
   Returning 'True'.

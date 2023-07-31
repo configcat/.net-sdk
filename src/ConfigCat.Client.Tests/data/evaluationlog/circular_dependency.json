@@ -1,7 +1,5 @@
 {
   "jsonOverride": "circular_dependency_override.json",
-  "sdkKey": "",
-  "baseUrl": "",
   "tests": [
     {
       "key": "key1",

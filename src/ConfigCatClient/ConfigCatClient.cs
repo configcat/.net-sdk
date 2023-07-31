@@ -54,6 +54,11 @@ public sealed class ConfigCatClient : IConfigCatClient
         };
     }
 
+    internal static string GetProductVersion(PollingMode pollingMode)
+    {
+        return $"{pollingMode.Identifier}-{Version}";
+    }
+
     internal static string GetCacheKey(string sdkKey)
     {
         var key = $"{sdkKey}_{ConfigCatClientOptions.ConfigFileName}_{ProjectConfig.SerializationFormatVersion}";
@@ -97,7 +102,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         this.configService = this.overrideBehaviour != OverrideBehaviour.LocalOnly
             ? DetermineConfigService(pollingMode,
                 new HttpConfigFetcher(options.CreateUri(sdkKey),
-                        $"{pollingMode.Identifier}-{Version}",
+                        GetProductVersion(pollingMode),
                         this.logger,
                         options.HttpClientHandler,
                         options.IsCustomBaseUrl,

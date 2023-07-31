@@ -1,32 +1,32 @@
-INFO [5000] Evaluating 'dependentFeature' for User '{"Identifier": "12345", "Email": "kate@configcat.com", "Country": "USA", "Custom": null}'
+INFO [5000] Evaluating 'dependentFeature' for User '{"Identifier":"12345","Email":"kate@configcat.com","Country":"USA"}'
   Evaluating targeting rules and applying the first match if any:
-  - IF flag 'mainFeature' EQUALS 'target'
+  - IF Flag 'mainFeature' EQUALS 'target'
     (
       Evaluating prerequisite flag 'mainFeature':
       Evaluating targeting rules and applying the first match if any:
-      - IF User.Email ENDS WITH (hashed) ['21_afedf39...'] => False, skipping the remaining AND conditions
+      - IF User.Email ENDS WITH ANY OF (hashed) [<1 hashed value>] => false, skipping the remaining AND conditions
         THEN 'private' => no match
-      - IF User.Country IS ONE OF (hashed) ['f17aae9d1a...'] => True
+      - IF User.Country IS ONE OF (hashed) [<1 hashed value>] => true
         AND User IS NOT IN SEGMENT 'Beta Users'
         (
           Evaluating segment 'Beta Users':
-          - IF User.Email IS ONE OF (hashed) ['3b10c030fb...', '63aadd8165...'] => False, skipping the remaining AND conditions
+          - IF User.Email IS ONE OF (hashed) [<2 hashed values>] => false, skipping the remaining AND conditions
           Segment evaluation result: User IS NOT IN SEGMENT.
-          Condition (User IS NOT IN SEGMENT 'Beta Users') evaluates to True.
-        ) => True
+          Condition (User IS NOT IN SEGMENT 'Beta Users') evaluates to true.
+        ) => true
         AND User IS NOT IN SEGMENT 'Developers'
         (
           Evaluating segment 'Developers':
-          - IF User.Email IS ONE OF (hashed) ['b3892c655a...', '026df07501...'] => False, skipping the remaining AND conditions
+          - IF User.Email IS ONE OF (hashed) [<2 hashed values>] => false, skipping the remaining AND conditions
           Segment evaluation result: User IS NOT IN SEGMENT.
-          Condition (User IS NOT IN SEGMENT 'Developers') evaluates to True.
-        ) => True
+          Condition (User IS NOT IN SEGMENT 'Developers') evaluates to true.
+        ) => true
         THEN 'target' => MATCH, applying rule
-      Prerequisite flag evaluation result: 'target'
-      Condition: (Flag 'mainFeature' EQUALS 'target') evaluates to True.
+      Prerequisite flag evaluation result: 'target'.
+      Condition (Flag 'mainFeature' EQUALS 'target') evaluates to true.
     )
     THEN % options => MATCH, applying rule
     Evaluating % options based on the User.Identifier attribute:
     - Computing hash in the [0..99] range from User.Identifier => 78 (this value is sticky and consistent across all SDKs)
-    - Hash value 78 selects % option 4 (100%), 'Horse'
+    - Hash value 78 selects % option 4 (25%), 'Horse'.
   Returning 'Horse'.

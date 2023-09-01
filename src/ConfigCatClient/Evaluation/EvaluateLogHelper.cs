@@ -59,7 +59,7 @@ internal static class EvaluateLogHelper
         }
 
         return isDateTime && DateTimeUtils.TryConvertFromUnixTimeSeconds(comparisonValue.Value, out var dateTime)
-            ? builder.Append($"User.{comparisonAttribute} {comparator.ToDisplayText()} '{comparisonValue.Value}' ({dateTime:yyyy-MM-dd'T'HH:mm:ss.fffK})")
+            ? builder.Append($"User.{comparisonAttribute} {comparator.ToDisplayText()} '{comparisonValue.Value}' ({dateTime:yyyy-MM-dd'T'HH:mm:ss.fffK} UTC)")
             : builder.Append($"User.{comparisonAttribute} {comparator.ToDisplayText()} '{comparisonValue.Value}'");
     }
 
@@ -296,30 +296,30 @@ internal static class EvaluateLogHelper
         {
             Comparator.Contains => "CONTAINS ANY OF",
             Comparator.NotContains => "NOT CONTAINS ANY OF",
-            Comparator.SemVerOneOf => "IS ONE OF (semver)",
-            Comparator.SemVerNotOneOf => "IS NOT ONE OF (semver)",
-            Comparator.SemVerLessThan => "< (semver)",
-            Comparator.SemVerLessThanEqual => "<= (semver)",
-            Comparator.SemVerGreaterThan => "> (semver)",
-            Comparator.SemVerGreaterThanEqual => ">= (semver)",
-            Comparator.NumberEqual => "= (number)",
-            Comparator.NumberNotEqual => "!= (number)",
-            Comparator.NumberLessThan => "< (number)",
-            Comparator.NumberLessThanEqual => "<= (number)",
-            Comparator.NumberGreaterThan => "> (number)",
-            Comparator.NumberGreaterThanEqual => ">= (number)",
-            Comparator.SensitiveOneOf => "IS ONE OF (hashed)",
-            Comparator.SensitiveNotOneOf => "IS NOT ONE OF (hashed)",
-            Comparator.DateTimeBefore => "BEFORE (UTC datetime)",
-            Comparator.DateTimeAfter => "AFTER (UTC datetime)",
-            Comparator.SensitiveTextEquals => "EQUALS (hashed)",
-            Comparator.SensitiveTextNotEquals => "NOT EQUALS (hashed)",
-            Comparator.SensitiveTextStartsWith => "STARTS WITH ANY OF (hashed)",
-            Comparator.SensitiveTextNotStartsWith => "NOT STARTS WITH ANY OF (hashed)",
-            Comparator.SensitiveTextEndsWith => "ENDS WITH ANY OF (hashed)",
-            Comparator.SensitiveTextNotEndsWith => "NOT ENDS WITH ANY OF (hashed)",
-            Comparator.SensitiveArrayContains => "ARRAY CONTAINS (hashed)",
-            Comparator.SensitiveArrayNotContains => "ARRAY NOT CONTAINS (hashed)",
+            Comparator.SemVerOneOf => "IS ONE OF",
+            Comparator.SemVerNotOneOf => "IS NOT ONE OF",
+            Comparator.SemVerLessThan => "<",
+            Comparator.SemVerLessThanEqual => "<=",
+            Comparator.SemVerGreaterThan => ">",
+            Comparator.SemVerGreaterThanEqual => ">=",
+            Comparator.NumberEqual => "=",
+            Comparator.NumberNotEqual => "!=",
+            Comparator.NumberLessThan => "<",
+            Comparator.NumberLessThanEqual => "<=",
+            Comparator.NumberGreaterThan => ">",
+            Comparator.NumberGreaterThanEqual => ">=",
+            Comparator.SensitiveOneOf => "IS ONE OF",
+            Comparator.SensitiveNotOneOf => "IS NOT ONE OF",
+            Comparator.DateTimeBefore => "BEFORE",
+            Comparator.DateTimeAfter => "AFTER",
+            Comparator.SensitiveTextEquals => "EQUALS",
+            Comparator.SensitiveTextNotEquals => "NOT EQUALS",
+            Comparator.SensitiveTextStartsWith => "STARTS WITH ANY OF",
+            Comparator.SensitiveTextNotStartsWith => "NOT STARTS WITH ANY OF",
+            Comparator.SensitiveTextEndsWith => "ENDS WITH ANY OF",
+            Comparator.SensitiveTextNotEndsWith => "NOT ENDS WITH ANY OF",
+            Comparator.SensitiveArrayContains => "ARRAY CONTAINS",
+            Comparator.SensitiveArrayNotContains => "ARRAY NOT CONTAINS",
             _ => InvalidOperatorPlaceholder
         };
     }

@@ -27,7 +27,7 @@ public class ModelTests
     }
 
     [DataTestMethod]
-    [DataRow("sample_v5", "stringIsNotInDogDefaultCat", 0, 0, new[] { "User.Email IS NOT ONE OF (hashed) [<2 hashed values>]" })]
+    [DataRow("sample_v5", "stringIsNotInDogDefaultCat", 0, 0, new[] { "User.Email IS NOT ONE OF [<2 hashed values>]" })]
     [DataRow("sample_segments_v6", "countrySegment", 0, 0, new[] { "User IS IN SEGMENT 'United'" })]
     [DataRow("sample_flagdependency_v6", "boolDependsOnBool", 0, 0, new[] { "Flag 'mainBoolFlag' EQUALS 'True'" })]
     public void Condition_ToString(string configJsonFileName, string settingKey, int targetingRuleIndex, int conditionIndex, string[] expectedResultLines)
@@ -62,21 +62,21 @@ public class ModelTests
     [DataTestMethod]
     [DataRow("sample_v5", "stringIsNotInDogDefaultCat", 0, new[]
     {
-        "IF User.Email IS NOT ONE OF (hashed) [<2 hashed values>]",
+        "IF User.Email IS NOT ONE OF [<2 hashed values>]",
         "THEN 'Dog'",
     })]
     [DataRow("sample_comparators_v6", "missingPercentageAttribute", 0, new[]
     {
-        "IF User.Email ENDS WITH ANY OF (hashed) [<1 hashed value>]",
+        "IF User.Email ENDS WITH ANY OF [<1 hashed value>]",
         "THEN",
         "  50%: 'Falcon'",
         "  50%: 'Horse'",
     })]
     [DataRow("sample_and_or_v6", "emailAnd", 0, new[]
     {
-        "IF User.Email STARTS WITH ANY OF (hashed) [<1 hashed value>]",
+        "IF User.Email STARTS WITH ANY OF [<1 hashed value>]",
         "  AND User.Email CONTAINS ANY OF ['@']",
-        "  AND User.Email ENDS WITH ANY OF (hashed) [<1 hashed value>]",
+        "  AND User.Email ENDS WITH ANY OF [<1 hashed value>]",
         "THEN 'Dog'"
     })]
     public void TargetingRule_ToString(string configJsonFileName, string settingKey, int targetingRuleIndex, string[] expectedResultLines)
@@ -94,7 +94,7 @@ public class ModelTests
     [DataRow("test_json_complex", "doubleSetting", new[] { "To all users: '3.14'" })]
     [DataRow("sample_v5", "stringIsNotInDogDefaultCat", new[]
     {
-        "IF User.Email IS NOT ONE OF (hashed) [<2 hashed values>]",
+        "IF User.Email IS NOT ONE OF [<2 hashed values>]",
         "THEN 'Dog'",
         "To all others: 'Cat'",
     })]
@@ -114,7 +114,7 @@ public class ModelTests
     })]
     [DataRow("sample_v5", "string25Cat25Dog25Falcon25HorseAdvancedRules", new[]
     {
-        "IF User.Country IS ONE OF (hashed) [<2 hashed values>]",
+        "IF User.Country IS ONE OF [<2 hashed values>]",
         "THEN 'Dolphin'",
         "ELSE IF User.Custom1 CONTAINS ANY OF ['admi']",
         "THEN 'Lion'",
@@ -129,19 +129,19 @@ public class ModelTests
     })]
     [DataRow("sample_comparators_v6", "missingPercentageAttribute", new[]
     {
-        "IF User.Email ENDS WITH ANY OF (hashed) [<1 hashed value>]",
+        "IF User.Email ENDS WITH ANY OF [<1 hashed value>]",
         "THEN",
         "  50% of all NotFound attributes: 'Falcon'",
         "  50% of all NotFound attributes: 'Horse'",
-        "ELSE IF User.Email ENDS WITH ANY OF (hashed) [<1 hashed value>]",
+        "ELSE IF User.Email ENDS WITH ANY OF [<1 hashed value>]",
         "THEN 'NotFound'",
         "To all others: 'Chicken'",
     })]
     [DataRow("sample_and_or_v6", "emailAnd", new[]
     {
-        "IF User.Email STARTS WITH ANY OF (hashed) [<1 hashed value>]",
+        "IF User.Email STARTS WITH ANY OF [<1 hashed value>]",
         "  AND User.Email CONTAINS ANY OF ['@']",
-        "  AND User.Email ENDS WITH ANY OF (hashed) [<1 hashed value>]",
+        "  AND User.Email ENDS WITH ANY OF [<1 hashed value>]",
         "THEN 'Dog'",
         "To all others: 'Cat'",
     })]
@@ -156,7 +156,7 @@ public class ModelTests
     }
 
     [DataTestMethod]
-    [DataRow("sample_segments_v6", 0, new[] { "User.Email IS ONE OF (hashed) [<2 hashed values>]" })]
+    [DataRow("sample_segments_v6", 0, new[] { "User.Email IS ONE OF [<2 hashed values>]" })]
     public void Segment_ToString(string configJsonFileName, int segmentIndex, string[] expectedResultLines)
     {
         var pc = ConfigHelper.FromFile(Path.Combine("data", configJsonFileName + ".json"), null, default);

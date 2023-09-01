@@ -4,20 +4,20 @@ INFO [5000] Evaluating 'dependentFeature' for User '{"Identifier":"12345","Email
     (
       Evaluating prerequisite flag 'mainFeature':
       Evaluating targeting rules and applying the first match if any:
-      - IF User.Email ENDS WITH ANY OF (hashed) [<1 hashed value>] => false, skipping the remaining AND conditions
+      - IF User.Email ENDS WITH ANY OF [<1 hashed value>] => false, skipping the remaining AND conditions
         THEN 'private' => no match
-      - IF User.Country IS ONE OF (hashed) [<1 hashed value>] => true
+      - IF User.Country IS ONE OF [<1 hashed value>] => true
         AND User IS NOT IN SEGMENT 'Beta Users'
         (
           Evaluating segment 'Beta Users':
-          - IF User.Email IS ONE OF (hashed) [<2 hashed values>] => false, skipping the remaining AND conditions
+          - IF User.Email IS ONE OF [<2 hashed values>] => false, skipping the remaining AND conditions
           Segment evaluation result: User IS NOT IN SEGMENT.
           Condition (User IS NOT IN SEGMENT 'Beta Users') evaluates to true.
         ) => true
         AND User IS NOT IN SEGMENT 'Developers'
         (
           Evaluating segment 'Developers':
-          - IF User.Email IS ONE OF (hashed) [<2 hashed values>] => false, skipping the remaining AND conditions
+          - IF User.Email IS ONE OF [<2 hashed values>] => false, skipping the remaining AND conditions
           Segment evaluation result: User IS NOT IN SEGMENT.
           Condition (User IS NOT IN SEGMENT 'Developers') evaluates to true.
         ) => true

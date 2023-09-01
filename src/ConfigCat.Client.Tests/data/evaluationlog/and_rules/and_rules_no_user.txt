@@ -1,7 +1,7 @@
 WARNING [3001] Cannot evaluate targeting rules and % options for setting 'emailAnd' (User Object is missing). You should pass a User Object to the evaluation methods like `GetValue()`/`GetValueAsync()` in order to make targeting work properly. Read more: https://configcat.com/docs/advanced/user-object/
 INFO [5000] Evaluating 'emailAnd'
   Evaluating targeting rules and applying the first match if any:
-  - IF User.Email STARTS WITH ANY OF (hashed) [<1 hashed value>] => false, skipping the remaining AND conditions
+  - IF User.Email STARTS WITH ANY OF [<1 hashed value>] => false, skipping the remaining AND conditions
     THEN 'Dog' => cannot evaluate, User Object is missing
     The current targeting rule is ignored and the evaluation continues with the next rule.
   Returning 'Cat'.

@@ -81,8 +81,8 @@ internal class IndentedTextBuilder
 
         public void AppendFormatted(object? value, int alignment = 0, string? format = null) => this.handler.AppendFormatted(value, alignment, format);
 
-        public void AppendFormatted(StringListFormatter value) => value.AppendWith(this.handler);
-        public void AppendFormatted(StringListFormatter value, string? format) => value.AppendWith(this.handler, format);
+        public void AppendFormatted(StringListFormatter value) => value.AppendWith(ref this.handler);
+        public void AppendFormatted(StringListFormatter value, string? format) => value.AppendWith(ref this.handler, format);
     }
 #endif
 

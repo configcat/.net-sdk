@@ -21,7 +21,7 @@ internal readonly struct StringListFormatter : IFormattable
     private static string GetSeparator(string? format) => format == "a" ? "' -> '" : "', '";
 
 #if NET6_0_OR_GREATER
-    public void AppendWith(StringBuilder.AppendInterpolatedStringHandler handler, string? format = null)
+    public void AppendWith(ref StringBuilder.AppendInterpolatedStringHandler handler, string? format = null)
     {
         if (this.collection is { Count: > 0 })
         {

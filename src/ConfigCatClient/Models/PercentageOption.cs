@@ -17,7 +17,7 @@ public interface IPercentageOption : ISettingValueContainer
     /// <summary>
     /// A number between 0 and 100 that represents a randomly allocated fraction of the users.
     /// </summary>
-    int Percentage { get; }
+    byte Percentage { get; }
 }
 
 internal sealed class PercentageOption : SettingValueContainer, IPercentageOption
@@ -27,7 +27,7 @@ internal sealed class PercentageOption : SettingValueContainer, IPercentageOptio
 #else
     [JsonPropertyName("p")]
 #endif
-    public int Percentage { get; set; }
+    public byte Percentage { get; set; }
 
     public override string ToString()
     {

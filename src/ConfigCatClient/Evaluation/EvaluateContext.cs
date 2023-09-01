@@ -5,6 +5,23 @@ namespace ConfigCat.Client.Evaluation;
 
 internal struct EvaluateContext
 {
+    public readonly string Key;
+    public readonly Setting Setting;
+    public readonly SettingValue DefaultValue;
+    public readonly User? User;
+    public readonly IReadOnlyDictionary<string, Setting> Settings;
+
+    private IReadOnlyDictionary<string, string>? userAttributes;
+    public IReadOnlyDictionary<string, string>? UserAttributes => this.userAttributes ??= this.User?.GetAllAttributes();
+
+    private List<string>? visitedFlags;
+    public List<string> VisitedFlags => this.visitedFlags ??= new List<string>();
+
+    public bool IsMissingUserObjectLogged;
+    public bool IsMissingUserObjectAttributeLogged;
+
+    public IndentedTextBuilder? LogBuilder;
+
     public EvaluateContext(string key, Setting setting, SettingValue defaultValue, User? user, IReadOnlyDictionary<string, Setting> settings)
     {
         this.Key = key;
@@ -26,21 +43,4 @@ internal struct EvaluateContext
         this.visitedFlags = dependentFlagContext.VisitedFlags; // crucial to use the property here to make sure the list is created!
         this.LogBuilder = dependentFlagContext.LogBuilder;
     }
-
-    public readonly string Key;
-    public readonly Setting Setting;
-    public readonly SettingValue DefaultValue;
-    public readonly User? User;
-    public readonly IReadOnlyDictionary<string, Setting> Settings;
-
-    private IReadOnlyDictionary<string, string>? userAttributes;
-    public IReadOnlyDictionary<string, string>? UserAttributes => this.userAttributes ??= this.User?.GetAllAttributes();
-
-    private List<string>? visitedFlags;
-    public List<string> VisitedFlags => this.visitedFlags ??= new List<string>();
-
-    public bool IsMissingUserObjectLogged;
-    public bool IsMissingUserObjectAttributeLogged;
-
-    public IndentedTextBuilder? LogBuilder;
 }

@@ -136,6 +136,36 @@ public class EvaluationLogTests
         RunTest(testSetName, sdkKey, baseUrlOrOverrideFileName, key, defaultValue, userObject, expectedReturnValue, expectedLogFileName);
     }
 
+    private static IEnumerable<object?[]> GetEpochDateValidationTests() => GetTests("epoch_date_validation");
+
+    [DataTestMethod]
+    [DynamicData(nameof(GetEpochDateValidationTests), DynamicDataSourceType.Method)]
+    public void EpochDateValidationTests(string testSetName, string? sdkKey, string? baseUrlOrOverrideFileName,
+        string key, string? defaultValue, string userObject, string? expectedReturnValue, string expectedLogFileName)
+    {
+        RunTest(testSetName, sdkKey, baseUrlOrOverrideFileName, key, defaultValue, userObject, expectedReturnValue, expectedLogFileName);
+    }
+
+    private static IEnumerable<object?[]> GetNumberValidationTests() => GetTests("number_validation");
+
+    [DataTestMethod]
+    [DynamicData(nameof(GetNumberValidationTests), DynamicDataSourceType.Method)]
+    public void NumberValidationTests(string testSetName, string? sdkKey, string? baseUrlOrOverrideFileName,
+        string key, string? defaultValue, string userObject, string? expectedReturnValue, string expectedLogFileName)
+    {
+        RunTest(testSetName, sdkKey, baseUrlOrOverrideFileName, key, defaultValue, userObject, expectedReturnValue, expectedLogFileName);
+    }
+
+    private static IEnumerable<object?[]> GetSemVerValidationTests() => GetTests("semver_validation");
+
+    [DataTestMethod]
+    [DynamicData(nameof(GetSemVerValidationTests), DynamicDataSourceType.Method)]
+    public void SemVerValidationTests(string testSetName, string? sdkKey, string? baseUrlOrOverrideFileName,
+        string key, string? defaultValue, string userObject, string? expectedReturnValue, string expectedLogFileName)
+    {
+        RunTest(testSetName, sdkKey, baseUrlOrOverrideFileName, key, defaultValue, userObject, expectedReturnValue, expectedLogFileName);
+    }
+
     private static IEnumerable<object?[]> GetTests(string testSetName)
     {
         var filePath = Path.Combine("data", "evaluationlog", testSetName + ".json");

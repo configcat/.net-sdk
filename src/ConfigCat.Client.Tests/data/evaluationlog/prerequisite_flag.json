@@ -4,6 +4,24 @@
   "baseUrl": "https://test-cdn-eu.configcat.com",
   "tests": [
     {
+      "key": "dependentFeatureWithUserCondition",
+      "defaultValue": "default",
+      "returnValue": "Chicken",
+      "expectedLog": "prerequisite_flag_no_user_needed_by_dep.txt"
+    },
+    {
+      "key": "dependentFeature",
+      "defaultValue": "default",
+      "returnValue": "Chicken",
+      "expectedLog": "prerequisite_flag_no_user_needed_by_prereq.txt"
+    },
+    {
+      "key": "dependentFeatureWithUserCondition2",
+      "defaultValue": "default",
+      "returnValue": "Frog",
+      "expectedLog": "prerequisite_flag_no_user_needed_by_both.txt"
+    },
+    {
       "key": "dependentFeature",
       "defaultValue": "default",
       "user": {

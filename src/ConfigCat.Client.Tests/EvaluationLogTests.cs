@@ -31,7 +31,7 @@ public class EvaluationLogTests
     [DataTestMethod]
     [DynamicData(nameof(GetSimpleValueTests), DynamicDataSourceType.Method)]
     public void SimpleValueTests(string testSetName, string? sdkKey, string? baseUrlOrOverrideFileName,
-    string key, string? defaultValue, string userObject, string? expectedReturnValue, string expectedLogFileName)
+        string key, string? defaultValue, string userObject, string? expectedReturnValue, string expectedLogFileName)
     {
         RunTest(testSetName, sdkKey, baseUrlOrOverrideFileName, key, defaultValue, userObject, expectedReturnValue, expectedLogFileName);
     }
@@ -126,6 +126,16 @@ public class EvaluationLogTests
         RunTest(testSetName, sdkKey, baseUrlOrOverrideFileName, key, defaultValue, userObject, expectedReturnValue, expectedLogFileName);
     }
 
+    private static IEnumerable<object?[]> GetComparatorsTests() => GetTests("comparators");
+
+    [DataTestMethod]
+    [DynamicData(nameof(GetComparatorsTests), DynamicDataSourceType.Method)]
+    public void ComparatorsTests(string testSetName, string? sdkKey, string? baseUrlOrOverrideFileName,
+        string key, string? defaultValue, string userObject, string? expectedReturnValue, string expectedLogFileName)
+    {
+        RunTest(testSetName, sdkKey, baseUrlOrOverrideFileName, key, defaultValue, userObject, expectedReturnValue, expectedLogFileName);
+    }
+
     private static IEnumerable<object?[]> GetPrerequisiteFlagConditionsWithCircularDependencyTests() => GetTests("circular_dependency");
 
     [DataTestMethod]
@@ -165,6 +175,7 @@ public class EvaluationLogTests
     {
         RunTest(testSetName, sdkKey, baseUrlOrOverrideFileName, key, defaultValue, userObject, expectedReturnValue, expectedLogFileName);
     }
+
 
     private static IEnumerable<object?[]> GetTests(string testSetName)
     {

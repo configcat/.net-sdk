@@ -15,13 +15,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ConfigCat.Client" Version="8.1.1" />
+    <PackageReference Include="ConfigCat.Client" Version="8.2.0" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="..\NewVersionLib\BenchmarkHelper.Shared.cs" Link="BenchmarkHelper.Shared.cs" />
     <Compile Include="..\NewVersionLib\ConfigHelper.cs" Link="ConfigHelper.cs" />
     <Compile Include="..\..\src\ConfigCat.Client.Tests\MatrixTestRunnerBase.cs" Link="MatrixTestRunnerBase.cs" />
+    <Compile Include="..\..\src\ConfigCat.Client.Tests\Helpers\ConfigLocation.cs" Link="ConfigLocation.cs" />
+    <Compile Include="..\..\src\ConfigCat.Client.Tests\Helpers\ConfigLocation.LocalFile.cs" Link="ConfigLocation.LocalFile.cs" />
     <Compile Include="..\NewVersionLib\NullLogger.cs" Link="NullLogger.cs" />
   </ItemGroup>
 

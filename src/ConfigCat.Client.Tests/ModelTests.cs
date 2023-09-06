@@ -1,8 +1,6 @@
 using System;
-using System.IO;
 using ConfigCat.Client.Evaluation;
 using ConfigCat.Client.Tests.Helpers;
-using ConfigCat.Client.Utils;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ConfigCat.Client.Tests;
@@ -10,6 +8,21 @@ namespace ConfigCat.Client.Tests;
 [TestClass]
 public class ModelTests
 {
+    private const string TestBaseUrl = "https://test-cdn-eu.configcat.com";
+
+    private const string BasicSampleSdkKey = "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A";
+    private const string AndOrV6SampleSdkKey = "configcat-sdk-1/XUbbCFZX_0mOU_uQ_XYGMg/FfwncdJg1kq0lBqxhYC_7g";
+    private const string ComparatorsV6SampleSdkKey = "configcat-sdk-1/XUbbCFZX_0mOU_uQ_XYGMg/Lv2mD9Tgx0Km27nuHjw_FA";
+    private const string FlagDependencyV6SampleSdkKey = "configcat-sdk-1/XUbbCFZX_0mOU_uQ_XYGMg/LGO_8DM9OUGpJixrqqqQcA";
+    private const string SegmentsV6SampleSdkKey = "configcat-sdk-1/XUbbCFZX_0mOU_uQ_XYGMg/LP0_4hhbQkmVVJcsbO_2Lw";
+
+    private static ConfigLocation GetConfigLocation(string? sdkKey, string baseUrlOrFileName)
+    {
+        return sdkKey is { Length: > 0 }
+            ? new ConfigLocation.Cdn(sdkKey, baseUrlOrFileName)
+            : new ConfigLocation.LocalFile("data", baseUrlOrFileName + ".json");
+    }
+
     [DataTestMethod]
     [DataRow(false, "False")]
     [DataRow(true, "True")]
@@ -27,13 +40,12 @@ public class ModelTests
     }
 
     [DataTestMethod]
-    [DataRow("sample_v5", "stringIsNotInDogDefaultCat", 0, 0, new[] { "User.Email IS NOT ONE OF [<2 hashed values>]" })]
-    [DataRow("sample_segments_v6", "countrySegment", 0, 0, new[] { "User IS IN SEGMENT 'United'" })]
-    [DataRow("sample_flagdependency_v6", "boolDependsOnBool", 0, 0, new[] { "Flag 'mainBoolFlag' EQUALS 'True'" })]
-    public void Condition_ToString(string configJsonFileName, string settingKey, int targetingRuleIndex, int conditionIndex, string[] expectedResultLines)
+    [DataRow(BasicSampleSdkKey, null, "stringIsNotInDogDefaultCat", 0, 0, new[] { "User.Email IS NOT ONE OF [<2 hashed values>]" })]
+    [DataRow(SegmentsV6SampleSdkKey, TestBaseUrl, "countrySegment", 0, 0, new[] { "User IS IN SEGMENT 'United'" })]
+    [DataRow(FlagDependencyV6SampleSdkKey, TestBaseUrl, "boolDependsOnBool", 0, 0, new[] { "Flag 'mainBoolFlag' EQUALS 'True'" })]
+    public void Condition_ToString(string? sdkKey, string baseUrlOrFileName, string settingKey, int targetingRuleIndex, int conditionIndex, string[] expectedResultLines)
     {
-        var pc = ConfigHelper.FromFile(Path.Combine("data", configJsonFileName + ".json"), null, default);
-        IConfig config = pc.Config!;
+        IConfig config = GetConfigLocation(sdkKey, baseUrlOrFileName).FetchConfigCached();
         var setting = config.Settings[settingKey];
         var targetingRule = setting.TargetingRules[targetingRuleIndex];
         var condition = targetingRule.Conditions[conditionIndex];
@@ -43,12 +55,11 @@ public class ModelTests
     }
 
     [DataTestMethod]
-    [DataRow("sample_v5", "string25Cat25Dog25Falcon25Horse", -1, 0, new[] { "25%: 'Cat'" })]
-    [DataRow("sample_comparators_v6", "missingPercentageAttribute", 0, 0, new[] { "50%: 'Falcon'" })]
-    public void PercentageOption_ToString(string configJsonFileName, string settingKey, int targetingRuleIndex, int percentageOptionIndex, string[] expectedResultLines)
+    [DataRow(BasicSampleSdkKey, null, "string25Cat25Dog25Falcon25Horse", -1, 0, new[] { "25%: 'Cat'" })]
+    [DataRow(ComparatorsV6SampleSdkKey, TestBaseUrl, "missingPercentageAttribute", 0, 0, new[] { "50%: 'Falcon'" })]
+    public void PercentageOption_ToString(string? sdkKey, string baseUrlOrFileName, string settingKey, int targetingRuleIndex, int percentageOptionIndex, string[] expectedResultLines)
     {
-        var pc = ConfigHelper.FromFile(Path.Combine("data", configJsonFileName + ".json"), null, default);
-        IConfig config = pc.Config!;
+        IConfig config = GetConfigLocation(sdkKey, baseUrlOrFileName).FetchConfigCached();
         var setting = config.Settings[settingKey];
         var percentageOptions = targetingRuleIndex >= 0
             ? setting.TargetingRules[targetingRuleIndex].PercentageOptions
@@ -60,29 +71,28 @@ public class ModelTests
     }
 
     [DataTestMethod]
-    [DataRow("sample_v5", "stringIsNotInDogDefaultCat", 0, new[]
+    [DataRow(BasicSampleSdkKey, null, "stringIsNotInDogDefaultCat", 0, new[]
     {
         "IF User.Email IS NOT ONE OF [<2 hashed values>]",
         "THEN 'Dog'",
     })]
-    [DataRow("sample_comparators_v6", "missingPercentageAttribute", 0, new[]
+    [DataRow(ComparatorsV6SampleSdkKey, TestBaseUrl, "missingPercentageAttribute", 0, new[]
     {
         "IF User.Email ENDS WITH ANY OF [<1 hashed value>]",
         "THEN",
         "  50%: 'Falcon'",
         "  50%: 'Horse'",
     })]
-    [DataRow("sample_and_or_v6", "emailAnd", 0, new[]
+    [DataRow(AndOrV6SampleSdkKey, TestBaseUrl, "emailAnd", 0, new[]
     {
         "IF User.Email STARTS WITH ANY OF [<1 hashed value>]",
         "  AND User.Email CONTAINS ANY OF ['@']",
         "  AND User.Email ENDS WITH ANY OF [<1 hashed value>]",
         "THEN 'Dog'"
     })]
-    public void TargetingRule_ToString(string configJsonFileName, string settingKey, int targetingRuleIndex, string[] expectedResultLines)
+    public void TargetingRule_ToString(string? sdkKey, string baseUrlOrFileName, string settingKey, int targetingRuleIndex, string[] expectedResultLines)
     {
-        var pc = ConfigHelper.FromFile(Path.Combine("data", configJsonFileName + ".json"), null, default);
-        IConfig config = pc.Config!;
+        IConfig config = GetConfigLocation(sdkKey, baseUrlOrFileName).FetchConfigCached();
         var setting = config.Settings[settingKey];
         var targetingRule = setting.TargetingRules[targetingRuleIndex];
         var actualResult = targetingRule.ToString();
@@ -91,14 +101,14 @@ public class ModelTests
     }
 
     [DataTestMethod]
-    [DataRow("test_json_complex", "doubleSetting", new[] { "To all users: '3.14'" })]
-    [DataRow("sample_v5", "stringIsNotInDogDefaultCat", new[]
+    [DataRow(null, "test_json_complex", "doubleSetting", new[] { "To all users: '3.14'" })]
+    [DataRow(BasicSampleSdkKey, null, "stringIsNotInDogDefaultCat", new[]
     {
         "IF User.Email IS NOT ONE OF [<2 hashed values>]",
         "THEN 'Dog'",
         "To all others: 'Cat'",
     })]
-    [DataRow("sample_v5", "string25Cat25Dog25Falcon25Horse", new[]
+    [DataRow(BasicSampleSdkKey, null, "string25Cat25Dog25Falcon25Horse", new[]
     {
         "25% of users: 'Cat'",
         "25% of users: 'Dog'",
@@ -106,13 +116,13 @@ public class ModelTests
         "25% of users: 'Horse'",
         "To unidentified: 'Chicken'",
     })]
-    [DataRow("sample_comparators_v6", "countryPercentageAttribute", new[]
+    [DataRow(ComparatorsV6SampleSdkKey, TestBaseUrl, "countryPercentageAttribute", new[]
     {
         "50% of all Country attributes: 'Falcon'",
         "50% of all Country attributes: 'Horse'",
         "To unidentified: 'Chicken'",
     })]
-    [DataRow("sample_v5", "string25Cat25Dog25Falcon25HorseAdvancedRules", new[]
+    [DataRow(BasicSampleSdkKey, null, "string25Cat25Dog25Falcon25HorseAdvancedRules", new[]
     {
         "IF User.Country IS ONE OF [<2 hashed values>]",
         "THEN 'Dolphin'",
@@ -127,7 +137,7 @@ public class ModelTests
         "  25% of users: 'Horse'",
         "To unidentified: 'Chicken'",
     })]
-    [DataRow("sample_comparators_v6", "missingPercentageAttribute", new[]
+    [DataRow(ComparatorsV6SampleSdkKey, TestBaseUrl, "missingPercentageAttribute", new[]
     {
         "IF User.Email ENDS WITH ANY OF [<1 hashed value>]",
         "THEN",
@@ -137,7 +147,7 @@ public class ModelTests
         "THEN 'NotFound'",
         "To all others: 'Chicken'",
     })]
-    [DataRow("sample_and_or_v6", "emailAnd", new[]
+    [DataRow(AndOrV6SampleSdkKey, TestBaseUrl, "emailAnd", new[]
     {
         "IF User.Email STARTS WITH ANY OF [<1 hashed value>]",
         "  AND User.Email CONTAINS ANY OF ['@']",
@@ -145,10 +155,9 @@ public class ModelTests
         "THEN 'Dog'",
         "To all others: 'Cat'",
     })]
-    public void Setting_ToString(string configJsonFileName, string settingKey, string[] expectedResultLines)
+    public void Setting_ToString(string? sdkKey, string baseUrlOrFileName, string settingKey, string[] expectedResultLines)
     {
-        var pc = ConfigHelper.FromFile(Path.Combine("data", configJsonFileName + ".json"), null, default);
-        IConfig config = pc.Config!;
+        IConfig config = GetConfigLocation(sdkKey, baseUrlOrFileName).FetchConfigCached();
         var setting = config.Settings[settingKey];
         var actualResult = setting.ToString();
         var expectedResult = string.Join(Environment.NewLine, expectedResultLines);
@@ -156,11 +165,10 @@ public class ModelTests
     }
 
     [DataTestMethod]
-    [DataRow("sample_segments_v6", 0, new[] { "User.Email IS ONE OF [<2 hashed values>]" })]
-    public void Segment_ToString(string configJsonFileName, int segmentIndex, string[] expectedResultLines)
+    [DataRow(SegmentsV6SampleSdkKey, TestBaseUrl, 0, new[] { "User.Email IS ONE OF [<2 hashed values>]" })]
+    public void Segment_ToString(string? sdkKey, string baseUrlOrFileName, int segmentIndex, string[] expectedResultLines)
     {
-        var pc = ConfigHelper.FromFile(Path.Combine("data", configJsonFileName + ".json"), null, default);
-        IConfig config = pc.Config!;
+        IConfig config = GetConfigLocation(sdkKey, baseUrlOrFileName).FetchConfigCached();
         var segment = config.Segments[segmentIndex];
         var actualResult = segment.ToString();
         var expectedResult = string.Join(Environment.NewLine, expectedResultLines);

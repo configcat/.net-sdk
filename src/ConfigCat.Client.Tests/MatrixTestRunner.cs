@@ -11,7 +11,7 @@ public class MatrixTestRunner<TDescriptor> : MatrixTestRunnerBase<TDescriptor>
 
     protected override bool AssertValue<T>(string expected, Func<string, T> parse, T actual, string keyName, string? userId)
     {
-        Assert.AreEqual(parse(expected), actual, $"jsonFileName: {DescriptorInstance.SampleJsonFileName} | keyName: {keyName} | userId: {userId}");
+        Assert.AreEqual(parse(expected), actual, $"config: {DescriptorInstance.ConfigLocation.RealLocation} | keyName: {keyName} | userId: {userId}");
         return true;
     }
 }

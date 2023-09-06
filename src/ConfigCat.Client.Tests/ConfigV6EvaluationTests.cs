@@ -14,28 +14,32 @@ public class ConfigV6EvaluationTests
 {
     public class AndOrMatrixTestsDescriptor : IMatrixTestDescriptor
     {
-        public string SampleJsonFileName => "sample_and_or_v6.json";
+        // https://test-app.configcat.com/v2/08d89dea-13b2-406b-8ecf-ee94414208a2/08db465d-5756-49ff-8e53-fb90fd760632/08db4c16-c78b-473c-8b68-ca6723c98bfa/08db465d-a64e-4881-8ed0-62b6c9e68e33
+        public ConfigLocation ConfigLocation => new ConfigLocation.Cdn("configcat-sdk-1/XUbbCFZX_0mOU_uQ_XYGMg/FfwncdJg1kq0lBqxhYC_7g", "https://test-cdn-eu.configcat.com");
         public string MatrixResultFileName => "testmatrix_and_or.csv";
         public static IEnumerable<object?[]> GetTests() => MatrixTestRunner<AndOrMatrixTestsDescriptor>.GetTests();
     }
 
     public class ComparatorMatrixTestsDescriptor : IMatrixTestDescriptor
     {
-        public string SampleJsonFileName => "sample_comparators_v6.json";
+        // https://test-app.configcat.com/v2/08d89dea-13b2-406b-8ecf-ee94414208a2/08db465d-5756-49ff-8e53-fb90fd760632/08db4be6-4a08-4c5c-8c35-30ef3a571a72/08db465d-a64e-4881-8ed0-62b6c9e68e33
+        public ConfigLocation ConfigLocation => new ConfigLocation.Cdn("configcat-sdk-1/XUbbCFZX_0mOU_uQ_XYGMg/Lv2mD9Tgx0Km27nuHjw_FA", "https://test-cdn-eu.configcat.com");
         public string MatrixResultFileName => "testmatrix_comparators_v6.csv";
         public static IEnumerable<object?[]> GetTests() => MatrixTestRunner<ComparatorMatrixTestsDescriptor>.GetTests();
     }
 
     public class FlagDependencyMatrixTestsDescriptor : IMatrixTestDescriptor
     {
-        public string SampleJsonFileName => "sample_flagdependency_v6.json";
+        // https://test-app.configcat.com/v2/08d89dea-13b2-406b-8ecf-ee94414208a2/08db465d-5756-49ff-8e53-fb90fd760632/08db4c12-1ff9-47dc-86ca-1186fe1dd43e/08db465d-a64e-4881-8ed0-62b6c9e68e33
+        public ConfigLocation ConfigLocation => new ConfigLocation.Cdn("configcat-sdk-1/XUbbCFZX_0mOU_uQ_XYGMg/LGO_8DM9OUGpJixrqqqQcA", "https://test-cdn-eu.configcat.com");
         public string MatrixResultFileName => "testmatrix_dependent_flag.csv";
         public static IEnumerable<object?[]> GetTests() => MatrixTestRunner<FlagDependencyMatrixTestsDescriptor>.GetTests();
     }
 
     public class SegmentMatrixTestsDescriptor : IMatrixTestDescriptor
     {
-        public string SampleJsonFileName => "sample_segments_v6.json";
+        // https://test-app.configcat.com/v2/08d89dea-13b2-406b-8ecf-ee94414208a2/08db465d-5756-49ff-8e53-fb90fd760632/08db4c15-8ed0-49d6-8a76-778b50d0bc17/08db465d-a64e-4881-8ed0-62b6c9e68e33
+        public ConfigLocation ConfigLocation => new ConfigLocation.Cdn("configcat-sdk-1/XUbbCFZX_0mOU_uQ_XYGMg/LP0_4hhbQkmVVJcsbO_2Lw", "https://test-cdn-eu.configcat.com");
         public string MatrixResultFileName => "testmatrix_segments.csv";
         public static IEnumerable<object?[]> GetTests() => MatrixTestRunner<SegmentMatrixTestsDescriptor>.GetTests();
     }
@@ -51,7 +55,7 @@ public class ConfigV6EvaluationTests
 
     [DataTestMethod]
     [DynamicData(nameof(AndOrMatrixTestsDescriptor.GetTests), typeof(AndOrMatrixTestsDescriptor), DynamicDataSourceType.Method)]
-    public void AndOrMatrixTests(string jsonFileName, string settingKey, string expectedReturnValue,
+    public void AndOrMatrixTests(string configLocation, string settingKey, string expectedReturnValue,
         string? userId, string? userEmail, string? userCountry, string? userCustomAttributeName, string? userCustomAttributeValue)
     {
         MatrixTestRunner<AndOrMatrixTestsDescriptor>.Default.RunTest(this.configEvaluator, this.logger, settingKey, expectedReturnValue,
@@ -60,7 +64,7 @@ public class ConfigV6EvaluationTests
 
     [DataTestMethod]
     [DynamicData(nameof(ComparatorMatrixTestsDescriptor.GetTests), typeof(ComparatorMatrixTestsDescriptor), DynamicDataSourceType.Method)]
-    public void ComparatorMatrixTests(string jsonFileName, string settingKey, string expectedReturnValue,
+    public void ComparatorMatrixTests(string configLocation, string settingKey, string expectedReturnValue,
         string? userId, string? userEmail, string? userCountry, string? userCustomAttributeName, string? userCustomAttributeValue)
     {
         MatrixTestRunner<ComparatorMatrixTestsDescriptor>.Default.RunTest(this.configEvaluator, this.logger, settingKey, expectedReturnValue,
@@ -69,7 +73,7 @@ public class ConfigV6EvaluationTests
 
     [DataTestMethod]
     [DynamicData(nameof(FlagDependencyMatrixTestsDescriptor.GetTests), typeof(FlagDependencyMatrixTestsDescriptor), DynamicDataSourceType.Method)]
-    public void FlagDependencyMatrixTests(string jsonFileName, string settingKey, string expectedReturnValue,
+    public void FlagDependencyMatrixTests(string configLocation, string settingKey, string expectedReturnValue,
         string? userId, string? userEmail, string? userCountry, string? userCustomAttributeName, string? userCustomAttributeValue)
     {
         MatrixTestRunner<FlagDependencyMatrixTestsDescriptor>.Default.RunTest(this.configEvaluator, this.logger, settingKey, expectedReturnValue,
@@ -78,7 +82,7 @@ public class ConfigV6EvaluationTests
 
     [DataTestMethod]
     [DynamicData(nameof(SegmentMatrixTestsDescriptor.GetTests), typeof(SegmentMatrixTestsDescriptor), DynamicDataSourceType.Method)]
-    public void SegmentMatrixTests(string jsonFileName, string settingKey, string expectedReturnValue,
+    public void SegmentMatrixTests(string configLocation, string settingKey, string expectedReturnValue,
         string? userId, string? userEmail, string? userCountry, string? userCustomAttributeName, string? userCustomAttributeValue)
     {
         MatrixTestRunner<SegmentMatrixTestsDescriptor>.Default.RunTest(this.configEvaluator, this.logger, settingKey, expectedReturnValue,
@@ -88,8 +92,7 @@ public class ConfigV6EvaluationTests
     [TestMethod]
     public void CircularDependencyTest()
     {
-        var configJson = ConfigHelper.GetSampleJson("sample_circulardependency_v6.json");
-        var config = configJson.Deserialize<Config>()!;
+        var config = new ConfigLocation.LocalFile("data", "sample_circulardependency_v6.json").FetchConfig();
 
         var logEvents = new List<(LogLevel Level, LogEventId EventId, FormattableLogMessage Message, Exception? Exception)>();
 
@@ -103,7 +106,7 @@ public class ConfigV6EvaluationTests
         var evaluator = new RolloutEvaluator(loggerWrapper);
 
         const string key = "key1";
-        var evaluationDetails = evaluator.Evaluate<object?>(config.Settings, key, defaultValue: null, user: null, remoteConfig: null, loggerWrapper);
+        var evaluationDetails = evaluator.Evaluate<object?>(config!.Settings, key, defaultValue: null, user: null, remoteConfig: null, loggerWrapper);
 
         Assert.AreEqual(4, logEvents.Count);
 

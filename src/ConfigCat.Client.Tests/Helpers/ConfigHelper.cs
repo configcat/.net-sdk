@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.IO;
 
 namespace ConfigCat.Client.Tests.Helpers;
@@ -15,10 +16,14 @@ internal static class ConfigHelper
         return FromString(File.ReadAllText(configJsonFilePath), httpETag, timeStamp);
     }
 
-    public static string GetSampleJson(string fileName)
+    private static readonly ConcurrentDictionary<ConfigLocation, Lazy<Config>> ConfigCache = new();
+
+    public static Config FetchConfigCached(this ConfigLocation location)
     {
-        using Stream stream = File.OpenRead(Path.Combine("data", fileName));
-        using StreamReader reader = new(stream);
-        return reader.ReadToEnd();
+        // NOTE: ConfigLocation is a record type, that is, has value equality,
+        // which is exactly what we want here w.r.t. the cache key.
+        return ConfigCache
+            .GetOrAdd(location, _ => new Lazy<Config>(() => location.FetchConfig(), isThreadSafe: true))
+            .Value;
     }
 }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using ConfigCat.Client.Evaluation;
+using ConfigCat.Client.Tests.Helpers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ConfigCat.Client.Tests;
@@ -11,7 +12,8 @@ public class BasicConfigEvaluatorTests : ConfigEvaluatorTestsBase<BasicConfigEva
 {
     public class Descriptor : IMatrixTestDescriptor
     {
-        public string SampleJsonFileName => "sample_v5.json";
+        // https://app.configcat.com/08d5a03c-feb7-af1e-a1fa-40b3329f8bed/08d62463-86ec-8fde-f5b5-1c5c426fc830/244cf8b0-f604-11e8-b543-f23c917f9d8d
+        public ConfigLocation ConfigLocation => new ConfigLocation.Cdn("PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A");
 
         public string MatrixResultFileName => "testmatrix.csv";
     }

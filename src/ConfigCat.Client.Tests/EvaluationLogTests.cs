@@ -1,12 +1,10 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using ConfigCat.Client.Configuration;
 using ConfigCat.Client.Evaluation;
-using ConfigCat.Client.Override;
+using ConfigCat.Client.Tests.Helpers;
 using ConfigCat.Client.Utils;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
@@ -26,6 +24,8 @@ namespace ConfigCat.Client.Tests;
 [TestClass]
 public class EvaluationLogTests
 {
+    private static readonly string TestDataRootPath = Path.Combine("data", "evaluationlog");
+
     private static IEnumerable<object?[]> GetSimpleValueTests() => GetTests("simple_value");
 
     [DataTestMethod]
@@ -176,10 +176,9 @@ public class EvaluationLogTests
         RunTest(testSetName, sdkKey, baseUrlOrOverrideFileName, key, defaultValue, userObject, expectedReturnValue, expectedLogFileName);
     }
 
-
     private static IEnumerable<object?[]> GetTests(string testSetName)
     {
-        var filePath = Path.Combine("data", "evaluationlog", testSetName + ".json");
+        var filePath = Path.Combine(TestDataRootPath, testSetName + ".json");
         var fileContent = File.ReadAllText(filePath);
         var testSet = SerializationExtensions.Deserialize<TestSet>(fileContent);
 
@@ -198,8 +197,6 @@ public class EvaluationLogTests
             };
         }
     }
-
-    private static string GetReferencedTestFilePath(string subDirName, string fileName) => Path.Combine("data", "evaluationlog", subDirName, fileName);
 
     private static void RunTest(string testSetName, string? sdkKey, string? baseUrlOrOverrideFileName, string key, string? defaultValue, string? userObject, string? expectedReturnValue, string expectedLogFileName)
     {
@@ -243,7 +240,11 @@ public class EvaluationLogTests
             .Callback(delegate (LogLevel level, LogEventId eventId, ref FormattableLogMessage msg, Exception ex) { logEvents.Add((level, eventId, msg, ex)); });
         var logger = loggerMock.Object.AsWrapper();
 
-        var settings = GetSettings(testSetName, sdkKey, baseUrlOrOverrideFileName);
+        ConfigLocation configLocation = sdkKey is { Length: > 0 }
+            ? new ConfigLocation.Cdn(sdkKey, baseUrlOrOverrideFileName)
+            : new ConfigLocation.LocalFile(TestDataRootPath, "_overrides", baseUrlOrOverrideFileName!);
+
+        var settings = configLocation.FetchConfigCached().Settings;
 
         var evaluator = new RolloutEvaluator(logger);
         var evaluationDetails = evaluator.Evaluate(settings, key, defaultValueParsed, user, remoteConfig: null, logger);
@@ -251,7 +252,7 @@ public class EvaluationLogTests
 
         Assert.AreEqual(expectedReturnValueParsed, actualReturnValue);
 
-        var expectedLogFilePath = GetReferencedTestFilePath(testSetName, expectedLogFileName);
+        var expectedLogFilePath = Path.Combine(TestDataRootPath, testSetName, expectedLogFileName);
         var expectedLogText = string.Join(Environment.NewLine, File.ReadAllLines(expectedLogFilePath));
 
         var actualLogText = string.Join(Environment.NewLine, logEvents
@@ -277,49 +278,6 @@ public class EvaluationLogTests
 
         return $"{levelString} [{eventIdString}] {message.InvariantFormattedMessage}{exceptionString}";
     }
-
-    private static readonly ConcurrentDictionary<string, Lazy<Dictionary<string, Setting>?>> SettingsCache = new();
-
-    private static Dictionary<string, Setting>? GetSettings(string testSetName, string? sdkKey, string? baseUrlOrOverrideFileName)
-    {
-        var key = sdkKey switch
-        {
-            not { Length: > 0 } => "flag-override:" + testSetName + "/" + baseUrlOrOverrideFileName,
-            { } when baseUrlOrOverrideFileName is { Length: > 0 } => sdkKey + "@" + baseUrlOrOverrideFileName,
-            _ => sdkKey
-        };
-
-        return SettingsCache.GetOrAdd(key, _ => new Lazy<Dictionary<string, Setting>?>(() =>
-        {
-            var logger = new ConsoleLogger();
-            if (sdkKey is { Length: > 0 })
-            {
-                var options = new ConfigCatClientOptions() { PollingMode = PollingModes.ManualPoll, Logger = logger };
-                if (baseUrlOrOverrideFileName is { Length: > 0 })
-                {
-                    options.BaseUrl = new Uri(baseUrlOrOverrideFileName);
-                }
-
-                using var configFetcher = new HttpConfigFetcher(options.CreateUri(sdkKey), ConfigCatClient.GetProductVersion(options.PollingMode),
-                    options.Logger!.AsWrapper(), options.HttpClientHandler, options.IsCustomBaseUrl, options.HttpTimeout);
-
-                var fetchResult = configFetcher.Fetch(ProjectConfig.Empty);
-                return fetchResult.Config.Config?.Settings;
-            }
-            else
-            {
-                var overrideFilePath = GetReferencedTestFilePath("_overrides", baseUrlOrOverrideFileName!);
-                var dataSource = new LocalFileDataSource(overrideFilePath, autoReload: false, logger.AsWrapper());
-                return dataSource.GetOverrides();
-            }
-        }, isThreadSafe: true)).Value;
-    }
-
-    [ClassInitialize]
-    public static void ClassInitialize(TestContext _) => SettingsCache.Clear();
-
-    [ClassCleanup]
-    public static void ClassCleanup() => SettingsCache.Clear();
 
 #pragma warning disable IDE1006 // Naming Styles
     public class TestSet

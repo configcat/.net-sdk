@@ -20,6 +20,8 @@
 
   <ItemGroup>
     <Compile Include="..\..\src\ConfigCat.Client.Tests\MatrixTestRunnerBase.cs" Link="MatrixTestRunnerBase.cs" />
+    <Compile Include="..\..\src\ConfigCat.Client.Tests\Helpers\ConfigLocation.cs" Link="ConfigLocation.cs" />
+    <Compile Include="..\..\src\ConfigCat.Client.Tests\Helpers\ConfigLocation.LocalFile.cs" Link="ConfigLocation.LocalFile.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -27,5 +29,5 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-  
+
 </Project>

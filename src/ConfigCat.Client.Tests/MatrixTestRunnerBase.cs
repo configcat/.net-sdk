@@ -7,9 +7,7 @@ using ConfigCat.Client.Tests.Helpers;
 
 #if BENCHMARK_OLD
 using Config = ConfigCat.Client.SettingsWithPreferences;
-#endif
 
-#if BENCHMARK_OLD
 namespace ConfigCat.Client.Benchmarks.Old;
 #elif BENCHMARK_NEW
 namespace ConfigCat.Client.Benchmarks.New;
@@ -21,7 +19,7 @@ namespace ConfigCat.Client.Tests;
 
 public interface IMatrixTestDescriptor
 {
-    public string SampleJsonFileName { get; }
+    public ConfigLocation ConfigLocation { get; }
     public string MatrixResultFileName { get; }
 }
 
@@ -33,12 +31,14 @@ public class MatrixTestRunnerBase<TDescriptor> where TDescriptor : IMatrixTestDe
 
     public MatrixTestRunnerBase()
     {
-        this.config = ConfigHelper.GetSampleJson(DescriptorInstance.SampleJsonFileName).Deserialize<Config>()!.Settings;
+        this.config = DescriptorInstance.ConfigLocation.FetchConfigCached().Settings;
     }
 
     public static IEnumerable<object?[]> GetTests()
     {
         var resultFilePath = Path.Combine("data", DescriptorInstance.MatrixResultFileName);
+        var configLocation = DescriptorInstance.ConfigLocation.ToString();
+
         using var reader = new StreamReader(resultFilePath);
         var header = reader.ReadLine()!;
 
@@ -70,7 +70,7 @@ public class MatrixTestRunnerBase<TDescriptor> where TDescriptor : IMatrixTestDe
             {
                 yield return new[]
                 {
-                    DescriptorInstance.SampleJsonFileName, columns[i], row[i],
+                    configLocation, columns[i], row[i],
                     userId, userEmail, userCountry, userCustomAttributeName, userCustomAttributeValue
                 };
             }

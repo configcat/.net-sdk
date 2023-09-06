@@ -1,4 +1,5 @@
 using System;
+using ConfigCat.Client.Tests.Helpers;
 
 namespace ConfigCat.Client.Benchmarks.New;
 
@@ -6,7 +7,7 @@ public static partial class BenchmarkHelper
 {
     public class BasicMatrixTestsDescriptor : IMatrixTestDescriptor
     {
-        public string SampleJsonFileName => "sample_v5.json";
+        public ConfigLocation ConfigLocation => new ConfigLocation.LocalFile("data", "sample_v5.json");
         public string MatrixResultFileName => "testmatrix.csv";
     }
 

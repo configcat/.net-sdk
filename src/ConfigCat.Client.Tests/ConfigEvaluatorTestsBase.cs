@@ -24,7 +24,7 @@ public abstract class ConfigEvaluatorTestsBase<TDescriptor> : MatrixTestRunner<T
     [TestCategory("MatrixTests")]
     [DataTestMethod]
     [DynamicData(nameof(GetMatrixTests), DynamicDataSourceType.Method)]
-    public void MatrixTests(string jsonFileName, string settingKey, string expectedReturnValue,
+    public void MatrixTests(string configLocation, string settingKey, string expectedReturnValue,
         string? userId, string? userEmail, string? userCountry, string? userCustomAttributeName, string? userCustomAttributeValue)
     {
         RunTest(this.configEvaluator, this.Logger, settingKey, expectedReturnValue, userId, userEmail, userCountry, userCustomAttributeName, userCustomAttributeValue);

@@ -395,7 +395,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
             case Comparator.SensitiveArrayContains:
             case Comparator.SensitiveArrayNotContains:
-                return EvaluateSensitiveArrayContains(userAttributeValue!, condition.StringValue,
+                return EvaluateSensitiveArrayContains(userAttributeValue!, condition.StringListValue,
                     EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, negate: comparator == Comparator.SensitiveArrayNotContains);
 
             default:
@@ -560,9 +560,9 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return before ? number < number2 : number > number2;
     }
 
-    private static bool EvaluateSensitiveArrayContains(string csvText, string? comparisonValue, string configJsonSalt, string contextSalt, bool negate)
+    private static bool EvaluateSensitiveArrayContains(string csvText, string[]? comparisonValues, string configJsonSalt, string contextSalt, bool negate)
     {
-        EnsureComparisonValue(comparisonValue);
+        EnsureComparisonValue(comparisonValues);
 
         int index;
         for (var startIndex = 0; startIndex < csvText.Length; startIndex = index + 1)
@@ -576,9 +576,12 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             var slice = csvText.AsSpan(startIndex, index - startIndex).Trim();
             var hash = HashComparisonValue(slice, configJsonSalt, contextSalt);
 
-            if (hash.Equals(hexString: comparisonValue.AsSpan()))
+            for (var i = 0; i < comparisonValues.Length; i++)
             {
-                return !negate;
+                if (hash.Equals(hexString: EnsureComparisonValue(comparisonValues[i]).AsSpan()))
+                {
+                    return !negate;
+                }
             }
         }
 

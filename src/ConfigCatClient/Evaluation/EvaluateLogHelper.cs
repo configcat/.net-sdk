@@ -92,7 +92,9 @@ internal static class EvaluateLogHelper
             Comparator.SensitiveTextStartsWith or
             Comparator.SensitiveTextNotStartsWith or
             Comparator.SensitiveTextEndsWith or
-            Comparator.SensitiveTextNotEndsWith =>
+            Comparator.SensitiveTextNotEndsWith or
+            Comparator.SensitiveArrayContains or
+            Comparator.SensitiveArrayNotContains =>
                 builder.AppendComparisonCondition(condition.ComparisonAttribute, condition.Comparator, condition.StringListValue, isSensitive: true),
 
             Comparator.DateTimeBefore or
@@ -100,9 +102,7 @@ internal static class EvaluateLogHelper
                 builder.AppendComparisonCondition(condition.ComparisonAttribute, condition.Comparator, condition.DoubleValue, isDateTime: true),
 
             Comparator.SensitiveTextEquals or
-            Comparator.SensitiveTextNotEquals or
-            Comparator.SensitiveArrayContains or
-            Comparator.SensitiveArrayNotContains =>
+            Comparator.SensitiveTextNotEquals =>
                 builder.AppendComparisonCondition(condition.ComparisonAttribute, condition.Comparator, condition.StringValue, isSensitive: true),
 
             _ =>
@@ -318,8 +318,8 @@ internal static class EvaluateLogHelper
             Comparator.SensitiveTextNotStartsWith => "NOT STARTS WITH ANY OF",
             Comparator.SensitiveTextEndsWith => "ENDS WITH ANY OF",
             Comparator.SensitiveTextNotEndsWith => "NOT ENDS WITH ANY OF",
-            Comparator.SensitiveArrayContains => "ARRAY CONTAINS",
-            Comparator.SensitiveArrayNotContains => "ARRAY NOT CONTAINS",
+            Comparator.SensitiveArrayContains => "ARRAY CONTAINS ANY OF",
+            Comparator.SensitiveArrayNotContains => "ARRAY NOT CONTAINS ANY OF",
             _ => InvalidOperatorPlaceholder
         };
     }

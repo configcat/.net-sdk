@@ -36,7 +36,7 @@ INFO [5000] Evaluating 'allinone' for User '{"Identifier":"12345","Email":"joe@e
   - IF User.Date BEFORE '1693497600' (2023-08-31T16:00:00.000Z UTC) => true
     AND User.Date AFTER '1693497600' (2023-08-31T16:00:00.000Z UTC) => false, skipping the remaining AND conditions
     THEN '12' => no match
-  - IF User.Country ARRAY CONTAINS '<hashed value>' => true
-    AND User.Country ARRAY NOT CONTAINS '<hashed value>' => false, skipping the remaining AND conditions
+  - IF User.Country ARRAY CONTAINS ANY OF [<1 hashed value>] => true
+    AND User.Country ARRAY NOT CONTAINS ANY OF [<1 hashed value>] => false, skipping the remaining AND conditions
     THEN '13' => no match
   Returning 'default'.

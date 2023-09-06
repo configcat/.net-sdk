@@ -126,12 +126,12 @@ public enum Comparator : byte
     SensitiveTextNotEndsWith = 25,
 
     /// <summary>
-    /// ARRAY CONTAINS (hashed) - Does the comparison attribute interpreted as a comma-separated list contain the comparison value (where the comparison is performed using the salted SHA256 hashes of the values)?
+    /// ARRAY CONTAINS ANY OF (hashed) - Does the comparison attribute interpreted as a comma-separated list contain any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values)?
     /// </summary>
     SensitiveArrayContains = 26,
 
     /// <summary>
-    /// ARRAY NOT CONTAINS (hashed) - Does the comparison attribute interpreted as a comma-separated list contain the comparison value (where the comparison is performed using the salted SHA256 hashes of the values)?
+    /// ARRAY NOT CONTAINS ANY OF (hashed) - Does the comparison attribute interpreted as a comma-separated list not contain any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values)?
     /// </summary>
     SensitiveArrayNotContains = 27,
 }

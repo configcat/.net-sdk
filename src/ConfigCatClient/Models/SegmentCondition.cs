@@ -26,7 +26,7 @@ public interface ISegmentCondition : ICondition
     SegmentComparator Comparator { get; }
 }
 
-internal sealed class SegmentCondition : ISegmentCondition
+internal sealed class SegmentCondition : Condition, ISegmentCondition
 {
     public const SegmentComparator UnknownComparator = (SegmentComparator)byte.MaxValue;
 

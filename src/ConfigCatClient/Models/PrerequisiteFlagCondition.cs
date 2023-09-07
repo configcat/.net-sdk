@@ -31,7 +31,7 @@ public interface IPrerequisiteFlagCondition : ICondition
     object ComparisonValue { get; }
 }
 
-internal sealed class PrerequisiteFlagCondition : IPrerequisiteFlagCondition
+internal sealed class PrerequisiteFlagCondition : Condition, IPrerequisiteFlagCondition
 {
     public const PrerequisiteFlagComparator UnknownComparator = (PrerequisiteFlagComparator)byte.MaxValue;
 

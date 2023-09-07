@@ -136,7 +136,8 @@ internal static class EvaluateLogHelper
         return result ? builder : builder.Append(", skipping the remaining AND conditions");
     }
 
-    private static IndentedTextBuilder AppendConditions<TCondition>(this IndentedTextBuilder builder, TCondition[] conditions, Func<TCondition, ICondition?> getCondition)
+    private static IndentedTextBuilder AppendConditions<TCondition>(this IndentedTextBuilder builder, TCondition[] conditions)
+        where TCondition : IConditionProvider
     {
         for (var i = 0; i < conditions.Length; i++)
         {
@@ -147,7 +148,7 @@ internal static class EvaluateLogHelper
                 builder.NewLine("AND ");
             }
 
-            _ = getCondition(conditions[i]) switch
+            _ = conditions[i].GetCondition(throwIfInvalid: false) switch
             {
                 ComparisonCondition comparisonCondition => builder.AppendComparisonCondition(comparisonCondition),
                 PrerequisiteFlagCondition prerequisiteFlagCondition => builder.AppendPrerequisiteFlagCondition(prerequisiteFlagCondition),
@@ -229,7 +230,7 @@ internal static class EvaluateLogHelper
         var conditions = targetingRule.Conditions;
 
         return builder.Append("IF ")
-            .AppendConditions(conditions, static condition => condition.GetCondition(throwIfInvalid: false))
+            .AppendConditions(conditions)
             .AppendTargetingRuleThenPart(targetingRule, newLine: true, appendPercentageOptions: true, percentageOptionsAttribute);
     }
 
@@ -287,7 +288,7 @@ internal static class EvaluateLogHelper
 
     public static IndentedTextBuilder AppendSegment(this IndentedTextBuilder builder, Segment segment)
     {
-        return builder.AppendConditions(segment.Conditions, static condition => condition);
+        return builder.AppendConditions(segment.Conditions);
     }
 
     public static string ToDisplayText(this Comparator comparator)

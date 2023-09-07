@@ -96,7 +96,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             var targetingRule = targetingRules[i];
             var conditions = targetingRule.Conditions;
 
-            if (!TryEvaluateConditions(conditions, static condition => condition.GetCondition()!, targetingRule, contextSalt: context.Key, ref context, out var isMatch))
+            if (!TryEvaluateConditions(conditions, targetingRule, contextSalt: context.Key, ref context, out var isMatch))
             {
                 logBuilder?
                     .IncreaseIndent()
@@ -216,8 +216,8 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         throw new InvalidOperationException("Sum of percentage option percentages are less than 100).");
     }
 
-    private bool TryEvaluateConditions<TCondition>(TCondition[] conditions, Func<TCondition, ICondition> getCondition, TargetingRule? targetingRule,
-        string contextSalt, ref EvaluateContext context, out bool result)
+    private bool TryEvaluateConditions<TCondition>(TCondition[] conditions, TargetingRule? targetingRule, string contextSalt, ref EvaluateContext context, out bool result)
+        where TCondition : IConditionProvider
     {
         result = true;
 
@@ -229,7 +229,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
         for (var i = 0; i < conditions.Length; i++)
         {
-            var condition = getCondition(conditions[i]);
+            var condition = conditions[i].GetCondition();
 
             if (logBuilder is not null)
             {
@@ -267,7 +267,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                     break;
 
                 default:
-                    throw new InvalidOperationException("Condition is missing or invalid.");
+                    throw new InvalidOperationException(); // execution should never get here
             }
 
             if (targetingRule is null || conditions.Length > 1)
@@ -682,7 +682,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             .IncreaseIndent()
             .NewLine().Append($"Evaluating segment '{segment.Name}':");
 
-        TryEvaluateConditions(segment.Conditions, static condition => condition, targetingRule: null, contextSalt: segment.Name, ref context, out var segmentResult);
+        TryEvaluateConditions(segment.Conditions, targetingRule: null, contextSalt: segment.Name, ref context, out var segmentResult);
 
         var comparator = condition.Comparator;
         var result = comparator switch

@@ -36,7 +36,7 @@ public interface ITargetingRule
 
 internal sealed class TargetingRule : ITargetingRule
 {
-    private ConditionWrapper[]? conditions;
+    private ConditionContainer[]? conditions;
 
 #if USE_NEWTONSOFT_JSON
     [JsonProperty(PropertyName = "c")]
@@ -44,9 +44,9 @@ internal sealed class TargetingRule : ITargetingRule
     [JsonPropertyName("c")]
 #endif
     [NotNull]
-    public ConditionWrapper[]? Conditions
+    public ConditionContainer[]? Conditions
     {
-        get => this.conditions ?? ArrayUtils.EmptyArray<ConditionWrapper>();
+        get => this.conditions ?? ArrayUtils.EmptyArray<ConditionContainer>();
         set => this.conditions = value;
     }
 

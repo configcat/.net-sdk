@@ -33,7 +33,7 @@ public interface IComparisonCondition : ICondition
     object ComparisonValue { get; }
 }
 
-internal sealed class ComparisonCondition : IComparisonCondition
+internal sealed class ComparisonCondition : Condition, IComparisonCondition
 {
     public const Comparator UnknownComparator = (Comparator)byte.MaxValue;
 

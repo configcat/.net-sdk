@@ -35,7 +35,7 @@ public static partial class BenchmarkHelper
                         {
                             Conditions = new[]
                             {
-                                new ConditionWrapper
+                                new ConditionContainer
                                 {
                                     ComparisonCondition =  new ComparisonCondition()
                                     {
@@ -55,7 +55,7 @@ public static partial class BenchmarkHelper
                         {
                             Conditions = new[]
                             {
-                                new ConditionWrapper
+                                new ConditionContainer
                                 {
                                     ComparisonCondition =  new ComparisonCondition()
                                     {
@@ -71,7 +71,7 @@ public static partial class BenchmarkHelper
                         {
                             Conditions = new[]
                             {
-                                new ConditionWrapper
+                                new ConditionContainer
                                 {
                                     ComparisonCondition =  new ComparisonCondition()
                                     {
@@ -87,7 +87,7 @@ public static partial class BenchmarkHelper
                         {
                             Conditions = new[]
                             {
-                                new ConditionWrapper
+                                new ConditionContainer
                                 {
                                     ComparisonCondition =  new ComparisonCondition()
                                     {
@@ -103,7 +103,7 @@ public static partial class BenchmarkHelper
                         {
                             Conditions = new[]
                             {
-                                new ConditionWrapper
+                                new ConditionContainer
                                 {
                                     ComparisonCondition =  new ComparisonCondition()
                                     {

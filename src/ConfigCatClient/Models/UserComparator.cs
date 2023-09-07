@@ -1,9 +1,9 @@
 namespace ConfigCat.Client;
 
 /// <summary>
-/// Comparison condition operator.
+/// User condition operator.
 /// </summary>
-public enum Comparator : byte
+public enum UserComparator : byte
 {
     /// <summary>
     /// CONTAINS ANY OF - Does the comparison attribute contain any of the comparison values as a substring?

@@ -37,10 +37,10 @@ public static partial class BenchmarkHelper
                             {
                                 new ConditionContainer
                                 {
-                                    ComparisonCondition =  new ComparisonCondition()
+                                    UserCondition =  new UserCondition()
                                     {
                                         ComparisonAttribute = nameof(User.Identifier),
-                                        Comparator = Comparator.SensitiveOneOf,
+                                        Comparator = UserComparator.SensitiveOneOf,
                                         StringListValue = new[]
                                         {
                                             "61418c941ecda8031d08ab86ec821e676fde7b6a59cd16b1e7191503c2f8297d",
@@ -57,10 +57,10 @@ public static partial class BenchmarkHelper
                             {
                                 new ConditionContainer
                                 {
-                                    ComparisonCondition =  new ComparisonCondition()
+                                    UserCondition =  new UserCondition()
                                     {
                                         ComparisonAttribute = nameof(User.Email),
-                                        Comparator = Comparator.Contains,
+                                        Comparator = UserComparator.Contains,
                                         StringListValue = new[] { "@example.com" }
                                     }
                                 },
@@ -73,10 +73,10 @@ public static partial class BenchmarkHelper
                             {
                                 new ConditionContainer
                                 {
-                                    ComparisonCondition =  new ComparisonCondition()
+                                    UserCondition =  new UserCondition()
                                     {
                                         ComparisonAttribute = "Version",
-                                        Comparator = Comparator.SemVerOneOf,
+                                        Comparator = UserComparator.SemVerOneOf,
                                         StringListValue = new[] { "1.0.0", "2.0.0" }
                                     }
                                 },
@@ -89,10 +89,10 @@ public static partial class BenchmarkHelper
                             {
                                 new ConditionContainer
                                 {
-                                    ComparisonCondition =  new ComparisonCondition()
+                                    UserCondition =  new UserCondition()
                                     {
                                         ComparisonAttribute = "Version",
-                                        Comparator = Comparator.SemVerGreaterThan,
+                                        Comparator = UserComparator.SemVerGreaterThan,
                                         StringValue = "3.0.0"
                                     }
                                 },
@@ -105,10 +105,10 @@ public static partial class BenchmarkHelper
                             {
                                 new ConditionContainer
                                 {
-                                    ComparisonCondition =  new ComparisonCondition()
+                                    UserCondition =  new UserCondition()
                                     {
                                         ComparisonAttribute = "Number",
-                                        Comparator = Comparator.NumberGreaterThan,
+                                        Comparator = UserComparator.NumberGreaterThan,
                                         DoubleValue = 3.14
                                     }
                                 },

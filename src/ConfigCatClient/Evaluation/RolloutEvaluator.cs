@@ -251,8 +251,8 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
             switch (condition)
             {
-                case ComparisonCondition comparisonCondition:
-                    conditionResult = EvaluateComparisonCondition(comparisonCondition, contextSalt, ref context, out error);
+                case UserCondition userCondition:
+                    conditionResult = EvaluateUserCondition(userCondition, contextSalt, ref context, out error);
                     newLineBeforeThen = conditions.Length > 1;
                     break;
 
@@ -296,12 +296,12 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return error is null;
     }
 
-    private bool EvaluateComparisonCondition(ComparisonCondition condition, string contextSalt, ref EvaluateContext context, out string? error)
+    private bool EvaluateUserCondition(UserCondition condition, string contextSalt, ref EvaluateContext context, out string? error)
     {
         error = null;
 
         var logBuilder = context.LogBuilder;
-        logBuilder?.AppendComparisonCondition(condition);
+        logBuilder?.AppendUserCondition(condition);
 
         if (context.User is null)
         {
@@ -327,43 +327,43 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         var comparator = condition.Comparator;
         switch (comparator)
         {
-            case Comparator.SensitiveTextEquals:
-            case Comparator.SensitiveTextNotEquals:
+            case UserComparator.SensitiveTextEquals:
+            case UserComparator.SensitiveTextNotEquals:
                 return EvaluateSensitiveTextEquals(userAttributeValue!, condition.StringValue,
-                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, negate: comparator == Comparator.SensitiveTextNotEquals);
+                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, negate: comparator == UserComparator.SensitiveTextNotEquals);
 
-            case Comparator.SensitiveOneOf:
-            case Comparator.SensitiveNotOneOf:
+            case UserComparator.SensitiveOneOf:
+            case UserComparator.SensitiveNotOneOf:
                 return EvaluateSensitiveOneOf(userAttributeValue!, condition.StringListValue,
-                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, negate: comparator == Comparator.SensitiveNotOneOf);
+                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, negate: comparator == UserComparator.SensitiveNotOneOf);
 
-            case Comparator.SensitiveTextStartsWith:
-            case Comparator.SensitiveTextNotStartsWith:
+            case UserComparator.SensitiveTextStartsWith:
+            case UserComparator.SensitiveTextNotStartsWith:
                 return EvaluateSensitiveTextSliceEquals(userAttributeValue!, condition.StringListValue,
-                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, startsWith: true, negate: comparator == Comparator.SensitiveTextNotStartsWith);
+                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, startsWith: true, negate: comparator == UserComparator.SensitiveTextNotStartsWith);
 
-            case Comparator.SensitiveTextEndsWith:
-            case Comparator.SensitiveTextNotEndsWith:
+            case UserComparator.SensitiveTextEndsWith:
+            case UserComparator.SensitiveTextNotEndsWith:
                 return EvaluateSensitiveTextSliceEquals(userAttributeValue!, condition.StringListValue,
-                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, startsWith: false, negate: comparator == Comparator.SensitiveTextNotEndsWith);
+                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, startsWith: false, negate: comparator == UserComparator.SensitiveTextNotEndsWith);
 
-            case Comparator.Contains:
-            case Comparator.NotContains:
-                return EvaluateContains(userAttributeValue!, condition.StringListValue, negate: comparator == Comparator.NotContains);
+            case UserComparator.Contains:
+            case UserComparator.NotContains:
+                return EvaluateContains(userAttributeValue!, condition.StringListValue, negate: comparator == UserComparator.NotContains);
 
-            case Comparator.SemVerOneOf:
-            case Comparator.SemVerNotOneOf:
+            case UserComparator.SemVerOneOf:
+            case UserComparator.SemVerNotOneOf:
                 if (!SemVersion.TryParse(userAttributeValue!.Trim(), out var version, strict: true))
                 {
                     error = HandleInvalidSemVerUserAttribute(condition, context.Key, userAttributeName, userAttributeValue);
                     return false;
                 }
-                return EvaluateSemVerOneOf(version, condition.StringListValue, negate: comparator == Comparator.SemVerNotOneOf);
+                return EvaluateSemVerOneOf(version, condition.StringListValue, negate: comparator == UserComparator.SemVerNotOneOf);
 
-            case Comparator.SemVerLessThan:
-            case Comparator.SemVerLessThanEqual:
-            case Comparator.SemVerGreaterThan:
-            case Comparator.SemVerGreaterThanEqual:
+            case UserComparator.SemVerLessThan:
+            case UserComparator.SemVerLessThanEqual:
+            case UserComparator.SemVerGreaterThan:
+            case UserComparator.SemVerGreaterThanEqual:
                 if (!SemVersion.TryParse(userAttributeValue!.Trim(), out version, strict: true))
                 {
                     error = HandleInvalidSemVerUserAttribute(condition, context.Key, userAttributeName, userAttributeValue);
@@ -371,12 +371,12 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                 }
                 return EvaluateSemVerRelation(version, comparator, condition.StringValue);
 
-            case Comparator.NumberEqual:
-            case Comparator.NumberNotEqual:
-            case Comparator.NumberLessThan:
-            case Comparator.NumberLessThanEqual:
-            case Comparator.NumberGreaterThan:
-            case Comparator.NumberGreaterThanEqual:
+            case UserComparator.NumberEqual:
+            case UserComparator.NumberNotEqual:
+            case UserComparator.NumberLessThan:
+            case UserComparator.NumberLessThanEqual:
+            case UserComparator.NumberGreaterThan:
+            case UserComparator.NumberGreaterThanEqual:
                 if (!double.TryParse(userAttributeValue!.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out var number))
                 {
                     error = HandleInvalidNumberUserAttribute(condition, context.Key, userAttributeName, userAttributeValue);
@@ -384,19 +384,19 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                 }
                 return EvaluateNumberRelation(number, condition.Comparator, condition.DoubleValue);
 
-            case Comparator.DateTimeBefore:
-            case Comparator.DateTimeAfter:
+            case UserComparator.DateTimeBefore:
+            case UserComparator.DateTimeAfter:
                 if (!double.TryParse(userAttributeValue!.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out number))
                 {
                     error = HandleInvalidNumberUserAttribute(condition, context.Key, userAttributeName, userAttributeValue, isDateTime: true);
                     return false;
                 }
-                return EvaluateDateTimeRelation(number, condition.DoubleValue, before: comparator == Comparator.DateTimeBefore);
+                return EvaluateDateTimeRelation(number, condition.DoubleValue, before: comparator == UserComparator.DateTimeBefore);
 
-            case Comparator.SensitiveArrayContains:
-            case Comparator.SensitiveArrayNotContains:
+            case UserComparator.SensitiveArrayContains:
+            case UserComparator.SensitiveArrayNotContains:
                 return EvaluateSensitiveArrayContains(userAttributeValue!, condition.StringListValue,
-                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, negate: comparator == Comparator.SensitiveArrayNotContains);
+                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, negate: comparator == UserComparator.SensitiveArrayNotContains);
 
             default:
                 throw new InvalidOperationException("Comparison operator is invalid.");
@@ -516,7 +516,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return result ^ negate;
     }
 
-    private static bool EvaluateSemVerRelation(SemVersion version, Comparator comparator, string? comparisonValue)
+    private static bool EvaluateSemVerRelation(SemVersion version, UserComparator comparator, string? comparisonValue)
     {
         EnsureComparisonValue(comparisonValue);
 
@@ -529,26 +529,26 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
         return comparator switch
         {
-            Comparator.SemVerLessThan => comparisonResult < 0,
-            Comparator.SemVerLessThanEqual => comparisonResult <= 0,
-            Comparator.SemVerGreaterThan => comparisonResult > 0,
-            Comparator.SemVerGreaterThanEqual => comparisonResult >= 0,
+            UserComparator.SemVerLessThan => comparisonResult < 0,
+            UserComparator.SemVerLessThanEqual => comparisonResult <= 0,
+            UserComparator.SemVerGreaterThan => comparisonResult > 0,
+            UserComparator.SemVerGreaterThanEqual => comparisonResult >= 0,
             _ => throw new ArgumentOutOfRangeException(nameof(comparator), comparator, null)
         };
     }
 
-    private static bool EvaluateNumberRelation(double number, Comparator comparator, double? comparisonValue)
+    private static bool EvaluateNumberRelation(double number, UserComparator comparator, double? comparisonValue)
     {
         var number2 = EnsureComparisonValue(comparisonValue).Value;
 
         return comparator switch
         {
-            Comparator.NumberEqual => number == number2,
-            Comparator.NumberNotEqual => number != number2,
-            Comparator.NumberLessThan => number < number2,
-            Comparator.NumberLessThanEqual => number <= number2,
-            Comparator.NumberGreaterThan => number > number2,
-            Comparator.NumberGreaterThanEqual => number >= number2,
+            UserComparator.NumberEqual => number == number2,
+            UserComparator.NumberNotEqual => number != number2,
+            UserComparator.NumberLessThan => number < number2,
+            UserComparator.NumberLessThanEqual => number <= number2,
+            UserComparator.NumberGreaterThan => number > number2,
+            UserComparator.NumberGreaterThanEqual => number >= number2,
             _ => throw new ArgumentOutOfRangeException(nameof(comparator), comparator, null)
         };
     }
@@ -719,14 +719,14 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return value ?? throw new InvalidOperationException("Comparison value is missing or invalid.");
     }
 
-    private string HandleInvalidSemVerUserAttribute(ComparisonCondition condition, string key, string userAttributeName, string userAttributeValue)
+    private string HandleInvalidSemVerUserAttribute(UserCondition condition, string key, string userAttributeName, string userAttributeValue)
     {
         var reason = $"'{userAttributeValue}' is not a valid semantic version";
         this.logger.UserObjectAttributeIsInvalid(condition.ToString(), key, reason, userAttributeName, condition.Comparator.ToDisplayText());
         return string.Format(CultureInfo.InvariantCulture, InvalidUserAttributeError, userAttributeName, reason);
     }
 
-    private string HandleInvalidNumberUserAttribute(ComparisonCondition condition, string key, string userAttributeName, string userAttributeValue, bool isDateTime = false)
+    private string HandleInvalidNumberUserAttribute(UserCondition condition, string key, string userAttributeName, string userAttributeValue, bool isDateTime = false)
     {
         var reason = isDateTime
             ? $"'{userAttributeValue}' is not a valid Unix timestamp (number of seconds elapsed since Unix epoch)"

@@ -26,7 +26,7 @@ public interface ISegment
     /// <summary>
     /// The list of segment rule conditions (where there is a logical AND relation between the items).
     /// </summary>
-    IReadOnlyList<IComparisonCondition> Conditions { get; }
+    IReadOnlyList<IUserCondition> Conditions { get; }
 }
 
 internal sealed class Segment : ISegment
@@ -40,7 +40,7 @@ internal sealed class Segment : ISegment
 
     string ISegment.Name => Name ?? throw new InvalidOperationException("Segment name is missing.");
 
-    private ComparisonCondition[]? conditions;
+    private UserCondition[]? conditions;
 
 #if USE_NEWTONSOFT_JSON
     [JsonProperty(PropertyName = "r")]
@@ -48,16 +48,16 @@ internal sealed class Segment : ISegment
     [JsonPropertyName("r")]
 #endif
     [NotNull]
-    public ComparisonCondition[]? Conditions
+    public UserCondition[]? Conditions
     {
-        get => this.conditions ?? ArrayUtils.EmptyArray<ComparisonCondition>();
+        get => this.conditions ?? ArrayUtils.EmptyArray<UserCondition>();
         set => this.conditions = value;
     }
 
-    private IReadOnlyList<IComparisonCondition>? conditionsReadOnly;
-    IReadOnlyList<IComparisonCondition> ISegment.Conditions => this.conditionsReadOnly ??= this.conditions is { Length: > 0 }
-        ? new ReadOnlyCollection<IComparisonCondition>(this.conditions)
-        : ArrayUtils.EmptyArray<IComparisonCondition>();
+    private IReadOnlyList<IUserCondition>? conditionsReadOnly;
+    IReadOnlyList<IUserCondition> ISegment.Conditions => this.conditionsReadOnly ??= this.conditions is { Length: > 0 }
+        ? new ReadOnlyCollection<IUserCondition>(this.conditions)
+        : ArrayUtils.EmptyArray<IUserCondition>();
 
     public override string ToString()
     {

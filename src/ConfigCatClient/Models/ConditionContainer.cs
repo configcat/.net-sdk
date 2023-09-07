@@ -18,9 +18,9 @@ internal struct ConditionContainer : IConditionProvider
 #else
     [JsonPropertyName("t")]
 #endif
-    public ComparisonCondition? ComparisonCondition
+    public UserCondition? UserCondition
     {
-        readonly get => this.condition as ComparisonCondition;
+        readonly get => this.condition as UserCondition;
         set => ModelHelper.SetOneOf(ref this.condition, value);
     }
 

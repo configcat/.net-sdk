@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using ConfigCat.Client.Utils;
 using ConfigCat.Client.Evaluation;
@@ -13,9 +12,9 @@ using System.Text.Json.Serialization;
 namespace ConfigCat.Client;
 
 /// <summary>
-/// Comparison condition.
+/// User condition.
 /// </summary>
-public interface IComparisonCondition : ICondition
+public interface IUserCondition : ICondition
 {
     /// <summary>
     /// The User Object attribute that the condition is based on. Can be "User ID", "Email", "Country" or any custom attribute.
@@ -25,17 +24,17 @@ public interface IComparisonCondition : ICondition
     /// <summary>
     /// The operator which defines the relation between the comparison attribute and the comparison value.
     /// </summary>
-    Comparator Comparator { get; }
+    UserComparator Comparator { get; }
 
     /// <summary>
-    /// The value that the attribute is compared to. Can be a value of the following types: <see cref="string"/> (including a semantic version), <see cref="double"/> or <see cref="IReadOnlyList{T}" />, where T is <see cref="string"/>.
+    /// The value that the attribute is compared to. Can be a value of the following types: <see cref="string"/> (including a semantic version), <see cref="double"/> or <see langword="IReadOnlyList{T}" />, where T is <see cref="string"/>.
     /// </summary>
     object ComparisonValue { get; }
 }
 
-internal sealed class ComparisonCondition : Condition, IComparisonCondition
+internal sealed class UserCondition : Condition, IUserCondition
 {
-    public const Comparator UnknownComparator = (Comparator)byte.MaxValue;
+    public const UserComparator UnknownComparator = (UserComparator)byte.MaxValue;
 
 #if USE_NEWTONSOFT_JSON
     [JsonProperty(PropertyName = "a")]
@@ -44,16 +43,16 @@ internal sealed class ComparisonCondition : Condition, IComparisonCondition
 #endif
     public string? ComparisonAttribute { get; set; }
 
-    string IComparisonCondition.ComparisonAttribute => ComparisonAttribute ?? throw new InvalidOperationException("Comparison attribute name is missing.");
+    string IUserCondition.ComparisonAttribute => ComparisonAttribute ?? throw new InvalidOperationException("Comparison attribute name is missing.");
 
-    private Comparator comparator = UnknownComparator;
+    private UserComparator comparator = UnknownComparator;
 
 #if USE_NEWTONSOFT_JSON
     [JsonProperty(PropertyName = "c")]
 #else
     [JsonPropertyName("c")]
 #endif
-    public Comparator Comparator
+    public UserComparator Comparator
     {
         get => this.comparator;
         set => ModelHelper.SetEnum(ref this.comparator, value);
@@ -96,7 +95,7 @@ internal sealed class ComparisonCondition : Condition, IComparisonCondition
 
     private object? comparisonValueReadOnly;
 
-    object IComparisonCondition.ComparisonValue => this.comparisonValueReadOnly ??= GetComparisonValue() is var comparisonValue && comparisonValue is string[] stringListValue
+    object IUserCondition.ComparisonValue => this.comparisonValueReadOnly ??= GetComparisonValue() is var comparisonValue && comparisonValue is string[] stringListValue
         ? (stringListValue.Length > 0 ? new ReadOnlyCollection<string>(stringListValue) : ArrayUtils.EmptyArray<string>())
         : comparisonValue!;
 
@@ -110,7 +109,7 @@ internal sealed class ComparisonCondition : Condition, IComparisonCondition
     public override string ToString()
     {
         return new IndentedTextBuilder()
-            .AppendComparisonCondition(this)
+            .AppendUserCondition(this)
             .ToString();
     }
 }

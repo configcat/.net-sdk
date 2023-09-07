@@ -12,7 +12,7 @@ internal static class EvaluateLogHelper
     public const string InvalidReferencePlaceholder = "<invalid reference>";
     public const string InvalidValuePlaceholder = "<invalid value>";
 
-    private const int StringListMaxLength = 10;
+    internal const int StringListMaxLength = 10;
 
     public static IndentedTextBuilder AppendEvaluationResult(this IndentedTextBuilder builder, bool result)
     {

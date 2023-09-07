@@ -1,0 +1,66 @@
+{
+  "p": {
+    "u": "https://test-cdn-eu.configcat.com",
+    "r": 0,
+    "s": "80xCU/SlDz1lCiWFaxIBjyJeJecWjq46T4eu6GtozkM="
+  },
+  "s": [
+    {
+      "n": "Beta Users",
+      "r": [
+        {
+          "a": "Email",
+          "c": 16,
+          "l": [
+            "9189c42f6035bd1d2df5eda347a4f62926d27c80540a7aa6cc72cc75bc6757ff"
+          ]
+        }
+      ]
+    },
+    {
+      "n": "Developers",
+      "r": [
+        {
+          "a": "Email",
+          "c": 16,
+          "l": [
+            "a7cdf54e74b5527bd2617889ec47f6d29b825ccfc97ff00832886bcb735abded"
+          ]
+        }
+      ]
+    }
+  ],
+  "f": {
+    "developerAndBetaUserSegment": {
+      "t": 0,
+      "r": [
+        {
+          "c": [
+            {
+              "s": {
+                "s": 1,
+                "c": 0
+              }
+            },
+            {
+              "s": {
+                "s": 0,
+                "c": 1
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "b": true
+            },
+            "i": "ddc50638"
+          }
+        }
+      ],
+      "v": {
+        "b": false
+      },
+      "i": "6427f4b8"
+    }
+  }
+}

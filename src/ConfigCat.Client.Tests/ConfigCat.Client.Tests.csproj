@@ -44,4 +44,10 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="data\test_list_truncation.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

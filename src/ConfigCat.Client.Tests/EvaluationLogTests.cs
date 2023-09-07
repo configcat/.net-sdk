@@ -7,7 +7,6 @@ using ConfigCat.Client.Evaluation;
 using ConfigCat.Client.Tests.Helpers;
 using ConfigCat.Client.Utils;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Moq;
 
 #if NET45
 using Newtonsoft.Json;
@@ -198,6 +197,36 @@ public class EvaluationLogTests
         }
     }
 
+    [TestMethod]
+    public void ComparisonValueListTruncation()
+    {
+        var config = new ConfigLocation.LocalFile("data", "test_list_truncation.json").FetchConfig();
+
+        var logEvents = new List<LogEvent>();
+        var logger = LoggingHelper.CreateCapturingLogger(logEvents);
+
+        var evaluator = new RolloutEvaluator(logger);
+        var evaluationDetails = evaluator.Evaluate(config.Settings, "key1", (bool?)null, new User("12"), remoteConfig: null, logger);
+        var actualReturnValue = evaluationDetails.Value;
+
+        Assert.AreEqual(true, actualReturnValue);
+        Assert.AreEqual(1, logEvents.Count);
+
+        var expectedLogLines = new[]
+        {
+            "INFO [5000] Evaluating 'key1' for User '{\"Identifier\":\"12\"}'",
+            "  Evaluating targeting rules and applying the first match if any:",
+            "  - IF User.Identifier CONTAINS ANY OF ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'] => true",
+            "    AND User.Identifier CONTAINS ANY OF ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10' ... <1 more value>] => true",
+            "    AND User.Identifier CONTAINS ANY OF ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10' ... <2 more values>] => true",
+            "    THEN 'True' => MATCH, applying rule",
+            "  Returning 'True'.",
+        };
+
+        var evt = logEvents[0];
+        Assert.AreEqual(string.Join(Environment.NewLine, expectedLogLines), FormatLogEvent(ref evt));
+    }
+
     private static void RunTest(string testSetName, string? sdkKey, string? baseUrlOrOverrideFileName, string key, string? defaultValue, string? userObject, string? expectedReturnValue, string expectedLogFileName)
     {
         var defaultValueParsed = defaultValue?.Deserialize<JsonValue>()!.ToSettingValue(out var settingType).GetValue();
@@ -232,13 +261,8 @@ public class EvaluationLogTests
             user = null;
         }
 
-        var logEvents = new List<(LogLevel Level, LogEventId EventId, FormattableLogMessage Message, Exception? Exception)>();
-
-        var loggerMock = new Mock<IConfigCatLogger>();
-        loggerMock.SetupGet(logger => logger.LogLevel).Returns(LogLevel.Info);
-        loggerMock.Setup(logger => logger.Log(It.IsAny<LogLevel>(), It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()))
-            .Callback(delegate (LogLevel level, LogEventId eventId, ref FormattableLogMessage msg, Exception ex) { logEvents.Add((level, eventId, msg, ex)); });
-        var logger = loggerMock.Object.AsWrapper();
+        var logEvents = new List<LogEvent>();
+        var logger = LoggingHelper.CreateCapturingLogger(logEvents);
 
         ConfigLocation configLocation = sdkKey is { Length: > 0 }
             ? new ConfigLocation.Cdn(sdkKey, baseUrlOrOverrideFileName)
@@ -255,28 +279,27 @@ public class EvaluationLogTests
         var expectedLogFilePath = Path.Combine(TestDataRootPath, testSetName, expectedLogFileName);
         var expectedLogText = string.Join(Environment.NewLine, File.ReadAllLines(expectedLogFilePath));
 
-        var actualLogText = string.Join(Environment.NewLine, logEvents
-            .Select(evt => FormatLogEvent(evt.Level, evt.EventId, ref evt.Message, evt.Exception)));
+        var actualLogText = string.Join(Environment.NewLine, logEvents.Select(evt => FormatLogEvent(ref evt)));
 
         Assert.AreEqual(expectedLogText, actualLogText);
     }
 
-    private static string FormatLogEvent(LogLevel level, LogEventId eventId, ref FormattableLogMessage message, Exception? exception)
+    private static string FormatLogEvent(ref LogEvent evt)
     {
-        var levelString = level switch
+        var levelString = evt.Level switch
         {
             LogLevel.Debug => "DEBUG",
             LogLevel.Info => "INFO",
             LogLevel.Warning => "WARNING",
             LogLevel.Error => "ERROR",
-            _ => level.ToString().ToUpperInvariant().PadRight(5)
+            _ => evt.Level.ToString().ToUpperInvariant().PadRight(5)
         };
 
-        var eventIdString = eventId.Id.ToString(CultureInfo.InvariantCulture);
+        var eventIdString = evt.EventId.Id.ToString(CultureInfo.InvariantCulture);
 
-        var exceptionString = exception is null ? string.Empty : Environment.NewLine + exception;
+        var exceptionString = evt.Exception is null ? string.Empty : Environment.NewLine + evt.Exception;
 
-        return $"{levelString} [{eventIdString}] {message.InvariantFormattedMessage}{exceptionString}";
+        return $"{levelString} [{eventIdString}] {evt.Message.InvariantFormattedMessage}{exceptionString}";
     }
 
 #pragma warning disable IDE1006 // Naming Styles

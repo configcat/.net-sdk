@@ -1,0 +1,44 @@
+{
+  "p": {
+    "u": "https://test-cdn-eu.configcat.com",
+    "r": 0,
+    "s": "TsTuRHo\u002BMHs8h8j16HQY83sooJsLg34Ir5KIVOletFU="
+  },
+  "f": {
+    "mainStringFlag": {
+      "t": 1,
+      "v": {
+        "s": "private"
+      },
+      "i": "24c96275"
+    },
+    "stringDependsOnInt": {
+      "t": 1,
+      "r": [
+        {
+          "c": [
+            {
+              "d": {
+                "f": "mainIntFlag",
+                "c": 0,
+                "v": {
+                  "i": 42
+                }
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "Dog"
+            },
+            "i": "12531eec"
+          }
+        }
+      ],
+      "v": {
+        "s": "Cat"
+      },
+      "i": "e227d926"
+    }
+  }
+}

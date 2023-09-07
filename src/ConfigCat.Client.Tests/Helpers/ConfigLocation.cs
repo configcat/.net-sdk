@@ -8,7 +8,7 @@ public abstract partial record class ConfigLocation
 {
     private ConfigLocation() { }
 
-    public abstract string RealLocation { get; }
+    public abstract string GetRealLocation();
 
     internal abstract Config FetchConfig();
 }

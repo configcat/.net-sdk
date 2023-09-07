@@ -12,13 +12,11 @@ public partial record class ConfigLocation
         public string SdkKey { get; }
         public string? BaseUrl { get; }
 
-        public override string RealLocation
+        public override string GetRealLocation()
         {
-            get
-            {
-                var options = new ConfigCatClientOptions { BaseUrl = BaseUrl is not null ? new Uri(BaseUrl) : ConfigCatClientOptions.BaseUrlEu };
-                return options.CreateUri(SdkKey).ToString();
-            }
+            var options = new ConfigCatClientOptions();
+            ConfigureBaseUrl(options);
+            return options.CreateUri(SdkKey).ToString();
         }
 
         internal override Config FetchConfig()
@@ -27,8 +25,8 @@ public partial record class ConfigLocation
             {
                 PollingMode = PollingModes.ManualPoll,
                 Logger = new ConsoleLogger(),
-                BaseUrl = BaseUrl is not null ? new Uri(BaseUrl) : ConfigCatClientOptions.BaseUrlEu
             };
+            ConfigureBaseUrl(options);
 
             using var configFetcher = new HttpConfigFetcher(
                 options.CreateUri(SdkKey),
@@ -42,6 +40,11 @@ public partial record class ConfigLocation
             return fetchResult.IsSuccess
                 ? fetchResult.Config.Config!
                 : throw new InvalidOperationException("Could not fetch config from CDN: " + fetchResult.ErrorMessage);
+        }
+
+        internal void ConfigureBaseUrl(ConfigCatClientOptions options)
+        {
+            options.BaseUrl = BaseUrl is not null ? new Uri(BaseUrl) : ConfigCatClientOptions.BaseUrlEu;
         }
     }
 }

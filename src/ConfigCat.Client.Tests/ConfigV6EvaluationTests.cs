@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using ConfigCat.Client.Configuration;
 using ConfigCat.Client.Evaluation;
 using ConfigCat.Client.Tests.Helpers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Moq;
 
 namespace ConfigCat.Client.Tests;
 
@@ -92,21 +94,15 @@ public class ConfigV6EvaluationTests
     [TestMethod]
     public void CircularDependencyTest()
     {
-        var config = new ConfigLocation.LocalFile("data", "sample_circulardependency_v6.json").FetchConfig();
+        var config = new ConfigLocation.LocalFile("data", "test_circulardependency_v6.json").FetchConfig();
 
-        var logEvents = new List<(LogLevel Level, LogEventId EventId, FormattableLogMessage Message, Exception? Exception)>();
+        var logEvents = new List<LogEvent>();
+        var logger = LoggingHelper.CreateCapturingLogger(logEvents);
 
-        var loggerMock = new Mock<IConfigCatLogger>();
-        loggerMock.SetupGet(logger => logger.LogLevel).Returns(LogLevel.Info);
-        loggerMock.Setup(logger => logger.Log(It.IsAny<LogLevel>(), It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()))
-            .Callback(delegate (LogLevel level, LogEventId eventId, ref FormattableLogMessage msg, Exception ex) { logEvents.Add((level, eventId, msg, ex)); });
-
-        var loggerWrapper = loggerMock.Object.AsWrapper();
-
-        var evaluator = new RolloutEvaluator(loggerWrapper);
+        var evaluator = new RolloutEvaluator(logger);
 
         const string key = "key1";
-        var evaluationDetails = evaluator.Evaluate<object?>(config!.Settings, key, defaultValue: null, user: null, remoteConfig: null, loggerWrapper);
+        var evaluationDetails = evaluator.Evaluate<object?>(config!.Settings, key, defaultValue: null, user: null, remoteConfig: null, logger);
 
         Assert.AreEqual(4, logEvents.Count);
 
@@ -138,7 +134,77 @@ public class ConfigV6EvaluationTests
         StringAssert.Matches((string?)evaluateLogEvent.Message.ArgValues[0], new Regex(
             "THEN 'key3-prereq1' => " + Regex.Escape(RolloutEvaluator.CircularDependencyError) + Environment.NewLine
             + @"\s+" + Regex.Escape(RolloutEvaluator.TargetingRuleIgnoredMessage)));
+    }
 
-        var inv = loggerMock.Invocations[0];
+    [DataTestMethod]
+    [DataRow("stringDependsOnString", "1", "john@sensitivecompany.com", null, "Dog")]
+    [DataRow("stringDependsOnString", "1", "john@sensitivecompany.com", OverrideBehaviour.RemoteOverLocal, "Dog")]
+    [DataRow("stringDependsOnString", "1", "john@sensitivecompany.com", OverrideBehaviour.LocalOverRemote, "Dog")]
+    [DataRow("stringDependsOnString", "1", "john@sensitivecompany.com", OverrideBehaviour.LocalOnly, null)]
+    [DataRow("stringDependsOnString", "2", "john@notsensitivecompany.com", null, "Cat")]
+    [DataRow("stringDependsOnString", "2", "john@notsensitivecompany.com", OverrideBehaviour.RemoteOverLocal, "Cat")]
+    [DataRow("stringDependsOnString", "2", "john@notsensitivecompany.com", OverrideBehaviour.LocalOverRemote, "Dog")]
+    [DataRow("stringDependsOnString", "2", "john@notsensitivecompany.com", OverrideBehaviour.LocalOnly, null)]
+    [DataRow("stringDependsOnInt", "1", "john@sensitivecompany.com", null, "Dog")]
+    [DataRow("stringDependsOnInt", "1", "john@sensitivecompany.com", OverrideBehaviour.RemoteOverLocal, "Dog")]
+    [DataRow("stringDependsOnInt", "1", "john@sensitivecompany.com", OverrideBehaviour.LocalOverRemote, "Cat")]
+    [DataRow("stringDependsOnInt", "1", "john@sensitivecompany.com", OverrideBehaviour.LocalOnly, null)]
+    [DataRow("stringDependsOnInt", "2", "john@notsensitivecompany.com", null, "Cat")]
+    [DataRow("stringDependsOnInt", "2", "john@notsensitivecompany.com", OverrideBehaviour.RemoteOverLocal, "Cat")]
+    [DataRow("stringDependsOnInt", "2", "john@notsensitivecompany.com", OverrideBehaviour.LocalOverRemote, "Dog")]
+    [DataRow("stringDependsOnInt", "2", "john@notsensitivecompany.com", OverrideBehaviour.LocalOnly, null)]
+    public async Task PrerequisiteFlagOverrideTest(string key, string userId, string email, OverrideBehaviour? overrideBehaviour, object expectedValue)
+    {
+        var cdnLocation = (ConfigLocation.Cdn)new FlagDependencyMatrixTestsDescriptor().ConfigLocation;
+
+        var options = new ConfigCatClientOptions
+        {
+            // The flag override alters the definition of the following flags:
+            // * 'mainStringFlag': to check the case where a prerequisite flag is overridden (dependent flag: 'stringDependsOnString')
+            // * 'stringDependsOnInt': to check the case where a dependent flag is overridden (prerequisite flag: 'mainIntFlag')
+            FlagOverrides = overrideBehaviour is not null
+                ? FlagOverrides.LocalFile(Path.Combine("data", "test_override_flagdependency_v6.json"), autoReload: false, overrideBehaviour.Value)
+                : null,
+            PollingMode = PollingModes.ManualPoll,
+        };
+        cdnLocation.ConfigureBaseUrl(options);
+
+        using var client = new ConfigCatClient(cdnLocation.SdkKey, options);
+        await client.ForceRefreshAsync();
+        var actualValue = await client.GetValueAsync(key, (object?)null, new User(userId) { Email = email });
+
+        Assert.AreEqual(expectedValue, actualValue);
+    }
+
+    [DataTestMethod]
+    [DataRow("developerAndBetaUserSegment", "1", "john@example.com", null, false)]
+    [DataRow("developerAndBetaUserSegment", "1", "john@example.com", OverrideBehaviour.RemoteOverLocal, false)]
+    [DataRow("developerAndBetaUserSegment", "1", "john@example.com", OverrideBehaviour.LocalOverRemote, true)]
+    [DataRow("developerAndBetaUserSegment", "1", "john@example.com", OverrideBehaviour.LocalOnly, true)]
+    [DataRow("notDeveloperAndNotBetaUserSegment", "2", "kate@example.com", null, true)]
+    [DataRow("notDeveloperAndNotBetaUserSegment", "2", "kate@example.com", OverrideBehaviour.RemoteOverLocal, true)]
+    [DataRow("notDeveloperAndNotBetaUserSegment", "2", "kate@example.com", OverrideBehaviour.LocalOverRemote, true)]
+    [DataRow("notDeveloperAndNotBetaUserSegment", "2", "kate@example.com", OverrideBehaviour.LocalOnly, null)]
+    public async Task ConfigSaltAndSegmentsOverrideTest(string key, string userId, string email, OverrideBehaviour? overrideBehaviour, object expectedValue)
+    {
+        var cdnLocation = (ConfigLocation.Cdn)new SegmentMatrixTestsDescriptor().ConfigLocation;
+
+        var options = new ConfigCatClientOptions
+        {
+            // The flag override uses a different config json salt than the downloaded one and overrides the following segments:
+            // * 'Beta Users': User.Email IS ONE OF ['jane@example.com']
+            // * 'Developers': User.Email IS ONE OF ['john@example.com']
+            FlagOverrides = overrideBehaviour is not null
+                ? FlagOverrides.LocalFile(Path.Combine("data", "test_override_segments_v6.json"), autoReload: false, overrideBehaviour.Value)
+                : null,
+            PollingMode = PollingModes.ManualPoll,
+        };
+        cdnLocation.ConfigureBaseUrl(options);
+
+        using var client = new ConfigCatClient(cdnLocation.SdkKey, options);
+        await client.ForceRefreshAsync();
+        var actualValue = await client.GetValueAsync(key, (object?)null, new User(userId) { Email = email });
+
+        Assert.AreEqual(expectedValue, actualValue);
     }
 }

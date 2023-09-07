@@ -15,7 +15,7 @@ public partial record class ConfigLocation
 
         public string FilePath { get; }
 
-        public override string RealLocation => FilePath;
+        public override string GetRealLocation() => FilePath;
 
         internal override Config FetchConfig()
         {

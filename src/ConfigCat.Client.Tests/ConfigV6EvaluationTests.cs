@@ -32,7 +32,7 @@ public class ConfigV6EvaluationTests
     {
         // https://test-app.configcat.com/v2/08d89dea-13b2-406b-8ecf-ee94414208a2/08db465d-5756-49ff-8e53-fb90fd760632/08db4c12-1ff9-47dc-86ca-1186fe1dd43e/08db465d-a64e-4881-8ed0-62b6c9e68e33
         public ConfigLocation ConfigLocation => new ConfigLocation.Cdn("configcat-sdk-1/XUbbCFZX_0mOU_uQ_XYGMg/LGO_8DM9OUGpJixrqqqQcA", "https://test-cdn-eu.configcat.com");
-        public string MatrixResultFileName => "testmatrix_dependent_flag.csv";
+        public string MatrixResultFileName => "testmatrix_prerequisite_flag.csv";
         public static IEnumerable<object?[]> GetTests() => MatrixTestRunner<FlagDependencyMatrixTestsDescriptor>.GetTests();
     }
 

@@ -131,10 +131,10 @@ internal static partial class LoggerExtensions
         $"Cannot evaluate condition ({condition}) for setting '{key}' (the User.{attributeName} attribute is missing). You should set the User.{attributeName} attribute in order to make targeting work properly. Read more: https://configcat.com/docs/advanced/user-object/",
         "CONDITION", "KEY", "ATTRIBUTE_NAME", "ATTRIBUTE_NAME");
 
-    public static FormattableLogMessage UserObjectAttributeIsInvalid(this LoggerWrapper logger, string condition, string key, string reason, string attributeName, string @operator) => logger.LogInterpolated(
+    public static FormattableLogMessage UserObjectAttributeIsInvalid(this LoggerWrapper logger, string condition, string key, string reason, string attributeName) => logger.LogInterpolated(
         LogLevel.Warning, 3004,
-        $"Cannot evaluate condition ({condition}) for setting '{key}' ({reason}). Please check the User.{attributeName} attribute and make sure that its value corresponds to the {@operator} operator.",
-        "CONDITION", "KEY", "REASON", "ATTRIBUTE_NAME", "OPERATOR");
+        $"Cannot evaluate condition ({condition}) for setting '{key}' ({reason}). Please check the User.{attributeName} attribute and make sure that its value corresponds to the comparison operator.",
+        "CONDITION", "KEY", "REASON", "ATTRIBUTE_NAME");
 
     public static FormattableLogMessage CircularDependencyDetected(this LoggerWrapper logger, string condition, string key, string dependencyCycle) => logger.LogInterpolated(
         LogLevel.Warning, 3005,

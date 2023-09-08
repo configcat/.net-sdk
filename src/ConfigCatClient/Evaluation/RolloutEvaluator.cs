@@ -722,7 +722,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
     private string HandleInvalidSemVerUserAttribute(UserCondition condition, string key, string userAttributeName, string userAttributeValue)
     {
         var reason = $"'{userAttributeValue}' is not a valid semantic version";
-        this.logger.UserObjectAttributeIsInvalid(condition.ToString(), key, reason, userAttributeName, condition.Comparator.ToDisplayText());
+        this.logger.UserObjectAttributeIsInvalid(condition.ToString(), key, reason, userAttributeName);
         return string.Format(CultureInfo.InvariantCulture, InvalidUserAttributeError, userAttributeName, reason);
     }
 
@@ -731,7 +731,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         var reason = isDateTime
             ? $"'{userAttributeValue}' is not a valid Unix timestamp (number of seconds elapsed since Unix epoch)"
             : $"'{userAttributeValue}' is not a valid decimal number";
-        this.logger.UserObjectAttributeIsInvalid(condition.ToString(), key, reason, userAttributeName, condition.Comparator.ToDisplayText());
+        this.logger.UserObjectAttributeIsInvalid(condition.ToString(), key, reason, userAttributeName);
         return string.Format(CultureInfo.InvariantCulture, InvalidUserAttributeError, userAttributeName, reason);
     }
 }

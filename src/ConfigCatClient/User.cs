@@ -1,4 +1,8 @@
+using System;
 using System.Collections.Generic;
+using System.Globalization;
+using ConfigCat.Client.Utils;
+using System.Linq;
 
 #if USE_NEWTONSOFT_JSON
 using Newtonsoft.Json;
@@ -13,6 +17,47 @@ namespace ConfigCat.Client;
 /// </summary>
 public class User
 {
+    /// <summary>
+    /// Converts the specified <see cref="DateTimeOffset"/> value to the format expected by datetime comparison operators (BEFORE/AFTER).
+    /// </summary>
+    /// <param name="dateTime">The <see cref="DateTimeOffset"/> value to convert.</param>
+    /// <returns>The User Object attribute value in the expected format.</returns>
+    public static string AttributeValueFrom(DateTimeOffset dateTime)
+    {
+        var unixTimeSeconds = DateTimeUtils.ToUnixTimeMilliseconds(dateTime.UtcDateTime) / 1000.0;
+        return unixTimeSeconds.ToString("0.###", CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>
+    /// Converts the specified <see cref="double"/> value to the format expected by number comparison operators.
+    /// </summary>
+    /// <param name="number">The <see cref="double"/> value to convert.</param>
+    /// <returns>The User Object attribute value in the expected format.</returns>
+    public static string AttributeValueFrom(double number)
+    {
+        return number.ToString("g", CultureInfo.InvariantCulture); // format "g" allows scientific notation as well
+    }
+
+    /// <summary>
+    /// Converts the specified <see cref="string"/> items to the format expected by array comparison operators (ARRAY CONTAINS ANY OF/ARRAY NOT CONTAINS ANY OF).
+    /// </summary>
+    /// <param name="items">The <see cref="string"/> items to convert.</param>
+    /// <returns>The User Object attribute value in the expected format.</returns>
+    public static string AttributeValueFrom(params string[] items)
+    {
+        return AttributeValueFrom(items.AsEnumerable());
+    }
+
+    /// <summary>
+    /// Converts the specified <see cref="string"/> items to the format expected by array comparison operators (ARRAY CONTAINS ANY OF/ARRAY NOT CONTAINS ANY OF).
+    /// </summary>
+    /// <param name="items">The <see cref="string"/> items to convert.</param>
+    /// <returns>The User Object attribute value in the expected format.</returns>
+    public static string AttributeValueFrom(IEnumerable<string> items)
+    {
+        return (items ?? throw new ArgumentNullException("items")).Serialize();
+    }
+
     internal const string DefaultIdentifierValue = "";
 
     /// <summary>

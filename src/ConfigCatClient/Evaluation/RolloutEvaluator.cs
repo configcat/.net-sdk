@@ -355,7 +355,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             case UserComparator.SemVerNotOneOf:
                 if (!SemVersion.TryParse(userAttributeValue!.Trim(), out var version, strict: true))
                 {
-                    error = HandleInvalidSemVerUserAttribute(condition, context.Key, userAttributeName, userAttributeValue);
+                    error = HandleInvalidUserAttribute(condition, context.Key, userAttributeName, $"'{userAttributeValue}' is not a valid semantic version");
                     return false;
                 }
                 return EvaluateSemVerOneOf(version, condition.StringListValue, negate: comparator == UserComparator.SemVerNotOneOf);
@@ -366,7 +366,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             case UserComparator.SemVerGreaterThanEqual:
                 if (!SemVersion.TryParse(userAttributeValue!.Trim(), out version, strict: true))
                 {
-                    error = HandleInvalidSemVerUserAttribute(condition, context.Key, userAttributeName, userAttributeValue);
+                    error = HandleInvalidUserAttribute(condition, context.Key, userAttributeName, $"'{userAttributeValue}' is not a valid semantic version");
                     return false;
                 }
                 return EvaluateSemVerRelation(version, comparator, condition.StringValue);
@@ -379,7 +379,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             case UserComparator.NumberGreaterThanEqual:
                 if (!double.TryParse(userAttributeValue!.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out var number))
                 {
-                    error = HandleInvalidNumberUserAttribute(condition, context.Key, userAttributeName, userAttributeValue);
+                    error = HandleInvalidUserAttribute(condition, context.Key, userAttributeName, $"'{userAttributeValue}' is not a valid decimal number");
                     return false;
                 }
                 return EvaluateNumberRelation(number, condition.Comparator, condition.DoubleValue);
@@ -388,14 +388,24 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             case UserComparator.DateTimeAfter:
                 if (!double.TryParse(userAttributeValue!.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out number))
                 {
-                    error = HandleInvalidNumberUserAttribute(condition, context.Key, userAttributeName, userAttributeValue, isDateTime: true);
+                    error = HandleInvalidUserAttribute(condition, context.Key, userAttributeName, $"'{userAttributeValue}' is not a valid Unix timestamp (number of seconds elapsed since Unix epoch)");
                     return false;
                 }
                 return EvaluateDateTimeRelation(number, condition.DoubleValue, before: comparator == UserComparator.DateTimeBefore);
 
             case UserComparator.SensitiveArrayContains:
             case UserComparator.SensitiveArrayNotContains:
-                return EvaluateSensitiveArrayContains(userAttributeValue!, condition.StringListValue,
+                string[]? array;
+                try { array = userAttributeValue!.Deserialize<string[]>(); }
+                catch { array = null; }
+
+                if (array is null)
+                {
+                    error = HandleInvalidUserAttribute(condition, context.Key, userAttributeName, $"'{userAttributeValue}' is not a valid JSON string array");
+                    return false;
+                }
+
+                return EvaluateSensitiveArrayContains(array, condition.StringListValue,
                     EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, negate: comparator == UserComparator.SensitiveArrayNotContains);
 
             default:
@@ -560,25 +570,17 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return before ? number < number2 : number > number2;
     }
 
-    private static bool EvaluateSensitiveArrayContains(string csvText, string[]? comparisonValues, string configJsonSalt, string contextSalt, bool negate)
+    private static bool EvaluateSensitiveArrayContains(string[] array, string[]? comparisonValues, string configJsonSalt, string contextSalt, bool negate)
     {
         EnsureComparisonValue(comparisonValues);
 
-        int index;
-        for (var startIndex = 0; startIndex < csvText.Length; startIndex = index + 1)
+        for (var i = 0; i < array.Length; i++)
         {
-            index = csvText.IndexOf(',', startIndex);
-            if (index < 0)
-            {
-                index = csvText.Length;
-            }
+            var hash = HashComparisonValue(array[i].AsSpan(), configJsonSalt, contextSalt);
 
-            var slice = csvText.AsSpan(startIndex, index - startIndex).Trim();
-            var hash = HashComparisonValue(slice, configJsonSalt, contextSalt);
-
-            for (var i = 0; i < comparisonValues.Length; i++)
+            for (var j = 0; j < comparisonValues.Length; j++)
             {
-                if (hash.Equals(hexString: EnsureComparisonValue(comparisonValues[i]).AsSpan()))
+                if (hash.Equals(hexString: EnsureComparisonValue(comparisonValues[j]).AsSpan()))
                 {
                     return !negate;
                 }
@@ -719,18 +721,8 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return value ?? throw new InvalidOperationException("Comparison value is missing or invalid.");
     }
 
-    private string HandleInvalidSemVerUserAttribute(UserCondition condition, string key, string userAttributeName, string userAttributeValue)
+    private string HandleInvalidUserAttribute(UserCondition condition, string key, string userAttributeName, string reason)
     {
-        var reason = $"'{userAttributeValue}' is not a valid semantic version";
-        this.logger.UserObjectAttributeIsInvalid(condition.ToString(), key, reason, userAttributeName);
-        return string.Format(CultureInfo.InvariantCulture, InvalidUserAttributeError, userAttributeName, reason);
-    }
-
-    private string HandleInvalidNumberUserAttribute(UserCondition condition, string key, string userAttributeName, string userAttributeValue, bool isDateTime = false)
-    {
-        var reason = isDateTime
-            ? $"'{userAttributeValue}' is not a valid Unix timestamp (number of seconds elapsed since Unix epoch)"
-            : $"'{userAttributeValue}' is not a valid decimal number";
         this.logger.UserObjectAttributeIsInvalid(condition.ToString(), key, reason, userAttributeName);
         return string.Format(CultureInfo.InvariantCulture, InvalidUserAttributeError, userAttributeName, reason);
     }

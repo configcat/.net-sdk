@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Globalization;
 
 namespace ConfigCat.Client.Utils;
@@ -7,6 +8,9 @@ internal static class DateTimeUtils
 {
     public static long ToUnixTimeMilliseconds(this DateTime dateTime)
     {
+        // NOTE: Internally we should always work with UTC datetime values (as DateTimeKind.Unspecified can lead to incorrect results).
+        Debug.Assert(dateTime.Kind == DateTimeKind.Utc, "Non-UTC datetime encountered.");
+
 #if !NET45
         return new DateTimeOffset(dateTime).ToUnixTimeMilliseconds();
 #else

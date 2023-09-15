@@ -1,4 +1,5 @@
-using System.Collections.Generic;
+using System;
+using System.Globalization;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ConfigCat.Client.Tests;
@@ -123,5 +124,39 @@ public class UserTests
 
         Assert.AreEqual(expectedValue, user.Identifier);
         Assert.AreEqual(expectedValue, user.GetAllAttributes()[nameof(User.Identifier)]);
+    }
+
+
+    [DataTestMethod]
+    [DataRow("datetime", "2023-09-19T11:01:35.0000000+00:00", "1695121295")]
+    [DataRow("datetime", "2023-09-19T13:01:35.0000000+02:00", "1695121295")]
+    [DataRow("datetime", "2023-09-19T11:01:35.0510886+00:00", "1695121295.051")]
+    [DataRow("datetime", "2023-09-19T13:01:35.0510886+02:00", "1695121295.051")]
+    [DataRow("number", "3", "3")]
+    [DataRow("number", "3.14", "3.14")]
+    [DataRow("number", "-1.23e-100", "-1.23e-100")]
+    [DataRow("stringlist", "a,,b,c", "[\"a\",\"\",\"b\",\"c\"]")]
+    public void HelperMethodsShouldWork(string type, string value, string expectedAttributeValue)
+    {
+        string actualAttributeValue;
+        switch (type)
+        {
+            case "datetime":
+                var dateTimeOffset = DateTimeOffset.ParseExact(value, "o", CultureInfo.InvariantCulture);
+                actualAttributeValue = User.AttributeValueFrom(dateTimeOffset);
+                break;
+            case "number":
+                var number = double.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+                actualAttributeValue = User.AttributeValueFrom(number);
+                break;
+            case "stringlist":
+                var items = value.Split(',');
+                actualAttributeValue = User.AttributeValueFrom(items);
+                break;
+            default:
+                throw new InvalidOperationException();
+        }
+
+        Assert.AreEqual(expectedAttributeValue, actualAttributeValue);
     }
 }

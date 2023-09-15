@@ -14,6 +14,7 @@ internal sealed class ProjectConfig
     public ProjectConfig(string? configJson, Config? config, DateTime timeStamp, string? httpETag)
     {
         Debug.Assert(!(configJson is null ^ config is null), $"{nameof(configJson)} and {nameof(config)} must be both null or both not null.");
+        Debug.Assert(timeStamp.Kind == DateTimeKind.Utc, "Timestamp must be a UTC datetime.");
 
         ConfigJson = configJson;
         Config = config;

@@ -12,47 +12,125 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace ConfigCat.Client.Tests;
 
 [TestClass]
-public class ConfigV6EvaluationTests
+public class ConfigV6EvaluationTests : EvaluationTestsBase
 {
+    public class BasicTestsDescriptor : IMatrixTestDescriptor
+    {
+        // https://app.configcat.com/v2/e7a75611-4256-49a5-9320-ce158755e3ba/08d5a03c-feb7-af1e-a1fa-40b3329f8bed/08dbc4dc-1927-4d6b-8fb9-b1472564e2d3/244cf8b0-f604-11e8-b543-f23c917f9d8d
+        public ConfigLocation ConfigLocation => new ConfigLocation.Cdn("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/AG6C1ngVb0CvM07un6JisQ");
+        public string MatrixResultFileName => "testmatrix.csv";
+        public static IEnumerable<object?[]> GetTests() => MatrixTestRunner<BasicTestsDescriptor>.GetTests();
+    }
+
+    public class NumericTestsDescriptor : IMatrixTestDescriptor
+    {
+        // https://app.configcat.com/v2/e7a75611-4256-49a5-9320-ce158755e3ba/08d5a03c-feb7-af1e-a1fa-40b3329f8bed/08dbc4dc-0fa3-48d0-8de8-9de55b67fb8b/244cf8b0-f604-11e8-b543-f23c917f9d8d
+        public ConfigLocation ConfigLocation => new ConfigLocation.Cdn("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw");
+        public string MatrixResultFileName => "testmatrix_number.csv";
+        public static IEnumerable<object?[]> GetTests() => MatrixTestRunner<NumericTestsDescriptor>.GetTests();
+    }
+
+    public class SemanticVersionTestsDescriptor : IMatrixTestDescriptor
+    {
+        // https://app.configcat.com/v2/e7a75611-4256-49a5-9320-ce158755e3ba/08d5a03c-feb7-af1e-a1fa-40b3329f8bed/08dbc4dc-278c-4f83-8d36-db73ad6e2a3a/244cf8b0-f604-11e8-b543-f23c917f9d8d
+        public ConfigLocation ConfigLocation => new ConfigLocation.Cdn("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/iV8vH2MBakKxkFZylxHmTg");
+        public string MatrixResultFileName => "testmatrix_semantic.csv";
+        public static IEnumerable<object?[]> GetTests() => MatrixTestRunner<SemanticVersionTestsDescriptor>.GetTests();
+    }
+
+    public class SemanticVersion2TestsDescriptor : IMatrixTestDescriptor
+    {
+        // https://app.configcat.com/v2/e7a75611-4256-49a5-9320-ce158755e3ba/08d5a03c-feb7-af1e-a1fa-40b3329f8bed/08dbc4dc-2b2b-451e-8359-abdef494c2a2/244cf8b0-f604-11e8-b543-f23c917f9d8d
+        public ConfigLocation ConfigLocation => new ConfigLocation.Cdn("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/U8nt3zEhDEO5S2ulubCopA");
+        public string MatrixResultFileName => "testmatrix_semantic_2.csv";
+        public static IEnumerable<object?[]> GetTests() => MatrixTestRunner<SemanticVersion2TestsDescriptor>.GetTests();
+    }
+
+    public class SensitiveTestsDescriptor : IMatrixTestDescriptor
+    {
+        // https://app.configcat.com/v2/e7a75611-4256-49a5-9320-ce158755e3ba/08d5a03c-feb7-af1e-a1fa-40b3329f8bed/08dbc4dc-2d62-4e1b-884b-6aa237b34764/244cf8b0-f604-11e8-b543-f23c917f9d8d
+        public ConfigLocation ConfigLocation => new ConfigLocation.Cdn("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/-0YmVOUNgEGKkgRF-rU65g");
+        public string MatrixResultFileName => "testmatrix_sensitive.csv";
+        public static IEnumerable<object?[]> GetTests() => MatrixTestRunner<SensitiveTestsDescriptor>.GetTests();
+    }
+
     public class AndOrMatrixTestsDescriptor : IMatrixTestDescriptor
     {
-        // https://test-app.configcat.com/v2/08d89dea-13b2-406b-8ecf-ee94414208a2/08db465d-5756-49ff-8e53-fb90fd760632/08db4c16-c78b-473c-8b68-ca6723c98bfa/08db465d-a64e-4881-8ed0-62b6c9e68e33
-        public ConfigLocation ConfigLocation => new ConfigLocation.Cdn("configcat-sdk-1/XUbbCFZX_0mOU_uQ_XYGMg/FfwncdJg1kq0lBqxhYC_7g", "https://test-cdn-eu.configcat.com");
+        // https://app.configcat.com/v2/e7a75611-4256-49a5-9320-ce158755e3ba/08dbc325-7f69-4fd4-8af4-cf9f24ec8ac9/08dbc325-9d5e-4988-891c-fd4a45790bd1/08dbc325-9ebd-4587-8171-88f76a3004cb
+        public ConfigLocation ConfigLocation => new ConfigLocation.Cdn("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/ByMO9yZNn02kXcm72lnY1A");
         public string MatrixResultFileName => "testmatrix_and_or.csv";
         public static IEnumerable<object?[]> GetTests() => MatrixTestRunner<AndOrMatrixTestsDescriptor>.GetTests();
     }
 
     public class ComparatorMatrixTestsDescriptor : IMatrixTestDescriptor
     {
-        // https://test-app.configcat.com/v2/08d89dea-13b2-406b-8ecf-ee94414208a2/08db465d-5756-49ff-8e53-fb90fd760632/08db4be6-4a08-4c5c-8c35-30ef3a571a72/08db465d-a64e-4881-8ed0-62b6c9e68e33
-        public ConfigLocation ConfigLocation => new ConfigLocation.Cdn("configcat-sdk-1/XUbbCFZX_0mOU_uQ_XYGMg/Lv2mD9Tgx0Km27nuHjw_FA", "https://test-cdn-eu.configcat.com");
+        // https://app.configcat.com/v2/e7a75611-4256-49a5-9320-ce158755e3ba/08dbc325-7f69-4fd4-8af4-cf9f24ec8ac9/08dbc325-9a6b-4947-84e2-91529248278a/08dbc325-9ebd-4587-8171-88f76a3004cb
+        public ConfigLocation ConfigLocation => new ConfigLocation.Cdn("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ");
         public string MatrixResultFileName => "testmatrix_comparators_v6.csv";
         public static IEnumerable<object?[]> GetTests() => MatrixTestRunner<ComparatorMatrixTestsDescriptor>.GetTests();
     }
 
     public class FlagDependencyMatrixTestsDescriptor : IMatrixTestDescriptor
     {
-        // https://test-app.configcat.com/v2/08d89dea-13b2-406b-8ecf-ee94414208a2/08db465d-5756-49ff-8e53-fb90fd760632/08db4c12-1ff9-47dc-86ca-1186fe1dd43e/08db465d-a64e-4881-8ed0-62b6c9e68e33
-        public ConfigLocation ConfigLocation => new ConfigLocation.Cdn("configcat-sdk-1/XUbbCFZX_0mOU_uQ_XYGMg/LGO_8DM9OUGpJixrqqqQcA", "https://test-cdn-eu.configcat.com");
+        // https://app.configcat.com/v2/e7a75611-4256-49a5-9320-ce158755e3ba/08dbc325-7f69-4fd4-8af4-cf9f24ec8ac9/08dbc325-9b74-45cb-86d0-4d61c25af1aa/08dbc325-9ebd-4587-8171-88f76a3004cb
+        public ConfigLocation ConfigLocation => new ConfigLocation.Cdn("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/JoGwdqJZQ0K2xDy7LnbyOg");
         public string MatrixResultFileName => "testmatrix_prerequisite_flag.csv";
         public static IEnumerable<object?[]> GetTests() => MatrixTestRunner<FlagDependencyMatrixTestsDescriptor>.GetTests();
     }
 
     public class SegmentMatrixTestsDescriptor : IMatrixTestDescriptor
     {
-        // https://test-app.configcat.com/v2/08d89dea-13b2-406b-8ecf-ee94414208a2/08db465d-5756-49ff-8e53-fb90fd760632/08db4c15-8ed0-49d6-8a76-778b50d0bc17/08db465d-a64e-4881-8ed0-62b6c9e68e33
-        public ConfigLocation ConfigLocation => new ConfigLocation.Cdn("configcat-sdk-1/XUbbCFZX_0mOU_uQ_XYGMg/LP0_4hhbQkmVVJcsbO_2Lw", "https://test-cdn-eu.configcat.com");
+        // https://app.configcat.com/v2/e7a75611-4256-49a5-9320-ce158755e3ba/08dbc325-7f69-4fd4-8af4-cf9f24ec8ac9/08dbc325-9cfb-486f-8906-72a57c693615/08dbc325-9ebd-4587-8171-88f76a3004cb
+        public ConfigLocation ConfigLocation => new ConfigLocation.Cdn("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/h99HYXWWNE2bH8eWyLAVMA");
         public string MatrixResultFileName => "testmatrix_segments.csv";
         public static IEnumerable<object?[]> GetTests() => MatrixTestRunner<SegmentMatrixTestsDescriptor>.GetTests();
     }
 
-    private readonly LoggerWrapper logger;
-    private readonly IRolloutEvaluator configEvaluator;
+    private protected override Dictionary<string, Setting> BasicConfig => MatrixTestRunner<BasicTestsDescriptor>.Default.config;
 
-    public ConfigV6EvaluationTests()
+    [DataTestMethod]
+    [DynamicData(nameof(BasicTestsDescriptor.GetTests), typeof(BasicTestsDescriptor), DynamicDataSourceType.Method)]
+    public void BasicTests(string configLocation, string settingKey, string expectedReturnValue,
+        string? userId, string? userEmail, string? userCountry, string? userCustomAttributeName, string? userCustomAttributeValue)
     {
-        this.logger = new ConsoleLogger(LogLevel.Debug).AsWrapper();
-        this.configEvaluator = new RolloutEvaluator(this.logger);
+        MatrixTestRunner<BasicTestsDescriptor>.Default.RunTest(this.configEvaluator, this.logger, settingKey, expectedReturnValue,
+            userId, userEmail, userCountry, userCustomAttributeName, userCustomAttributeValue);
+    }
+
+    [DataTestMethod]
+    [DynamicData(nameof(NumericTestsDescriptor.GetTests), typeof(NumericTestsDescriptor), DynamicDataSourceType.Method)]
+    public void NumericTests(string configLocation, string settingKey, string expectedReturnValue,
+        string? userId, string? userEmail, string? userCountry, string? userCustomAttributeName, string? userCustomAttributeValue)
+    {
+        MatrixTestRunner<NumericTestsDescriptor>.Default.RunTest(this.configEvaluator, this.logger, settingKey, expectedReturnValue,
+            userId, userEmail, userCountry, userCustomAttributeName, userCustomAttributeValue);
+    }
+
+    [DataTestMethod]
+    [DynamicData(nameof(SemanticVersionTestsDescriptor.GetTests), typeof(SemanticVersionTestsDescriptor), DynamicDataSourceType.Method)]
+    public void SemanticVersionTests(string configLocation, string settingKey, string expectedReturnValue,
+        string? userId, string? userEmail, string? userCountry, string? userCustomAttributeName, string? userCustomAttributeValue)
+    {
+        MatrixTestRunner<SemanticVersionTestsDescriptor>.Default.RunTest(this.configEvaluator, this.logger, settingKey, expectedReturnValue,
+            userId, userEmail, userCountry, userCustomAttributeName, userCustomAttributeValue);
+    }
+
+    [DataTestMethod]
+    [DynamicData(nameof(SemanticVersion2TestsDescriptor.GetTests), typeof(SemanticVersion2TestsDescriptor), DynamicDataSourceType.Method)]
+    public void SemanticVersion2Tests(string configLocation, string settingKey, string expectedReturnValue,
+        string? userId, string? userEmail, string? userCountry, string? userCustomAttributeName, string? userCustomAttributeValue)
+    {
+        MatrixTestRunner<SemanticVersion2TestsDescriptor>.Default.RunTest(this.configEvaluator, this.logger, settingKey, expectedReturnValue,
+            userId, userEmail, userCountry, userCustomAttributeName, userCustomAttributeValue);
+    }
+
+    [DataTestMethod]
+    [DynamicData(nameof(SensitiveTestsDescriptor.GetTests), typeof(SensitiveTestsDescriptor), DynamicDataSourceType.Method)]
+    public void SensitiveTests(string configLocation, string settingKey, string expectedReturnValue,
+        string? userId, string? userEmail, string? userCountry, string? userCustomAttributeName, string? userCustomAttributeValue)
+    {
+        MatrixTestRunner<SensitiveTestsDescriptor>.Default.RunTest(this.configEvaluator, this.logger, settingKey, expectedReturnValue,
+            userId, userEmail, userCountry, userCustomAttributeName, userCustomAttributeValue);
     }
 
     [DataTestMethod]

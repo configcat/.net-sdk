@@ -27,7 +27,7 @@ public class MatrixTestRunnerBase<TDescriptor> where TDescriptor : IMatrixTestDe
 {
     public static readonly TDescriptor DescriptorInstance = new();
 
-    private protected readonly Dictionary<string, Setting> config;
+    internal readonly Dictionary<string, Setting> config;
 
     public MatrixTestRunnerBase()
     {

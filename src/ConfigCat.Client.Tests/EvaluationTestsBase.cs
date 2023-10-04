@@ -2,26 +2,27 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using ConfigCat.Client.Evaluation;
-using ConfigCat.Client.Tests.Helpers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ConfigCat.Client.Tests;
 
-[TestClass]
-public class BasicConfigEvaluatorTests : ConfigEvaluatorTestsBase<BasicConfigEvaluatorTests.Descriptor>
+public abstract class EvaluationTestsBase
 {
-    public class Descriptor : IMatrixTestDescriptor
-    {
-        // https://app.configcat.com/08d5a03c-feb7-af1e-a1fa-40b3329f8bed/08d62463-86ec-8fde-f5b5-1c5c426fc830/244cf8b0-f604-11e8-b543-f23c917f9d8d
-        public ConfigLocation ConfigLocation => new ConfigLocation.Cdn("PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A");
+    private protected readonly LoggerWrapper logger;
+    private protected readonly IRolloutEvaluator configEvaluator;
 
-        public string MatrixResultFileName => "testmatrix.csv";
+    public EvaluationTestsBase()
+    {
+        this.logger = new ConsoleLogger(LogLevel.Debug).AsWrapper();
+        this.configEvaluator = new RolloutEvaluator(this.logger);
     }
+
+    private protected abstract Dictionary<string, Setting> BasicConfig { get; }
 
     [TestMethod]
     public void GetValue_WithSimpleKey_ShouldReturnCat()
     {
-        var actual = this.configEvaluator.Evaluate(this.config, "stringDefaultCat", string.Empty, user: null, null, this.Logger).Value;
+        var actual = this.configEvaluator.Evaluate(BasicConfig, "stringDefaultCat", string.Empty, user: null, null, this.logger).Value;
 
         Assert.AreNotEqual(string.Empty, actual);
         Assert.AreEqual("Cat", actual);
@@ -30,7 +31,7 @@ public class BasicConfigEvaluatorTests : ConfigEvaluatorTestsBase<BasicConfigEva
     [TestMethod]
     public void GetValue_WithNonExistingKey_ShouldReturnDefaultValue()
     {
-        var actual = this.configEvaluator.Evaluate(this.config, "NotExistsKey", "NotExistsValue", user: null, null, this.Logger).Value;
+        var actual = this.configEvaluator.Evaluate(BasicConfig, "NotExistsKey", "NotExistsValue", user: null, null, this.logger).Value;
 
         Assert.AreEqual("NotExistsValue", actual);
     }
@@ -38,7 +39,7 @@ public class BasicConfigEvaluatorTests : ConfigEvaluatorTestsBase<BasicConfigEva
     [TestMethod]
     public void GetValue_WithEmptyProjectConfig_ShouldReturnDefaultValue()
     {
-        var actual = this.configEvaluator.Evaluate(new Dictionary<string, Setting>(), "stringDefaultCat", "Default", user: null, null, this.Logger).Value;
+        var actual = this.configEvaluator.Evaluate(new Dictionary<string, Setting>(), "stringDefaultCat", "Default", user: null, null, this.logger).Value;
 
         Assert.AreEqual("Default", actual);
     }
@@ -46,12 +47,12 @@ public class BasicConfigEvaluatorTests : ConfigEvaluatorTestsBase<BasicConfigEva
     [TestMethod]
     public void GetValue_WithUser_ShouldReturnEvaluatedValue()
     {
-        var actual = this.configEvaluator.Evaluate(this.config, "doubleDefaultPi", double.NaN, new User("c@configcat.com")
+        var actual = this.configEvaluator.Evaluate(BasicConfig, "doubleDefaultPi", double.NaN, new User("c@configcat.com")
         {
             Email = "c@configcat.com",
             Country = "United Kingdom",
             Custom = { { "Custom1", "admin" } }
-        }, null, this.Logger).Value;
+        }, null, this.logger).Value;
 
         Assert.AreEqual(3.1415, actual);
     }
@@ -80,12 +81,12 @@ public class BasicConfigEvaluatorTests : ConfigEvaluatorTestsBase<BasicConfigEva
         var args = new object?[]
         {
             this.configEvaluator,
-            this.config,
+            BasicConfig,
             key,
             defaultValue,
             null,
             null,
-            this.Logger,
+            this.logger,
         };
 
         var evaluationDetails = (EvaluationDetails)EvaluateMethodDefinition.MakeGenericMethod(settingClrType).Invoke(null, args)!;
@@ -103,12 +104,12 @@ public class BasicConfigEvaluatorTests : ConfigEvaluatorTestsBase<BasicConfigEva
         var args = new object?[]
         {
             this.configEvaluator,
-            this.config,
+            BasicConfig,
             key,
             defaultValue,
             null,
             null,
-            this.Logger,
+            this.logger,
         };
 
         var ex = Assert.ThrowsException<InvalidOperationException>(() =>
@@ -116,6 +117,6 @@ public class BasicConfigEvaluatorTests : ConfigEvaluatorTestsBase<BasicConfigEva
             try { EvaluateMethodDefinition.MakeGenericMethod(settingClrType).Invoke(null, args); }
             catch (TargetInvocationException ex) { throw ex.InnerException!; }
         });
-        StringAssert.Contains(ex.Message, $"Setting's type was {this.config[key].SettingType} but the default value's type was {settingClrType}.");
+        StringAssert.Contains(ex.Message, $"Setting's type was {BasicConfig[key].SettingType} but the default value's type was {settingClrType}.");
     }
 }

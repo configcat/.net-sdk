@@ -8,13 +8,11 @@ namespace ConfigCat.Client.Tests;
 [TestClass]
 public class ModelTests
 {
-    private const string TestBaseUrl = "https://test-cdn-eu.configcat.com";
-
     private const string BasicSampleSdkKey = "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A";
-    private const string AndOrV6SampleSdkKey = "configcat-sdk-1/XUbbCFZX_0mOU_uQ_XYGMg/FfwncdJg1kq0lBqxhYC_7g";
-    private const string ComparatorsV6SampleSdkKey = "configcat-sdk-1/XUbbCFZX_0mOU_uQ_XYGMg/Lv2mD9Tgx0Km27nuHjw_FA";
-    private const string FlagDependencyV6SampleSdkKey = "configcat-sdk-1/XUbbCFZX_0mOU_uQ_XYGMg/LGO_8DM9OUGpJixrqqqQcA";
-    private const string SegmentsV6SampleSdkKey = "configcat-sdk-1/XUbbCFZX_0mOU_uQ_XYGMg/LP0_4hhbQkmVVJcsbO_2Lw";
+    private const string AndOrV6SampleSdkKey = "configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/ByMO9yZNn02kXcm72lnY1A";
+    private const string ComparatorsV6SampleSdkKey = "configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ";
+    private const string FlagDependencyV6SampleSdkKey = "configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/JoGwdqJZQ0K2xDy7LnbyOg";
+    private const string SegmentsV6SampleSdkKey = "configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/h99HYXWWNE2bH8eWyLAVMA";
 
     private static ConfigLocation GetConfigLocation(string? sdkKey, string baseUrlOrFileName)
     {
@@ -41,8 +39,8 @@ public class ModelTests
 
     [DataTestMethod]
     [DataRow(BasicSampleSdkKey, null, "stringIsNotInDogDefaultCat", 0, 0, new[] { "User.Email IS NOT ONE OF [<2 hashed values>]" })]
-    [DataRow(SegmentsV6SampleSdkKey, TestBaseUrl, "countrySegment", 0, 0, new[] { "User IS IN SEGMENT 'United'" })]
-    [DataRow(FlagDependencyV6SampleSdkKey, TestBaseUrl, "boolDependsOnBool", 0, 0, new[] { "Flag 'mainBoolFlag' EQUALS 'True'" })]
+    [DataRow(SegmentsV6SampleSdkKey, null, "countrySegment", 0, 0, new[] { "User IS IN SEGMENT 'United'" })]
+    [DataRow(FlagDependencyV6SampleSdkKey, null, "boolDependsOnBool", 0, 0, new[] { "Flag 'mainBoolFlag' EQUALS 'True'" })]
     public void Condition_ToString(string? sdkKey, string baseUrlOrFileName, string settingKey, int targetingRuleIndex, int conditionIndex, string[] expectedResultLines)
     {
         IConfig config = GetConfigLocation(sdkKey, baseUrlOrFileName).FetchConfigCached();
@@ -56,7 +54,7 @@ public class ModelTests
 
     [DataTestMethod]
     [DataRow(BasicSampleSdkKey, null, "string25Cat25Dog25Falcon25Horse", -1, 0, new[] { "25%: 'Cat'" })]
-    [DataRow(ComparatorsV6SampleSdkKey, TestBaseUrl, "missingPercentageAttribute", 0, 0, new[] { "50%: 'Falcon'" })]
+    [DataRow(ComparatorsV6SampleSdkKey, null, "missingPercentageAttribute", 0, 0, new[] { "50%: 'Falcon'" })]
     public void PercentageOption_ToString(string? sdkKey, string baseUrlOrFileName, string settingKey, int targetingRuleIndex, int percentageOptionIndex, string[] expectedResultLines)
     {
         IConfig config = GetConfigLocation(sdkKey, baseUrlOrFileName).FetchConfigCached();
@@ -76,14 +74,14 @@ public class ModelTests
         "IF User.Email IS NOT ONE OF [<2 hashed values>]",
         "THEN 'Dog'",
     })]
-    [DataRow(ComparatorsV6SampleSdkKey, TestBaseUrl, "missingPercentageAttribute", 0, new[]
+    [DataRow(ComparatorsV6SampleSdkKey, null, "missingPercentageAttribute", 0, new[]
     {
         "IF User.Email ENDS WITH ANY OF [<1 hashed value>]",
         "THEN",
         "  50%: 'Falcon'",
         "  50%: 'Horse'",
     })]
-    [DataRow(AndOrV6SampleSdkKey, TestBaseUrl, "emailAnd", 0, new[]
+    [DataRow(AndOrV6SampleSdkKey, null, "emailAnd", 0, new[]
     {
         "IF User.Email STARTS WITH ANY OF [<1 hashed value>]",
         "  AND User.Email CONTAINS ANY OF ['@']",
@@ -116,7 +114,7 @@ public class ModelTests
         "25% of users: 'Horse'",
         "To unidentified: 'Chicken'",
     })]
-    [DataRow(ComparatorsV6SampleSdkKey, TestBaseUrl, "countryPercentageAttribute", new[]
+    [DataRow(ComparatorsV6SampleSdkKey, null, "countryPercentageAttribute", new[]
     {
         "50% of all Country attributes: 'Falcon'",
         "50% of all Country attributes: 'Horse'",
@@ -137,7 +135,7 @@ public class ModelTests
         "  25% of users: 'Horse'",
         "To unidentified: 'Chicken'",
     })]
-    [DataRow(ComparatorsV6SampleSdkKey, TestBaseUrl, "missingPercentageAttribute", new[]
+    [DataRow(ComparatorsV6SampleSdkKey, null, "missingPercentageAttribute", new[]
     {
         "IF User.Email ENDS WITH ANY OF [<1 hashed value>]",
         "THEN",
@@ -147,7 +145,7 @@ public class ModelTests
         "THEN 'NotFound'",
         "To all others: 'Chicken'",
     })]
-    [DataRow(AndOrV6SampleSdkKey, TestBaseUrl, "emailAnd", new[]
+    [DataRow(AndOrV6SampleSdkKey, null, "emailAnd", new[]
     {
         "IF User.Email STARTS WITH ANY OF [<1 hashed value>]",
         "  AND User.Email CONTAINS ANY OF ['@']",
@@ -165,7 +163,7 @@ public class ModelTests
     }
 
     [DataTestMethod]
-    [DataRow(SegmentsV6SampleSdkKey, TestBaseUrl, 0, new[] { "User.Email IS ONE OF [<2 hashed values>]" })]
+    [DataRow(SegmentsV6SampleSdkKey, null, 0, new[] { "User.Email IS ONE OF [<2 hashed values>]" })]
     public void Segment_ToString(string? sdkKey, string baseUrlOrFileName, int segmentIndex, string[] expectedResultLines)
     {
         IConfig config = GetConfigLocation(sdkKey, baseUrlOrFileName).FetchConfigCached();

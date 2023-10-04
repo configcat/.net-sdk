@@ -1,7 +1,6 @@
 {
-  "configUrl": "https://test-app.configcat.com/v2/08d89dea-13b2-406b-8ecf-ee94414208a2/08db465d-5756-49ff-8e53-fb90fd760632/08db4be6-4a08-4c5c-8c35-30ef3a571a72/08db465d-a64e-4881-8ed0-62b6c9e68e33",
-  "sdkKey": "configcat-sdk-1/XUbbCFZX_0mOU_uQ_XYGMg/Lv2mD9Tgx0Km27nuHjw_FA",
-  "baseUrl": "https://test-cdn-eu.configcat.com",
+  "configUrl": "https://app.configcat.com/v2/e7a75611-4256-49a5-9320-ce158755e3ba/08dbc325-7f69-4fd4-8af4-cf9f24ec8ac9/08dbc325-9a6b-4947-84e2-91529248278a/08dbc325-9ebd-4587-8171-88f76a3004cb",
+  "sdkKey": "configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ",
   "tests": [
     {
       "key": "allinone",

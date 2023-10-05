@@ -14,7 +14,7 @@ using System.Text.Json.Serialization;
 namespace ConfigCat.Client;
 
 /// <summary>
-/// ConfigCat config.
+/// Details of a ConfigCat config.
 /// </summary>
 public interface IConfig
 {

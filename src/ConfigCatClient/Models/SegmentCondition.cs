@@ -11,7 +11,7 @@ using System.Text.Json.Serialization;
 namespace ConfigCat.Client;
 
 /// <summary>
-/// Segment condition.
+/// Describes a condition that is based on a segment.
 /// </summary>
 public interface ISegmentCondition : ICondition
 {

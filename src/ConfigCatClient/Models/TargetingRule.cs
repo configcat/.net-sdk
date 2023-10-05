@@ -14,12 +14,13 @@ using System.Text.Json.Serialization;
 namespace ConfigCat.Client;
 
 /// <summary>
-/// Targeting rule.
+/// Describes a targeting rule.
 /// </summary>
 public interface ITargetingRule
 {
     /// <summary>
-    /// The list of conditions (where there is a logical AND relation between the items).
+    /// The list of conditions that are combined with the AND logical operator.
+    /// Items can be one of the following types: <see cref="IUserCondition"/>, <see cref="ISegmentCondition"/> or <see cref="IPrerequisiteFlagCondition"/>.
     /// </summary>
     IReadOnlyList<ICondition> Conditions { get; }
 

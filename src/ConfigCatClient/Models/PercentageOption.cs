@@ -10,7 +10,7 @@ using System.Text.Json.Serialization;
 namespace ConfigCat.Client;
 
 /// <summary>
-/// Percentage option.
+/// Represents a percentage option.
 /// </summary>
 public interface IPercentageOption : ISettingValueContainer
 {

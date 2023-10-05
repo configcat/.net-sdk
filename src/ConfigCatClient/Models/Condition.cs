@@ -1,7 +1,8 @@
 namespace ConfigCat.Client;
 
 /// <summary>
-/// Base interface for conditions.
+/// Represents a condition.
+/// Can be one of the following types: <see cref="IUserCondition"/>, <see cref="ISegmentCondition"/> or <see cref="IPrerequisiteFlagCondition"/>.
 /// </summary>
 public interface ICondition { }
 

@@ -12,7 +12,8 @@ namespace ConfigCat.Client;
 public interface ISettingValueContainer
 {
     /// <summary>
-    /// Setting value. Can be a value of the following types: <see cref="bool"/>, <see cref="string"/>, <see cref="int"/> or <see cref="double"/>.
+    /// Setting value.
+    /// Can be a value of the following types: <see cref="bool"/>, <see cref="string"/>, <see cref="int"/> or <see cref="double"/>.
     /// </summary>
     object Value { get; }
 

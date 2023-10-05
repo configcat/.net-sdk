@@ -2,6 +2,7 @@ using System;
 using System.Collections.ObjectModel;
 using ConfigCat.Client.Utils;
 using ConfigCat.Client.Evaluation;
+using System.Collections.Generic;
 
 #if USE_NEWTONSOFT_JSON
 using Newtonsoft.Json;
@@ -12,7 +13,7 @@ using System.Text.Json.Serialization;
 namespace ConfigCat.Client;
 
 /// <summary>
-/// User condition.
+/// Describes a condition that is based on a User Object attribute.
 /// </summary>
 public interface IUserCondition : ICondition
 {
@@ -27,7 +28,8 @@ public interface IUserCondition : ICondition
     UserComparator Comparator { get; }
 
     /// <summary>
-    /// The value that the attribute is compared to. Can be a value of the following types: <see cref="string"/> (including a semantic version), <see cref="double"/> or <see langword="IReadOnlyList{T}" />, where T is <see cref="string"/>.
+    /// The value that the User Object attribute is compared to.
+    /// Can be a value of the following types: <see cref="string"/> (including a semantic version), <see cref="double"/> or <see cref="IReadOnlyList{T}" /> where T is <see cref="string"/>.
     /// </summary>
     object ComparisonValue { get; }
 }

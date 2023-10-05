@@ -11,7 +11,7 @@ using System.Text.Json.Serialization;
 namespace ConfigCat.Client;
 
 /// <summary>
-/// Prerequisite flag condition.
+/// Describes a condition that is based on a prerequisite flag.
 /// </summary>
 public interface IPrerequisiteFlagCondition : ICondition
 {
@@ -26,7 +26,8 @@ public interface IPrerequisiteFlagCondition : ICondition
     PrerequisiteFlagComparator Comparator { get; }
 
     /// <summary>
-    /// The value that the evaluated value of the prerequisite flag is compared to. Can be a value of the following types: <see cref="bool"/>, <see cref="string"/>, <see cref="int"/> or <see cref="double"/>.
+    /// The value that the evaluated value of the prerequisite flag is compared to.
+    /// Can be a value of the following types: <see cref="bool"/>, <see cref="string"/>, <see cref="int"/> or <see cref="double"/>.
     /// </summary>
     object ComparisonValue { get; }
 }

@@ -14,7 +14,7 @@ using System.Text.Json.Serialization;
 namespace ConfigCat.Client;
 
 /// <summary>
-/// Segment.
+/// Describes a segment.
 /// </summary>
 public interface ISegment
 {

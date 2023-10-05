@@ -55,7 +55,7 @@ public class User
     /// <returns>The User Object attribute value in the expected format.</returns>
     public static string AttributeValueFrom(IEnumerable<string> items)
     {
-        return (items ?? throw new ArgumentNullException("items")).Serialize();
+        return (items ?? throw new ArgumentNullException(nameof(items))).Serialize();
     }
 
     internal const string DefaultIdentifierValue = "";

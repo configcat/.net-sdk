@@ -116,8 +116,8 @@ internal struct SettingValue
         // In the case of Int settings, we also allow long and long? return types.
         return typeof(TValue) switch
         {
-            var type when type == typeof(long) => value.Cast<object, TValue>(ObjectExtensions.BoxedIntToLong),
-            var type when type == typeof(long?) => value.Cast<object, TValue>(ObjectExtensions.BoxedIntToNullableLong),
+            _ when typeof(TValue) == typeof(long) => value.Cast<object, TValue>(ObjectExtensions.BoxedIntToLong),
+            _ when typeof(TValue) == typeof(long?) => value.Cast<object, TValue>(ObjectExtensions.BoxedIntToNullableLong),
             _ => (TValue)value,
         };
     }

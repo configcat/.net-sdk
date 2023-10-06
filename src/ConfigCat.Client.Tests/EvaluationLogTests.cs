@@ -7,6 +7,7 @@ using ConfigCat.Client.Evaluation;
 using ConfigCat.Client.Tests.Helpers;
 using ConfigCat.Client.Utils;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 
 #if NET45
 using Newtonsoft.Json;
@@ -175,6 +176,16 @@ public class EvaluationLogTests
         RunTest(testSetName, sdkKey, baseUrlOrOverrideFileName, key, defaultValue, userObject, expectedReturnValue, expectedLogFileName);
     }
 
+    private static IEnumerable<object?[]> GetListTruncationTests() => GetTests("list_truncation");
+
+    [DataTestMethod]
+    [DynamicData(nameof(GetListTruncationTests), DynamicDataSourceType.Method)]
+    public void ListTruncationTests(string testSetName, string? sdkKey, string? baseUrlOrOverrideFileName,
+        string key, string? defaultValue, string userObject, string? expectedReturnValue, string expectedLogFileName)
+    {
+        RunTest(testSetName, sdkKey, baseUrlOrOverrideFileName, key, defaultValue, userObject, expectedReturnValue, expectedLogFileName);
+    }
+
     private static IEnumerable<object?[]> GetTests(string testSetName)
     {
         var filePath = Path.Combine(TestDataRootPath, testSetName + ".json");
@@ -195,36 +206,6 @@ public class EvaluationLogTests
                 testCase.expectedLog
             };
         }
-    }
-
-    [TestMethod]
-    public void ComparisonValueListTruncation()
-    {
-        var config = new ConfigLocation.LocalFile("data", "test_list_truncation.json").FetchConfig();
-
-        var logEvents = new List<LogEvent>();
-        var logger = LoggingHelper.CreateCapturingLogger(logEvents);
-
-        var evaluator = new RolloutEvaluator(logger);
-        var evaluationDetails = evaluator.Evaluate(config.Settings, "key1", (bool?)null, new User("12"), remoteConfig: null, logger);
-        var actualReturnValue = evaluationDetails.Value;
-
-        Assert.AreEqual(true, actualReturnValue);
-        Assert.AreEqual(1, logEvents.Count);
-
-        var expectedLogLines = new[]
-        {
-            "INFO [5000] Evaluating 'key1' for User '{\"Identifier\":\"12\"}'",
-            "  Evaluating targeting rules and applying the first match if any:",
-            "  - IF User.Identifier CONTAINS ANY OF ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'] => true",
-            "    AND User.Identifier CONTAINS ANY OF ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10' ... <1 more value>] => true",
-            "    AND User.Identifier CONTAINS ANY OF ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10' ... <2 more values>] => true",
-            "    THEN 'True' => MATCH, applying rule",
-            "  Returning 'True'.",
-        };
-
-        var evt = logEvents[0];
-        Assert.AreEqual(string.Join(Environment.NewLine, expectedLogLines), FormatLogEvent(ref evt));
     }
 
     private static void RunTest(string testSetName, string? sdkKey, string? baseUrlOrOverrideFileName, string key, string? defaultValue, string? userObject, string? expectedReturnValue, string expectedLogFileName)
@@ -320,4 +301,40 @@ public class EvaluationLogTests
         public string expectedLog { get; set; } = null!;
     }
 #pragma warning restore IDE1006 // Naming Styles
+
+    [DataTestMethod]
+    [DataRow(LogLevel.Off, false)]
+    [DataRow(LogLevel.Error, false)]
+    [DataRow(LogLevel.Warning, false)]
+    [DataRow(LogLevel.Info, true)]
+    [DataRow(LogLevel.Debug, true)]
+    public void EvaluationLogShouldBeBuiltOnlyWhenNecessary(LogLevel logLevel, bool expectedIsLogBuilt)
+    {
+        var settings = new ConfigLocation.Cdn("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/AG6C1ngVb0CvM07un6JisQ").FetchConfigCached().Settings;
+
+        var logEvents = new List<LogEvent>();
+        var logger = LoggingHelper.CreateCapturingLogger(logEvents, logLevel);
+
+        var evaluator = new RolloutEvaluator(logger);
+
+        var actualIsLogBuilt = false;
+        var evaluatorMock = new Mock<IRolloutEvaluator>();
+        evaluatorMock
+            .Setup(e => e.Evaluate(ref It.Ref<EvaluateContext>.IsAny))
+            .Returns((ref EvaluateContext ctx) =>
+            {
+                var result = evaluator.Evaluate(ref ctx);
+                actualIsLogBuilt = ctx.LogBuilder is not null;
+                return result;
+            });
+
+        var evaluationResult = evaluatorMock.Object.Evaluate<bool?>(settings, "bool30TrueAdvancedRules", defaultValue: null, user: null, remoteConfig: null, logger);
+        Assert.IsFalse(evaluationResult.IsDefaultValue);
+        Assert.IsTrue(evaluationResult.Value);
+
+        Assert.AreEqual(actualIsLogBuilt, expectedIsLogBuilt);
+
+        Assert.AreEqual(logLevel >= LogLevel.Warning, logEvents.Any(evt => evt is { Level: LogLevel.Warning, EventId.Id: 3001 }));
+        Assert.AreEqual(expectedIsLogBuilt, logEvents.Any(evt => evt is { Level: LogLevel.Info, EventId.Id: 5000 }));
+    }
 }

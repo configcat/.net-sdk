@@ -146,9 +146,9 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
         return await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(false);
     }
 
-    protected override void OnConfigUpdated(ProjectConfig newConfig)
+    protected override void OnConfigFetched(ProjectConfig newConfig)
     {
-        base.OnConfigUpdated(newConfig);
+        base.OnConfigFetched(newConfig);
         SignalInitialization();
     }
 

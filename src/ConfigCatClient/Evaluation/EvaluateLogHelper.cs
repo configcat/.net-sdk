@@ -45,7 +45,7 @@ internal static class EvaluateLogHelper
         else
         {
             var comparisonValueFormatter = new StringListFormatter(comparisonValue, StringListMaxLength, getOmittedItemsText: static count =>
-                string.Format(CultureInfo.InvariantCulture, " ... <{0} more {1}>", count, count == 1 ? valueText : valuesText));
+                $", ... <{count.ToString(CultureInfo.InvariantCulture)} more {(count == 1 ? valueText : valuesText)}>");
 
             return builder.Append($"User.{comparisonAttribute} {comparator.ToDisplayText()} [{comparisonValueFormatter}]");
         }

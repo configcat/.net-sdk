@@ -24,20 +24,22 @@
       </ItemGroup>
     </When>
 
-    <When Condition="'$(TargetFramework)' == 'net461'">
+    <When Condition="'$(TargetFramework)' == 'net6.0'">
       <ItemGroup>
         <!-- DynamicData matrix tests won't show up in VS 2022 using MSTest.TestAdapter v2.2.10.
-         It seems we'd need v3.x to make that work. But v3.x supports .NET 4.6.2+ only... :S
-         TODO: upgrade to v3.x when when we drop support for .NET 4.6.1 and earlier. -->
-        <PackageReference Include="MSTest.TestAdapter" Version="2.2.10" />
-        <PackageReference Include="MSTest.TestFramework" Version="2.2.10" />
+         It seems we'd need v3.x to make that work. But v3.x supports .NET 4.6.2+ only...
+         However, as test discovery may be pretty slow because of the large number of test cases,
+         it's usually sufficient to see separate test results for only one of the target frameworks,
+         so we enable v3.x on .NET 6 only. -->
+        <PackageReference Include="MSTest.TestAdapter" Version="3.1.1" />
+        <PackageReference Include="MSTest.TestFramework" Version="3.1.1" />
       </ItemGroup>
     </When>
 
     <Otherwise>
       <ItemGroup>
-        <PackageReference Include="MSTest.TestAdapter" Version="3.1.1" />
-        <PackageReference Include="MSTest.TestFramework" Version="3.1.1" />
+        <PackageReference Include="MSTest.TestAdapter" Version="2.2.10" />
+        <PackageReference Include="MSTest.TestFramework" Version="2.2.10" />
       </ItemGroup>
     </Otherwise>
   </Choose>

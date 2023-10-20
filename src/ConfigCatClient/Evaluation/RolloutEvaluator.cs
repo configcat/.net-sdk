@@ -327,43 +327,59 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         var comparator = condition.Comparator;
         switch (comparator)
         {
+            case UserComparator.TextEquals:
+            case UserComparator.TextNotEquals:
+                return EvaluateTextEquals(userAttributeValue!, condition.StringValue, negate: comparator == UserComparator.TextNotEquals);
+
             case UserComparator.SensitiveTextEquals:
             case UserComparator.SensitiveTextNotEquals:
                 return EvaluateSensitiveTextEquals(userAttributeValue!, condition.StringValue,
                     EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, negate: comparator == UserComparator.SensitiveTextNotEquals);
 
-            case UserComparator.SensitiveOneOf:
-            case UserComparator.SensitiveNotOneOf:
-                return EvaluateSensitiveOneOf(userAttributeValue!, condition.StringListValue,
-                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, negate: comparator == UserComparator.SensitiveNotOneOf);
+            case UserComparator.IsOneOf:
+            case UserComparator.IsNotOneOf:
+                return EvaluateIsOneOf(userAttributeValue!, condition.StringListValue, negate: comparator == UserComparator.IsNotOneOf);
 
-            case UserComparator.SensitiveTextStartsWith:
-            case UserComparator.SensitiveTextNotStartsWith:
-                return EvaluateSensitiveTextSliceEquals(userAttributeValue!, condition.StringListValue,
-                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, startsWith: true, negate: comparator == UserComparator.SensitiveTextNotStartsWith);
+            case UserComparator.SensitiveIsOneOf:
+            case UserComparator.SensitiveIsNotOneOf:
+                return EvaluateSensitiveIsOneOf(userAttributeValue!, condition.StringListValue,
+                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, negate: comparator == UserComparator.SensitiveIsNotOneOf);
 
-            case UserComparator.SensitiveTextEndsWith:
-            case UserComparator.SensitiveTextNotEndsWith:
-                return EvaluateSensitiveTextSliceEquals(userAttributeValue!, condition.StringListValue,
-                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, startsWith: false, negate: comparator == UserComparator.SensitiveTextNotEndsWith);
+            case UserComparator.TextStartsWithAnyOf:
+            case UserComparator.TextNotStartsWithAnyOf:
+                return EvaluateTextSliceEqualsAnyOf(userAttributeValue!, condition.StringListValue, startsWith: true, negate: comparator == UserComparator.TextNotStartsWithAnyOf);
 
-            case UserComparator.Contains:
-            case UserComparator.NotContains:
-                return EvaluateContains(userAttributeValue!, condition.StringListValue, negate: comparator == UserComparator.NotContains);
+            case UserComparator.SensitiveTextStartsWithAnyOf:
+            case UserComparator.SensitiveTextNotStartsWithAnyOf:
+                return EvaluateSensitiveTextSliceEqualsAnyOf(userAttributeValue!, condition.StringListValue,
+                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, startsWith: true, negate: comparator == UserComparator.SensitiveTextNotStartsWithAnyOf);
 
-            case UserComparator.SemVerOneOf:
-            case UserComparator.SemVerNotOneOf:
+            case UserComparator.TextEndsWithAnyOf:
+            case UserComparator.TextNotEndsWithAnyOf:
+                return EvaluateTextSliceEqualsAnyOf(userAttributeValue!, condition.StringListValue, startsWith: false, negate: comparator == UserComparator.TextNotEndsWithAnyOf);
+
+            case UserComparator.SensitiveTextEndsWithAnyOf:
+            case UserComparator.SensitiveTextNotEndsWithAnyOf:
+                return EvaluateSensitiveTextSliceEqualsAnyOf(userAttributeValue!, condition.StringListValue,
+                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, startsWith: false, negate: comparator == UserComparator.SensitiveTextNotEndsWithAnyOf);
+
+            case UserComparator.ContainsAnyOf:
+            case UserComparator.NotContainsAnyOf:
+                return EvaluateContainsAnyOf(userAttributeValue!, condition.StringListValue, negate: comparator == UserComparator.NotContainsAnyOf);
+
+            case UserComparator.SemVerIsOneOf:
+            case UserComparator.SemVerIsNotOneOf:
                 if (!SemVersion.TryParse(userAttributeValue!.Trim(), out var version, strict: true))
                 {
                     error = HandleInvalidUserAttribute(condition, context.Key, userAttributeName, $"'{userAttributeValue}' is not a valid semantic version");
                     return false;
                 }
-                return EvaluateSemVerOneOf(version, condition.StringListValue, negate: comparator == UserComparator.SemVerNotOneOf);
+                return EvaluateSemVerIsOneOf(version, condition.StringListValue, negate: comparator == UserComparator.SemVerIsNotOneOf);
 
-            case UserComparator.SemVerLessThan:
-            case UserComparator.SemVerLessThanEqual:
-            case UserComparator.SemVerGreaterThan:
-            case UserComparator.SemVerGreaterThanEqual:
+            case UserComparator.SemVerLess:
+            case UserComparator.SemVerLessOrEquals:
+            case UserComparator.SemVerGreater:
+            case UserComparator.SemVerGreaterOrEquals:
                 if (!SemVersion.TryParse(userAttributeValue!.Trim(), out version, strict: true))
                 {
                     error = HandleInvalidUserAttribute(condition, context.Key, userAttributeName, $"'{userAttributeValue}' is not a valid semantic version");
@@ -371,12 +387,12 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                 }
                 return EvaluateSemVerRelation(version, comparator, condition.StringValue);
 
-            case UserComparator.NumberEqual:
-            case UserComparator.NumberNotEqual:
-            case UserComparator.NumberLessThan:
-            case UserComparator.NumberLessThanEqual:
-            case UserComparator.NumberGreaterThan:
-            case UserComparator.NumberGreaterThanEqual:
+            case UserComparator.NumberEquals:
+            case UserComparator.NumberNotEquals:
+            case UserComparator.NumberLess:
+            case UserComparator.NumberLessOrEquals:
+            case UserComparator.NumberGreater:
+            case UserComparator.NumberGreaterOrEquals:
                 if (!double.TryParse(userAttributeValue!.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out var number))
                 {
                     error = HandleInvalidUserAttribute(condition, context.Key, userAttributeName, $"'{userAttributeValue}' is not a valid decimal number");
@@ -393,24 +409,39 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                 }
                 return EvaluateDateTimeRelation(number, condition.DoubleValue, before: comparator == UserComparator.DateTimeBefore);
 
-            case UserComparator.SensitiveArrayContains:
-            case UserComparator.SensitiveArrayNotContains:
-                string[]? array;
-                try { array = userAttributeValue!.Deserialize<string[]>(); }
-                catch { array = null; }
-
+            case UserComparator.ArrayContainsAnyOf:
+            case UserComparator.ArrayNotContainsAnyOf:
+                var array = userAttributeValue!.DeserializeOrDefault<string[]>();
                 if (array is null)
                 {
                     error = HandleInvalidUserAttribute(condition, context.Key, userAttributeName, $"'{userAttributeValue}' is not a valid JSON string array");
                     return false;
                 }
 
-                return EvaluateSensitiveArrayContains(array, condition.StringListValue,
-                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, negate: comparator == UserComparator.SensitiveArrayNotContains);
+                return EvaluateArrayContainsAnyOf(array, condition.StringListValue, negate: comparator == UserComparator.ArrayNotContainsAnyOf);
+
+            case UserComparator.SensitiveArrayContainsAnyOf:
+            case UserComparator.SensitiveArrayNotContainsAnyOf:
+                array = userAttributeValue!.DeserializeOrDefault<string[]>();
+                if (array is null)
+                {
+                    error = HandleInvalidUserAttribute(condition, context.Key, userAttributeName, $"'{userAttributeValue}' is not a valid JSON string array");
+                    return false;
+                }
+
+                return EvaluateSensitiveArrayContainsAnyOf(array, condition.StringListValue,
+                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, negate: comparator == UserComparator.SensitiveArrayNotContainsAnyOf);
 
             default:
                 throw new InvalidOperationException("Comparison operator is invalid.");
         }
+    }
+
+    private static bool EvaluateTextEquals(string text, string? comparisonValue, bool negate)
+    {
+        EnsureComparisonValue(comparisonValue);
+
+        return text.Equals(comparisonValue) ^ negate;
     }
 
     private static bool EvaluateSensitiveTextEquals(string text, string? comparisonValue, string configJsonSalt, string contextSalt, bool negate)
@@ -422,7 +453,22 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return hash.Equals(hexString: comparisonValue.AsSpan()) ^ negate;
     }
 
-    private static bool EvaluateSensitiveOneOf(string text, string[]? comparisonValues, string configJsonSalt, string contextSalt, bool negate)
+    private static bool EvaluateIsOneOf(string text, string[]? comparisonValues, bool negate)
+    {
+        EnsureComparisonValue(comparisonValues);
+
+        for (var i = 0; i < comparisonValues.Length; i++)
+        {
+            if (text.Equals(EnsureComparisonValue(comparisonValues[i])))
+            {
+                return !negate;
+            }
+        }
+
+        return negate;
+    }
+
+    private static bool EvaluateSensitiveIsOneOf(string text, string[]? comparisonValues, string configJsonSalt, string contextSalt, bool negate)
     {
         EnsureComparisonValue(comparisonValues);
 
@@ -439,7 +485,31 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return negate;
     }
 
-    private static bool EvaluateSensitiveTextSliceEquals(string text, string[]? comparisonValues, string configJsonSalt, string contextSalt, bool startsWith, bool negate)
+    private static bool EvaluateTextSliceEqualsAnyOf(string text, string[]? comparisonValues, bool startsWith, bool negate)
+    {
+        EnsureComparisonValue(comparisonValues);
+
+        for (var i = 0; i < comparisonValues.Length; i++)
+        {
+            var item = EnsureComparisonValue(comparisonValues[i]);
+
+            if (text.Length < item.Length)
+            {
+                continue;
+            }
+
+            var slice = startsWith ? text.AsSpan(0, item.Length) : text.AsSpan(text.Length - item.Length);
+
+            if (slice.SequenceEqual(item.AsSpan()))
+            {
+                return !negate;
+            }
+        }
+
+        return negate;
+    }
+
+    private static bool EvaluateSensitiveTextSliceEqualsAnyOf(string text, string[]? comparisonValues, string configJsonSalt, string contextSalt, bool startsWith, bool negate)
     {
         EnsureComparisonValue(comparisonValues);
 
@@ -475,7 +545,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return negate;
     }
 
-    private static bool EvaluateContains(string text, string[]? comparisonValues, bool negate)
+    private static bool EvaluateContainsAnyOf(string text, string[]? comparisonValues, bool negate)
     {
         EnsureComparisonValue(comparisonValues);
 
@@ -490,7 +560,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return negate;
     }
 
-    private static bool EvaluateSemVerOneOf(SemVersion version, string[]? comparisonValues, bool negate)
+    private static bool EvaluateSemVerIsOneOf(SemVersion version, string[]? comparisonValues, bool negate)
     {
         EnsureComparisonValue(comparisonValues);
 
@@ -539,10 +609,10 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
         return comparator switch
         {
-            UserComparator.SemVerLessThan => comparisonResult < 0,
-            UserComparator.SemVerLessThanEqual => comparisonResult <= 0,
-            UserComparator.SemVerGreaterThan => comparisonResult > 0,
-            UserComparator.SemVerGreaterThanEqual => comparisonResult >= 0,
+            UserComparator.SemVerLess => comparisonResult < 0,
+            UserComparator.SemVerLessOrEquals => comparisonResult <= 0,
+            UserComparator.SemVerGreater => comparisonResult > 0,
+            UserComparator.SemVerGreaterOrEquals => comparisonResult >= 0,
             _ => throw new ArgumentOutOfRangeException(nameof(comparator), comparator, null)
         };
     }
@@ -553,12 +623,12 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
         return comparator switch
         {
-            UserComparator.NumberEqual => number == number2,
-            UserComparator.NumberNotEqual => number != number2,
-            UserComparator.NumberLessThan => number < number2,
-            UserComparator.NumberLessThanEqual => number <= number2,
-            UserComparator.NumberGreaterThan => number > number2,
-            UserComparator.NumberGreaterThanEqual => number >= number2,
+            UserComparator.NumberEquals => number == number2,
+            UserComparator.NumberNotEquals => number != number2,
+            UserComparator.NumberLess => number < number2,
+            UserComparator.NumberLessOrEquals => number <= number2,
+            UserComparator.NumberGreater => number > number2,
+            UserComparator.NumberGreaterOrEquals => number >= number2,
             _ => throw new ArgumentOutOfRangeException(nameof(comparator), comparator, null)
         };
     }
@@ -570,7 +640,27 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return before ? number < number2 : number > number2;
     }
 
-    private static bool EvaluateSensitiveArrayContains(string[] array, string[]? comparisonValues, string configJsonSalt, string contextSalt, bool negate)
+    private static bool EvaluateArrayContainsAnyOf(string[] array, string[]? comparisonValues, bool negate)
+    {
+        EnsureComparisonValue(comparisonValues);
+
+        for (var i = 0; i < array.Length; i++)
+        {
+            var text = array[i];
+
+            for (var j = 0; j < comparisonValues.Length; j++)
+            {
+                if (text.Equals(EnsureComparisonValue(comparisonValues[j])))
+                {
+                    return !negate;
+                }
+            }
+        }
+
+        return negate;
+    }
+
+    private static bool EvaluateSensitiveArrayContainsAnyOf(string[] array, string[]? comparisonValues, string configJsonSalt, string contextSalt, bool negate)
     {
         EnsureComparisonValue(comparisonValues);
 

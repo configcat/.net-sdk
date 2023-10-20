@@ -24,12 +24,12 @@ internal static class EvaluateLogHelper
         return builder.Append($"User.{comparisonAttribute} {comparator.ToDisplayText()} '{comparisonValue ?? InvalidValuePlaceholder}'");
     }
 
-    private static IndentedTextBuilder AppendUserCondition(this IndentedTextBuilder builder, string? comparisonAttribute, UserComparator comparator, string? comparisonValue, bool isSensitive = false)
+    private static IndentedTextBuilder AppendUserCondition(this IndentedTextBuilder builder, string? comparisonAttribute, UserComparator comparator, string? comparisonValue, bool isSensitive)
     {
         return builder.AppendUserCondition(comparisonAttribute, comparator, !isSensitive ? (object?)comparisonValue : "<hashed value>");
     }
 
-    private static IndentedTextBuilder AppendUserCondition(this IndentedTextBuilder builder, string? comparisonAttribute, UserComparator comparator, string[]? comparisonValue, bool isSensitive = false)
+    private static IndentedTextBuilder AppendUserCondition(this IndentedTextBuilder builder, string? comparisonAttribute, UserComparator comparator, string[]? comparisonValue, bool isSensitive)
     {
         if (comparisonValue is null)
         {
@@ -67,34 +67,44 @@ internal static class EvaluateLogHelper
     {
         return condition.Comparator switch
         {
-            UserComparator.Contains or
-            UserComparator.NotContains or
-            UserComparator.SemVerOneOf or
-            UserComparator.SemVerNotOneOf =>
-                builder.AppendUserCondition(condition.ComparisonAttribute, condition.Comparator, condition.StringListValue),
+            UserComparator.IsOneOf or
+            UserComparator.IsNotOneOf or
+            UserComparator.ContainsAnyOf or
+            UserComparator.NotContainsAnyOf or
+            UserComparator.SemVerIsOneOf or
+            UserComparator.SemVerIsNotOneOf or
+            UserComparator.TextStartsWithAnyOf or
+            UserComparator.TextNotStartsWithAnyOf or
+            UserComparator.TextEndsWithAnyOf or
+            UserComparator.TextNotEndsWithAnyOf or
+            UserComparator.ArrayContainsAnyOf or
+            UserComparator.ArrayNotContainsAnyOf =>
+                builder.AppendUserCondition(condition.ComparisonAttribute, condition.Comparator, condition.StringListValue, isSensitive: false),
 
-            UserComparator.SemVerLessThan or
-            UserComparator.SemVerLessThanEqual or
-            UserComparator.SemVerGreaterThan or
-            UserComparator.SemVerGreaterThanEqual =>
-                builder.AppendUserCondition(condition.ComparisonAttribute, condition.Comparator, condition.StringValue),
+            UserComparator.SemVerLess or
+            UserComparator.SemVerLessOrEquals or
+            UserComparator.SemVerGreater or
+            UserComparator.SemVerGreaterOrEquals or
+            UserComparator.TextEquals or
+            UserComparator.TextNotEquals =>
+                builder.AppendUserCondition(condition.ComparisonAttribute, condition.Comparator, condition.StringValue, isSensitive: false),
 
-            UserComparator.NumberEqual or
-            UserComparator.NumberNotEqual or
-            UserComparator.NumberLessThan or
-            UserComparator.NumberLessThanEqual or
-            UserComparator.NumberGreaterThan or
-            UserComparator.NumberGreaterThanEqual =>
+            UserComparator.NumberEquals or
+            UserComparator.NumberNotEquals or
+            UserComparator.NumberLess or
+            UserComparator.NumberLessOrEquals or
+            UserComparator.NumberGreater or
+            UserComparator.NumberGreaterOrEquals =>
                 builder.AppendUserCondition(condition.ComparisonAttribute, condition.Comparator, condition.DoubleValue),
 
-            UserComparator.SensitiveOneOf or
-            UserComparator.SensitiveNotOneOf or
-            UserComparator.SensitiveTextStartsWith or
-            UserComparator.SensitiveTextNotStartsWith or
-            UserComparator.SensitiveTextEndsWith or
-            UserComparator.SensitiveTextNotEndsWith or
-            UserComparator.SensitiveArrayContains or
-            UserComparator.SensitiveArrayNotContains =>
+            UserComparator.SensitiveIsOneOf or
+            UserComparator.SensitiveIsNotOneOf or
+            UserComparator.SensitiveTextStartsWithAnyOf or
+            UserComparator.SensitiveTextNotStartsWithAnyOf or
+            UserComparator.SensitiveTextEndsWithAnyOf or
+            UserComparator.SensitiveTextNotEndsWithAnyOf or
+            UserComparator.SensitiveArrayContainsAnyOf or
+            UserComparator.SensitiveArrayNotContainsAnyOf =>
                 builder.AppendUserCondition(condition.ComparisonAttribute, condition.Comparator, condition.StringListValue, isSensitive: true),
 
             UserComparator.DateTimeBefore or
@@ -295,32 +305,32 @@ internal static class EvaluateLogHelper
     {
         return comparator switch
         {
-            UserComparator.Contains => "CONTAINS ANY OF",
-            UserComparator.NotContains => "NOT CONTAINS ANY OF",
-            UserComparator.SemVerOneOf => "IS ONE OF",
-            UserComparator.SemVerNotOneOf => "IS NOT ONE OF",
-            UserComparator.SemVerLessThan => "<",
-            UserComparator.SemVerLessThanEqual => "<=",
-            UserComparator.SemVerGreaterThan => ">",
-            UserComparator.SemVerGreaterThanEqual => ">=",
-            UserComparator.NumberEqual => "=",
-            UserComparator.NumberNotEqual => "!=",
-            UserComparator.NumberLessThan => "<",
-            UserComparator.NumberLessThanEqual => "<=",
-            UserComparator.NumberGreaterThan => ">",
-            UserComparator.NumberGreaterThanEqual => ">=",
-            UserComparator.SensitiveOneOf => "IS ONE OF",
-            UserComparator.SensitiveNotOneOf => "IS NOT ONE OF",
+            UserComparator.IsOneOf or UserComparator.SensitiveIsOneOf => "IS ONE OF",
+            UserComparator.IsNotOneOf or UserComparator.SensitiveIsNotOneOf => "IS NOT ONE OF",
+            UserComparator.ContainsAnyOf => "CONTAINS ANY OF",
+            UserComparator.NotContainsAnyOf => "NOT CONTAINS ANY OF",
+            UserComparator.SemVerIsOneOf => "IS ONE OF",
+            UserComparator.SemVerIsNotOneOf => "IS NOT ONE OF",
+            UserComparator.SemVerLess => "<",
+            UserComparator.SemVerLessOrEquals => "<=",
+            UserComparator.SemVerGreater => ">",
+            UserComparator.SemVerGreaterOrEquals => ">=",
+            UserComparator.NumberEquals => "=",
+            UserComparator.NumberNotEquals => "!=",
+            UserComparator.NumberLess => "<",
+            UserComparator.NumberLessOrEquals => "<=",
+            UserComparator.NumberGreater => ">",
+            UserComparator.NumberGreaterOrEquals => ">=",
             UserComparator.DateTimeBefore => "BEFORE",
             UserComparator.DateTimeAfter => "AFTER",
-            UserComparator.SensitiveTextEquals => "EQUALS",
-            UserComparator.SensitiveTextNotEquals => "NOT EQUALS",
-            UserComparator.SensitiveTextStartsWith => "STARTS WITH ANY OF",
-            UserComparator.SensitiveTextNotStartsWith => "NOT STARTS WITH ANY OF",
-            UserComparator.SensitiveTextEndsWith => "ENDS WITH ANY OF",
-            UserComparator.SensitiveTextNotEndsWith => "NOT ENDS WITH ANY OF",
-            UserComparator.SensitiveArrayContains => "ARRAY CONTAINS ANY OF",
-            UserComparator.SensitiveArrayNotContains => "ARRAY NOT CONTAINS ANY OF",
+            UserComparator.TextEquals or UserComparator.SensitiveTextEquals => "EQUALS",
+            UserComparator.TextNotEquals or UserComparator.SensitiveTextNotEquals => "NOT EQUALS",
+            UserComparator.TextStartsWithAnyOf or UserComparator.SensitiveTextStartsWithAnyOf => "STARTS WITH ANY OF",
+            UserComparator.TextNotStartsWithAnyOf or UserComparator.SensitiveTextNotStartsWithAnyOf => "NOT STARTS WITH ANY OF",
+            UserComparator.TextEndsWithAnyOf or UserComparator.SensitiveTextEndsWithAnyOf => "ENDS WITH ANY OF",
+            UserComparator.TextNotEndsWithAnyOf or UserComparator.SensitiveTextNotEndsWithAnyOf => "NOT ENDS WITH ANY OF",
+            UserComparator.ArrayContainsAnyOf or UserComparator.SensitiveArrayContainsAnyOf => "ARRAY CONTAINS ANY OF",
+            UserComparator.ArrayNotContainsAnyOf or UserComparator.SensitiveArrayNotContainsAnyOf => "ARRAY NOT CONTAINS ANY OF",
             _ => InvalidOperatorPlaceholder
         };
     }

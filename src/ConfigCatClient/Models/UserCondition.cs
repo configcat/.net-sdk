@@ -18,7 +18,7 @@ namespace ConfigCat.Client;
 public interface IUserCondition : ICondition
 {
     /// <summary>
-    /// The User Object attribute that the condition is based on. Can be "User ID", "Email", "Country" or any custom attribute.
+    /// The User Object attribute that the condition is based on. Can be "Identifier", "Email", "Country" or any custom attribute.
     /// </summary>
     string ComparisonAttribute { get; }
 

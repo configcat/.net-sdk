@@ -6,84 +6,94 @@ namespace ConfigCat.Client;
 public enum UserComparator : byte
 {
     /// <summary>
-    /// CONTAINS ANY OF - It matches when the comparison attribute contains any comparison values as a substring.
+    /// IS ONE OF (cleartext) - It matches when the comparison attribute is equal to any of the comparison values.
     /// </summary>
-    Contains = 2,
+    IsOneOf = 0,
 
     /// <summary>
-    /// NOT CONTAINS ANY OF - It matches when the comparison attribute does not contain any comparison values as a substring.
+    /// IS NOT ONE OF (cleartext) - It matches when the comparison attribute is not equal to any of the comparison values.
     /// </summary>
-    NotContains = 3,
+    IsNotOneOf = 1,
+
+    /// <summary>
+    /// CONTAINS ANY OF (cleartext) - It matches when the comparison attribute contains any comparison values as a substring.
+    /// </summary>
+    ContainsAnyOf = 2,
+
+    /// <summary>
+    /// NOT CONTAINS ANY OF (cleartext) - It matches when the comparison attribute does not contain any comparison values as a substring.
+    /// </summary>
+    NotContainsAnyOf = 3,
 
     /// <summary>
     /// IS ONE OF (semver) - It matches when the comparison attribute interpreted as a semantic version is equal to any of the comparison values.
     /// </summary>
-    SemVerOneOf = 4,
+    SemVerIsOneOf = 4,
 
     /// <summary>
     /// IS NOT ONE OF (semver) - It matches when the comparison attribute interpreted as a semantic version is not equal to any of the comparison values.
     /// </summary>
-    SemVerNotOneOf = 5,
+    SemVerIsNotOneOf = 5,
 
     /// <summary>
     /// &lt; (semver) - It matches when the comparison attribute interpreted as a semantic version is less than the comparison value.
     /// </summary>
-    SemVerLessThan = 6,
+    SemVerLess = 6,
 
     /// <summary>
     /// &lt;= (semver) - It matches when the comparison attribute interpreted as a semantic version is less than or equal to the comparison value.
     /// </summary>
-    SemVerLessThanEqual = 7,
+    SemVerLessOrEquals = 7,
 
     /// <summary>
     /// &gt; (semver) - It matches when the comparison attribute interpreted as a semantic version is greater than the comparison value.
     /// </summary>
-    SemVerGreaterThan = 8,
+    SemVerGreater = 8,
 
     /// <summary>
     /// &gt;= (semver) - It matches when the comparison attribute interpreted as a semantic version is greater than or equal to the comparison value.
     /// </summary>
-    SemVerGreaterThanEqual = 9,
+    SemVerGreaterOrEquals = 9,
 
     /// <summary>
     /// = (number) - It matches when the comparison attribute interpreted as a decimal number is equal to the comparison value.
     /// </summary>
-    NumberEqual = 10,
+    NumberEquals = 10,
 
     /// <summary>
     /// != (number) - It matches when the comparison attribute interpreted as a decimal number is not equal to the comparison value.
     /// </summary>
-    NumberNotEqual = 11,
+    NumberNotEquals = 11,
 
     /// <summary>
     /// &lt; (number) - It matches when the comparison attribute interpreted as a decimal number is less than the comparison value.
     /// </summary>
-    NumberLessThan = 12,
+    NumberLess = 12,
 
     /// <summary>
     /// &lt;= (number) - It matches when the comparison attribute interpreted as a decimal number is less than or equal to the comparison value.
     /// </summary>
-    NumberLessThanEqual = 13,
+    NumberLessOrEquals = 13,
 
     /// <summary>
     /// &gt; (number) - It matches when the comparison attribute interpreted as a decimal number is greater than the comparison value.
     /// </summary>
-    NumberGreaterThan = 14,
+    NumberGreater = 14,
 
     /// <summary>
     /// &gt;= (number) - It matches when the comparison attribute interpreted as a decimal number is greater than or equal to the comparison value.
     /// </summary>
-    NumberGreaterThanEqual = 15,
+    NumberGreaterOrEquals = 15,
 
     /// <summary>
-    /// IS ONE OF (hashed) - It matches when the comparison attribute is equal to any of the comparison values (where the comparison is performed using the SHA256 hashes of the values).
+    /// IS ONE OF (hashed) - It matches when the comparison attribute is equal to any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values).
     /// </summary>
-    SensitiveOneOf = 16,
+    SensitiveIsOneOf = 16,
 
     /// <summary>
-    /// IS NOT ONE OF (hashed) - It matches when the comparison attribute is not equal to any of the comparison values (where the comparison is performed using the SHA256 hashes of the values).
+    /// IS NOT ONE OF (hashed) - It matches when the comparison attribute is not equal to any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values).
     /// </summary>
-    SensitiveNotOneOf = 17,
+    SensitiveIsNotOneOf = 17,
 
     /// <summary>
     /// BEFORE (UTC datetime) - It matches when the comparison attribute interpreted as the seconds elapsed since <see href="https://en.wikipedia.org/wiki/Unix_time">Unix Epoch</see> is less than the comparison value.
@@ -96,42 +106,82 @@ public enum UserComparator : byte
     DateTimeAfter = 19,
 
     /// <summary>
-    /// EQUALS (hashed) - It matches when the comparison attribute is equal to the comparison value (where the comparison is performed using the SHA256 hashes of the values).
+    /// EQUALS (hashed) - It matches when the comparison attribute is equal to the comparison value (where the comparison is performed using the salted SHA256 hashes of the values).
     /// </summary>
     SensitiveTextEquals = 20,
 
     /// <summary>
-    /// NOT EQUALS (hashed) - It matches when the comparison attribute is not equal to the comparison value (where the comparison is performed using the SHA256 hashes of the values).
+    /// NOT EQUALS (hashed) - It matches when the comparison attribute is not equal to the comparison value (where the comparison is performed using the salted SHA256 hashes of the values).
     /// </summary>
     SensitiveTextNotEquals = 21,
 
     /// <summary>
-    /// STARTS WITH ANY OF (hashed) - It matches when the comparison attribute starts with any of the comparison values (where the comparison is performed using the SHA256 hashes of the values).
+    /// STARTS WITH ANY OF (hashed) - It matches when the comparison attribute starts with any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values).
     /// </summary>
-    SensitiveTextStartsWith = 22,
+    SensitiveTextStartsWithAnyOf = 22,
 
     /// <summary>
     /// NOT STARTS WITH ANY OF (hashed) - It matches when the comparison attribute does not start with any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values).
     /// </summary>
-    SensitiveTextNotStartsWith = 23,
+    SensitiveTextNotStartsWithAnyOf = 23,
 
     /// <summary>
     /// ENDS WITH ANY OF (hashed) - It matches when the comparison attribute ends with any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values).
     /// </summary>
-    SensitiveTextEndsWith = 24,
+    SensitiveTextEndsWithAnyOf = 24,
 
     /// <summary>
     /// NOT ENDS WITH ANY OF (hashed) - It matches when the comparison attribute does not end with any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values).
     /// </summary>
-    SensitiveTextNotEndsWith = 25,
+    SensitiveTextNotEndsWithAnyOf = 25,
 
     /// <summary>
     /// ARRAY CONTAINS ANY OF (hashed) - It matches when the comparison attribute interpreted as a comma-separated list contains any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values).
     /// </summary>
-    SensitiveArrayContains = 26,
+    SensitiveArrayContainsAnyOf = 26,
 
     /// <summary>
     /// ARRAY NOT CONTAINS ANY OF (hashed) - It matches when the comparison attribute interpreted as a comma-separated list does not contain any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values).
     /// </summary>
-    SensitiveArrayNotContains = 27,
+    SensitiveArrayNotContainsAnyOf = 27,
+
+    /// <summary>
+    /// EQUALS (cleartext) - It matches when the comparison attribute is equal to the comparison value.
+    /// </summary>
+    TextEquals = 28,
+
+    /// <summary>
+    /// NOT EQUALS (cleartext) - It matches when the comparison attribute is not equal to the comparison value.
+    /// </summary>
+    TextNotEquals = 29,
+
+    /// <summary>
+    /// STARTS WITH ANY OF (cleartext) - It matches when the comparison attribute starts with any of the comparison values.
+    /// </summary>
+    TextStartsWithAnyOf = 30,
+
+    /// <summary>
+    /// NOT STARTS WITH ANY OF (cleartext) - It matches when the comparison attribute does not start with any of the comparison values.
+    /// </summary>
+    TextNotStartsWithAnyOf = 31,
+
+    /// <summary>
+    /// ENDS WITH ANY OF (cleartext) - It matches when the comparison attribute ends with any of the comparison values.
+    /// </summary>
+    TextEndsWithAnyOf = 32,
+
+    /// <summary>
+    /// NOT ENDS WITH ANY OF (cleartext) - It matches when the comparison attribute does not end with any of the comparison values.
+    /// </summary>
+    TextNotEndsWithAnyOf = 33,
+
+    /// <summary>
+    /// ARRAY CONTAINS ANY OF (cleartext) - It matches when the comparison attribute interpreted as a comma-separated list contains any of the comparison values.
+    /// </summary>
+    ArrayContainsAnyOf = 34,
+
+    /// <summary>
+    /// ARRAY NOT CONTAINS ANY OF (cleartext) - It matches when the comparison attribute interpreted as a comma-separated list does not contain any of the comparison values.
+    /// </summary>
+    ArrayNotContainsAnyOf = 35,
 }

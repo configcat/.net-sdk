@@ -25,9 +25,13 @@ internal static class RolloutEvaluatorExtensions
             return EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: remoteConfig?.TimeStamp, user, logMessage.InvariantFormattedMessage);
         }
 
-        var evaluateContext = new EvaluateContext(key, setting, defaultValue.ToSettingValue(out _), user, settings);
-        var evaluateResult = evaluator.Evaluate(ref evaluateContext);
-        return EvaluationDetails.FromEvaluateResult<T>(key, evaluateResult, setting.SettingType, fetchTime: remoteConfig?.TimeStamp, user);
+        var evaluateContext = new EvaluateContext(key, setting, user, settings);
+        // NOTE: It's better to avoid virtual generic method calls as they are slow and may be problematic for older AOT compilers (like Mono AOT or IL2CPP),
+        // especially, when targeting platforms which disallow the execution of dynamically generated code (e.g. Xamarin.iOS).
+        var evaluateResult = evaluator is RolloutEvaluator rolloutEvaluator
+            ? rolloutEvaluator.Evaluate(defaultValue, ref evaluateContext, out var value)
+            : evaluator.Evaluate(defaultValue, ref evaluateContext, out value);
+        return EvaluationDetails.FromEvaluateResult(key, value, evaluateResult, fetchTime: remoteConfig?.TimeStamp, user);
     }
 
     public static EvaluationDetails[] EvaluateAll(this IRolloutEvaluator evaluator, Dictionary<string, Setting>? settings, User? user,
@@ -41,6 +45,7 @@ internal static class RolloutEvaluatorExtensions
 
         var evaluationDetailsArray = new EvaluationDetails[settings.Count];
         List<Exception>? exceptionList = null;
+        var rolloutEvaluator = evaluator as RolloutEvaluator;
 
         var index = 0;
         foreach (var kvp in settings)
@@ -48,9 +53,13 @@ internal static class RolloutEvaluatorExtensions
             EvaluationDetails evaluationDetails;
             try
             {
-                var evaluateContext = new EvaluateContext(kvp.Key, kvp.Value, defaultValue: default, user, settings);
-                var evaluateResult = evaluator.Evaluate(ref evaluateContext);
-                evaluationDetails = EvaluationDetails.FromEvaluateResult<object>(kvp.Key, evaluateResult, kvp.Value.SettingType, fetchTime: remoteConfig?.TimeStamp, user);
+                var evaluateContext = new EvaluateContext(kvp.Key, kvp.Value, user, settings);
+                // NOTE: It's better to avoid virtual generic method calls as they are slow and may be problematic for older AOT compilers (like Mono AOT or IL2CPP),
+                // especially, when targeting platforms which disallow the execution of dynamically generated code (e.g. Xamarin.iOS).
+                var evaluateResult = rolloutEvaluator is not null
+                    ? rolloutEvaluator.Evaluate<object?>(defaultValue: null, ref evaluateContext, out var value)
+                    : evaluator.Evaluate(defaultValue: null, ref evaluateContext, out value);
+                evaluationDetails = EvaluationDetails.FromEvaluateResult(kvp.Key, value, evaluateResult, fetchTime: remoteConfig?.TimeStamp, user);
             }
             catch (Exception ex)
             {

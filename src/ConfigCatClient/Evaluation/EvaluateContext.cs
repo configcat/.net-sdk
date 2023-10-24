@@ -7,7 +7,6 @@ internal struct EvaluateContext
 {
     public readonly string Key;
     public readonly Setting Setting;
-    public readonly SettingValue DefaultValue;
     public readonly User? User;
     public readonly IReadOnlyDictionary<string, Setting> Settings;
 
@@ -22,11 +21,10 @@ internal struct EvaluateContext
 
     public IndentedTextBuilder? LogBuilder;
 
-    public EvaluateContext(string key, Setting setting, SettingValue defaultValue, User? user, IReadOnlyDictionary<string, Setting> settings)
+    public EvaluateContext(string key, Setting setting, User? user, IReadOnlyDictionary<string, Setting> settings)
     {
         this.Key = key;
         this.Setting = setting;
-        this.DefaultValue = defaultValue;
         this.User = user;
         this.Settings = settings;
 
@@ -37,7 +35,7 @@ internal struct EvaluateContext
     }
 
     public EvaluateContext(string key, Setting setting, ref EvaluateContext dependentFlagContext)
-        : this(key, setting, dependentFlagContext.DefaultValue, dependentFlagContext.User, dependentFlagContext.Settings)
+        : this(key, setting, dependentFlagContext.User, dependentFlagContext.Settings)
     {
         this.userAttributes = dependentFlagContext.userAttributes;
         this.visitedFlags = dependentFlagContext.VisitedFlags; // crucial to use the property here to make sure the list is created!

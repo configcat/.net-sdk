@@ -192,7 +192,7 @@ public class ConfigCatClientTests
             .Throws<Exception>();
 
         this.evaluatorMock
-            .Setup(m => m.Evaluate(ref It.Ref<EvaluateContext>.IsAny))
+            .Setup(m => m.Evaluate(It.IsAny<It.IsAnyType>(), ref It.Ref<EvaluateContext>.IsAny, out It.Ref<It.IsAnyType>.IsAny))
             .Throws<Exception>();
 
         var client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, new Hooks());
@@ -225,7 +225,7 @@ public class ConfigCatClientTests
             .Throws<Exception>();
 
         this.evaluatorMock
-            .Setup(m => m.Evaluate(ref It.Ref<EvaluateContext>.IsAny))
+            .Setup(m => m.Evaluate(It.IsAny<It.IsAnyType>(), ref It.Ref<EvaluateContext>.IsAny, out It.Ref<It.IsAnyType>.IsAny))
             .Throws<Exception>();
 
         var client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, new Hooks());
@@ -509,7 +509,7 @@ public class ConfigCatClientTests
         var timeStamp = ProjectConfig.GenerateTimeStamp();
 
         this.evaluatorMock
-            .Setup(m => m.Evaluate(ref It.Ref<EvaluateContext>.IsAny))
+            .Setup(m => m.Evaluate(It.IsAny<It.IsAnyType>(), ref It.Ref<EvaluateContext>.IsAny, out It.Ref<It.IsAnyType>.IsAny))
             .Throws(new ApplicationException(errorMessage));
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
@@ -708,7 +708,7 @@ public class ConfigCatClientTests
         var timeStamp = ProjectConfig.GenerateTimeStamp();
 
         this.evaluatorMock
-            .Setup(m => m.Evaluate(ref It.Ref<EvaluateContext>.IsAny))
+            .Setup(m => m.Evaluate(It.IsAny<It.IsAnyType>(), ref It.Ref<EvaluateContext>.IsAny, out It.Ref<It.IsAnyType>.IsAny))
             .Throws(new ApplicationException(errorMessage));
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,

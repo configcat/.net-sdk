@@ -11,6 +11,12 @@ internal class IndentedTextBuilder
     private readonly StringBuilder stringBuilder = new();
     private int indentLevel;
 
+    public IndentedTextBuilder ResetIndent()
+    {
+        this.indentLevel = 0;
+        return this;
+    }
+
     public IndentedTextBuilder IncreaseIndent()
     {
         this.indentLevel++;

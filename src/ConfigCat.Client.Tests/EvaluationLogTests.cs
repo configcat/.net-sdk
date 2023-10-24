@@ -320,10 +320,10 @@ public class EvaluationLogTests
         var actualIsLogBuilt = false;
         var evaluatorMock = new Mock<IRolloutEvaluator>();
         evaluatorMock
-            .Setup(e => e.Evaluate(ref It.Ref<EvaluateContext>.IsAny))
-            .Returns((ref EvaluateContext ctx) =>
+            .Setup(e => e.Evaluate(It.IsAny<bool?>(), ref It.Ref<EvaluateContext>.IsAny, out It.Ref<bool?>.IsAny))
+            .Returns((bool? defaultValue, ref EvaluateContext ctx, out bool? returnValue) =>
             {
-                var result = evaluator.Evaluate(ref ctx);
+                var result = evaluator.Evaluate(defaultValue, ref ctx, out returnValue);
                 actualIsLogBuilt = ctx.LogBuilder is not null;
                 return result;
             });

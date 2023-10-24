@@ -1,5 +1,4 @@
 using ConfigCat.Client.Utils;
-using System;
 using System.Globalization;
 
 namespace ConfigCat.Client.Evaluation;

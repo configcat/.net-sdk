@@ -23,11 +23,11 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         this.logger = logger;
     }
 
-    public EvaluateResult Evaluate(ref EvaluateContext context)
+    public EvaluateResult Evaluate<T>(T defaultValue, ref EvaluateContext context, [NotNull] out T returnValue)
     {
         ref var logBuilder = ref context.LogBuilder;
 
-        // Building the evaluation log is relatively expensive, so let's not do it if it wouldn't be logged anyway.
+        // Building the evaluation log is expensive, so let's not do it if it wouldn't be logged anyway.
         if (this.logger.IsEnabled(LogLevel.Info))
         {
             logBuilder = new IndentedTextBuilder();
@@ -42,16 +42,46 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             logBuilder.IncreaseIndent();
         }
 
-        object? returnValue = null;
+        returnValue = default!;
         try
         {
             var result = EvaluateSetting(ref context);
-            returnValue = result.Value.GetValue(context.Setting.SettingType, throwIfInvalid: false) ?? EvaluateLogHelper.InvalidValuePlaceholder;
+
+            if (typeof(T) != typeof(object))
+            {
+                var expectedSettingType = typeof(T).ToSettingType();
+
+                // NOTE: We've already checked earlier in the call chain that T is an allowed type (see also TypeExtensions.EnsureSupportedSettingClrType).
+                Debug.Assert(expectedSettingType != Setting.UnknownType, "Type is not supported.");
+
+                // context.Setting.SettingType can be unknown in two cases:
+                // 1. when the setting type is missing from the config JSON (which should occur in the case of a full config JSON flag override only) or
+                // 2. when the setting comes from a non-full config JSON flag override and has an unsupported value (see also ObjectExtensions.ToSetting).
+                // The latter case is handled by SettingValue.GetValue<T> below.
+                if (context.Setting.SettingType != Setting.UnknownType && context.Setting.SettingType != expectedSettingType)
+                {
+                    throw new InvalidOperationException(
+                        "The type of a setting must match the type of the specified default value "
+                        + $"Setting's type was {context.Setting.SettingType} but the default value's type was {typeof(T)}. "
+                        + $"Please use a default value which corresponds to the setting type {context.Setting.SettingType}.");
+                }
+
+                returnValue = result.Value.GetValue<T>(expectedSettingType)!;
+            }
+            else
+            {
+                returnValue = (T)(context.Setting.SettingType != Setting.UnknownType
+                    ? result.Value.GetValue(context.Setting.SettingType)!
+                    : result.Value.GetValue()!);
+            }
+
             return result;
         }
         catch
         {
-            returnValue = context.DefaultValue.GetValue(context.Setting.SettingType, throwIfInvalid: false);
+            logBuilder?.ResetIndent().IncreaseIndent();
+
+            returnValue = defaultValue;
             throw;
         }
         finally

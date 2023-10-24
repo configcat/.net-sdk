@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using ConfigCat.Client.Evaluation;
 
 namespace ConfigCat.Client;
@@ -9,40 +8,21 @@ namespace ConfigCat.Client;
 /// </summary>
 public abstract record class EvaluationDetails
 {
-    internal static EvaluationDetails<TValue> FromEvaluateResult<TValue>(string key, in EvaluateResult evaluateResult, SettingType settingType,
+    internal static EvaluationDetails<TValue> FromEvaluateResult<TValue>(string key, TValue value, in EvaluateResult evaluateResult,
         DateTime? fetchTime, User? user)
     {
-        // NOTE: We've already checked earlier in the call chain that TValue is an allowed type (see also TypeExtensions.EnsureSupportedSettingClrType).
-        Debug.Assert(typeof(TValue) == typeof(object) || typeof(TValue).ToSettingType() != Setting.UnknownType, "Type is not supported.");
-
-        EvaluationDetails<TValue> instance;
-
-        if (typeof(TValue) != typeof(object))
+        var instance = new EvaluationDetails<TValue>(key, value)
         {
-            if (settingType != Setting.UnknownType && settingType != typeof(TValue).ToSettingType())
-            {
-                throw new InvalidOperationException(
-                    "The type of a setting must match the type of the setting's default value. "
-                    + $"Setting's type was {settingType} but the default value's type was {typeof(TValue)}. "
-                    + $"Please use a default value which corresponds to the setting type {settingType}.");
-            }
+            User = user,
+            VariationId = evaluateResult.VariationId,
+            MatchedTargetingRule = evaluateResult.MatchedTargetingRule,
+            MatchedPercentageOption = evaluateResult.MatchedPercentageOption
+        };
 
-            instance = new EvaluationDetails<TValue>(key, evaluateResult.Value.GetValue<TValue>(settingType));
-        }
-        else
-        {
-            EvaluationDetails evaluationDetails = new EvaluationDetails<object>(key, evaluateResult.Value.GetValue(settingType)!);
-            instance = (EvaluationDetails<TValue>)evaluationDetails;
-        }
-
-        instance.VariationId = evaluateResult.VariationId;
         if (fetchTime is not null)
         {
             instance.FetchTime = fetchTime.Value;
         }
-        instance.User = user;
-        instance.MatchedTargetingRule = evaluateResult.MatchedTargetingRule;
-        instance.MatchedPercentageOption = evaluateResult.MatchedPercentageOption;
 
         return instance;
     }

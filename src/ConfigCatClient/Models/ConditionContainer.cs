@@ -14,9 +14,9 @@ internal struct ConditionContainer : IConditionProvider
     private object? condition;
 
 #if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "t")]
+    [JsonProperty(PropertyName = "u")]
 #else
-    [JsonPropertyName("t")]
+    [JsonPropertyName("u")]
 #endif
     public UserCondition? UserCondition
     {
@@ -36,9 +36,9 @@ internal struct ConditionContainer : IConditionProvider
     }
 
 #if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "d")]
+    [JsonProperty(PropertyName = "p")]
 #else
-    [JsonPropertyName("d")]
+    [JsonPropertyName("p")]
 #endif
     public PrerequisiteFlagCondition? PrerequisiteFlagCondition
     {

@@ -38,7 +38,7 @@ public class ModelTests
     }
 
     [DataTestMethod]
-    [DataRow(BasicSampleSdkKey, null, "stringIsNotInDogDefaultCat", 0, 0, new[] { "User.Email IS NOT ONE OF [<2 hashed values>]" })]
+    [DataRow(BasicSampleSdkKey, null, "stringIsNotInDogDefaultCat", 0, 0, new[] { "User.Email IS NOT ONE OF ['a@configcat.com', 'b@configcat.com']" })]
     [DataRow(SegmentsV6SampleSdkKey, null, "countrySegment", 0, 0, new[] { "User IS IN SEGMENT 'United'" })]
     [DataRow(FlagDependencyV6SampleSdkKey, null, "boolDependsOnBool", 0, 0, new[] { "Flag 'mainBoolFlag' EQUALS 'True'" })]
     public void Condition_ToString(string? sdkKey, string baseUrlOrFileName, string settingKey, int targetingRuleIndex, int conditionIndex, string[] expectedResultLines)
@@ -71,7 +71,7 @@ public class ModelTests
     [DataTestMethod]
     [DataRow(BasicSampleSdkKey, null, "stringIsNotInDogDefaultCat", 0, new[]
     {
-        "IF User.Email IS NOT ONE OF [<2 hashed values>]",
+        "IF User.Email IS NOT ONE OF ['a@configcat.com', 'b@configcat.com']",
         "THEN 'Dog'",
     })]
     [DataRow(ComparatorsV6SampleSdkKey, null, "missingPercentageAttribute", 0, new[]
@@ -102,7 +102,7 @@ public class ModelTests
     [DataRow(null, "test_json_complex", "doubleSetting", new[] { "To all users: '3.14'" })]
     [DataRow(BasicSampleSdkKey, null, "stringIsNotInDogDefaultCat", new[]
     {
-        "IF User.Email IS NOT ONE OF [<2 hashed values>]",
+        "IF User.Email IS NOT ONE OF ['a@configcat.com', 'b@configcat.com']",
         "THEN 'Dog'",
         "To all others: 'Cat'",
     })]
@@ -122,7 +122,7 @@ public class ModelTests
     })]
     [DataRow(BasicSampleSdkKey, null, "string25Cat25Dog25Falcon25HorseAdvancedRules", new[]
     {
-        "IF User.Country IS ONE OF [<2 hashed values>]",
+        "IF User.Country IS ONE OF ['Hungary', 'United Kingdom']",
         "THEN 'Dolphin'",
         "ELSE IF User.Custom1 CONTAINS ANY OF ['admi']",
         "THEN 'Lion'",

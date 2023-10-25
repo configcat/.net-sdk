@@ -203,11 +203,10 @@ internal static class EvaluateLogHelper
 
     private static IndentedTextBuilder AppendTargetingRuleThenPart(this IndentedTextBuilder builder, TargetingRule targetingRule, bool newLine, bool appendPercentageOptions = false, string? percentageOptionsAttribute = null)
     {
-        var percentageOptions = targetingRule.PercentageOptions;
-
         (newLine ? builder.NewLine() : builder.Append(" "))
             .Append("THEN");
 
+        var percentageOptions = targetingRule.PercentageOptions;
         if (percentageOptions is not { Length: > 0 })
         {
             return builder.Append($" '{targetingRule.SimpleValue?.Value ?? default}'");
@@ -304,22 +303,16 @@ internal static class EvaluateLogHelper
     {
         return comparator switch
         {
-            UserComparator.IsOneOf or UserComparator.SensitiveIsOneOf => "IS ONE OF",
-            UserComparator.IsNotOneOf or UserComparator.SensitiveIsNotOneOf => "IS NOT ONE OF",
+            UserComparator.IsOneOf or UserComparator.SensitiveIsOneOf or UserComparator.SemVerIsOneOf => "IS ONE OF",
+            UserComparator.IsNotOneOf or UserComparator.SensitiveIsNotOneOf or UserComparator.SemVerIsNotOneOf => "IS NOT ONE OF",
             UserComparator.ContainsAnyOf => "CONTAINS ANY OF",
             UserComparator.NotContainsAnyOf => "NOT CONTAINS ANY OF",
-            UserComparator.SemVerIsOneOf => "IS ONE OF",
-            UserComparator.SemVerIsNotOneOf => "IS NOT ONE OF",
-            UserComparator.SemVerLess => "<",
-            UserComparator.SemVerLessOrEquals => "<=",
-            UserComparator.SemVerGreater => ">",
-            UserComparator.SemVerGreaterOrEquals => ">=",
+            UserComparator.SemVerLess or UserComparator.NumberLess => "<",
+            UserComparator.SemVerLessOrEquals or UserComparator.NumberLessOrEquals => "<=",
+            UserComparator.SemVerGreater or UserComparator.NumberGreater => ">",
+            UserComparator.SemVerGreaterOrEquals or UserComparator.NumberGreaterOrEquals => ">=",
             UserComparator.NumberEquals => "=",
             UserComparator.NumberNotEquals => "!=",
-            UserComparator.NumberLess => "<",
-            UserComparator.NumberLessOrEquals => "<=",
-            UserComparator.NumberGreater => ">",
-            UserComparator.NumberGreaterOrEquals => ">=",
             UserComparator.DateTimeBefore => "BEFORE",
             UserComparator.DateTimeAfter => "AFTER",
             UserComparator.TextEquals or UserComparator.SensitiveTextEquals => "EQUALS",

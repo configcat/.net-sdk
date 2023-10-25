@@ -62,7 +62,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                 if (context.Setting.SettingType != Setting.UnknownType && context.Setting.SettingType != expectedSettingType)
                 {
                     throw new InvalidOperationException(
-                        "The type of a setting must match the type of the specified default value "
+                        "The type of a setting must match the type of the specified default value. "
                         + $"Setting's type was {context.Setting.SettingType} but the default value's type was {typeof(T)}. "
                         + $"Please use a default value which corresponds to the setting type {context.Setting.SettingType}.");
                 }
@@ -159,13 +159,10 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                 logBuilder?.DecreaseIndent();
                 return true;
             }
-            else
-            {
-                logBuilder?
-                    .NewLine(TargetingRuleIgnoredMessage)
-                    .DecreaseIndent();
-                continue;
-            }
+
+            logBuilder?
+                .NewLine(TargetingRuleIgnoredMessage)
+                .DecreaseIndent();
         }
 
         result = default;
@@ -237,14 +234,14 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                 continue;
             }
 
-            var percentageOptionValue = percentageOption.Value.GetValue(context.Setting.SettingType, throwIfInvalid: false);
+            var percentageOptionValue = percentageOption.Value.GetValue(throwIfInvalid: false);
             logBuilder?.NewLine().Append($"- Hash value {hashValue} selects % option {i + 1} ({percentageOption.Percentage}%), '{percentageOptionValue ?? EvaluateLogHelper.InvalidValuePlaceholder}'.");
 
             result = new EvaluateResult(percentageOption, matchedTargetingRule: targetingRule, matchedPercentageOption: percentageOption);
             return true;
         }
 
-        throw new InvalidOperationException("Sum of percentage option percentages are less than 100).");
+        throw new InvalidOperationException("Sum of percentage option percentages are less than 100.");
     }
 
     private bool EvaluateConditions<TCondition>(TCondition[] conditions, TargetingRule? targetingRule, string contextSalt, ref EvaluateContext context, out string? error)
@@ -301,12 +298,15 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                     throw new InvalidOperationException(); // execution should never get here
             }
 
-            if (targetingRule is null || conditions.Length > 1)
+            if (logBuilder is not null)
             {
-                logBuilder?.AppendConditionConsequence(conditionResult);
-            }
+                if (targetingRule is null || conditions.Length > 1)
+                {
+                    logBuilder.AppendConditionConsequence(conditionResult);
+                }
 
-            logBuilder?.DecreaseIndent();
+                logBuilder.DecreaseIndent();
+            }
 
             if (!conditionResult)
             {
@@ -429,7 +429,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                     error = HandleInvalidUserAttribute(condition, context.Key, userAttributeName, $"'{userAttributeValue}' is not a valid decimal number");
                     return false;
                 }
-                return EvaluateNumberRelation(number, condition.Comparator, condition.DoubleValue);
+                return EvaluateNumberRelation(number, comparator, condition.DoubleValue);
 
             case UserComparator.DateTimeBefore:
             case UserComparator.DateTimeAfter:
@@ -620,7 +620,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             if (!result && version.PrecedenceMatches(version2))
             {
                 // NOTE: Previous versions of the evaluation algorithm require that
-                // all the comparison values are empty or valid, that is, we can't stop when finding a match.
+                // none of the comparison values are empty or invalid, that is, we can't stop when finding a match.
                 // We keep this behavior for backward compatibility.
                 result = true;
             }

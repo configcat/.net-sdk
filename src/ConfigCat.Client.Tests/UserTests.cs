@@ -126,7 +126,6 @@ public class UserTests
         Assert.AreEqual(expectedValue, user.GetAllAttributes()[nameof(User.Identifier)]);
     }
 
-
     [DataTestMethod]
     [DataRow("datetime", "2023-09-19T11:01:35.0000000+00:00", "1695121295")]
     [DataRow("datetime", "2023-09-19T13:01:35.0000000+02:00", "1695121295")]

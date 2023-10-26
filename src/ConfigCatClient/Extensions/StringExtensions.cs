@@ -16,29 +16,13 @@ internal static class StringExtensions
 #endif
     }
 
-    public static byte[] Sha256(this string text)
+    public static byte[] Sha256(this byte[] bytes)
     {
-        var textBytes = Encoding.UTF8.GetBytes(text);
 #if NET5_0_OR_GREATER
-        return SHA256.HashData(textBytes);
+        return SHA256.HashData(bytes);
 #else
         using var hash = SHA256.Create();
-        return hash.ComputeHash(textBytes);
-#endif
-    }
-
-    public static
-#if NET5_0_OR_GREATER
-        ReadOnlySpan<char>
-#else
-        string
-#endif
-        ToConcatenable(this ReadOnlySpan<char> s)
-    {
-#if NET5_0_OR_GREATER
-        return s;
-#else
-        return s.ToString();
+        return hash.ComputeHash(bytes);
 #endif
     }
 

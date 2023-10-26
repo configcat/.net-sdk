@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Text;
 using ConfigCat.Client.Utils;
 using ConfigCat.Client.Versioning;
 
@@ -478,7 +479,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
     {
         EnsureComparisonValue(comparisonValue);
 
-        var hash = HashComparisonValue(text.AsSpan(), configJsonSalt, contextSalt);
+        var hash = HashComparisonValue(text, configJsonSalt, contextSalt);
 
         return hash.Equals(hexString: comparisonValue.AsSpan()) ^ negate;
     }
@@ -502,7 +503,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
     {
         EnsureComparisonValue(comparisonValues);
 
-        var hash = HashComparisonValue(text.AsSpan(), configJsonSalt, contextSalt);
+        var hash = HashComparisonValue(text, configJsonSalt, contextSalt);
 
         for (var i = 0; i < comparisonValues.Length; i++)
         {
@@ -543,6 +544,8 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
     {
         EnsureComparisonValue(comparisonValues);
 
+        var textUtf8 = Encoding.UTF8.GetBytes(text);
+
         for (var i = 0; i < comparisonValues.Length; i++)
         {
             var item = EnsureComparisonValue(comparisonValues[i]);
@@ -558,12 +561,12 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                 break; // execution should never get here (this is just for keeping the compiler happy)
             }
 
-            if (text.Length < sliceLength)
+            if (textUtf8.Length < sliceLength)
             {
                 continue;
             }
 
-            var slice = startsWith ? text.AsSpan(0, sliceLength) : text.AsSpan(text.Length - sliceLength);
+            var slice = startsWith ? textUtf8.AsSpan(0, sliceLength) : textUtf8.AsSpan(textUtf8.Length - sliceLength);
 
             var hash = HashComparisonValue(slice, configJsonSalt, contextSalt);
             if (hash.Equals(hexString: hash2))
@@ -696,7 +699,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
         for (var i = 0; i < array.Length; i++)
         {
-            var hash = HashComparisonValue(array[i].AsSpan(), configJsonSalt, contextSalt);
+            var hash = HashComparisonValue(array[i], configJsonSalt, contextSalt);
 
             for (var j = 0; j < comparisonValues.Length; j++)
             {
@@ -825,9 +828,32 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return result;
     }
 
-    private static byte[] HashComparisonValue(ReadOnlySpan<char> value, string configJsonSalt, string contextSalt)
+    private static byte[] HashComparisonValue(string value, string configJsonSalt, string contextSalt)
     {
-        return string.Concat(value.ToConcatenable(), configJsonSalt, contextSalt).Sha256();
+        var valueByteCount = Encoding.UTF8.GetByteCount(value);
+        var configJsonSaltByteCount = Encoding.UTF8.GetByteCount(configJsonSalt);
+        var contextSaltByteCount = Encoding.UTF8.GetByteCount(contextSalt);
+        var bytes = new byte[valueByteCount + configJsonSaltByteCount + contextSaltByteCount];
+
+        Encoding.UTF8.GetBytes(value, 0, value.Length, bytes, 0);
+        Encoding.UTF8.GetBytes(configJsonSalt, 0, configJsonSalt.Length, bytes, valueByteCount);
+        Encoding.UTF8.GetBytes(contextSalt, 0, contextSalt.Length, bytes, valueByteCount + configJsonSaltByteCount);
+
+        return bytes.Sha256();
+    }
+
+    private static byte[] HashComparisonValue(ReadOnlySpan<byte> valueUtf8, string configJsonSalt, string contextSalt)
+    {
+        var valueByteCount = valueUtf8.Length;
+        var configJsonSaltByteCount = Encoding.UTF8.GetByteCount(configJsonSalt);
+        var contextSaltByteCount = Encoding.UTF8.GetByteCount(contextSalt);
+        var bytes = new byte[valueByteCount + configJsonSaltByteCount + contextSaltByteCount];
+
+        valueUtf8.CopyTo(bytes);
+        Encoding.UTF8.GetBytes(configJsonSalt, 0, configJsonSalt.Length, bytes, valueByteCount);
+        Encoding.UTF8.GetBytes(contextSalt, 0, contextSalt.Length, bytes, valueByteCount + configJsonSaltByteCount);
+
+        return bytes.Sha256();
     }
 
     private static string EnsureConfigJsonSalt([NotNull] string? value)

@@ -14,4 +14,10 @@ public class MatrixTestRunner<TDescriptor> : MatrixTestRunnerBase<TDescriptor>
         Assert.AreEqual(parse(expected), actual, $"config: {DescriptorInstance.ConfigLocation.GetRealLocation()} | keyName: {keyName} | userId: {userId}");
         return true;
     }
+
+    protected override bool AssertVariationId(string expected, string? actual, string keyName, string? userId)
+    {
+        Assert.AreEqual(expected, actual, $"config: {DescriptorInstance.ConfigLocation.GetRealLocation()} | keyName: {keyName} | userId: {userId}");
+        return true;
+    }
 }

@@ -47,6 +47,14 @@ public class ConfigV5EvaluationTests : EvaluationTestsBase
         public static IEnumerable<object?[]> GetTests() => MatrixTestRunner<SensitiveTestsDescriptor>.GetTests();
     }
 
+    public class VariationIdTestsDescriptor : IMatrixTestDescriptor, IVariationIdMatrixText
+    {
+        // https://app.configcat.com/08d5a03c-feb7-af1e-a1fa-40b3329f8bed/08d774b9-3d05-0027-d5f4-3e76c3dba752/244cf8b0-f604-11e8-b543-f23c917f9d8d
+        public ConfigLocation ConfigLocation => new ConfigLocation.Cdn("PKDVCLf-Hq-h-kCzMp-L7Q/nQ5qkhRAUEa6beEyyrVLBA");
+        public string MatrixResultFileName => "testmatrix_variationid.csv";
+        public static IEnumerable<object?[]> GetTests() => MatrixTestRunner<VariationIdTestsDescriptor>.GetTests();
+    }
+
     private protected override Dictionary<string, Setting> BasicConfig => MatrixTestRunner<BasicTestsDescriptor>.Default.config;
 
     [DataTestMethod]
@@ -91,6 +99,15 @@ public class ConfigV5EvaluationTests : EvaluationTestsBase
         string? userId, string? userEmail, string? userCountry, string? userCustomAttributeName, string? userCustomAttributeValue)
     {
         MatrixTestRunner<SensitiveTestsDescriptor>.Default.RunTest(this.configEvaluator, this.logger, settingKey, expectedReturnValue,
+            userId, userEmail, userCountry, userCustomAttributeName, userCustomAttributeValue);
+    }
+
+    [DataTestMethod]
+    [DynamicData(nameof(VariationIdTestsDescriptor.GetTests), typeof(VariationIdTestsDescriptor), DynamicDataSourceType.Method)]
+    public void VariationIdTests(string configLocation, string settingKey, string expectedReturnValue,
+        string? userId, string? userEmail, string? userCountry, string? userCustomAttributeName, string? userCustomAttributeValue)
+    {
+        MatrixTestRunner<VariationIdTestsDescriptor>.Default.RunTest(this.configEvaluator, this.logger, settingKey, expectedReturnValue,
             userId, userEmail, userCountry, userCustomAttributeName, userCustomAttributeValue);
     }
 }

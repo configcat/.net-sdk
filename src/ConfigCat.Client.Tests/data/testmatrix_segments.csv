@@ -1,6 +1,6 @@
-Identifier;Email;Country;Custom1;developerAndBetaUserSegment
-##null##;;;;False
-;;;;False
-john@example.com;john@example.com;##null##;##null##;False
-jane@example.com;jane@example.com;##null##;##null##;False
-kate@example.com;kate@example.com;##null##;##null##;True
+Identifier;Email;Country;Custom1;developerAndBetaUserSegment;developerAndBetaUserCleartextSegment;notDeveloperAndNotBetaUserSegment;notDeveloperAndNotBetaUserCleartextSegment
+##null##;;;;False;False;False;False
+;;;;False;False;False;False
+john@example.com;john@example.com;##null##;##null##;False;False;False;False
+jane@example.com;jane@example.com;##null##;##null##;False;False;False;False
+kate@example.com;kate@example.com;##null##;##null##;True;True;True;True

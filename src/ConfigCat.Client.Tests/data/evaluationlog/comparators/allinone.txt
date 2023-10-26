@@ -2,16 +2,28 @@ INFO [5000] Evaluating 'allinone' for User '{"Identifier":"12345","Email":"joe@e
   Evaluating targeting rules and applying the first match if any:
   - IF User.Email EQUALS '<hashed value>' => true
     AND User.Email NOT EQUALS '<hashed value>' => false, skipping the remaining AND conditions
-    THEN '1' => no match
+    THEN '1h' => no match
+  - IF User.Email EQUALS 'joe@example.com' => true
+    AND User.Email NOT EQUALS 'joe@example.com' => false, skipping the remaining AND conditions
+    THEN '1c' => no match
   - IF User.Email IS ONE OF [<1 hashed value>] => true
     AND User.Email IS NOT ONE OF [<1 hashed value>] => false, skipping the remaining AND conditions
-    THEN '2' => no match
+    THEN '2h' => no match
+  - IF User.Email IS ONE OF ['joe@example.com'] => true
+    AND User.Email IS NOT ONE OF ['joe@example.com'] => false, skipping the remaining AND conditions
+    THEN '2c' => no match
   - IF User.Email STARTS WITH ANY OF [<1 hashed value>] => true
     AND User.Email NOT STARTS WITH ANY OF [<1 hashed value>] => false, skipping the remaining AND conditions
-    THEN '3' => no match
+    THEN '3h' => no match
+  - IF User.Email STARTS WITH ANY OF ['joe@'] => true
+    AND User.Email NOT STARTS WITH ANY OF ['joe@'] => false, skipping the remaining AND conditions
+    THEN '3c' => no match
   - IF User.Email ENDS WITH ANY OF [<1 hashed value>] => true
     AND User.Email NOT ENDS WITH ANY OF [<1 hashed value>] => false, skipping the remaining AND conditions
-    THEN '4' => no match
+    THEN '4h' => no match
+  - IF User.Email ENDS WITH ANY OF ['@example.com'] => true
+    AND User.Email NOT ENDS WITH ANY OF ['@example.com'] => false, skipping the remaining AND conditions
+    THEN '4c' => no match
   - IF User.Email CONTAINS ANY OF ['e@e'] => true
     AND User.Email NOT CONTAINS ANY OF ['e@e'] => false, skipping the remaining AND conditions
     THEN '5' => no match
@@ -38,5 +50,8 @@ INFO [5000] Evaluating 'allinone' for User '{"Identifier":"12345","Email":"joe@e
     THEN '12' => no match
   - IF User.Country ARRAY CONTAINS ANY OF [<1 hashed value>] => true
     AND User.Country ARRAY NOT CONTAINS ANY OF [<1 hashed value>] => false, skipping the remaining AND conditions
-    THEN '13' => no match
+    THEN '13h' => no match
+  - IF User.Country ARRAY CONTAINS ANY OF ['USA'] => true
+    AND User.Country ARRAY NOT CONTAINS ANY OF ['USA'] => false, skipping the remaining AND conditions
+    THEN '13c' => no match
   Returning 'default'.

@@ -23,14 +23,18 @@ public interface IMatrixTestDescriptor
     public string MatrixResultFileName { get; }
 }
 
+public interface IVariationIdMatrixText { }
+
 public class MatrixTestRunnerBase<TDescriptor> where TDescriptor : IMatrixTestDescriptor, new()
 {
     public static readonly TDescriptor DescriptorInstance = new();
 
+    private readonly bool isVariationIdMatrixTest;
     internal readonly Dictionary<string, Setting> config;
 
     public MatrixTestRunnerBase()
     {
+        this.isVariationIdMatrixTest = DescriptorInstance is IVariationIdMatrixText;
         this.config = DescriptorInstance.ConfigLocation.FetchConfigCached().Settings;
     }
 
@@ -79,37 +83,47 @@ public class MatrixTestRunnerBase<TDescriptor> where TDescriptor : IMatrixTestDe
 
     protected virtual bool AssertValue<T>(string expected, Func<string, T> parse, T actual, string keyName, string? userId) => true;
 
+    protected virtual bool AssertVariationId(string expected, string? actual, string keyName, string? userId) => true;
+
     internal bool RunTest(IRolloutEvaluator evaluator, LoggerWrapper logger, string settingKey, string expectedReturnValue, User? user = null)
     {
-        if (settingKey.StartsWith("bool", StringComparison.OrdinalIgnoreCase))
+        if (this.isVariationIdMatrixTest)
         {
-            var actual = evaluator.Evaluate(this.config, settingKey, false, user, null, logger).Value;
-
-            return AssertValue(expectedReturnValue, static e => bool.Parse(e), actual, settingKey, user?.Identifier);
-        }
-        else if (settingKey.StartsWith("double", StringComparison.OrdinalIgnoreCase))
-        {
-            var actual = evaluator.Evaluate(this.config, settingKey, double.NaN, user, null, logger).Value;
-
-            return AssertValue(expectedReturnValue, static e => double.Parse(e, CultureInfo.InvariantCulture), actual, settingKey, user?.Identifier);
-        }
-        else if (settingKey.StartsWith("integer", StringComparison.OrdinalIgnoreCase))
-        {
-            var actual = evaluator.Evaluate(this.config, settingKey, int.MinValue, user, null, logger).Value;
-
-            return AssertValue(expectedReturnValue, static e => int.Parse(e, CultureInfo.InvariantCulture), actual, settingKey, user?.Identifier);
-        }
-        else if (settingKey.StartsWith("string", StringComparison.OrdinalIgnoreCase))
-        {
-            var actual = evaluator.Evaluate(this.config, settingKey, string.Empty, user, null, logger).Value;
-
-            return AssertValue(expectedReturnValue, static e => e, actual, settingKey, user?.Identifier);
+            var actual = evaluator.Evaluate(this.config, settingKey, (object?)null, user, null, logger).VariationId;
+            return AssertVariationId(expectedReturnValue, actual, settingKey, user?.Identifier);
         }
         else
         {
-            var actual = evaluator.Evaluate(this.config, settingKey, (object?)null, user, null, logger).Value;
+            if (settingKey.StartsWith("bool", StringComparison.OrdinalIgnoreCase))
+            {
+                var actual = evaluator.Evaluate(this.config, settingKey, false, user, null, logger).Value;
 
-            return AssertValue(expectedReturnValue, static e => e, Convert.ToString(actual, CultureInfo.InvariantCulture), settingKey, user?.Identifier);
+                return AssertValue(expectedReturnValue, static e => bool.Parse(e), actual, settingKey, user?.Identifier);
+            }
+            else if (settingKey.StartsWith("double", StringComparison.OrdinalIgnoreCase))
+            {
+                var actual = evaluator.Evaluate(this.config, settingKey, double.NaN, user, null, logger).Value;
+
+                return AssertValue(expectedReturnValue, static e => double.Parse(e, CultureInfo.InvariantCulture), actual, settingKey, user?.Identifier);
+            }
+            else if (settingKey.StartsWith("integer", StringComparison.OrdinalIgnoreCase))
+            {
+                var actual = evaluator.Evaluate(this.config, settingKey, int.MinValue, user, null, logger).Value;
+
+                return AssertValue(expectedReturnValue, static e => int.Parse(e, CultureInfo.InvariantCulture), actual, settingKey, user?.Identifier);
+            }
+            else if (settingKey.StartsWith("string", StringComparison.OrdinalIgnoreCase))
+            {
+                var actual = evaluator.Evaluate(this.config, settingKey, string.Empty, user, null, logger).Value;
+
+                return AssertValue(expectedReturnValue, static e => e, actual, settingKey, user?.Identifier);
+            }
+            else
+            {
+                var actual = evaluator.Evaluate(this.config, settingKey, (object?)null, user, null, logger).Value;
+
+                return AssertValue(expectedReturnValue, static e => e, Convert.ToString(actual, CultureInfo.InvariantCulture), settingKey, user?.Identifier);
+            }
         }
     }
 

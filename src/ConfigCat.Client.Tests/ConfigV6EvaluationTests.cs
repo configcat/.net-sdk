@@ -54,6 +54,14 @@ public class ConfigV6EvaluationTests : EvaluationTestsBase
         public static IEnumerable<object?[]> GetTests() => MatrixTestRunner<SensitiveTestsDescriptor>.GetTests();
     }
 
+    public class VariationIdTestsDescriptor : IMatrixTestDescriptor, IVariationIdMatrixText
+    {
+        //https://app.configcat.com/v2/e7a75611-4256-49a5-9320-ce158755e3ba/08d5a03c-feb7-af1e-a1fa-40b3329f8bed/08dbc4dc-30c6-4969-8e4c-03f6a8764199/244cf8b0-f604-11e8-b543-f23c917f9d8d
+        public ConfigLocation ConfigLocation => new ConfigLocation.Cdn("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/spQnkRTIPEWVivZkWM84lQ");
+        public string MatrixResultFileName => "testmatrix_variationid.csv";
+        public static IEnumerable<object?[]> GetTests() => MatrixTestRunner<VariationIdTestsDescriptor>.GetTests();
+    }
+
     public class AndOrMatrixTestsDescriptor : IMatrixTestDescriptor
     {
         // https://app.configcat.com/v2/e7a75611-4256-49a5-9320-ce158755e3ba/08dbc325-7f69-4fd4-8af4-cf9f24ec8ac9/08dbc325-9d5e-4988-891c-fd4a45790bd1/08dbc325-9ebd-4587-8171-88f76a3004cb
@@ -84,6 +92,14 @@ public class ConfigV6EvaluationTests : EvaluationTestsBase
         public ConfigLocation ConfigLocation => new ConfigLocation.Cdn("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/h99HYXWWNE2bH8eWyLAVMA");
         public string MatrixResultFileName => "testmatrix_segments.csv";
         public static IEnumerable<object?[]> GetTests() => MatrixTestRunner<SegmentMatrixTestsDescriptor>.GetTests();
+    }
+
+    public class UnicodeMatrixTestsDescriptor : IMatrixTestDescriptor
+    {
+        // https://app.configcat.com/v2/e7a75611-4256-49a5-9320-ce158755e3ba/08dbc325-7f69-4fd4-8af4-cf9f24ec8ac9/08dbd63c-9774-49d6-8187-5f2aab7bd606/08dbc325-9ebd-4587-8171-88f76a3004cb
+        public ConfigLocation ConfigLocation => new ConfigLocation.Cdn("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/Da6w8dBbmUeMUBhh0iEeQQ");
+        public string MatrixResultFileName => "testmatrix_unicode.csv";
+        public static IEnumerable<object?[]> GetTests() => MatrixTestRunner<UnicodeMatrixTestsDescriptor>.GetTests();
     }
 
     private protected override Dictionary<string, Setting> BasicConfig => MatrixTestRunner<BasicTestsDescriptor>.Default.config;
@@ -134,6 +150,15 @@ public class ConfigV6EvaluationTests : EvaluationTestsBase
     }
 
     [DataTestMethod]
+    [DynamicData(nameof(VariationIdTestsDescriptor.GetTests), typeof(VariationIdTestsDescriptor), DynamicDataSourceType.Method)]
+    public void VariationIdTests(string configLocation, string settingKey, string expectedReturnValue,
+        string? userId, string? userEmail, string? userCountry, string? userCustomAttributeName, string? userCustomAttributeValue)
+    {
+        MatrixTestRunner<VariationIdTestsDescriptor>.Default.RunTest(this.configEvaluator, this.logger, settingKey, expectedReturnValue,
+            userId, userEmail, userCountry, userCustomAttributeName, userCustomAttributeValue);
+    }
+
+    [DataTestMethod]
     [DynamicData(nameof(AndOrMatrixTestsDescriptor.GetTests), typeof(AndOrMatrixTestsDescriptor), DynamicDataSourceType.Method)]
     public void AndOrMatrixTests(string configLocation, string settingKey, string expectedReturnValue,
         string? userId, string? userEmail, string? userCountry, string? userCustomAttributeName, string? userCustomAttributeValue)
@@ -166,6 +191,16 @@ public class ConfigV6EvaluationTests : EvaluationTestsBase
         string? userId, string? userEmail, string? userCountry, string? userCustomAttributeName, string? userCustomAttributeValue)
     {
         MatrixTestRunner<SegmentMatrixTestsDescriptor>.Default.RunTest(this.configEvaluator, this.logger, settingKey, expectedReturnValue,
+            userId, userEmail, userCountry, userCustomAttributeName, userCustomAttributeValue);
+    }
+
+
+    [DataTestMethod]
+    [DynamicData(nameof(UnicodeMatrixTestsDescriptor.GetTests), typeof(UnicodeMatrixTestsDescriptor), DynamicDataSourceType.Method)]
+    public void UnicodeMatrixTests(string configLocation, string settingKey, string expectedReturnValue,
+        string? userId, string? userEmail, string? userCountry, string? userCustomAttributeName, string? userCustomAttributeValue)
+    {
+        MatrixTestRunner<UnicodeMatrixTestsDescriptor>.Default.RunTest(this.configEvaluator, this.logger, settingKey, expectedReturnValue,
             userId, userEmail, userCountry, userCustomAttributeName, userCustomAttributeValue);
     }
 

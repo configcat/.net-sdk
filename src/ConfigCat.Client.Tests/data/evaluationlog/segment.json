@@ -9,6 +9,15 @@
       "expectedLog": "segment_no_user.txt"
     },
     {
+      "key": "featureWithNegatedSegmentTargetingCleartext",
+      "defaultValue": false,
+      "user": {
+        "Identifier": "12345"
+      },
+      "returnValue": false,
+      "expectedLog": "segment_no_targeted_attribute.txt"
+    },
+    {
       "key": "featureWithSegmentTargeting",
       "defaultValue": false,
       "user": {
@@ -18,7 +27,7 @@
       "returnValue": true,
       "expectedLog": "segment_matching.txt"
     },
-        {
+    {
       "key": "featureWithNegatedSegmentTargeting",
       "defaultValue": false,
       "user": {

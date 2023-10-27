@@ -127,16 +127,16 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             var targetingRule = targetingRules[i];
             var conditions = targetingRule.Conditions;
 
-            if (!TryEvaluateConditions(conditions, targetingRule, contextSalt: context.Key, ref context, out var isMatch))
+            var isMatch = EvaluateConditions(conditions, targetingRule, contextSalt: context.Key, ref context, out var error);
+            if (!isMatch)
             {
-                logBuilder?
-                    .IncreaseIndent()
-                    .NewLine(TargetingRuleIgnoredMessage)
-                    .DecreaseIndent();
-                continue;
-            }
-            else if (!isMatch)
-            {
+                if (error is not null)
+                {
+                    logBuilder?
+                        .IncreaseIndent()
+                        .NewLine(TargetingRuleIgnoredMessage)
+                        .DecreaseIndent();
+                }
                 continue;
             }
 
@@ -247,13 +247,13 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         throw new InvalidOperationException("Sum of percentage option percentages are less than 100).");
     }
 
-    private bool TryEvaluateConditions<TCondition>(TCondition[] conditions, TargetingRule? targetingRule, string contextSalt, ref EvaluateContext context, out bool result)
+    private bool EvaluateConditions<TCondition>(TCondition[] conditions, TargetingRule? targetingRule, string contextSalt, ref EvaluateContext context, out string? error)
         where TCondition : IConditionProvider
     {
-        result = true;
+        error = null;
+        var result = true;
 
         var logBuilder = context.LogBuilder;
-        string? error = null;
         var newLineBeforeThen = false;
 
         logBuilder?.NewLine("- ");
@@ -289,12 +289,12 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
                 case PrerequisiteFlagCondition prerequisiteFlagCondition:
                     conditionResult = EvaluatePrerequisiteFlagCondition(prerequisiteFlagCondition, ref context, out error);
-                    newLineBeforeThen = error is null || conditions.Length > 1;
+                    newLineBeforeThen = error is null || error != CircularDependencyError || conditions.Length > 1;
                     break;
 
                 case SegmentCondition segmentCondition:
                     conditionResult = EvaluateSegmentCondition(segmentCondition, ref context, out error);
-                    newLineBeforeThen = error is null || conditions.Length > 1;
+                    newLineBeforeThen = error is null || error != MissingUserObjectError || conditions.Length > 1;
                     break;
 
                 default:
@@ -324,7 +324,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             logBuilder?.AppendTargetingRuleConsequence(targetingRule, error, result, newLineBeforeThen);
         }
 
-        return error is null;
+        return result;
     }
 
     private bool EvaluateUserCondition(UserCondition condition, string contextSalt, ref EvaluateContext context, out string? error)
@@ -807,23 +807,34 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             .IncreaseIndent()
             .NewLine().Append($"Evaluating segment '{segment.Name}':");
 
-        TryEvaluateConditions(segment.Conditions, targetingRule: null, contextSalt: segment.Name, ref context, out var segmentResult);
+        var segmentResult = EvaluateConditions(segment.Conditions, targetingRule: null, contextSalt: segment.Name, ref context, out error);
 
         var comparator = condition.Comparator;
-        var result = comparator switch
+        var result = error is null && comparator switch
         {
             SegmentComparator.IsIn => segmentResult,
             SegmentComparator.IsNotIn => !segmentResult,
             _ => throw new InvalidOperationException("Comparison operator is invalid.")
         };
 
-        logBuilder?
-            .NewLine().Append($"Segment evaluation result: User {(segmentResult ? SegmentComparator.IsIn : SegmentComparator.IsNotIn).ToDisplayText()}.")
-            .NewLine("Condition (")
-                .AppendSegmentCondition(condition)
-                .Append(") evaluates to ").AppendEvaluationResult(result).Append(".")
-            .DecreaseIndent()
-            .NewLine(")");
+        if (logBuilder is not null)
+        {
+            logBuilder.NewLine("Segment evaluation result: ");
+            (error is null
+                ? logBuilder.Append($"User {(segmentResult ? SegmentComparator.IsIn : SegmentComparator.IsNotIn).ToDisplayText()}")
+                : logBuilder.Append(error))
+                .Append(".");
+
+            logBuilder.NewLine("Condition (").AppendSegmentCondition(condition).Append(")");
+            (error is null
+                ? logBuilder.Append(" evaluates to ").AppendEvaluationResult(result)
+                : logBuilder.Append(" failed to evaluate"))
+                .Append(".");
+
+            logBuilder
+                .DecreaseIndent()
+                .NewLine(")");
+        }
 
         return result;
     }

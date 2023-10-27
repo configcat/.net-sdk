@@ -23,6 +23,14 @@ public class ConfigV1EvaluationTests : EvaluationTestsBase
         public static IEnumerable<object?[]> GetTests() => MatrixTestRunner<NumericTestsDescriptor>.GetTests();
     }
 
+    public class SegmentTestsDescriptor : IMatrixTestDescriptor
+    {
+        // https://app.configcat.com/08d5a03c-feb7-af1e-a1fa-40b3329f8bed/08d9f207-6883-43e5-868c-cbf677af3fe6/244cf8b0-f604-11e8-b543-f23c917f9d8d
+        public ConfigLocation ConfigLocation => new ConfigLocation.Cdn("PKDVCLf-Hq-h-kCzMp-L7Q/LcYz135LE0qbcacz2mgXnA");
+        public string MatrixResultFileName => "testmatrix_segments_old.csv";
+        public static IEnumerable<object?[]> GetTests() => MatrixTestRunner<SegmentTestsDescriptor>.GetTests();
+    }
+
     public class SemanticVersionTestsDescriptor : IMatrixTestDescriptor
     {
         // https://app.configcat.com/08d5a03c-feb7-af1e-a1fa-40b3329f8bed/08d745f1-f315-7daf-d163-5541d3786e6f/244cf8b0-f604-11e8-b543-f23c917f9d8d
@@ -72,6 +80,15 @@ public class ConfigV1EvaluationTests : EvaluationTestsBase
         string? userId, string? userEmail, string? userCountry, string? userCustomAttributeName, string? userCustomAttributeValue)
     {
         MatrixTestRunner<NumericTestsDescriptor>.Default.RunTest(this.configEvaluator, this.logger, settingKey, expectedReturnValue,
+            userId, userEmail, userCountry, userCustomAttributeName, userCustomAttributeValue);
+    }
+
+    [DataTestMethod]
+    [DynamicData(nameof(SegmentTestsDescriptor.GetTests), typeof(SegmentTestsDescriptor), DynamicDataSourceType.Method)]
+    public void SegmentTests(string configLocation, string settingKey, string expectedReturnValue,
+        string? userId, string? userEmail, string? userCountry, string? userCustomAttributeName, string? userCustomAttributeValue)
+    {
+        MatrixTestRunner<SegmentTestsDescriptor>.Default.RunTest(this.configEvaluator, this.logger, settingKey, expectedReturnValue,
             userId, userEmail, userCountry, userCustomAttributeName, userCustomAttributeValue);
     }
 

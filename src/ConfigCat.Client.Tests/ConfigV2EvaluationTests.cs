@@ -30,6 +30,14 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
         public static IEnumerable<object?[]> GetTests() => MatrixTestRunner<NumericTestsDescriptor>.GetTests();
     }
 
+    public class SegmentTestsDescriptor : IMatrixTestDescriptor
+    {
+        // https://app.configcat.com/v2/e7a75611-4256-49a5-9320-ce158755e3ba/08d5a03c-feb7-af1e-a1fa-40b3329f8bed/08dbd6ca-a85f-4ed0-888a-2da18def92b5/244cf8b0-f604-11e8-b543-f23c917f9d8d
+        public ConfigLocation ConfigLocation => new ConfigLocation.Cdn("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/y_ZB7o-Xb0Swxth-ZlMSeA");
+        public string MatrixResultFileName => "testmatrix_segments_old.csv";
+        public static IEnumerable<object?[]> GetTests() => MatrixTestRunner<SegmentTestsDescriptor>.GetTests();
+    }
+
     public class SemanticVersionTestsDescriptor : IMatrixTestDescriptor
     {
         // https://app.configcat.com/v2/e7a75611-4256-49a5-9320-ce158755e3ba/08d5a03c-feb7-af1e-a1fa-40b3329f8bed/08dbc4dc-278c-4f83-8d36-db73ad6e2a3a/244cf8b0-f604-11e8-b543-f23c917f9d8d
@@ -119,6 +127,15 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
         string? userId, string? userEmail, string? userCountry, string? userCustomAttributeName, string? userCustomAttributeValue)
     {
         MatrixTestRunner<NumericTestsDescriptor>.Default.RunTest(this.configEvaluator, this.logger, settingKey, expectedReturnValue,
+            userId, userEmail, userCountry, userCustomAttributeName, userCustomAttributeValue);
+    }
+
+    [DataTestMethod]
+    [DynamicData(nameof(SegmentTestsDescriptor.GetTests), typeof(SegmentTestsDescriptor), DynamicDataSourceType.Method)]
+    public void SegmentTests(string configLocation, string settingKey, string expectedReturnValue,
+        string? userId, string? userEmail, string? userCountry, string? userCustomAttributeName, string? userCustomAttributeValue)
+    {
+        MatrixTestRunner<SegmentTestsDescriptor>.Default.RunTest(this.configEvaluator, this.logger, settingKey, expectedReturnValue,
             userId, userEmail, userCountry, userCustomAttributeName, userCustomAttributeValue);
     }
 

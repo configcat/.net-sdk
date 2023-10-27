@@ -5,7 +5,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace ConfigCat.Client.Tests;
 
 [TestClass]
-public class ConfigV5EvaluationTests : EvaluationTestsBase
+public class ConfigV1EvaluationTests : EvaluationTestsBase
 {
     public class BasicTestsDescriptor : IMatrixTestDescriptor
     {

@@ -12,7 +12,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace ConfigCat.Client.Tests;
 
 [TestClass]
-public class ConfigV6EvaluationTests : EvaluationTestsBase
+public class ConfigV2EvaluationTests : EvaluationTestsBase
 {
     public class BasicTestsDescriptor : IMatrixTestDescriptor
     {

@@ -56,7 +56,7 @@ internal static class ArrayUtils
             if ((hi = GetDigitValue(hexString[j++])) < 0
                 || (lo = GetDigitValue(hexString[j++])) < 0)
             {
-                throw new FormatException();
+                return false;
             }
 
             var decodedByte = (byte)(hi << 4 | lo);

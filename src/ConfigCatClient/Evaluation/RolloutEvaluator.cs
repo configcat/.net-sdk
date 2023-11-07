@@ -35,7 +35,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
             logBuilder.Append($"Evaluating '{context.Key}'");
 
-            if (context.User is not null)
+            if (context.IsUserAvailable)
             {
                 logBuilder.Append($" for User '{context.UserAttributes.Serialize()}'");
             }
@@ -173,7 +173,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
     {
         var logBuilder = context.LogBuilder;
 
-        if (context.User is null)
+        if (!context.IsUserAvailable)
         {
             logBuilder?.NewLine("Skipping % options because the User Object is missing.");
 
@@ -187,14 +187,9 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             return false;
         }
 
-        string? percentageOptionsAttributeValue;
-        var percentageOptionsAttributeName = context.Setting.PercentageOptionsAttribute;
-        if (percentageOptionsAttributeName is null)
-        {
-            percentageOptionsAttributeName = nameof(User.Identifier);
-            percentageOptionsAttributeValue = context.User.Identifier;
-        }
-        else if (!context.UserAttributes!.TryGetValue(percentageOptionsAttributeName, out percentageOptionsAttributeValue))
+        var percentageOptionsAttributeName = context.Setting.PercentageOptionsAttribute ?? nameof(User.Identifier);
+
+        if (!context.UserAttributes.TryGetValue(percentageOptionsAttributeName, out var percentageOptionsAttributeValue))
         {
             logBuilder?.NewLine().Append($"Skipping % options because the User.{percentageOptionsAttributeName} attribute is missing.");
 
@@ -334,7 +329,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         var logBuilder = context.LogBuilder;
         logBuilder?.AppendUserCondition(condition);
 
-        if (context.User is null)
+        if (!context.IsUserAvailable)
         {
             if (!context.IsMissingUserObjectLogged)
             {
@@ -348,7 +343,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
         var userAttributeName = condition.ComparisonAttribute ?? throw new InvalidOperationException("Comparison attribute name is missing.");
 
-        if (!(context.UserAttributes!.TryGetValue(userAttributeName, out var userAttributeValue) && userAttributeValue.Length > 0))
+        if (!(context.UserAttributes.TryGetValue(userAttributeName, out var userAttributeValue) && userAttributeValue.Length > 0))
         {
             this.logger.UserObjectAttributeIsMissing(condition.ToString(), context.Key, userAttributeName);
             error = string.Format(CultureInfo.InvariantCulture, MissingUserAttributeError, userAttributeName);
@@ -783,7 +778,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         var logBuilder = context.LogBuilder;
         logBuilder?.AppendSegmentCondition(condition);
 
-        if (context.User is null)
+        if (!context.IsUserAvailable)
         {
             if (!context.IsMissingUserObjectLogged)
             {

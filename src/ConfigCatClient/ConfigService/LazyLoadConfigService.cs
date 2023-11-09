@@ -14,8 +14,10 @@ internal sealed class LazyLoadConfigService : ConfigServiceBase, IConfigService
     {
         this.cacheTimeToLive = cacheTimeToLive;
 
-        hooks.RaiseClientReady();
+        ReadyTask = SetupClientReady(out _);
     }
+
+    public Task<ClientCacheState> ReadyTask { get; }
 
     public ProjectConfig GetConfig()
     {
@@ -62,5 +64,20 @@ internal sealed class LazyLoadConfigService : ConfigServiceBase, IConfigService
     private void OnConfigExpired()
     {
         this.Logger.Debug("config expired");
+    }
+
+    public override ClientCacheState GetCacheState(ProjectConfig cachedConfig)
+    {
+        if (cachedConfig.IsEmpty)
+        {
+            return ClientCacheState.NoFlagData;
+        }
+
+        if (cachedConfig.IsExpired(this.cacheTimeToLive))
+        {
+            return ClientCacheState.HasCachedFlagDataOnly;
+        }
+
+        return ClientCacheState.HasUpToDateFlagData;
     }
 }

@@ -28,6 +28,7 @@ internal abstract class ConfigServiceBase : IDisposable
     protected readonly LoggerWrapper Logger;
     protected readonly string CacheKey;
     protected readonly SafeHooksWrapper Hooks;
+    private CancellationTokenSource? clientReadyCancellationTokenSource;
 
     protected ConfigServiceBase(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline, SafeHooksWrapper hooks)
     {
@@ -37,12 +38,23 @@ internal abstract class ConfigServiceBase : IDisposable
         this.Logger = logger;
         this.Hooks = hooks;
         this.status = isOffline ? Status.Offline : Status.Online;
+        this.clientReadyCancellationTokenSource = new CancellationTokenSource();
     }
 
     /// <remarks>
     /// Note for inheritors. Beware, this method is called within a lock statement.
     /// </remarks>
-    protected virtual void DisposeSynchronized(bool disposing) { }
+    protected virtual void DisposeSynchronized(bool disposing)
+    {
+        // If initialization is still in progress, it should stop.
+        this.clientReadyCancellationTokenSource?.Cancel();
+
+        if (disposing)
+        {
+            this.clientReadyCancellationTokenSource?.Dispose();
+            this.clientReadyCancellationTokenSource = null;
+        }
+    }
 
     protected virtual void Dispose(bool disposing)
     {
@@ -68,6 +80,8 @@ internal abstract class ConfigServiceBase : IDisposable
 
         Dispose(true);
     }
+
+    public ProjectConfig GetInMemoryConfig() => this.ConfigCache.LocalCachedConfig;
 
     public virtual RefreshResult RefreshConfig()
     {
@@ -215,11 +229,39 @@ internal abstract class ConfigServiceBase : IDisposable
         logAction?.Invoke(this.Logger);
     }
 
-    protected TResult Synchronize<TState, TResult>(Func<TState, TResult> func, TState state)
+    public abstract ClientCacheState GetCacheState(ProjectConfig cachedConfig);
+
+    protected virtual async Task<ClientCacheState> WaitForReadyAsync(Task<ProjectConfig> initialCacheSyncUpTask, CancellationToken cancellationToken)
     {
-        lock (this.syncObj)
+        var cachedConfig = await initialCacheSyncUpTask.ConfigureAwait(false);
+        return GetCacheState(cachedConfig);
+    }
+
+    protected Task<ClientCacheState> SetupClientReady(out Task<ProjectConfig> initialCacheSyncUpTask)
+    {
+        // NOTE: This method is called from the ctor and called only once, so it's safe to skip locking and null check here.
+        var cancellationToken = this.clientReadyCancellationTokenSource!.Token;
+
+        initialCacheSyncUpTask = this.ConfigCache.GetAsync(this.CacheKey, cancellationToken).AsTask();
+
+        return Awaited(this, initialCacheSyncUpTask, cancellationToken);
+
+        static async Task<ClientCacheState> Awaited(ConfigServiceBase @this, Task<ProjectConfig> initialCacheSyncUpTask, CancellationToken cancellationToken)
         {
-            return func(state);
+            ClientCacheState cacheState;
+            try { cacheState = await @this.WaitForReadyAsync(initialCacheSyncUpTask, cancellationToken).ConfigureAwait(false); }
+            finally
+            {
+                lock (@this.syncObj)
+                {
+                    @this.clientReadyCancellationTokenSource?.Dispose();
+                    @this.clientReadyCancellationTokenSource = null;
+                }
+            }
+
+            @this.Hooks.RaiseClientReady(cacheState);
+
+            return cacheState;
         }
     }
 }

@@ -10,7 +10,7 @@ public interface IProvidesHooks
     /// <summary>
     /// Occurs when the client is ready to provide the actual value of feature flags or settings.
     /// </summary>
-    event EventHandler? ClientReady;
+    event EventHandler<ClientReadyEventArgs>? ClientReady;
 
     /// <summary>
     /// Occurs after the value of a feature flag of setting has been evaluated.

@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
+using ConfigCat.Client.Configuration;
 
 namespace ConfigCat.Client;
 
@@ -162,6 +164,27 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the refresh result.</returns>
     Task<RefreshResult> ForceRefreshAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Waits for the client to initialize (i.e. to raise the <see cref="IProvidesHooks.ClientReady"/> event).
+    /// </summary>
+    /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the state of the local cache at the time the initialization was completed.</returns>
+    Task<ClientCacheState> WaitForReadyAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Captures the current state of the client.
+    /// The resulting snapshot can be used to evaluate feature flags and settings based on the captured state synchronously,
+    /// without any underlying I/O-bound operations, which could block the executing thread for a longer period of time.
+    /// </summary>
+    /// <remarks>
+    /// The operation captures the in-memory stored config data. It does not attempt to update it by contacting the remote server.
+    /// It does not synchronize with the user-provided custom cache (see <see cref="ConfigCatClientOptions.ConfigCache"/>) either.<br/>
+    /// Therefore, it is recommended to use snapshots in conjunction with the Auto Polling mode, where the SDK automatically updates the local cache in the background.<br/>
+    /// For other polling modes, you'll need to manually initiate a cache refresh by invoking <see cref="ForceRefresh"/> or <see cref="ForceRefreshAsync"/>.
+    /// </remarks>
+    /// <returns>The snapshot object.</returns>
+    ConfigCatClientSnapshot Snapshot();
 
     /// <summary>
     /// Sets the default user.

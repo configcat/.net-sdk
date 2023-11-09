@@ -242,7 +242,7 @@ public class ConfigCacheTests
     public void CachePayloadSerialization_ShouldBePlatformIndependent(string configJson, string timeStamp, string httpETag, string expectedPayload)
     {
         var timeStampDateTime = DateTimeOffset.ParseExact(timeStamp, "o", CultureInfo.InvariantCulture).UtcDateTime;
-        var pc = new ProjectConfig(configJson, configJson.Deserialize<Config>(), timeStampDateTime, httpETag);
+        var pc = new ProjectConfig(configJson, Config.Deserialize(configJson.AsMemory()), timeStampDateTime, httpETag);
 
         Assert.AreEqual(expectedPayload, ProjectConfig.Serialize(pc));
     }

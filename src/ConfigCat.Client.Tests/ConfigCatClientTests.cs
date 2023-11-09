@@ -1782,7 +1782,7 @@ public class ConfigCatClientTests
         var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
         var errorEvents = new List<ConfigCatClientErrorEventArgs>();
 
-        EventHandler handleClientReady = (s, e) => clientReadyCallCount++;
+        EventHandler<ClientReadyEventArgs> handleClientReady = (s, e) => clientReadyCallCount++;
         EventHandler<ConfigChangedEventArgs> handleConfigChanged = (s, e) => configChangedEvents.Add(e);
         EventHandler<FlagEvaluatedEventArgs> handleFlagEvaluated = (s, e) => flagEvaluatedEvents.Add(e);
         EventHandler<ConfigCatClientErrorEventArgs> handleError = (s, e) => errorEvents.Add(e);
@@ -1893,6 +1893,8 @@ public class ConfigCatClientTests
             base.Dispose(disposing);
         }
 
+        public Task<ClientCacheState> ReadyTask => Task.FromResult(ClientCacheState.NoFlagData);
+
         public ValueTask<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default)
         {
             return new ValueTask<ProjectConfig>(ProjectConfig.Empty);
@@ -1912,5 +1914,7 @@ public class ConfigCatClientTests
         {
             return RefreshResult.Success();
         }
+
+        public override ClientCacheState GetCacheState(ProjectConfig cachedConfig) => ClientCacheState.NoFlagData;
     }
 }

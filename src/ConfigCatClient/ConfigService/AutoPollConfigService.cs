@@ -19,7 +19,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
         CacheParameters cacheParameters,
         LoggerWrapper logger,
         bool isOffline = false,
-        Hooks? hooks = null) : this(options, configFetcher, cacheParameters, logger, startTimer: true, isOffline, hooks)
+        SafeHooksWrapper hooks = default) : this(options, configFetcher, cacheParameters, logger, startTimer: true, isOffline, hooks)
     { }
 
     // For test purposes only
@@ -30,7 +30,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
         LoggerWrapper logger,
         bool startTimer,
         bool isOffline = false,
-        Hooks? hooks = null) : base(configFetcher, cacheParameters, logger, isOffline, hooks)
+        SafeHooksWrapper hooks = default) : base(configFetcher, cacheParameters, logger, isOffline, hooks)
     {
         this.pollInterval = options.PollInterval;
         this.maxInitWaitTime = options.MaxInitWaitTime >= TimeSpan.Zero ? options.MaxInitWaitTime : Timeout.InfiniteTimeSpan;

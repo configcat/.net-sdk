@@ -1,5 +1,4 @@
 using System;
-using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace ConfigCat.Client;
@@ -9,7 +8,7 @@ internal class Hooks : IProvidesHooks
     private static readonly EventHandlers DisconnectedEventHandlers = new();
 
     private volatile EventHandlers eventHandlers;
-    private WeakReference<IConfigCatClient>? clientWeakRef; // should be null only in case of testing
+    private IConfigCatClient? client; // should be null only in case of testing
 
     protected Hooks(EventHandlers eventHandlers)
     {
@@ -29,23 +28,9 @@ internal class Hooks : IProvidesHooks
         return !ReferenceEquals(originalEventHandlers, DisconnectedEventHandlers);
     }
 
-    private bool TryGetSender(out IConfigCatClient? client)
-    {
-        if (this.clientWeakRef is null)
-        {
-            client = null;
-            return true;
-        }
-
-        return this.clientWeakRef.TryGetTarget(out client);
-    }
-
     public virtual void SetSender(IConfigCatClient client)
     {
-        // Strong back-references to the client instance must be avoided so GC can collect it when user doesn't have references to it any more.
-        // (There are cases - like AutoPollConfigService or LocalFileDataSource - where the background work keeps the service object alive,
-        // so if that had a strong reference to the client object, it would be kept alive as well, which would create a memory leak.)
-        this.clientWeakRef = new WeakReference<IConfigCatClient>(client);
+        this.client = client;
     }
 
     /// <inheritdoc/>
@@ -55,13 +40,9 @@ internal class Hooks : IProvidesHooks
         remove { this.eventHandlers.ClientReady -= value; }
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
     internal void RaiseClientReady()
     {
-        if (this.eventHandlers.ClientReady is { } clientReady && TryGetSender(out var client))
-        {
-            clientReady(client, EventArgs.Empty);
-        }
+        this.eventHandlers.ClientReady?.Invoke(this.client, EventArgs.Empty);
     }
 
     /// <inheritdoc/>
@@ -71,13 +52,9 @@ internal class Hooks : IProvidesHooks
         remove { this.eventHandlers.FlagEvaluated -= value; }
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
     internal void RaiseFlagEvaluated(EvaluationDetails evaluationDetails)
     {
-        if (this.eventHandlers.FlagEvaluated is { } flagEvaluated && TryGetSender(out var client))
-        {
-            flagEvaluated(client, new FlagEvaluatedEventArgs(evaluationDetails));
-        }
+        this.eventHandlers.FlagEvaluated?.Invoke(this.client, new FlagEvaluatedEventArgs(evaluationDetails));
     }
 
     /// <inheritdoc/>
@@ -87,13 +64,9 @@ internal class Hooks : IProvidesHooks
         remove { this.eventHandlers.ConfigChanged -= value; }
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
     internal void RaiseConfigChanged(IConfig newConfig)
     {
-        if (this.eventHandlers.ConfigChanged is { } configChanged && TryGetSender(out var client))
-        {
-            configChanged(client, new ConfigChangedEventArgs(newConfig));
-        }
+        this.eventHandlers.ConfigChanged?.Invoke(this.client, new ConfigChangedEventArgs(newConfig));
     }
 
     /// <inheritdoc/>
@@ -103,13 +76,9 @@ internal class Hooks : IProvidesHooks
         remove { this.eventHandlers.Error -= value; }
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
     internal void RaiseError(string message, Exception? exception)
     {
-        if (this.eventHandlers.Error is { } error && TryGetSender(out var client))
-        {
-            error(client, new ConfigCatClientErrorEventArgs(message, exception));
-        }
+        this.eventHandlers.Error?.Invoke(this.client, new ConfigCatClientErrorEventArgs(message, exception));
     }
 
     protected class EventHandlers

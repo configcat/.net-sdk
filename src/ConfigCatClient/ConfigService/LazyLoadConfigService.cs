@@ -9,12 +9,12 @@ internal sealed class LazyLoadConfigService : ConfigServiceBase, IConfigService
 {
     private readonly TimeSpan cacheTimeToLive;
 
-    internal LazyLoadConfigService(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger, TimeSpan cacheTimeToLive, bool isOffline = false, Hooks? hooks = null)
+    internal LazyLoadConfigService(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger, TimeSpan cacheTimeToLive, bool isOffline = false, SafeHooksWrapper hooks = default)
         : base(configFetcher, cacheParameters, logger, isOffline, hooks)
     {
         this.cacheTimeToLive = cacheTimeToLive;
 
-        hooks?.RaiseClientReady();
+        hooks.RaiseClientReady();
     }
 
     public ProjectConfig GetConfig()

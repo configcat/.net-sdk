@@ -27,15 +27,15 @@ internal abstract class ConfigServiceBase : IDisposable
     protected readonly ConfigCache ConfigCache;
     protected readonly LoggerWrapper Logger;
     protected readonly string CacheKey;
-    protected readonly Hooks Hooks;
+    protected readonly SafeHooksWrapper Hooks;
 
-    protected ConfigServiceBase(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline, Hooks? hooks)
+    protected ConfigServiceBase(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline, SafeHooksWrapper hooks)
     {
         this.ConfigFetcher = configFetcher;
         this.ConfigCache = cacheParameters.ConfigCache;
         this.CacheKey = cacheParameters.CacheKey;
         this.Logger = logger;
-        this.Hooks = hooks ?? NullHooks.Instance;
+        this.Hooks = hooks;
         this.status = isOffline ? Status.Offline : Status.Online;
     }
 

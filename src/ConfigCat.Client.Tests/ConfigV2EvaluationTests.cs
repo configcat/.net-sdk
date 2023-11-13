@@ -8,6 +8,7 @@ using ConfigCat.Client.Configuration;
 using ConfigCat.Client.Evaluation;
 using ConfigCat.Client.Tests.Helpers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 
 namespace ConfigCat.Client.Tests;
 
@@ -336,5 +337,33 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
         var actualValue = await client.GetValueAsync(key, (object?)null, new User(userId) { Email = email });
 
         Assert.AreEqual(expectedValue, actualValue);
+    }
+
+    // https://app.configcat.com/v2/e7a75611-4256-49a5-9320-ce158755e3ba/08dbc325-7f69-4fd4-8af4-cf9f24ec8ac9/08dbc325-9e4e-4f59-86b2-5da50924b6ca/08dbc325-9ebd-4587-8171-88f76a3004cb
+    [DataTestMethod]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/P4e3fAz_1ky2-Zg2e4cbkw", "stringMatchedTargetingRuleAndOrPercentageOption", null, null, null, "Cat", false, false)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/P4e3fAz_1ky2-Zg2e4cbkw", "stringMatchedTargetingRuleAndOrPercentageOption", "12345", null, null, "Cat", false, false)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/P4e3fAz_1ky2-Zg2e4cbkw", "stringMatchedTargetingRuleAndOrPercentageOption", "12345", "a@example.com", null, "Dog", true, false)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/P4e3fAz_1ky2-Zg2e4cbkw", "stringMatchedTargetingRuleAndOrPercentageOption", "12345", "a@configcat.com", null, "Cat", false, false)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/P4e3fAz_1ky2-Zg2e4cbkw", "stringMatchedTargetingRuleAndOrPercentageOption", "12345", "a@configcat.com", "", "Frog", true, true)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/P4e3fAz_1ky2-Zg2e4cbkw", "stringMatchedTargetingRuleAndOrPercentageOption", "12345", "a@configcat.com", "US", "Fish", true, true)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/P4e3fAz_1ky2-Zg2e4cbkw", "stringMatchedTargetingRuleAndOrPercentageOption", "12345", "b@configcat.com", null, "Cat", false, false)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/P4e3fAz_1ky2-Zg2e4cbkw", "stringMatchedTargetingRuleAndOrPercentageOption", "12345", "b@configcat.com", "", "Falcon", false, true)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/P4e3fAz_1ky2-Zg2e4cbkw", "stringMatchedTargetingRuleAndOrPercentageOption", "12345", "b@configcat.com", "US", "Spider", false, true)]
+    public void EvaluationDetails_MatchedEvaluationRuleAndPercantageOption_Test(string sdkKey, string key, string? userId, string? email, string? percentageBase,
+        string expectedReturnValue, bool expectedIsExpectedMatchedTargetingRuleSet, bool expectedIsExpectedMatchedPercentageOptionSet)
+    {
+        var config = new ConfigLocation.Cdn(sdkKey).FetchConfigCached();
+
+        var logger = new Mock<IConfigCatLogger>().Object.AsWrapper();
+        var evaluator = new RolloutEvaluator(logger);
+
+        var user = userId is not null ? new User(userId) { Email = email, Custom = { ["PercentageBase"] = percentageBase! } } : null;
+
+        var evaluationDetails = evaluator.Evaluate<object?>(config!.Settings, key, defaultValue: null, user, remoteConfig: null, logger);
+
+        Assert.AreEqual(expectedReturnValue, evaluationDetails.Value);
+        Assert.AreEqual(expectedIsExpectedMatchedTargetingRuleSet, evaluationDetails.MatchedTargetingRule is not null);
+        Assert.AreEqual(expectedIsExpectedMatchedPercentageOptionSet, evaluationDetails.MatchedPercentageOption is not null);
     }
 }

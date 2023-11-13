@@ -6,7 +6,7 @@ using System.Text;
 
 namespace ConfigCat.Client.Utils;
 
-internal class IndentedTextBuilder
+internal sealed class IndentedTextBuilder
 {
     private readonly StringBuilder stringBuilder = new();
     private int indentLevel;
@@ -25,12 +25,12 @@ internal class IndentedTextBuilder
 
     public IndentedTextBuilder DecreaseIndent()
     {
-        Debug.Assert(this.indentLevel > 0, "Evaluate log indentation got invalid.");
+        Debug.Assert(this.indentLevel > 0, "Indentation got invalid.");
         this.indentLevel--;
         return this;
     }
 
-    public virtual IndentedTextBuilder NewLine()
+    public IndentedTextBuilder NewLine()
     {
         this.stringBuilder.AppendLine().Insert(this.stringBuilder.Length, "  ", count: this.indentLevel);
         return this;
@@ -41,14 +41,14 @@ internal class IndentedTextBuilder
         return NewLine().Append(message);
     }
 
-    public virtual IndentedTextBuilder Append(object value)
+    public IndentedTextBuilder Append(object value)
     {
         this.stringBuilder.Append(Convert.ToString(value, CultureInfo.InvariantCulture));
         return this;
     }
 
 #if !NET6_0_OR_GREATER
-    public virtual IndentedTextBuilder Append(FormattableString value)
+    public IndentedTextBuilder Append(FormattableString value)
     {
         this.stringBuilder.AppendFormat(CultureInfo.InvariantCulture, value.Format, value.GetArguments());
         return this;

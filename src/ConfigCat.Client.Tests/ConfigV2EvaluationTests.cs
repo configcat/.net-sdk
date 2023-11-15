@@ -222,49 +222,96 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
             userId, userEmail, userCountry, userCustomAttributeName, userCustomAttributeValue);
     }
 
-    [TestMethod]
-    public void CircularDependencyTest()
+    [DataTestMethod]
+    [DataRow("key1", "'key1' -> 'key1'")]
+    [DataRow("key2", "'key2' -> 'key3' -> 'key2'")]
+    [DataRow("key4", "'key4' -> 'key3' -> 'key2' -> 'key3'")]
+    public void PrerequisiteFlagCircularDependencyTest(string key, string dependencyCycle)
     {
         var config = new ConfigLocation.LocalFile("data", "test_circulardependency_v6.json").FetchConfig();
+
+        var logger = new Mock<IConfigCatLogger>().Object.AsWrapper();
+        var evaluator = new RolloutEvaluator(logger);
+
+        var ex = Assert.ThrowsException<InvalidOperationException>(() => evaluator.Evaluate<object?>(config!.Settings, key, defaultValue: null, user: null, remoteConfig: null, logger));
+
+        StringAssert.Contains(ex.Message, "Circular dependency detected");
+        StringAssert.Contains(ex.Message, dependencyCycle);
+    }
+
+    [DataTestMethod]
+    [DataRow("stringDependsOnBool", "mainBoolFlag", true, "Dog")]
+    [DataRow("stringDependsOnBool", "mainBoolFlag", false, "Cat")]
+    [DataRow("stringDependsOnBool", "mainBoolFlag", "1", null)]
+    [DataRow("stringDependsOnBool", "mainBoolFlag", 1, null)]
+    [DataRow("stringDependsOnBool", "mainBoolFlag", 1.0, null)]
+    [DataRow("stringDependsOnBool", "mainBoolFlag", new[] { true }, null)]
+    [DataRow("stringDependsOnBool", "mainBoolFlag", null, null)]
+    [DataRow("stringDependsOnString", "mainStringFlag", "private", "Dog")]
+    [DataRow("stringDependsOnString", "mainStringFlag", "Private", "Cat")]
+    [DataRow("stringDependsOnString", "mainStringFlag", true, null)]
+    [DataRow("stringDependsOnString", "mainStringFlag", 1, null)]
+    [DataRow("stringDependsOnString", "mainStringFlag", 1.0, null)]
+    [DataRow("stringDependsOnString", "mainStringFlag", new[] { "private" }, null)]
+    [DataRow("stringDependsOnString", "mainStringFlag", null, null)]
+    [DataRow("stringDependsOnInt", "mainIntFlag", 2, "Dog")]
+    [DataRow("stringDependsOnInt", "mainIntFlag", 1, "Cat")]
+    [DataRow("stringDependsOnInt", "mainIntFlag", "2", null)]
+    [DataRow("stringDependsOnInt", "mainIntFlag", true, null)]
+    [DataRow("stringDependsOnInt", "mainIntFlag", 2.0, null)]
+    [DataRow("stringDependsOnInt", "mainIntFlag", new[] { 2 }, null)]
+    [DataRow("stringDependsOnInt", "mainIntFlag", null, null)]
+    [DataRow("stringDependsOnDouble", "mainDoubleFlag", 0.1, "Dog")]
+    [DataRow("stringDependsOnDouble", "mainDoubleFlag", 0.11, "Cat")]
+    [DataRow("stringDependsOnDouble", "mainDoubleFlag", "0.1", null)]
+    [DataRow("stringDependsOnDouble", "mainDoubleFlag", true, null)]
+    [DataRow("stringDependsOnDouble", "mainDoubleFlag", 1, null)]
+    [DataRow("stringDependsOnDouble", "mainDoubleFlag", new[] { 0.1 }, null)]
+    [DataRow("stringDependsOnDouble", "mainDoubleFlag", null, null)]
+    public async Task PrerequisiteFlagComparisonValueTypeMismatchTest(string key, string prerequisiteFlagKey, object? prerequisiteFlagValue, object? expectedValue)
+    {
+        var cdnLocation = (ConfigLocation.Cdn)new FlagDependencyMatrixTestsDescriptor().ConfigLocation;
 
         var logEvents = new List<LogEvent>();
         var logger = LoggingHelper.CreateCapturingLogger(logEvents);
 
-        var evaluator = new RolloutEvaluator(logger);
+        var overrideDictionary = new Dictionary<string, object> { [prerequisiteFlagKey] = prerequisiteFlagValue! };
 
-        const string key = "key1";
-        var evaluationDetails = evaluator.Evaluate<object?>(config!.Settings, key, defaultValue: null, user: null, remoteConfig: null, logger);
+        var options = new ConfigCatClientOptions
+        {
+            FlagOverrides = FlagOverrides.LocalDictionary(overrideDictionary, OverrideBehaviour.LocalOverRemote),
+            PollingMode = PollingModes.ManualPoll,
+            Logger = logger
+        };
+        cdnLocation.ConfigureBaseUrl(options);
 
-        Assert.AreEqual(4, logEvents.Count);
+        using var client = new ConfigCatClient(cdnLocation.SdkKey, options);
+        await client.ForceRefreshAsync();
 
-        Assert.AreEqual(3, logEvents.Count(evt => evt.EventId == 3005));
+        var actualValue = await client.GetValueAsync(key, (object?)null);
+        Assert.AreEqual(expectedValue, actualValue);
 
-        Assert.IsTrue(logEvents.Any(evt => evt.Level == LogLevel.Warning
-            && (string?)evt.Message.ArgValues[1] == "key1"
-            && (string?)evt.Message.ArgValues[2] == "'key1' -> 'key1'"));
+        if (expectedValue is null)
+        {
+            var errors = logEvents.Where(evt => evt.Level == LogLevel.Error).ToArray();
+            Assert.AreEqual(1, errors.Length);
+            Assert.AreEqual(1002, errors[0].EventId);
+            var ex = errors[0].Exception;
+            Assert.IsInstanceOfType(ex, typeof(InvalidOperationException));
 
-        Assert.IsTrue(logEvents.Any(evt => evt.Level == LogLevel.Warning
-            && (string?)evt.Message.ArgValues[1] == "key2"
-            && (string?)evt.Message.ArgValues[2] == "'key1' -> 'key2' -> 'key1'"));
-
-        Assert.IsTrue(logEvents.Any(evt => evt.Level == LogLevel.Warning
-            && (string?)evt.Message.ArgValues[1] == "key3"
-            && (string?)evt.Message.ArgValues[2] == "'key1' -> 'key3' -> 'key3'"));
-
-        var evaluateLogEvent = logEvents.FirstOrDefault(evt => evt.Level == LogLevel.Info && evt.EventId == 5000);
-        Assert.IsNotNull(evaluateLogEvent);
-
-        StringAssert.Matches((string?)evaluateLogEvent.Message.ArgValues[0], new Regex(
-            "THEN 'key1-prereq1' => " + Regex.Escape(RolloutEvaluator.CircularDependencyError) + Environment.NewLine
-            + @"\s+" + Regex.Escape(RolloutEvaluator.TargetingRuleIgnoredMessage)));
-
-        StringAssert.Matches((string?)evaluateLogEvent.Message.ArgValues[0], new Regex(
-            "THEN 'key2-prereq1' => " + Regex.Escape(RolloutEvaluator.CircularDependencyError) + Environment.NewLine
-            + @"\s+" + Regex.Escape(RolloutEvaluator.TargetingRuleIgnoredMessage)));
-
-        StringAssert.Matches((string?)evaluateLogEvent.Message.ArgValues[0], new Regex(
-            "THEN 'key3-prereq1' => " + Regex.Escape(RolloutEvaluator.CircularDependencyError) + Environment.NewLine
-            + @"\s+" + Regex.Escape(RolloutEvaluator.TargetingRuleIgnoredMessage)));
+            if (prerequisiteFlagValue == null)
+            {
+                StringAssert.Contains(ex!.Message, "Setting value is null");
+            }
+            else if (prerequisiteFlagValue.GetType().ToSettingType() == Setting.UnknownType)
+            {
+                StringAssert.Matches(ex!.Message, new Regex("Setting value '[^']+' is of an unsupported type"));
+            }
+            else
+            {
+                StringAssert.Matches(ex!.Message, new Regex("Type mismatch between comparison value '[^']+' and prerequisite flag '[^']+'"));
+            }
+        }
     }
 
     [DataTestMethod]

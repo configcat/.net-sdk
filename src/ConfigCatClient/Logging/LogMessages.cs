@@ -136,11 +136,6 @@ internal static partial class LoggerExtensions
         $"Cannot evaluate condition ({condition}) for setting '{key}' ({reason}). Please check the User.{attributeName} attribute and make sure that its value corresponds to the comparison operator.",
         "CONDITION", "KEY", "REASON", "ATTRIBUTE_NAME");
 
-    public static FormattableLogMessage CircularDependencyDetected(this LoggerWrapper logger, string condition, string key, string dependencyCycle) => logger.LogInterpolated(
-        LogLevel.Warning, 3005,
-        $"Cannot evaluate condition ({condition}) for setting '{key}' (circular dependency detected between the following depending flags: {dependencyCycle}). Please check your feature flag definition and eliminate the circular dependency.",
-        "CONDITION", "KEY", "DEPENDENCY_CYCLE");
-
     public static FormattableLogMessage ConfigServiceCannotInitiateHttpCalls(this LoggerWrapper logger) => logger.Log(
         LogLevel.Warning, 3200,
         "Client is in offline mode, it cannot initiate HTTP calls.");

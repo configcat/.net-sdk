@@ -24,7 +24,7 @@ internal static class LoggingHelper
         return new LoggerWrapper(logger, hooks);
     }
 
-    public static LoggerWrapper CreateCapturingLogger(List<LogEvent> logEvents, LogLevel logLevel = LogLevel.Info)
+    public static IConfigCatLogger CreateCapturingLogger(List<LogEvent> logEvents, LogLevel logLevel = LogLevel.Info)
     {
         var loggerMock = new Mock<IConfigCatLogger>();
 
@@ -33,6 +33,6 @@ internal static class LoggingHelper
         loggerMock.Setup(logger => logger.Log(It.IsAny<LogLevel>(), It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()))
             .Callback(delegate (LogLevel level, LogEventId eventId, ref FormattableLogMessage msg, Exception ex) { logEvents.Add(new LogEvent(level, eventId, ref msg, ex)); });
 
-        return loggerMock.Object.AsWrapper();
+        return loggerMock.Object;
     }
 }

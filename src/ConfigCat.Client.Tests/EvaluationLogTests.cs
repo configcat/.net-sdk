@@ -136,16 +136,6 @@ public class EvaluationLogTests
         RunTest(testSetName, sdkKey, baseUrlOrOverrideFileName, key, defaultValue, userObject, expectedReturnValue, expectedLogFileName);
     }
 
-    private static IEnumerable<object?[]> GetPrerequisiteFlagConditionsWithCircularDependencyTests() => GetTests("circular_dependency");
-
-    [DataTestMethod]
-    [DynamicData(nameof(GetPrerequisiteFlagConditionsWithCircularDependencyTests), DynamicDataSourceType.Method)]
-    public void PrerequisiteFlagConditionsWithCircularDependencyTests(string testSetName, string? sdkKey, string? baseUrlOrOverrideFileName,
-        string key, string? defaultValue, string userObject, string? expectedReturnValue, string expectedLogFileName)
-    {
-        RunTest(testSetName, sdkKey, baseUrlOrOverrideFileName, key, defaultValue, userObject, expectedReturnValue, expectedLogFileName);
-    }
-
     private static IEnumerable<object?[]> GetEpochDateValidationTests() => GetTests("epoch_date_validation");
 
     [DataTestMethod]
@@ -243,7 +233,7 @@ public class EvaluationLogTests
         }
 
         var logEvents = new List<LogEvent>();
-        var logger = LoggingHelper.CreateCapturingLogger(logEvents);
+        var logger = LoggingHelper.CreateCapturingLogger(logEvents).AsWrapper();
 
         ConfigLocation configLocation = sdkKey is { Length: > 0 }
             ? new ConfigLocation.Cdn(sdkKey, baseUrlOrOverrideFileName)
@@ -313,7 +303,7 @@ public class EvaluationLogTests
         var settings = new ConfigLocation.Cdn("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/AG6C1ngVb0CvM07un6JisQ").FetchConfigCached().Settings;
 
         var logEvents = new List<LogEvent>();
-        var logger = LoggingHelper.CreateCapturingLogger(logEvents, logLevel);
+        var logger = LoggingHelper.CreateCapturingLogger(logEvents, logLevel).AsWrapper();
 
         var evaluator = new RolloutEvaluator(logger);
 

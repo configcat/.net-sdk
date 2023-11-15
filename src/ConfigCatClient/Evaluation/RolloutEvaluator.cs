@@ -13,7 +13,6 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
     internal const string MissingUserObjectError = "cannot evaluate, User Object is missing";
     internal const string MissingUserAttributeError = "cannot evaluate, the User.{0} attribute is missing";
     internal const string InvalidUserAttributeError = "cannot evaluate, the User.{0} attribute is invalid ({1})";
-    internal const string CircularDependencyError = "cannot evaluate, circular dependency detected";
 
     internal const string TargetingRuleIgnoredMessage = "The current targeting rule is ignored and the evaluation continues with the next rule.";
 
@@ -46,7 +45,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         returnValue = default!;
         try
         {
-            var result = EvaluateSetting(ref context);
+            EvaluateResult result;
 
             if (typeof(T) != typeof(object))
             {
@@ -64,13 +63,18 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                     throw new InvalidOperationException(
                         "The type of a setting must match the type of the specified default value. "
                         + $"Setting's type was {context.Setting.SettingType} but the default value's type was {typeof(T)}. "
-                        + $"Please use a default value which corresponds to the setting type {context.Setting.SettingType}.");
+                        + $"Please use a default value which corresponds to the setting type {context.Setting.SettingType}. "
+                        + "Learn more: https://configcat.com/docs/sdk-reference/dotnet/#setting-type-mapping");
                 }
+
+                result = EvaluateSetting(ref context);
 
                 returnValue = result.Value.GetValue<T>(expectedSettingType)!;
             }
             else
             {
+                result = EvaluateSetting(ref context);
+
                 returnValue = (T)(context.Setting.SettingType != Setting.UnknownType
                     ? result.Value.GetValue(context.Setting.SettingType)!
                     : result.Value.GetValue()!);
@@ -281,7 +285,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
                 case PrerequisiteFlagCondition prerequisiteFlagCondition:
                     conditionResult = EvaluatePrerequisiteFlagCondition(prerequisiteFlagCondition, ref context, out error);
-                    newLineBeforeThen = error is null || error != CircularDependencyError || conditions.Length > 1;
+                    newLineBeforeThen = true;
                     break;
 
                 case SegmentCondition segmentCondition:
@@ -721,10 +725,12 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             throw new InvalidOperationException("Prerequisite flag key is missing or invalid.");
         }
 
-        var comparisonValue = condition.ComparisonValue.GetValue(throwIfInvalid: false);
-        if (comparisonValue is null || comparisonValue.GetType().ToSettingType() != prerequisiteFlag.SettingType)
+        var comparisonValue = EnsureComparisonValue(condition.ComparisonValue.GetValue(throwIfInvalid: false));
+
+        var expectedSettingType = comparisonValue.GetType().ToSettingType();
+        if (prerequisiteFlag.SettingType != Setting.UnknownType && prerequisiteFlag.SettingType != expectedSettingType)
         {
-            EnsureComparisonValue<string>(null);
+            throw new InvalidOperationException($"Type mismatch between comparison value '{comparisonValue}' and prerequisite flag '{prerequisiteFlagKey}'.");
         }
 
         context.VisitedFlags.Add(context.Key);
@@ -732,11 +738,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         {
             context.VisitedFlags.Add(prerequisiteFlagKey!);
             var dependencyCycle = new StringListFormatter(context.VisitedFlags).ToString("a", CultureInfo.InvariantCulture);
-            this.logger.CircularDependencyDetected(condition.ToString(), context.Key, dependencyCycle);
-
-            context.VisitedFlags.RemoveRange(context.VisitedFlags.Count - 2, 2);
-            error = CircularDependencyError;
-            return false;
+            throw new InvalidOperationException($"Circular dependency detected between the following depending flags: {dependencyCycle}.");
         }
 
         var prerequisiteFlagContext = new EvaluateContext(prerequisiteFlagKey!, prerequisiteFlag!, ref context);
@@ -750,13 +752,13 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
         context.VisitedFlags.RemoveAt(context.VisitedFlags.Count - 1);
 
-        var prerequisiteFlagValue = prerequisiteFlagEvaluateResult.Value.GetValue(prerequisiteFlag!.SettingType, throwIfInvalid: false);
+        var prerequisiteFlagValue = prerequisiteFlagEvaluateResult.Value.GetValue(expectedSettingType, throwIfInvalid: true)!;
 
         var comparator = condition.Comparator;
         var result = comparator switch
         {
-            PrerequisiteFlagComparator.Equals => prerequisiteFlagValue is not null && prerequisiteFlagValue.Equals(comparisonValue),
-            PrerequisiteFlagComparator.NotEquals => prerequisiteFlagValue is not null && !prerequisiteFlagValue.Equals(comparisonValue),
+            PrerequisiteFlagComparator.Equals => prerequisiteFlagValue.Equals(comparisonValue),
+            PrerequisiteFlagComparator.NotEquals => !prerequisiteFlagValue.Equals(comparisonValue),
             _ => throw new InvalidOperationException("Comparison operator is invalid.")
         };
 

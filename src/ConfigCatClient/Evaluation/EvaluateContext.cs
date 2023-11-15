@@ -15,8 +15,8 @@ internal struct EvaluateContext
     [MemberNotNullWhen(true, nameof(UserAttributes))]
     public readonly bool IsUserAvailable => this.user is not null;
 
-    private IReadOnlyDictionary<string, string>? userAttributes;
-    public IReadOnlyDictionary<string, string>? UserAttributes => this.userAttributes ??= this.user?.GetAllAttributes();
+    private IReadOnlyDictionary<string, object>? userAttributes;
+    public IReadOnlyDictionary<string, object>? UserAttributes => this.userAttributes ??= this.user?.GetAllAttributes();
 
     private List<string>? visitedFlags;
     public List<string> VisitedFlags => this.visitedFlags ??= new List<string>();

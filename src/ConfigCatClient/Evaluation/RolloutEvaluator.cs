@@ -209,7 +209,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
         logBuilder?.NewLine().Append($"Evaluating % options based on the User.{percentageOptionsAttributeName} attribute:");
 
-        var sha1 = (context.Key + percentageOptionsAttributeValue).Sha1();
+        var sha1 = (context.Key + UserAttributeValueToString(percentageOptionsAttributeValue)).Sha1();
 
         // NOTE: this is equivalent to hashValue = int.Parse(sha1.ToHexString().Substring(0, 7), NumberStyles.HexNumber) % 100;
         var hashValue =
@@ -347,7 +347,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
         var userAttributeName = condition.ComparisonAttribute ?? throw new InvalidOperationException("Comparison attribute name is missing.");
 
-        if (!(context.UserAttributes.TryGetValue(userAttributeName, out var userAttributeValue) && userAttributeValue.Length > 0))
+        if (!context.UserAttributes.TryGetValue(userAttributeName, out var userAttributeValue) || userAttributeValue is string { Length: 0 })
         {
             this.logger.UserObjectAttributeIsMissing(condition.ToString(), context.Key, userAttributeName);
             error = string.Format(CultureInfo.InvariantCulture, MissingUserAttributeError, userAttributeName);
@@ -359,63 +359,64 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         {
             case UserComparator.TextEquals:
             case UserComparator.TextNotEquals:
-                return EvaluateTextEquals(userAttributeValue!, condition.StringValue, negate: comparator == UserComparator.TextNotEquals);
+                var text = GetUserAttributeValueAsText(userAttributeName, userAttributeValue, condition, context.Key);
+                return EvaluateTextEquals(text, condition.StringValue, negate: comparator == UserComparator.TextNotEquals);
 
             case UserComparator.SensitiveTextEquals:
             case UserComparator.SensitiveTextNotEquals:
-                return EvaluateSensitiveTextEquals(userAttributeValue!, condition.StringValue,
+                text = GetUserAttributeValueAsText(userAttributeName, userAttributeValue, condition, context.Key);
+                return EvaluateSensitiveTextEquals(text, condition.StringValue,
                     EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, negate: comparator == UserComparator.SensitiveTextNotEquals);
 
             case UserComparator.IsOneOf:
             case UserComparator.IsNotOneOf:
-                return EvaluateIsOneOf(userAttributeValue!, condition.StringListValue, negate: comparator == UserComparator.IsNotOneOf);
+                text = GetUserAttributeValueAsText(userAttributeName, userAttributeValue, condition, context.Key);
+                return EvaluateIsOneOf(text, condition.StringListValue, negate: comparator == UserComparator.IsNotOneOf);
 
             case UserComparator.SensitiveIsOneOf:
             case UserComparator.SensitiveIsNotOneOf:
-                return EvaluateSensitiveIsOneOf(userAttributeValue!, condition.StringListValue,
+                text = GetUserAttributeValueAsText(userAttributeName, userAttributeValue, condition, context.Key);
+                return EvaluateSensitiveIsOneOf(text, condition.StringListValue,
                     EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, negate: comparator == UserComparator.SensitiveIsNotOneOf);
 
             case UserComparator.TextStartsWithAnyOf:
             case UserComparator.TextNotStartsWithAnyOf:
-                return EvaluateTextSliceEqualsAnyOf(userAttributeValue!, condition.StringListValue, startsWith: true, negate: comparator == UserComparator.TextNotStartsWithAnyOf);
+                text = GetUserAttributeValueAsText(userAttributeName, userAttributeValue, condition, context.Key);
+                return EvaluateTextSliceEqualsAnyOf(text, condition.StringListValue, startsWith: true, negate: comparator == UserComparator.TextNotStartsWithAnyOf);
 
             case UserComparator.SensitiveTextStartsWithAnyOf:
             case UserComparator.SensitiveTextNotStartsWithAnyOf:
-                return EvaluateSensitiveTextSliceEqualsAnyOf(userAttributeValue!, condition.StringListValue,
+                text = GetUserAttributeValueAsText(userAttributeName, userAttributeValue, condition, context.Key);
+                return EvaluateSensitiveTextSliceEqualsAnyOf(text, condition.StringListValue,
                     EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, startsWith: true, negate: comparator == UserComparator.SensitiveTextNotStartsWithAnyOf);
 
             case UserComparator.TextEndsWithAnyOf:
             case UserComparator.TextNotEndsWithAnyOf:
-                return EvaluateTextSliceEqualsAnyOf(userAttributeValue!, condition.StringListValue, startsWith: false, negate: comparator == UserComparator.TextNotEndsWithAnyOf);
+                text = GetUserAttributeValueAsText(userAttributeName, userAttributeValue, condition, context.Key);
+                return EvaluateTextSliceEqualsAnyOf(text, condition.StringListValue, startsWith: false, negate: comparator == UserComparator.TextNotEndsWithAnyOf);
 
             case UserComparator.SensitiveTextEndsWithAnyOf:
             case UserComparator.SensitiveTextNotEndsWithAnyOf:
-                return EvaluateSensitiveTextSliceEqualsAnyOf(userAttributeValue!, condition.StringListValue,
+                text = GetUserAttributeValueAsText(userAttributeName, userAttributeValue, condition, context.Key);
+                return EvaluateSensitiveTextSliceEqualsAnyOf(text, condition.StringListValue,
                     EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, startsWith: false, negate: comparator == UserComparator.SensitiveTextNotEndsWithAnyOf);
 
             case UserComparator.ContainsAnyOf:
             case UserComparator.NotContainsAnyOf:
-                return EvaluateContainsAnyOf(userAttributeValue!, condition.StringListValue, negate: comparator == UserComparator.NotContainsAnyOf);
+                text = GetUserAttributeValueAsText(userAttributeName, userAttributeValue, condition, context.Key);
+                return EvaluateContainsAnyOf(text, condition.StringListValue, negate: comparator == UserComparator.NotContainsAnyOf);
 
             case UserComparator.SemVerIsOneOf:
             case UserComparator.SemVerIsNotOneOf:
-                if (!SemVersion.TryParse(userAttributeValue!.Trim(), out var version, strict: true))
-                {
-                    error = HandleInvalidUserAttribute(condition, context.Key, userAttributeName, $"'{userAttributeValue}' is not a valid semantic version");
-                    return false;
-                }
-                return EvaluateSemVerIsOneOf(version, condition.StringListValue, negate: comparator == UserComparator.SemVerIsNotOneOf);
+                var version = GetUserAttributeValueAsSemVer(userAttributeName, userAttributeValue, condition, context.Key, out error);
+                return error is null && EvaluateSemVerIsOneOf(version!, condition.StringListValue, negate: comparator == UserComparator.SemVerIsNotOneOf);
 
             case UserComparator.SemVerLess:
             case UserComparator.SemVerLessOrEquals:
             case UserComparator.SemVerGreater:
             case UserComparator.SemVerGreaterOrEquals:
-                if (!SemVersion.TryParse(userAttributeValue!.Trim(), out version, strict: true))
-                {
-                    error = HandleInvalidUserAttribute(condition, context.Key, userAttributeName, $"'{userAttributeValue}' is not a valid semantic version");
-                    return false;
-                }
-                return EvaluateSemVerRelation(version, comparator, condition.StringValue);
+                version = GetUserAttributeValueAsSemVer(userAttributeName, userAttributeValue, condition, context.Key, out error);
+                return error is null && EvaluateSemVerRelation(version!, comparator, condition.StringValue);
 
             case UserComparator.NumberEquals:
             case UserComparator.NumberNotEquals:
@@ -423,43 +424,23 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             case UserComparator.NumberLessOrEquals:
             case UserComparator.NumberGreater:
             case UserComparator.NumberGreaterOrEquals:
-                if (!double.TryParse(userAttributeValue!.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out var number))
-                {
-                    error = HandleInvalidUserAttribute(condition, context.Key, userAttributeName, $"'{userAttributeValue}' is not a valid decimal number");
-                    return false;
-                }
-                return EvaluateNumberRelation(number, comparator, condition.DoubleValue);
+                var number = GetUserAttributeValueAsNumber(userAttributeName, userAttributeValue, condition, context.Key, out error);
+                return error is null && EvaluateNumberRelation(number, comparator, condition.DoubleValue);
 
             case UserComparator.DateTimeBefore:
             case UserComparator.DateTimeAfter:
-                if (!double.TryParse(userAttributeValue!.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out number))
-                {
-                    error = HandleInvalidUserAttribute(condition, context.Key, userAttributeName, $"'{userAttributeValue}' is not a valid Unix timestamp (number of seconds elapsed since Unix epoch)");
-                    return false;
-                }
-                return EvaluateDateTimeRelation(number, condition.DoubleValue, before: comparator == UserComparator.DateTimeBefore);
+                number = GetUserAttributeValueAsUnixTimeSeconds(userAttributeName, userAttributeValue, condition, context.Key, out error);
+                return error is null && EvaluateDateTimeRelation(number, condition.DoubleValue, before: comparator == UserComparator.DateTimeBefore);
 
             case UserComparator.ArrayContainsAnyOf:
             case UserComparator.ArrayNotContainsAnyOf:
-                var array = userAttributeValue!.DeserializeOrDefault<string[]>();
-                if (array is null)
-                {
-                    error = HandleInvalidUserAttribute(condition, context.Key, userAttributeName, $"'{userAttributeValue}' is not a valid JSON string array");
-                    return false;
-                }
-
-                return EvaluateArrayContainsAnyOf(array, condition.StringListValue, negate: comparator == UserComparator.ArrayNotContainsAnyOf);
+                var stringArray = GetUserAttributeValueAsStringArray(userAttributeName, userAttributeValue, condition, context.Key, out error);
+                return error is null && EvaluateArrayContainsAnyOf(stringArray!, condition.StringListValue, negate: comparator == UserComparator.ArrayNotContainsAnyOf);
 
             case UserComparator.SensitiveArrayContainsAnyOf:
             case UserComparator.SensitiveArrayNotContainsAnyOf:
-                array = userAttributeValue!.DeserializeOrDefault<string[]>();
-                if (array is null)
-                {
-                    error = HandleInvalidUserAttribute(condition, context.Key, userAttributeName, $"'{userAttributeValue}' is not a valid JSON string array");
-                    return false;
-                }
-
-                return EvaluateSensitiveArrayContainsAnyOf(array, condition.StringListValue,
+                stringArray = GetUserAttributeValueAsStringArray(userAttributeName, userAttributeValue, condition, context.Key, out error);
+                return error is null && EvaluateSensitiveArrayContainsAnyOf(stringArray!, condition.StringListValue,
                     EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, negate: comparator == UserComparator.SensitiveArrayNotContainsAnyOf);
 
             default:
@@ -875,9 +856,102 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return value ?? throw new InvalidOperationException("Comparison value is missing or invalid.");
     }
 
-    private string HandleInvalidUserAttribute(UserCondition condition, string key, string userAttributeName, string reason)
+    private static string UserAttributeValueToString(object attributeValue)
     {
-        this.logger.UserObjectAttributeIsInvalid(condition.ToString(), key, reason, userAttributeName);
-        return string.Format(CultureInfo.InvariantCulture, InvalidUserAttributeError, userAttributeName, reason);
+        if (attributeValue is string text)
+        {
+            return text;
+        }
+        else if (attributeValue is string[] stringArray)
+        {
+            return stringArray.Serialize();
+        }
+        else if (attributeValue.TryConvertNumericToDouble(out var number))
+        {
+            return number.ToString(CultureInfo.InvariantCulture);
+        }
+        else if (attributeValue.TryConvertDateTimeToDateTimeOffset(out var dateTimeOffset))
+        {
+            var unixTimeSeconds = DateTimeUtils.ToUnixTimeMilliseconds(dateTimeOffset.UtcDateTime) / 1000.0;
+            return unixTimeSeconds.ToString(CultureInfo.InvariantCulture);
+        }
+
+        return Convert.ToString(attributeValue, CultureInfo.InvariantCulture) ?? string.Empty;
+    }
+
+    private string GetUserAttributeValueAsText(string attributeName, object attributeValue, UserCondition condition, string key)
+    {
+        if (attributeValue is string text)
+        {
+            return text;
+        }
+
+        text = UserAttributeValueToString(attributeValue);
+        this.logger.UserObjectAttributeIsAutoConverted(condition.ToString(), key, attributeName, text);
+        return text;
+    }
+
+    private SemVersion? GetUserAttributeValueAsSemVer(string attributeName, object attributeValue, UserCondition condition, string key, out string? error)
+    {
+        if (attributeValue is string text && SemVersion.TryParse(text.Trim(), out var version, strict: true))
+        {
+            error = null;
+            return version;
+        }
+
+        error = HandleInvalidUserAttribute(condition, key, attributeName, $"'{attributeValue}' is not a valid semantic version");
+        return default;
+    }
+
+    private double GetUserAttributeValueAsNumber(string attributeName, object attributeValue, UserCondition condition, string key, out string? error)
+    {
+        if ((attributeValue.TryConvertNumericToDouble(out var number)
+            || attributeValue is string text && double.TryParse(text.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out number))
+            && !double.IsNaN(number))
+        {
+            error = null;
+            return number;
+        }
+
+        error = HandleInvalidUserAttribute(condition, key, attributeName, $"'{attributeValue}' is not a valid decimal number");
+        return default;
+    }
+
+    private double GetUserAttributeValueAsUnixTimeSeconds(string attributeName, object attributeValue, UserCondition condition, string key, out string? error)
+    {
+        if (attributeValue.TryConvertDateTimeToDateTimeOffset(out var dateTimeOffset))
+        {
+            error = null;
+            return DateTimeUtils.ToUnixTimeMilliseconds(dateTimeOffset.UtcDateTime) / 1000.0;
+        }
+        else if ((attributeValue.TryConvertNumericToDouble(out var number)
+            || attributeValue is string text && double.TryParse(text.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out number))
+            && !double.IsNaN(number))
+        {
+            error = null;
+            return number;
+        }
+
+        error = HandleInvalidUserAttribute(condition, key, attributeName, $"'{attributeValue}' is not a valid Unix timestamp (number of seconds elapsed since Unix epoch)");
+        return default;
+    }
+
+    private string[]? GetUserAttributeValueAsStringArray(string attributeName, object attributeValue, UserCondition condition, string key, out string? error)
+    {
+        if (attributeValue is string[] stringArray
+            || attributeValue is string json && (stringArray = json.DeserializeOrDefault<string[]>()!) is not null)
+        {
+            error = null;
+            return stringArray;
+        }
+
+        error = HandleInvalidUserAttribute(condition, key, attributeName, $"'{attributeValue}' is not a valid string array");
+        return default;
+    }
+
+    private string HandleInvalidUserAttribute(UserCondition condition, string key, string attributeName, string reason)
+    {
+        this.logger.UserObjectAttributeIsInvalid(condition.ToString(), key, reason, attributeName);
+        return string.Format(CultureInfo.InvariantCulture, InvalidUserAttributeError, attributeName, reason);
     }
 }

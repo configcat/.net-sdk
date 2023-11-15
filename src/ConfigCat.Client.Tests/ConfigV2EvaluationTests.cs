@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -212,7 +213,6 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
             userId, userEmail, userCountry, userCustomAttributeName, userCustomAttributeValue);
     }
 
-
     [DataTestMethod]
     [DynamicData(nameof(UnicodeMatrixTestsDescriptor.GetTests), typeof(UnicodeMatrixTestsDescriptor), DynamicDataSourceType.Method)]
     public void UnicodeMatrixTests(string configLocation, string settingKey, string expectedReturnValue,
@@ -412,5 +412,177 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
         Assert.AreEqual(expectedReturnValue, evaluationDetails.Value);
         Assert.AreEqual(expectedIsExpectedMatchedTargetingRuleSet, evaluationDetails.MatchedTargetingRule is not null);
         Assert.AreEqual(expectedIsExpectedMatchedPercentageOptionSet, evaluationDetails.MatchedPercentageOption is not null);
+    }
+
+    [TestMethod]
+    public void UserObjectAttributeValueConversion_TextComparisons_Test()
+    {
+        var config = new ConfigLocation.Cdn("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ").FetchConfigCached();
+
+        var logEvents = new List<LogEvent>();
+        var logger = LoggingHelper.CreateCapturingLogger(logEvents).AsWrapper();
+        var evaluator = new RolloutEvaluator(logger);
+
+        const string customAttributeName = "Custom1";
+        const int customAttributeValue = 42;
+        var user = new User("12345") { Custom = { [customAttributeName] = customAttributeValue } };
+
+        const string key = "boolTextEqualsNumber";
+        var evaluationDetails = evaluator.Evaluate<bool?>(config!.Settings, key, defaultValue: null, user, remoteConfig: null, logger);
+
+        Assert.AreEqual(true, evaluationDetails.Value);
+
+        var warnings = logEvents.Where(evt => evt.Level == LogLevel.Warning).ToArray();
+        Assert.AreEqual(1, warnings.Length);
+        Assert.AreEqual(3005, warnings[0].EventId);
+
+        var message = warnings[0].Message.ToString();
+        var expectedAttributeValueText = ((double)customAttributeValue).ToString(CultureInfo.InvariantCulture);
+        Assert.AreEqual($"Evaluation of condition (User.{customAttributeName} EQUALS '{expectedAttributeValueText}') for setting '{key}' may not produce the expected result (the User.{customAttributeName} attribute is not a string value, thus it was automatically converted to the string value '{expectedAttributeValueText}'). Please make sure that using a non-string value was intended.", message);
+    }
+
+    [DataTestMethod]
+    // SemVer-based comparisons
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/iV8vH2MBakKxkFZylxHmTg", "lessThanWithPercentage", "12345", "Custom1", "0.0", "20%")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/iV8vH2MBakKxkFZylxHmTg", "lessThanWithPercentage", "12345", "Custom1", "0.9.9", "< 1.0.0")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/iV8vH2MBakKxkFZylxHmTg", "lessThanWithPercentage", "12345", "Custom1", "1.0.0", "20%")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/iV8vH2MBakKxkFZylxHmTg", "lessThanWithPercentage", "12345", "Custom1", "1.1", "20%")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/iV8vH2MBakKxkFZylxHmTg", "lessThanWithPercentage", "12345", "Custom1", 0, "20%")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/iV8vH2MBakKxkFZylxHmTg", "lessThanWithPercentage", "12345", "Custom1", 0.9, "20%")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/iV8vH2MBakKxkFZylxHmTg", "lessThanWithPercentage", "12345", "Custom1", 2, "20%")]
+    // Number-based comparisons
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", (sbyte)-1, "<2.1")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", (sbyte)2, "<2.1")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", (sbyte)3, "<>4.2")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", (sbyte)5, ">=5")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", (byte)2, "<2.1")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", (byte)3, "<>4.2")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", (byte)5, ">=5")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", (short)-1, "<2.1")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", (short)2, "<2.1")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", (short)3, "<>4.2")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", (short)5, ">=5")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", (ushort)2, "<2.1")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", (ushort)3, "<>4.2")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", (ushort)5, ">=5")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", -1, "<2.1")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", 2, "<2.1")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", 3, "<>4.2")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", 5, ">=5")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", 2u, "<2.1")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", 3u, "<>4.2")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", 5u, ">=5")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", long.MinValue, "<2.1")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", 2L, "<2.1")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", 3L, "<>4.2")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", 5L, ">=5")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", long.MaxValue, ">5")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", 2ul, "<2.1")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", 3ul, "<>4.2")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", 5ul, ">=5")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", ulong.MaxValue, ">5")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", float.NegativeInfinity, "<2.1")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", -1f, "<2.1")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", 2f, "<2.1")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", 2.1f, "<2.1")] // 2.1f < 2.1d as (double)2.1f is 2.0999999046325684 !!! However, this is how IEEE 754 works, so we don't bother about it.
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", 3f, "<>4.2")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", 5f, ">=5")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", float.PositiveInfinity, ">5")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", float.NaN, "80%")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", double.NegativeInfinity, "<2.1")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", -1d, "<2.1")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", 2d, "<2.1")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", 2.1d, "<=2,1")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", 3d, "<>4.2")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", 5d, ">=5")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", double.PositiveInfinity, ">5")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", double.NaN, "80%")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", "decimal:-79228162514264337593543950335", "<2.1")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", "decimal:2", "<2.1")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", "decimal:2.1", "<=2,1")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", "decimal:3", "<>4.2")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", "decimal:5", ">=5")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", "decimal:79228162514264337593543950335", ">5")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", "-Infinity", "<2.1")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", "-1", "<2.1")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", "2", "<2.1")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", "2.1", "<=2,1")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", "2,1", "<=2,1")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", "3", "<>4.2")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", "5", ">=5")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", "Infinity", ">5")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/FCWN-k1dV0iBf8QZrDgjdw", "numberWithPercentage", "12345", "Custom1", "NaN", "80%")]
+    // Date time-based comparisons
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", "datetime:2023-03-31T23:59:59.9990000Z", false)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", "datetime:2023-04-01T01:59:59.9990000+02:00", false)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", "datetime:2023-04-01T00:00:00.0010000Z", true)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", "datetime:2023-04-01T02:00:00.0010000+02:00", true)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", "datetime:2023-04-30T23:59:59.9990000Z", true)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", "datetime:2023-05-01T01:59:59.9990000+02:00", true)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", "datetime:2023-05-01T00:00:00.0010000Z", false)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", "datetime:2023-05-01T02:00:00.0010000+02:00", false)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", "datetimeoffset:2023-03-31T23:59:59.9990000Z", false)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", "datetimeoffset:2023-04-01T01:59:59.9990000+02:00", false)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", "datetimeoffset:2023-04-01T00:00:00.0010000Z", true)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", "datetimeoffset:2023-04-01T02:00:00.0010000+02:00", true)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", "datetimeoffset:2023-04-30T23:59:59.9990000Z", true)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", "datetimeoffset:2023-05-01T01:59:59.9990000+02:00", true)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", "datetimeoffset:2023-05-01T00:00:00.0010000Z", false)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", "datetimeoffset:2023-05-01T02:00:00.0010000+02:00", false)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", double.NegativeInfinity, false)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", 1680307199.999, false)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", 1680307200.001, true)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", 1682899199.999, true)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", 1682899200.001, false)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", double.PositiveInfinity, false)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", double.NaN, false)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", 1680307199, false)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", 1680307201, true)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", 1682899199, true)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", 1682899201, false)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", "-Infinity", false)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", "1680307199.999", false)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", "1680307200.001", true)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", "1682899199.999", true)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", "1682899200.001", false)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", "+Infinity", false)]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "boolTrueIn202304", "12345", "Custom1", "NaN", false)]
+    // String array-based comparisons
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "stringArrayContainsAnyOfDogDefaultCat", "12345", "Custom1", new string[] { "x", "read" }, "Dog")]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "stringArrayContainsAnyOfDogDefaultCat", "12345", "Custom1", new string[] { "x", "Read" }, "Cat")]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "stringArrayContainsAnyOfDogDefaultCat", "12345", "Custom1", "[\"x\", \"read\"]", "Dog")]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "stringArrayContainsAnyOfDogDefaultCat", "12345", "Custom1", "[\"x\", \"Read\"]", "Cat")]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "stringArrayContainsAnyOfDogDefaultCat", "12345", "Custom1", "x, read", "Cat")]
+    public void UserObjectAttributeValueConversion_NonTextComparisons_Test(string sdkKey, string key, string? userId, string customAttributeName, object customAttributeValue,
+        object expectedReturnValue)
+    {
+        var config = new ConfigLocation.Cdn(sdkKey).FetchConfigCached();
+
+        var logger = new Mock<IConfigCatLogger>().Object.AsWrapper();
+        var evaluator = new RolloutEvaluator(logger);
+
+        if (customAttributeValue is string s)
+        {
+            const string decimalPrefix = "decimal:", dateTimePrefix = "datetime:", dateTimeOffsetPrefix = "datetimeoffset:";
+            if (s.StartsWith(decimalPrefix, StringComparison.Ordinal))
+            {
+                customAttributeValue = decimal.Parse(s.Substring(decimalPrefix.Length));
+            }
+            else if (s.StartsWith(dateTimePrefix, StringComparison.Ordinal))
+            {
+                var dateTimeStyle = s.EndsWith("Z", StringComparison.Ordinal) ? DateTimeStyles.AdjustToUniversal : DateTimeStyles.None;
+                customAttributeValue = DateTime.ParseExact(s.Substring(dateTimePrefix.Length), "o", CultureInfo.InvariantCulture, dateTimeStyle);
+            }
+            else if (s.StartsWith(dateTimeOffsetPrefix, StringComparison.Ordinal))
+            {
+                customAttributeValue = DateTimeOffset.ParseExact(s.Substring(dateTimeOffsetPrefix.Length), "o", CultureInfo.InvariantCulture);
+            }
+        }
+
+        var user = userId is not null ? new User(userId) { Custom = { [customAttributeName] = customAttributeValue! } } : null;
+
+        var evaluationDetails = evaluator.Evaluate<object?>(config!.Settings, key, defaultValue: null, user, remoteConfig: null, logger);
+
+        Assert.AreEqual(expectedReturnValue, evaluationDetails.Value);
     }
 }

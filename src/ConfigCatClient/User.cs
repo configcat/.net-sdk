@@ -1,8 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
-using ConfigCat.Client.Utils;
-using System.Linq;
 
 #if USE_NEWTONSOFT_JSON
 using Newtonsoft.Json;
@@ -15,49 +12,12 @@ namespace ConfigCat.Client;
 /// <summary>
 /// User Object. Contains user attributes which are used for evaluating targeting rules and percentage options.
 /// </summary>
+/// <remarks>
+/// Please note that the <see cref="User"/> class is not designed to be used as a DTO (data transfer object).
+/// (Since the type of the <see cref="Custom"/> property is polymorphic, it's not guaranteed that deserializing a serialized instance produces an instance with an identical or even valid data content.)
+/// </remarks>
 public class User
 {
-    /// <summary>
-    /// Converts the specified <see cref="DateTimeOffset"/> value to the format expected by datetime comparison operators (BEFORE/AFTER).
-    /// </summary>
-    /// <param name="dateTime">The <see cref="DateTimeOffset"/> value to convert.</param>
-    /// <returns>The User Object attribute value in the expected format.</returns>
-    public static string AttributeValueFrom(DateTimeOffset dateTime)
-    {
-        var unixTimeSeconds = DateTimeUtils.ToUnixTimeMilliseconds(dateTime.UtcDateTime) / 1000.0;
-        return unixTimeSeconds.ToString("0.###", CultureInfo.InvariantCulture);
-    }
-
-    /// <summary>
-    /// Converts the specified <see cref="double"/> value to the format expected by number comparison operators.
-    /// </summary>
-    /// <param name="number">The <see cref="double"/> value to convert.</param>
-    /// <returns>The User Object attribute value in the expected format.</returns>
-    public static string AttributeValueFrom(double number)
-    {
-        return number.ToString("g", CultureInfo.InvariantCulture); // format "g" allows scientific notation as well
-    }
-
-    /// <summary>
-    /// Converts the specified <see cref="string"/> items to the format expected by array comparison operators (ARRAY CONTAINS ANY OF/ARRAY NOT CONTAINS ANY OF).
-    /// </summary>
-    /// <param name="items">The <see cref="string"/> items to convert.</param>
-    /// <returns>The User Object attribute value in the expected format.</returns>
-    public static string AttributeValueFrom(params string[] items)
-    {
-        return AttributeValueFrom(items.AsEnumerable());
-    }
-
-    /// <summary>
-    /// Converts the specified <see cref="string"/> items to the format expected by array comparison operators (ARRAY CONTAINS ANY OF/ARRAY NOT CONTAINS ANY OF).
-    /// </summary>
-    /// <param name="items">The <see cref="string"/> items to convert.</param>
-    /// <returns>The User Object attribute value in the expected format.</returns>
-    public static string AttributeValueFrom(IEnumerable<string> items)
-    {
-        return (items ?? throw new ArgumentNullException(nameof(items))).Serialize();
-    }
-
     internal const string DefaultIdentifierValue = "";
 
     /// <summary>
@@ -75,23 +35,57 @@ public class User
     /// </summary>
     public string? Country { get; set; }
 
-    private IDictionary<string, string>? custom;
+    private IDictionary<string, object>? custom;
 
     /// <summary>
     /// Custom attributes of the user for advanced targeting rule definitions (e.g. user role, subscription type, etc.)
     /// </summary>
-    public IDictionary<string, string> Custom
+    /// <remarks>
+    /// The set of allowed attribute values depends on the comparison type of the condition which references the User Object attribute.<br/>
+    /// <see cref="string"/> values are supported by all comparison types (in some cases they need to be provided in a specific format though).<br/>
+    /// Some of the comparison types work with other types of values, as descibed below.
+    /// <para>
+    /// Text-based comparisons (EQUALS, IS ONE OF, etc.)<br/>
+    /// * accept <see cref="string"/> values,<br/>
+    /// * all other values are automatically converted to string (a warning will be logged but evaluation will continue as normal).
+    /// </para>
+    /// <para>
+    /// SemVer-based comparisons (IS ONE OF, &lt;, &gt;=, etc.)<br/>
+    /// * accept <see cref="string"/> values containing a properly formatted, valid semver value,<br/>
+    /// * all other values are considered invalid (a warning will be logged and the currently evaluated targeting rule will be skipped).
+    /// </para>
+    /// <para>
+    /// Number-based comparisons (=, &lt;, &gt;=, etc.)<br/>
+    /// * accept <see cref="double"/> values (except for <see cref="double.NaN"/>) and all other numeric values which can safely be converted to <see cref="double"/>,<br/>
+    /// * accept <see cref="string"/> values containing a properly formatted, valid <see cref="double"/> value,<br/>
+    /// * all other values are considered invalid (a warning will be logged and the currently evaluated targeting rule will be skipped).
+    /// </para>
+    /// <para>
+    /// Date time-based comparisons (BEFORE / AFTER)<br/>
+    /// * accept <see cref="DateTime"/> or <see cref="DateTimeOffset"/> values, which are automatically converted to a second-based Unix timestamp,<br/>
+    /// * accept <see cref="double"/> values (except for <see cref="double.NaN"/>) representing a second-based Unix timestamp and all other numeric values which can safely be converted to <see cref="double"/>,<br/>
+    /// * accept <see cref="string"/> values containing a properly formatted, valid <see cref="double"/> value,<br/>
+    /// * all other values are considered invalid (a warning will be logged and the currently evaluated targeting rule will be skipped).
+    /// </para>
+    /// <para>
+    /// String array-based comparisons (ARRAY CONTAINS ANY OF / ARRAY NOT CONTAINS ANY OF)<br/>
+    /// * accept arrays of <see cref="string"/>,<br/>
+    /// * accept <see cref="string"/> values containing a valid JSON string which can be deserialized to an array of <see cref="string"/>,<br/>
+    /// * all other values are considered invalid (a warning will be logged and the currently evaluated targeting rule will be skipped).
+    /// </para>
+    /// In case a non-string attribute value needs to be converted to <see cref="string"/> during evaluation, it will always be done using the same format which is accepted by the comparisons.
+    /// </remarks>
+    public IDictionary<string, object> Custom
     {
-        get => this.custom ??= new Dictionary<string, string>();
+        get => this.custom ??= new Dictionary<string, object>();
         set => this.custom = value;
     }
-
     /// <summary>
     /// Returns all attributes of the user.
     /// </summary>
-    public IReadOnlyDictionary<string, string> GetAllAttributes()
+    public IReadOnlyDictionary<string, object> GetAllAttributes()
     {
-        var result = new Dictionary<string, string>();
+        var result = new Dictionary<string, object>();
 
         result[nameof(Identifier)] = Identifier;
 

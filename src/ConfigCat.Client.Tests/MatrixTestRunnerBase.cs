@@ -135,7 +135,9 @@ public class MatrixTestRunnerBase<TDescriptor> where TDescriptor : IMatrixTestDe
         {
             user = new User(userId) { Email = userEmail, Country = userCountry };
             if (userCustomAttributeValue is not null)
+            {
                 user.Custom[userCustomAttributeName!] = userCustomAttributeValue;
+            }
         }
 
         return RunTest(evaluator, logger, settingKey, expectedReturnValue, user);

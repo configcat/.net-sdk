@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using ConfigCat.Client;
 
 #if USE_NEWTONSOFT_JSON
@@ -147,6 +148,46 @@ internal static class ObjectExtensions
         Debug.Assert(value.ValueKind != Text.Json.JsonValueKind.Null, "Tried to convert unexpected null value.");
         return Text.Json.JsonSerializer.Deserialize<TValue>(value)!;
 #endif
+    }
+
+    public static bool TryConvertNumericToDouble(this object value, out double number)
+    {
+        if (Type.GetTypeCode(value.GetType()) is
+           TypeCode.SByte or
+           TypeCode.Byte or
+           TypeCode.Int16 or
+           TypeCode.UInt16 or
+           TypeCode.Int32 or
+           TypeCode.UInt32 or
+           TypeCode.Int64 or
+           TypeCode.UInt64 or
+           TypeCode.Single or
+           TypeCode.Double or
+           TypeCode.Decimal)
+        {
+            number = ((IConvertible)value).ToDouble(CultureInfo.InvariantCulture);
+            return true;
+        }
+
+        number = default;
+        return false;
+    }
+
+    public static bool TryConvertDateTimeToDateTimeOffset(this object value, out DateTimeOffset dateTimeOffset)
+    {
+        if (value is DateTimeOffset dateTimeOffsetLocal)
+        {
+            dateTimeOffset = dateTimeOffsetLocal;
+            return true;
+        }
+        else if (value is DateTime dateTime)
+        {
+            dateTimeOffset = new DateTimeOffset(dateTime.Kind != DateTimeKind.Unspecified ? dateTime : DateTime.SpecifyKind(dateTime, DateTimeKind.Utc));
+            return true;
+        }
+
+        dateTimeOffset = default;
+        return false;
     }
 
     private static readonly object BoxedTrue = true;

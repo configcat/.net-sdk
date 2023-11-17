@@ -6,10 +6,10 @@ namespace ConfigCat.Client.ConfigService;
 
 internal sealed class ManualPollConfigService : ConfigServiceBase, IConfigService
 {
-    internal ManualPollConfigService(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline = false, Hooks? hooks = null)
+    internal ManualPollConfigService(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline = false, SafeHooksWrapper hooks = default)
         : base(configFetcher, cacheParameters, logger, isOffline, hooks)
     {
-        hooks?.RaiseClientReady();
+        hooks.RaiseClientReady();
     }
 
     public ProjectConfig GetConfig()

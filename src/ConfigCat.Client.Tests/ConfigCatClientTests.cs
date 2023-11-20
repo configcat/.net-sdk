@@ -1366,7 +1366,7 @@ public class ConfigCatClientTests
         [MethodImpl(MethodImplOptions.NoInlining)]
         static void CreateClients(out int instanceCount)
         {
-            var client = ConfigCatClient.Get("test1", options => options.PollingMode = PollingModes.AutoPoll(maxInitWaitTime: TimeSpan.Zero));
+            var client = ConfigCatClient.Get("test1-7890123456789012/1234567890123456789012", options => options.PollingMode = PollingModes.AutoPoll(maxInitWaitTime: TimeSpan.Zero));
 
             client.ConfigChanged += (_, e) =>
             {

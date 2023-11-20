@@ -1490,7 +1490,7 @@ public class ConfigCatClientTests
 
             if (pollingMode == nameof(AutoPoll))
             {
-                Assert.IsTrue(((AutoPollConfigService)configService).WaitForInitialization());
+                Assert.IsTrue(await ((AutoPollConfigService)configService).InitializationTask);
                 expectedFetchAsyncCount++;
             }
 
@@ -1605,7 +1605,7 @@ public class ConfigCatClientTests
 
             if (pollingMode == nameof(AutoPoll))
             {
-                Assert.IsTrue(((AutoPollConfigService)configService).WaitForInitialization());
+                Assert.IsTrue(await ((AutoPollConfigService)configService).InitializationTask);
                 expectedFetchAsyncCount++;
             }
 

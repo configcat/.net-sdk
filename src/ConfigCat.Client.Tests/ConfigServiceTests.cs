@@ -621,8 +621,8 @@ public class ConfigServiceTests
 
         var hooks = new Hooks();
 
-        var clientReadyTcs = new TaskCompletionSource<object?>();
-        hooks.ClientReady += (s, e) => clientReadyTcs.TrySetResult(default);
+        var clientReadyRaised = false;
+        hooks.ClientReady += (s, e) => Volatile.Write(ref clientReadyRaised, true);
 
         var cache = new InMemoryConfigCache();
         cache.Set(null!, cachedPc);
@@ -645,13 +645,9 @@ public class ConfigServiceTests
         {
             if (waitForClientReady)
             {
-                await service.WaitForInitializationAsync();
+                await service.ReadyTask;
 
-                // Allow some time for other initalization callbacks to execute.
-                using var cts = new CancellationTokenSource();
-                var task = await Task.WhenAny(clientReadyTcs.Task, Task.Delay(maxInitWaitTime, cts.Token));
-                cts.Cancel();
-                clientReadyCalled = task == clientReadyTcs.Task && task.Status == TaskStatus.RanToCompletion;
+                Assert.IsTrue(Volatile.Read(ref clientReadyRaised));
             }
 
             actualPc = isAsync ? await service.GetConfigAsync() : service.GetConfig();

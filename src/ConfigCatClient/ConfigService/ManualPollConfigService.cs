@@ -9,7 +9,8 @@ internal sealed class ManualPollConfigService : ConfigServiceBase, IConfigServic
     internal ManualPollConfigService(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline = false, SafeHooksWrapper hooks = default)
         : base(configFetcher, cacheParameters, logger, isOffline, hooks)
     {
-        ReadyTask = SetupClientReady(out _);
+        var initialCacheSyncUpTask = SyncUpWithCacheAsync(WaitForReadyCancellationToken);
+        ReadyTask = GetReadyTask(initialCacheSyncUpTask, async initialCacheSyncUpTask => GetCacheState(await initialCacheSyncUpTask.ConfigureAwait(false)));
     }
 
     public Task<ClientCacheState> ReadyTask { get; }

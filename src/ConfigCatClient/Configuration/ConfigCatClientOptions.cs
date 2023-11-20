@@ -15,6 +15,8 @@ public class ConfigCatClientOptions : IProvidesHooks
 
     internal static readonly Uri BaseUrlEu = new("https://cdn-eu.configcat.com");
 
+    private Hooks hooks = new();
+
     /// <summary>
     /// The logger implementation to use for performing logging.
     /// If not set, <see cref="ConsoleLogger"/> with <see cref="LogLevel.Warning"/> will be used by default.<br/>
@@ -88,7 +90,12 @@ public class ConfigCatClientOptions : IProvidesHooks
     /// </summary>
     public bool Offline { get; set; }
 
-    internal Hooks Hooks { get; } = new Hooks();
+    internal Hooks YieldHooks()
+    {
+        var hooks = this.hooks;
+        this.hooks = NullHooks.Instance;
+        return hooks;
+    }
 
     internal Uri CreateUri(string sdkKey)
     {
@@ -109,28 +116,28 @@ public class ConfigCatClientOptions : IProvidesHooks
     /// <inheritdoc/>
     public event EventHandler? ClientReady
     {
-        add { Hooks.ClientReady += value; }
-        remove { Hooks.ClientReady -= value; }
+        add { this.hooks.ClientReady += value; }
+        remove { this.hooks.ClientReady -= value; }
     }
 
     /// <inheritdoc/>
     public event EventHandler<FlagEvaluatedEventArgs>? FlagEvaluated
     {
-        add { Hooks.FlagEvaluated += value; }
-        remove { Hooks.FlagEvaluated -= value; }
+        add { this.hooks.FlagEvaluated += value; }
+        remove { this.hooks.FlagEvaluated -= value; }
     }
 
     /// <inheritdoc/>
     public event EventHandler<ConfigChangedEventArgs>? ConfigChanged
     {
-        add { Hooks.ConfigChanged += value; }
-        remove { Hooks.ConfigChanged -= value; }
+        add { this.hooks.ConfigChanged += value; }
+        remove { this.hooks.ConfigChanged -= value; }
     }
 
     /// <inheritdoc/>
     public event EventHandler<ConfigCatClientErrorEventArgs>? Error
     {
-        add { Hooks.Error += value; }
-        remove { Hooks.Error -= value; }
+        add { this.hooks.Error += value; }
+        remove { this.hooks.Error -= value; }
     }
 }

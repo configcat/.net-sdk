@@ -75,10 +75,13 @@ public sealed class ConfigCatClient : IConfigCatClient
     internal ConfigCatClient(string sdkKey, ConfigCatClientOptions options)
     {
         this.sdkKey = sdkKey;
-        this.hooks = options.Hooks;
+        this.hooks = options.YieldHooks();
         this.hooks.SetSender(this);
 
-        this.logger = new LoggerWrapper(options.Logger ?? ConfigCatClientOptions.CreateDefaultLogger(), this.hooks);
+        // To avoid possible memory leaks, the components of the client should not hold a strong reference to the hooks object (see also SafeHooksWrapper).
+        var hooksWrapper = new SafeHooksWrapper(this.hooks);
+
+        this.logger = new LoggerWrapper(options.Logger ?? ConfigCatClientOptions.CreateDefaultLogger(), hooksWrapper);
         this.configEvaluator = new RolloutEvaluator(this.logger);
 
         var cacheParameters = new CacheParameters
@@ -110,25 +113,19 @@ public sealed class ConfigCatClient : IConfigCatClient
                     cacheParameters,
                     this.logger,
                     options.Offline,
-                    this.hooks)
-            : new NullConfigService(this.logger, this.hooks);
+                    hooksWrapper)
+            : new NullConfigService(this.logger, hooksWrapper);
     }
 
     // For test purposes only
     internal ConfigCatClient(IConfigService configService, IConfigCatLogger logger, IRolloutEvaluator evaluator, Hooks? hooks = null)
     {
-        if (hooks is not null)
-        {
-            this.hooks = hooks;
-            this.hooks.SetSender(this);
-        }
-        else
-        {
-            this.hooks = NullHooks.Instance;
-        }
+        this.hooks = hooks ?? NullHooks.Instance;
+        this.hooks.SetSender(this);
+        var hooksWrapper = new SafeHooksWrapper(this.hooks);
 
         this.configService = configService;
-        this.logger = new LoggerWrapper(logger, this.hooks);
+        this.logger = new LoggerWrapper(logger, hooksWrapper);
         this.configEvaluator = evaluator;
     }
 
@@ -681,7 +678,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
     }
 
-    private static IConfigService DetermineConfigService(PollingMode pollingMode, HttpConfigFetcher fetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline, Hooks hooks)
+    private static IConfigService DetermineConfigService(PollingMode pollingMode, HttpConfigFetcher fetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline, SafeHooksWrapper hooks)
     {
         return pollingMode switch
         {

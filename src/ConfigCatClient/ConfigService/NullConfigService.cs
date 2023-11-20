@@ -7,11 +7,11 @@ internal sealed class NullConfigService : IConfigService
 {
     private readonly LoggerWrapper logger;
 
-    public NullConfigService(LoggerWrapper logger, Hooks? hooks = null)
+    public NullConfigService(LoggerWrapper logger, SafeHooksWrapper hooks = default)
     {
         this.logger = logger;
 
-        hooks?.RaiseClientReady();
+        hooks.RaiseClientReady();
     }
 
     public ProjectConfig GetConfig() => ProjectConfig.Empty;

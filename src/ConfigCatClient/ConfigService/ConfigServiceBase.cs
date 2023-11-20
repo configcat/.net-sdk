@@ -27,15 +27,15 @@ internal abstract class ConfigServiceBase : IDisposable
     protected readonly ConfigCache ConfigCache;
     protected readonly LoggerWrapper Logger;
     protected readonly string CacheKey;
-    protected readonly Hooks Hooks;
+    protected readonly SafeHooksWrapper Hooks;
 
-    protected ConfigServiceBase(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline, Hooks? hooks)
+    protected ConfigServiceBase(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline, SafeHooksWrapper hooks)
     {
         this.ConfigFetcher = configFetcher;
         this.ConfigCache = cacheParameters.ConfigCache;
         this.CacheKey = cacheParameters.CacheKey;
         this.Logger = logger;
-        this.Hooks = hooks ?? NullHooks.Instance;
+        this.Hooks = hooks;
         this.status = isOffline ? Status.Offline : Status.Online;
     }
 
@@ -91,16 +91,16 @@ internal abstract class ConfigServiceBase : IDisposable
         if (fetchResult.IsSuccess
             || fetchResult.Config.TimeStamp > latestConfig.TimeStamp && (!fetchResult.Config.IsEmpty || latestConfig.IsEmpty))
         {
+            this.ConfigCache.Set(this.CacheKey, fetchResult.Config);
+
             latestConfig = fetchResult.Config;
+        }
 
-            this.ConfigCache.Set(this.CacheKey, latestConfig);
+        OnConfigFetched(fetchResult.Config);
 
-            OnConfigUpdated(latestConfig);
-
-            if (fetchResult.IsSuccess)
-            {
-                OnConfigChanged(latestConfig);
-            }
+        if (fetchResult.IsSuccess)
+        {
+            OnConfigChanged(fetchResult.Config);
         }
 
         return new ConfigWithFetchResult(latestConfig, fetchResult);
@@ -128,22 +128,22 @@ internal abstract class ConfigServiceBase : IDisposable
         if (fetchResult.IsSuccess
             || fetchResult.Config.TimeStamp > latestConfig.TimeStamp && (!fetchResult.Config.IsEmpty || latestConfig.IsEmpty))
         {
+            await this.ConfigCache.SetAsync(this.CacheKey, fetchResult.Config, cancellationToken).ConfigureAwait(false);
+
             latestConfig = fetchResult.Config;
+        }
 
-            await this.ConfigCache.SetAsync(this.CacheKey, latestConfig, cancellationToken).ConfigureAwait(false);
+        OnConfigFetched(fetchResult.Config);
 
-            OnConfigUpdated(latestConfig);
-
-            if (fetchResult.IsSuccess)
-            {
-                OnConfigChanged(latestConfig);
-            }
+        if (fetchResult.IsSuccess)
+        {
+            OnConfigChanged(fetchResult.Config);
         }
 
         return new ConfigWithFetchResult(latestConfig, fetchResult);
     }
 
-    protected virtual void OnConfigUpdated(ProjectConfig newConfig) { }
+    protected virtual void OnConfigFetched(ProjectConfig newConfig) { }
 
     protected virtual void OnConfigChanged(ProjectConfig newConfig)
     {

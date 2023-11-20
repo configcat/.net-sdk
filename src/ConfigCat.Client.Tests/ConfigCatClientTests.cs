@@ -1357,6 +1357,42 @@ public class ConfigCatClientTests
         Assert.AreEqual(0, instanceCount2);
     }
 
+    [TestMethod]
+    [DoNotParallelize]
+    public void CachedInstancesCanBeGCdWhenHookHandlerClosesOverClientInstance()
+    {
+        // Arrange
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void CreateClients(out int instanceCount)
+        {
+            var client = ConfigCatClient.Get("test1", options => options.PollingMode = PollingModes.AutoPoll(maxInitWaitTime: TimeSpan.Zero));
+
+            client.ConfigChanged += (_, e) =>
+            {
+                client.GetValue("flag", false);
+            };
+
+            instanceCount = ConfigCatClient.Instances.GetAliveCount();
+
+            GC.KeepAlive(client);
+        }
+
+        // Act
+
+        CreateClients(out var instanceCount1);
+
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+
+        var instanceCount2 = ConfigCatClient.Instances.GetAliveCount();
+
+        // Assert
+
+        Assert.AreEqual(1, instanceCount1);
+        Assert.AreEqual(0, instanceCount2);
+    }
+
     private static IConfigCatClient CreateClientWithMockedFetcher(string cacheKey,
         Mock<IConfigCatLogger> loggerMock,
         Mock<IConfigFetcher> fetcherMock,

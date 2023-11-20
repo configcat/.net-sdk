@@ -5,7 +5,7 @@ namespace ConfigCat.Client;
 internal sealed class LoggerWrapper : IConfigCatLogger
 {
     private readonly IConfigCatLogger logger;
-    private readonly Hooks hooks;
+    private readonly SafeHooksWrapper hooks;
 
     public LogLevel LogLevel
     {
@@ -13,10 +13,10 @@ internal sealed class LoggerWrapper : IConfigCatLogger
         set => this.logger.LogLevel = value;
     }
 
-    internal LoggerWrapper(IConfigCatLogger logger, Hooks? hooks = null)
+    internal LoggerWrapper(IConfigCatLogger logger, SafeHooksWrapper hooks = default)
     {
         this.logger = logger;
-        this.hooks = hooks ?? NullHooks.Instance;
+        this.hooks = hooks;
     }
 
     public bool IsEnabled(LogLevel level)

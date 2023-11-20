@@ -905,9 +905,8 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
     private double GetUserAttributeValueAsNumber(string attributeName, object attributeValue, UserCondition condition, string key, out string? error)
     {
-        if ((attributeValue.TryConvertNumericToDouble(out var number)
+        if (attributeValue.TryConvertNumericToDouble(out var number)
             || attributeValue is string text && double.TryParse(text.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out number))
-            && !double.IsNaN(number))
         {
             error = null;
             return number;
@@ -924,9 +923,8 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             error = null;
             return DateTimeUtils.ToUnixTimeMilliseconds(dateTimeOffset.UtcDateTime) / 1000.0;
         }
-        else if ((attributeValue.TryConvertNumericToDouble(out var number)
+        else if (attributeValue.TryConvertNumericToDouble(out var number)
             || attributeValue is string text && double.TryParse(text.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out number))
-            && !double.IsNaN(number))
         {
             error = null;
             return number;

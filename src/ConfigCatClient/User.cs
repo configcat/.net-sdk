@@ -56,14 +56,14 @@ public class User
     /// </para>
     /// <para>
     /// Number-based comparisons (=, &lt;, &gt;=, etc.)<br/>
-    /// * accept <see cref="double"/> values (except for <see cref="double.NaN"/>) and all other numeric values which can safely be converted to <see cref="double"/>,<br/>
+    /// * accept <see cref="double"/> values and all other numeric values which can safely be converted to <see cref="double"/>,<br/>
     /// * accept <see cref="string"/> values containing a properly formatted, valid <see cref="double"/> value,<br/>
     /// * all other values are considered invalid (a warning will be logged and the currently evaluated targeting rule will be skipped).
     /// </para>
     /// <para>
     /// Date time-based comparisons (BEFORE / AFTER)<br/>
     /// * accept <see cref="DateTime"/> or <see cref="DateTimeOffset"/> values, which are automatically converted to a second-based Unix timestamp,<br/>
-    /// * accept <see cref="double"/> values (except for <see cref="double.NaN"/>) representing a second-based Unix timestamp and all other numeric values which can safely be converted to <see cref="double"/>,<br/>
+    /// * accept <see cref="double"/> values representing a second-based Unix timestamp and all other numeric values which can safely be converted to <see cref="double"/>,<br/>
     /// * accept <see cref="string"/> values containing a properly formatted, valid <see cref="double"/> value,<br/>
     /// * all other values are considered invalid (a warning will be logged and the currently evaluated targeting rule will be skipped).
     /// </para>

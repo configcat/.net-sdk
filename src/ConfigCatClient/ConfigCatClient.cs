@@ -124,7 +124,8 @@ public sealed class ConfigCatClient : IConfigCatClient
     }
 
     // For test purposes only
-    internal ConfigCatClient(IConfigService configService, IConfigCatLogger logger, IRolloutEvaluator evaluator, Hooks? hooks = null)
+    internal ConfigCatClient(IConfigService configService, IConfigCatLogger logger, IRolloutEvaluator evaluator,
+        OverrideBehaviour? overrideBehaviour = null, IOverrideDataSource? overrideDataSource = null, Hooks? hooks = null)
     {
         this.hooks = hooks ?? NullHooks.Instance;
         this.hooks.SetSender(this);
@@ -133,6 +134,9 @@ public sealed class ConfigCatClient : IConfigCatClient
         this.evaluationServices = new EvaluationServices(evaluator, hooksWrapper, new LoggerWrapper(logger, hooks));
 
         this.configService = configService;
+
+        this.overrideBehaviour = overrideBehaviour;
+        this.overrideDataSource = overrideDataSource;
     }
 
     /// <summary>

@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
+using ConfigCat.Client.Tests.Fakes;
 using ConfigCat.Client.Tests.Helpers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
@@ -70,20 +71,20 @@ public class ConfigCacheTests
         });
 
         configCacheMock.Verify(c => c.SetAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
-        configCacheMock.Verify(c => c.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        configCacheMock.Verify(c => c.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
 
         var actual = await client.GetValueAsync("stringDefaultCat", "N/A");
 
         Assert.AreEqual("N/A", actual);
         configCacheMock.Verify(c => c.SetAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
-        configCacheMock.Verify(c => c.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+        configCacheMock.Verify(c => c.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
 
         await client.ForceRefreshAsync();
 
         actual = await client.GetValueAsync("stringDefaultCat", "N/A");
         Assert.AreEqual("Cat", actual);
         configCacheMock.Verify(c => c.SetAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
-        configCacheMock.Verify(c => c.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(3));
+        configCacheMock.Verify(c => c.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(4));
     }
 
     [TestMethod]
@@ -245,37 +246,5 @@ public class ConfigCacheTests
         var pc = new ProjectConfig(configJson, Config.Deserialize(configJson.AsMemory()), timeStampDateTime, httpETag);
 
         Assert.AreEqual(expectedPayload, ProjectConfig.Serialize(pc));
-    }
-
-    private sealed class FakeExternalCache : IConfigCatCache
-    {
-        public volatile string? CachedValue = null;
-
-        public string? Get(string key) => this.CachedValue;
-
-        public Task<string?> GetAsync(string key, CancellationToken cancellationToken = default) => Task.FromResult(Get(key));
-
-        public void Set(string key, string value) => this.CachedValue = value;
-
-        public Task SetAsync(string key, string value, CancellationToken cancellationToken = default)
-        {
-            Set(key, value);
-            return Task.FromResult(0);
-        }
-    }
-
-    private sealed class FaultyFakeExternalCache : IConfigCatCache
-    {
-        public string? Get(string key) => throw new ApplicationException("Operation failed :(");
-
-        public Task<string?> GetAsync(string key, CancellationToken cancellationToken = default) => Task.FromResult(Get(key));
-
-        public void Set(string key, string value) => throw new ApplicationException("Operation failed :(");
-
-        public Task SetAsync(string key, string value, CancellationToken cancellationToken = default)
-        {
-            Set(key, value);
-            return Task.FromResult(0);
-        }
     }
 }

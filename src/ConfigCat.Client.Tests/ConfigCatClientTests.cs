@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -12,6 +13,8 @@ using ConfigCat.Client.Cache;
 using ConfigCat.Client.ConfigService;
 using ConfigCat.Client.Configuration;
 using ConfigCat.Client.Evaluation;
+using ConfigCat.Client.Override;
+using ConfigCat.Client.Tests.Fakes;
 using ConfigCat.Client.Tests.Helpers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
@@ -137,6 +140,371 @@ public class ConfigCatClientTests
     }
 
     [TestMethod]
+    public async Task Initialization_AutoPoll_ConfigChangedInEveryFetch_ShouldFireConfigChangedEveryPollingIteration()
+    {
+        var pollInterval = TimeSpan.FromSeconds(1);
+
+        var fetchCounter = 0;
+        var configChangedEventCount = 0;
+
+        var hooks = new Hooks();
+        hooks.ConfigChanged += delegate { configChangedEventCount++; };
+
+        using var client = CreateClientWithMockedFetcher("1", this.loggerMock, this.fetcherMock,
+            onFetch: cfg => FetchResult.Success(ConfigHelper.FromString("{}", httpETag: $"\"{(++fetchCounter).ToString(CultureInfo.InvariantCulture)}\"", timeStamp: ProjectConfig.GenerateTimeStamp())),
+            configServiceFactory: (fetcher, cacheParams, loggerWrapper, hooks) => new AutoPollConfigService(PollingModes.AutoPoll(pollInterval), this.fetcherMock.Object, cacheParams, loggerWrapper, hooks: hooks),
+            hooks, out _, out _
+        );
+
+        await Task.Delay(TimeSpan.FromMilliseconds(2.5 * pollInterval.TotalMilliseconds));
+
+        Assert.AreEqual(3, configChangedEventCount);
+    }
+
+    [TestMethod]
+    public async Task Initialization_AutoPoll_ConfigNotChanged_ShouldFireConfigChangedOnlyOnce()
+    {
+        var pollInterval = TimeSpan.FromSeconds(1);
+
+        var fetchCounter = 0;
+        var configChangedEventCount = 0;
+
+        var hooks = new Hooks();
+        hooks.ConfigChanged += delegate { configChangedEventCount++; };
+
+        var pc = ConfigHelper.FromString("{}", httpETag: $"\0\"", timeStamp: ProjectConfig.GenerateTimeStamp());
+
+        using var client = CreateClientWithMockedFetcher("1", this.loggerMock, this.fetcherMock,
+            onFetch: cfg => fetchCounter++ > 0
+                ? FetchResult.NotModified(pc.With(ProjectConfig.GenerateTimeStamp()))
+                : FetchResult.Success(pc.With(ProjectConfig.GenerateTimeStamp())),
+            configServiceFactory: (fetcher, cacheParams, loggerWrapper, hooks) => new AutoPollConfigService(PollingModes.AutoPoll(pollInterval), this.fetcherMock.Object, cacheParams, loggerWrapper, hooks: hooks),
+            hooks, out _, out _
+        );
+
+        await Task.Delay(TimeSpan.FromMilliseconds(2.5 * pollInterval.TotalMilliseconds));
+
+        Assert.AreEqual(1, configChangedEventCount);
+    }
+
+    [DataTestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task Initialization_AutoPoll_WithMaxInitWaitTime_GetValueShouldWait(bool isAsync)
+    {
+        var maxInitWaitTime = TimeSpan.FromSeconds(2);
+        var delay = TimeSpan.FromMilliseconds(maxInitWaitTime.TotalMilliseconds / 4);
+
+        var configJsonFilePath = Path.Combine("data", "sample_v5.json");
+        var pc = ConfigHelper.FromFile(configJsonFilePath, httpETag: $"\0\"", timeStamp: ProjectConfig.GenerateTimeStamp());
+
+        var sw = new Stopwatch();
+        sw.Start();
+        using var client = CreateClientWithMockedFetcher("1", this.loggerMock, this.fetcherMock,
+            onFetch: _ => throw new NotImplementedException(),
+            onFetchAsync: async (cfg, _) =>
+            {
+                await Task.Delay(delay);
+                return FetchResult.Success(pc.With(ProjectConfig.GenerateTimeStamp()));
+            },
+            configServiceFactory: (fetcher, cacheParams, loggerWrapper, _) => new AutoPollConfigService(PollingModes.AutoPoll(maxInitWaitTime: maxInitWaitTime), this.fetcherMock.Object, cacheParams, loggerWrapper),
+            evaluatorFactory: null, configCacheFactory: null, overrideDataSourceFactory: null, hooks: null, out _
+        );
+
+        var actualValue = isAsync
+            ? await client.GetValueAsync("boolDefaultTrue", false)
+            : client.GetValue("boolDefaultTrue", false);
+
+        sw.Stop();
+
+        Assert.IsTrue(sw.Elapsed >= delay - TimeSpan.FromMilliseconds(10), $"Elapsed time: {sw.Elapsed}");
+        Assert.IsTrue(sw.Elapsed <= delay + TimeSpan.FromMilliseconds(250), $"Elapsed time: {sw.Elapsed}"); // 250ms for tolerance
+        Assert.IsTrue(actualValue);
+    }
+
+    [DataTestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task Initialization_AutoPoll_WithMaxInitWaitTime_GetValueShouldWaitForMaxInitWaitTimeOnlyAndReturnDefaultValue(bool isAsync)
+    {
+        var maxInitWaitTime = TimeSpan.FromSeconds(1);
+        var delay = TimeSpan.FromMilliseconds(maxInitWaitTime.TotalMilliseconds * 4);
+
+        var configJsonFilePath = Path.Combine("data", "sample_v5.json");
+        var pc = ConfigHelper.FromFile(configJsonFilePath, httpETag: $"\0\"", timeStamp: ProjectConfig.GenerateTimeStamp());
+
+        var sw = new Stopwatch();
+        sw.Start();
+        using var client = CreateClientWithMockedFetcher("1", this.loggerMock, this.fetcherMock,
+            onFetch: _ => throw new NotImplementedException(),
+            onFetchAsync: async (cfg, _) =>
+            {
+                await Task.Delay(delay);
+                return FetchResult.Success(pc.With(ProjectConfig.GenerateTimeStamp()));
+            },
+            configServiceFactory: (fetcher, cacheParams, loggerWrapper, _) => new AutoPollConfigService(PollingModes.AutoPoll(maxInitWaitTime: maxInitWaitTime), this.fetcherMock.Object, cacheParams, loggerWrapper),
+            evaluatorFactory: null, configCacheFactory: null, overrideDataSourceFactory: null, hooks: null, out _
+        );
+
+        var actualValue = isAsync
+            ? await client.GetValueAsync("boolDefaultTrue", false)
+            : client.GetValue("boolDefaultTrue", false);
+
+        sw.Stop();
+
+        Assert.IsTrue(sw.Elapsed >= maxInitWaitTime - TimeSpan.FromMilliseconds(10), $"Elapsed time: {sw.Elapsed}");
+        Assert.IsTrue(sw.Elapsed <= maxInitWaitTime + TimeSpan.FromMilliseconds(250), $"Elapsed time: {sw.Elapsed}"); // 250ms for tolerance
+
+        Assert.IsFalse(actualValue);
+    }
+
+    [TestMethod]
+    public async Task WaitForReadyAsync_AutoPoll_ShouldWait()
+    {
+        var configJsonFilePath = Path.Combine("data", "sample_v5.json");
+        var pc = ConfigHelper.FromFile(configJsonFilePath, httpETag: $"\0\"", timeStamp: ProjectConfig.GenerateTimeStamp());
+
+        var hooks = new Hooks();
+
+        using var client = CreateClientWithMockedFetcher("1", this.loggerMock, this.fetcherMock,
+            onFetch: cfg => FetchResult.Success(pc.With(ProjectConfig.GenerateTimeStamp())),
+            configServiceFactory: (fetcher, cacheParams, loggerWrapper, hooks) => new AutoPollConfigService(PollingModes.AutoPoll(), this.fetcherMock.Object, cacheParams, loggerWrapper, hooks: hooks),
+            hooks, out _, out _
+        );
+
+        var cacheState = await client.WaitForReadyAsync();
+
+        Assert.AreEqual(ClientCacheState.HasUpToDateFlagData, cacheState);
+
+        var snapshot = client.Snapshot();
+        Assert.IsTrue(snapshot.GetValue("boolDefaultTrue", false));
+
+        var evaluationDetails = snapshot.GetValueDetails("boolDefaultTrue", false);
+        Assert.IsFalse(evaluationDetails.IsDefaultValue);
+        Assert.IsTrue(evaluationDetails.Value);
+    }
+
+    [TestMethod]
+    public async Task WaitForReadyAsync_AutoPoll_ShouldWaitForMaxInitWaitTime()
+    {
+        var maxInitWaitTime = TimeSpan.FromSeconds(1);
+        var delay = TimeSpan.FromMilliseconds(maxInitWaitTime.TotalMilliseconds * 4);
+
+        var configJsonFilePath = Path.Combine("data", "sample_v5.json");
+        var pc = ConfigHelper.FromFile(configJsonFilePath, httpETag: $"\0\"", timeStamp: ProjectConfig.GenerateTimeStamp());
+
+        var hooks = new Hooks();
+
+        var sw = new Stopwatch();
+        sw.Start();
+        using var client = CreateClientWithMockedFetcher("1", this.loggerMock, this.fetcherMock,
+            onFetch: _ => throw new NotImplementedException(),
+            onFetchAsync: async (cfg, _) =>
+            {
+                await Task.Delay(delay);
+                return FetchResult.Success(pc.With(ProjectConfig.GenerateTimeStamp()));
+            },
+            configServiceFactory: (fetcher, cacheParams, loggerWrapper, hooks) => new AutoPollConfigService(PollingModes.AutoPoll(maxInitWaitTime: maxInitWaitTime), this.fetcherMock.Object, cacheParams, loggerWrapper, hooks: hooks),
+            evaluatorFactory: null, configCacheFactory: null, overrideDataSourceFactory: null, hooks, out _
+        );
+
+        var cacheState = await client.WaitForReadyAsync();
+
+        sw.Stop();
+
+        Assert.IsTrue(sw.Elapsed >= maxInitWaitTime - TimeSpan.FromMilliseconds(10), $"Elapsed time: {sw.Elapsed}");
+        Assert.IsTrue(sw.Elapsed <= maxInitWaitTime + TimeSpan.FromMilliseconds(250), $"Elapsed time: {sw.Elapsed}"); // 250ms for tolerance
+
+        Assert.AreEqual(ClientCacheState.NoFlagData, cacheState);
+
+        var snapshot = client.Snapshot();
+        Assert.IsFalse(snapshot.GetValue("boolDefaultTrue", false));
+
+        var evaluationDetails = snapshot.GetValueDetails("boolDefaultTrue", false);
+        Assert.IsTrue(evaluationDetails.IsDefaultValue);
+        Assert.IsFalse(evaluationDetails.Value);
+    }
+
+    [TestMethod]
+    public async Task WaitForReadyAsync_AutoPoll_ShouldWaitForMaxInitWaitTimeAndReturnCached()
+    {
+        var maxInitWaitTime = TimeSpan.FromSeconds(1);
+        var pollInterval = TimeSpan.FromSeconds(5);
+        var delay = TimeSpan.FromMilliseconds(maxInitWaitTime.TotalMilliseconds * 4);
+
+        var configJsonFilePath = Path.Combine("data", "sample_v5.json");
+        var pc = ConfigHelper.FromFile(configJsonFilePath, httpETag: $"\0\"", timeStamp: ProjectConfig.GenerateTimeStamp() - pollInterval - TimeSpan.FromSeconds(1));
+
+        const string cacheKey = "1";
+        var externalCache = new FakeExternalCache();
+        externalCache.Set(cacheKey, ProjectConfig.Serialize(pc));
+
+        var hooks = new Hooks();
+
+        var sw = new Stopwatch();
+        sw.Start();
+        using var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
+            onFetch: _ => throw new NotImplementedException(),
+            onFetchAsync: async (cfg, _) =>
+            {
+                await Task.Delay(delay);
+                return FetchResult.NotModified(pc.With(ProjectConfig.GenerateTimeStamp()));
+            },
+            configServiceFactory: (fetcher, cacheParams, loggerWrapper, hooks) => new AutoPollConfigService(PollingModes.AutoPoll(pollInterval, maxInitWaitTime), this.fetcherMock.Object, cacheParams, loggerWrapper, hooks: hooks),
+            evaluatorFactory: null,
+            configCacheFactory: logger => new ExternalConfigCache(externalCache, logger),
+            overrideDataSourceFactory: null, hooks, out _
+        );
+
+        var cacheState = await client.WaitForReadyAsync();
+
+        sw.Stop();
+
+        Assert.IsTrue(sw.Elapsed >= maxInitWaitTime - TimeSpan.FromMilliseconds(10), $"Elapsed time: {sw.Elapsed}");
+        Assert.IsTrue(sw.Elapsed <= maxInitWaitTime + TimeSpan.FromMilliseconds(250), $"Elapsed time: {sw.Elapsed}"); // 250ms for tolerance
+
+        Assert.AreEqual(ClientCacheState.HasCachedFlagDataOnly, cacheState);
+
+        var snapshot = client.Snapshot();
+        Assert.IsTrue(snapshot.GetValue("boolDefaultTrue", false));
+
+        var evaluationDetails = snapshot.GetValueDetails("boolDefaultTrue", false);
+        Assert.IsFalse(evaluationDetails.IsDefaultValue);
+        Assert.IsTrue(evaluationDetails.Value);
+    }
+
+    [TestMethod]
+    public async Task WaitForReadyAsync_LazyLoad_ReturnCached_UpToDate()
+    {
+        var cacheTimeToLive = TimeSpan.FromSeconds(2);
+
+        var configJsonFilePath = Path.Combine("data", "sample_v5.json");
+        var pc = ConfigHelper.FromFile(configJsonFilePath, httpETag: $"\0\"", timeStamp: ProjectConfig.GenerateTimeStamp());
+
+        const string cacheKey = "1";
+        var externalCache = new FakeExternalCache();
+        externalCache.Set(cacheKey, ProjectConfig.Serialize(pc));
+
+        var hooks = new Hooks();
+
+        using var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
+            onFetch: cfg => FetchResult.NotModified(pc.With(ProjectConfig.GenerateTimeStamp())),
+            onFetchAsync: (cfg, _) => Task.FromResult(FetchResult.NotModified(pc.With(ProjectConfig.GenerateTimeStamp()))),
+            configServiceFactory: (fetcher, cacheParams, loggerWrapper, hooks) => new LazyLoadConfigService(this.fetcherMock.Object, cacheParams, loggerWrapper, cacheTimeToLive, hooks: hooks),
+            evaluatorFactory: null,
+            configCacheFactory: logger => new ExternalConfigCache(externalCache, logger),
+            overrideDataSourceFactory: null, hooks, out _
+        );
+
+        var cacheState = await client.WaitForReadyAsync();
+
+        Assert.AreEqual(ClientCacheState.HasUpToDateFlagData, cacheState);
+
+        var snapshot = client.Snapshot();
+        Assert.IsTrue(snapshot.GetValue("boolDefaultTrue", false));
+
+        var evaluationDetails = snapshot.GetValueDetails("boolDefaultTrue", false);
+        Assert.IsFalse(evaluationDetails.IsDefaultValue);
+        Assert.IsTrue(evaluationDetails.Value);
+    }
+
+    [TestMethod]
+    public async Task WaitForReadyAsync_LazyLoad_ReturnCached_Expired()
+    {
+        var cacheTimeToLive = TimeSpan.FromSeconds(2);
+
+        var configJsonFilePath = Path.Combine("data", "sample_v5.json");
+        var pc = ConfigHelper.FromFile(configJsonFilePath, httpETag: $"\0\"", timeStamp: ProjectConfig.GenerateTimeStamp() - cacheTimeToLive - TimeSpan.FromSeconds(1));
+
+        const string cacheKey = "1";
+        var externalCache = new FakeExternalCache();
+        externalCache.Set(cacheKey, ProjectConfig.Serialize(pc));
+
+        var hooks = new Hooks();
+
+        using var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
+            onFetch: cfg => FetchResult.NotModified(pc.With(ProjectConfig.GenerateTimeStamp())),
+            onFetchAsync: (cfg, _) => Task.FromResult(FetchResult.NotModified(pc.With(ProjectConfig.GenerateTimeStamp()))),
+            configServiceFactory: (fetcher, cacheParams, loggerWrapper, hooks) => new LazyLoadConfigService(this.fetcherMock.Object, cacheParams, loggerWrapper, cacheTimeToLive, hooks: hooks),
+            evaluatorFactory: null,
+            configCacheFactory: logger => new ExternalConfigCache(externalCache, logger),
+            overrideDataSourceFactory: null, hooks, out _
+        );
+
+        var cacheState = await client.WaitForReadyAsync();
+
+        Assert.AreEqual(ClientCacheState.HasCachedFlagDataOnly, cacheState);
+
+        var snapshot = client.Snapshot();
+        Assert.IsTrue(snapshot.GetValue("boolDefaultTrue", false));
+
+        var evaluationDetails = snapshot.GetValueDetails("boolDefaultTrue", false);
+        Assert.IsFalse(evaluationDetails.IsDefaultValue);
+        Assert.IsTrue(evaluationDetails.Value);
+    }
+
+    [TestMethod]
+    public async Task WaitForReadyAsync_ManualPoll_ReturnCached()
+    {
+        var configJsonFilePath = Path.Combine("data", "sample_v5.json");
+        var pc = ConfigHelper.FromFile(configJsonFilePath, httpETag: $"\0\"", timeStamp: ProjectConfig.GenerateTimeStamp());
+
+        const string cacheKey = "1";
+        var externalCache = new FakeExternalCache();
+        externalCache.Set(cacheKey, ProjectConfig.Serialize(pc));
+
+        var hooks = new Hooks();
+
+        using var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
+            onFetch: cfg => FetchResult.NotModified(pc.With(ProjectConfig.GenerateTimeStamp())),
+            onFetchAsync: (cfg, _) => Task.FromResult(FetchResult.NotModified(pc.With(ProjectConfig.GenerateTimeStamp()))),
+            configServiceFactory: (fetcher, cacheParams, loggerWrapper, hooks) => new ManualPollConfigService(this.fetcherMock.Object, cacheParams, loggerWrapper, hooks: hooks),
+            evaluatorFactory: null,
+            configCacheFactory: logger => new ExternalConfigCache(externalCache, logger),
+            overrideDataSourceFactory: null, hooks, out _
+        );
+
+        var cacheState = await client.WaitForReadyAsync();
+
+        Assert.AreEqual(ClientCacheState.HasCachedFlagDataOnly, cacheState);
+
+        var snapshot = client.Snapshot();
+        Assert.IsTrue(snapshot.GetValue("boolDefaultTrue", false));
+
+        var evaluationDetails = snapshot.GetValueDetails("boolDefaultTrue", false);
+        Assert.IsFalse(evaluationDetails.IsDefaultValue);
+        Assert.IsTrue(evaluationDetails.Value);
+    }
+
+    [TestMethod]
+    public async Task WaitForReadyAsync_LocalOnlyFlagOverride()
+    {
+        var configJsonFilePath = Path.Combine("data", "sample_v5.json");
+
+        var hooks = new Hooks();
+
+        using var client = CreateClientWithMockedFetcher("1", this.loggerMock, this.fetcherMock,
+            onFetch: delegate { throw new InvalidOperationException(); },
+            onFetchAsync: delegate { throw new InvalidOperationException(); },
+            configServiceFactory: (_, _, loggerWrapper, hooks) => new NullConfigService(loggerWrapper, hooks: hooks),
+            evaluatorFactory: null, configCacheFactory: null,
+            overrideDataSourceFactory: logger => Tuple.Create(OverrideBehaviour.LocalOnly, (IOverrideDataSource)new LocalFileDataSource(configJsonFilePath, autoReload: false, logger)),
+            hooks, out _
+        );
+
+        var cacheState = await client.WaitForReadyAsync();
+
+        Assert.AreEqual(ClientCacheState.HasLocalOverrideFlagDataOnly, cacheState);
+
+        var snapshot = client.Snapshot();
+        Assert.IsTrue(snapshot.GetValue("boolDefaultTrue", false));
+
+        var evaluationDetails = snapshot.GetValueDetails("boolDefaultTrue", false);
+        Assert.IsFalse(evaluationDetails.IsDefaultValue);
+        Assert.IsTrue(evaluationDetails.Value);
+    }
+
+    [TestMethod]
     public void GetValue_ConfigServiceThrowException_ShouldReturnDefaultValue()
     {
         // Arrange
@@ -195,7 +563,7 @@ public class ConfigCatClientTests
             .Setup(m => m.Evaluate(It.IsAny<It.IsAnyType>(), ref It.Ref<EvaluateContext>.IsAny, out It.Ref<It.IsAnyType>.IsAny))
             .Throws<Exception>();
 
-        var client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, new Hooks());
+        var client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, hooks: new Hooks());
 
         var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
         client.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
@@ -228,7 +596,7 @@ public class ConfigCatClientTests
             .Setup(m => m.Evaluate(It.IsAny<It.IsAnyType>(), ref It.Ref<EvaluateContext>.IsAny, out It.Ref<It.IsAnyType>.IsAny))
             .Throws<Exception>();
 
-        var client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, new Hooks());
+        var client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, hooks: new Hooks());
 
         var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
         client.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
@@ -514,7 +882,7 @@ public class ConfigCatClientTests
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
             onFetch: _ => FetchResult.Success(ConfigHelper.FromFile(configJsonFilePath, httpETag: "12345", timeStamp)),
-            configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
+            configServiceFactory: (fetcher, cacheParams, loggerWrapper, _) =>
             {
                 return new ManualPollConfigService(this.fetcherMock.Object, cacheParams, loggerWrapper);
             },
@@ -572,12 +940,11 @@ public class ConfigCatClientTests
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
             onFetch: _ => FetchResult.Success(ConfigHelper.FromFile(configJsonFilePath, httpETag: "12345", timeStamp)),
-            configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
+            configServiceFactory: (fetcher, cacheParams, loggerWrapper, _) =>
             {
                 return new ManualPollConfigService(this.fetcherMock.Object, cacheParams, loggerWrapper);
             },
-            evaluatorFactory: loggerWrapper => new RolloutEvaluator(loggerWrapper), new Hooks(),
-            out var configService, out _);
+            evaluatorFactory: null, new Hooks(), out var configService, out _);
 
         if (isAsync)
         {
@@ -642,7 +1009,7 @@ public class ConfigCatClientTests
         this.configServiceMock.Setup(m => m.GetConfigAsync(It.IsAny<CancellationToken>())).ReturnsAsync(ProjectConfig.Empty);
         var o = new Config();
 
-        using IConfigCatClient client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, new Hooks());
+        using IConfigCatClient client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, hooks: new Hooks());
 
         var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
         client.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
@@ -676,7 +1043,7 @@ public class ConfigCatClientTests
             .Setup(m => m.GetConfigAsync(It.IsAny<CancellationToken>()))
             .Throws<Exception>();
 
-        using IConfigCatClient client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, new Hooks());
+        using IConfigCatClient client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, hooks: new Hooks());
 
         var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
         client.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
@@ -713,7 +1080,7 @@ public class ConfigCatClientTests
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
             onFetch: _ => FetchResult.Success(ConfigHelper.FromFile(configJsonFilePath, httpETag: "12345", timeStamp)),
-            configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
+            configServiceFactory: (fetcher, cacheParams, loggerWrapper, _) =>
             {
                 return new ManualPollConfigService(this.fetcherMock.Object, cacheParams, loggerWrapper);
             },
@@ -1393,47 +1760,6 @@ public class ConfigCatClientTests
         Assert.AreEqual(0, instanceCount2);
     }
 
-    private static IConfigCatClient CreateClientWithMockedFetcher(string cacheKey,
-        Mock<IConfigCatLogger> loggerMock,
-        Mock<IConfigFetcher> fetcherMock,
-        Func<ProjectConfig, FetchResult> onFetch,
-        Func<IConfigFetcher, CacheParameters, LoggerWrapper, IConfigService> configServiceFactory,
-        out IConfigService configService,
-        out ConfigCache configCache)
-    {
-        return CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock, onFetch, configServiceFactory,
-            evaluatorFactory: loggerWrapper => new RolloutEvaluator(loggerWrapper), hooks: null,
-            out configService, out configCache);
-    }
-
-    private static IConfigCatClient CreateClientWithMockedFetcher(string cacheKey,
-        Mock<IConfigCatLogger> loggerMock,
-        Mock<IConfigFetcher> fetcherMock,
-        Func<ProjectConfig, FetchResult> onFetch,
-        Func<IConfigFetcher, CacheParameters, LoggerWrapper, IConfigService> configServiceFactory,
-        Func<LoggerWrapper, IRolloutEvaluator> evaluatorFactory,
-        Hooks? hooks,
-        out IConfigService configService,
-        out ConfigCache configCache)
-    {
-        fetcherMock.Setup(m => m.Fetch(It.IsAny<ProjectConfig>())).Returns(onFetch);
-        fetcherMock.Setup(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>())).ReturnsAsync((ProjectConfig pc, CancellationToken _) => onFetch(pc));
-
-        var loggerWrapper = loggerMock.Object.AsWrapper();
-
-        configCache = new InMemoryConfigCache();
-
-        var cacheParams = new CacheParameters(configCache, cacheKey);
-
-        configService = configServiceFactory(fetcherMock.Object, cacheParams, loggerWrapper);
-        return new ConfigCatClient(configService, loggerMock.Object, evaluatorFactory(loggerWrapper), hooks);
-    }
-
-    private static int ParseETagAsInt32(string? etag)
-    {
-        return int.TryParse(etag, NumberStyles.None, CultureInfo.InvariantCulture, out var value) ? value : 0;
-    }
-
     [DataRow(nameof(AutoPoll))]
     [DataRow(nameof(LazyLoad))]
     [DataRow(nameof(ManualPoll))]
@@ -1605,7 +1931,8 @@ public class ConfigCatClientTests
 
             if (pollingMode == nameof(AutoPoll))
             {
-                Assert.IsTrue(await ((AutoPollConfigService)configService).InitializationTask);
+                var x = await ((AutoPollConfigService)configService).InitializationTask;
+                Assert.IsTrue(x);
                 expectedFetchAsyncCount++;
             }
 
@@ -1724,7 +2051,10 @@ public class ConfigCatClientTests
         var configService = new ManualPollConfigService(this.fetcherMock.Object, cacheParams, loggerWrapper, hooks: hooks);
 
         // 1. Client gets created
-        var client = new ConfigCatClient(configService, this.loggerMock.Object, new RolloutEvaluator(loggerWrapper), hooks);
+        var client = new ConfigCatClient(configService, this.loggerMock.Object, new RolloutEvaluator(loggerWrapper), hooks: hooks);
+
+        var cacheState = await client.WaitForReadyAsync();
+        Assert.AreEqual(ClientCacheState.NoFlagData, cacheState);
 
         Assert.AreEqual(1, clientReadyEventCount);
         Assert.AreEqual(0, configChangedEvents.Count);
@@ -1825,6 +2155,9 @@ public class ConfigCatClientTests
             Subscribe(client);
         }
 
+        var cacheState = await client.WaitForReadyAsync();
+        Assert.AreEqual(ClientCacheState.NoFlagData, cacheState);
+
         Assert.AreEqual(subscribeViaOptions ? 2 : 0, clientReadyCallCount);
         Assert.AreEqual(0, configChangedEvents.Count);
         Assert.AreEqual(0, flagEvaluatedEvents.Count);
@@ -1876,6 +2209,83 @@ public class ConfigCatClientTests
         Assert.AreEqual(2, configChangedEvents.Count);
         Assert.AreEqual(evaluationDetails.Count * 2, flagEvaluatedEvents.Count);
         Assert.AreEqual(2, errorEvents.Count);
+    }
+
+    private static IConfigCatClient CreateClientWithMockedFetcher(string cacheKey,
+        Mock<IConfigCatLogger> loggerMock,
+        Mock<IConfigFetcher> fetcherMock,
+        Func<ProjectConfig, FetchResult> onFetch,
+        Func<IConfigFetcher, CacheParameters, LoggerWrapper, IConfigService> configServiceFactory,
+        out IConfigService configService,
+        out ConfigCache configCache)
+    {
+        return CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock, onFetch,
+            configServiceFactory: (fetcher, cacheParams, logger, hooks) => configServiceFactory(fetcher, cacheParams, logger),
+            hooks: null, out configService, out configCache);
+    }
+
+    private static IConfigCatClient CreateClientWithMockedFetcher(string cacheKey,
+        Mock<IConfigCatLogger> loggerMock,
+        Mock<IConfigFetcher> fetcherMock,
+        Func<ProjectConfig, FetchResult> onFetch,
+        Func<IConfigFetcher, CacheParameters, LoggerWrapper, Hooks?, IConfigService> configServiceFactory,
+        Hooks? hooks,
+        out IConfigService configService,
+        out ConfigCache configCache)
+    {
+        return CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock, onFetch, configServiceFactory,
+            evaluatorFactory: null, hooks, out configService, out configCache);
+    }
+
+    private static IConfigCatClient CreateClientWithMockedFetcher(string cacheKey,
+        Mock<IConfigCatLogger> loggerMock,
+        Mock<IConfigFetcher> fetcherMock,
+        Func<ProjectConfig, FetchResult> onFetch,
+        Func<IConfigFetcher, CacheParameters, LoggerWrapper, Hooks?, IConfigService> configServiceFactory,
+        Func<LoggerWrapper, IRolloutEvaluator>? evaluatorFactory,
+        Hooks? hooks,
+        out IConfigService configService,
+        out ConfigCache configCache)
+    {
+        var configCacheLocal = configCache = new InMemoryConfigCache();
+
+        return CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock,
+            onFetch, onFetchAsync: (pc, _) => Task.FromResult(onFetch(pc)),
+            configServiceFactory, evaluatorFactory,
+            configCacheFactory: _ => configCacheLocal,
+            overrideDataSourceFactory: null, hooks, out configService);
+    }
+
+    private static IConfigCatClient CreateClientWithMockedFetcher(string cacheKey,
+        Mock<IConfigCatLogger> loggerMock,
+        Mock<IConfigFetcher> fetcherMock,
+        Func<ProjectConfig, FetchResult> onFetch,
+        Func<ProjectConfig, CancellationToken, Task<FetchResult>> onFetchAsync,
+        Func<IConfigFetcher, CacheParameters, LoggerWrapper, Hooks?, IConfigService> configServiceFactory,
+        Func<LoggerWrapper, IRolloutEvaluator>? evaluatorFactory,
+        Func<LoggerWrapper, ConfigCache>? configCacheFactory,
+        Func<LoggerWrapper, Tuple<OverrideBehaviour, IOverrideDataSource>>? overrideDataSourceFactory,
+        Hooks? hooks,
+        out IConfigService configService)
+    {
+        fetcherMock.Setup(m => m.Fetch(It.IsAny<ProjectConfig>())).Returns(onFetch);
+        fetcherMock.Setup(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>())).Returns((ProjectConfig pc, CancellationToken ct) => onFetchAsync(pc, ct));
+
+        var loggerWrapper = loggerMock.Object.AsWrapper();
+
+        var configCache = configCacheFactory is not null ? configCacheFactory(loggerWrapper) : new InMemoryConfigCache();
+        var cacheParams = new CacheParameters(configCache, cacheKey);
+
+        var evaluator = evaluatorFactory is not null ? evaluatorFactory(loggerWrapper) : new RolloutEvaluator(loggerWrapper);
+        var overrideDataSource = overrideDataSourceFactory?.Invoke(loggerWrapper);
+
+        configService = configServiceFactory(fetcherMock.Object, cacheParams, loggerWrapper, hooks);
+        return new ConfigCatClient(configService, loggerMock.Object, evaluator, overrideDataSource?.Item1, overrideDataSource?.Item2, hooks);
+    }
+
+    private static int ParseETagAsInt32(string? etag)
+    {
+        return int.TryParse(etag, NumberStyles.None, CultureInfo.InvariantCulture, out var value) ? value : 0;
     }
 
     internal class FakeConfigService : ConfigServiceBase, IConfigService

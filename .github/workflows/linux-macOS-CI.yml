@@ -27,6 +27,7 @@ jobs:
             3.1.x
             5.0.x
             6.0.x
+            8.0.x
       - name: Restore
         run: dotnet restore src
       - name: Test
@@ -34,3 +35,4 @@ jobs:
           dotnet test src/ConfigCat.Client.Tests/ConfigCat.Client.Tests.csproj -c Release -f netcoreapp3.1 --no-restore
           dotnet test src/ConfigCat.Client.Tests/ConfigCat.Client.Tests.csproj -c Release -f net5.0 --no-restore
           dotnet test src/ConfigCat.Client.Tests/ConfigCat.Client.Tests.csproj -c Release -f net6.0 --no-restore
+          dotnet test src/ConfigCat.Client.Tests/ConfigCat.Client.Tests.csproj -c Release -f net8.0 --no-restore

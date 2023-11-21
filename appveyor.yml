@@ -1,5 +1,5 @@
 environment:
-  build_version: 8.2.0
+  build_version: 9.0.0
 version: $(build_version)-{build}
 image: Visual Studio 2022
 configuration: Release

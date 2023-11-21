@@ -6,7 +6,7 @@ namespace ConfigCat.Client;
 /// <summary>
 /// Contains the result of an <see cref="IConfigCatClient.ForceRefresh"/> or <see cref="IConfigCatClient.ForceRefreshAsync"/> operation.
 /// </summary>
-public readonly record struct RefreshResult
+public readonly struct RefreshResult
 {
     /// <summary>
     /// Creates an instance of the <see cref="RefreshResult"/> struct which indicates that the operation was successful.

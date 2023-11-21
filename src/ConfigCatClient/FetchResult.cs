@@ -3,7 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace ConfigCat.Client;
 
-internal readonly record struct FetchResult
+internal readonly struct FetchResult
 {
     private static readonly object NotModifiedToken = new();
 

@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Globalization;
-using System.Runtime.CompilerServices;
 using ConfigCat.Client;
 
 #if USE_NEWTONSOFT_JSON

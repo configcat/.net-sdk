@@ -61,7 +61,16 @@ internal static class TaskExtensions
             using (tokenRegistration)
             {
                 var completedTask = await Task.WhenAny(task, cancellationTask).ConfigureAwait(false);
-                return completedTask is Task<T> taskWithResult ? taskWithResult.GetAwaiter().GetResult() : default!;
+                if (completedTask is Task<T> taskWithResult)
+                {
+                    return taskWithResult.GetAwaiter().GetResult();
+                }
+                else
+                {
+                    // Although the task has no return value, the potential cancellation or exception still needs to be propagated.
+                    completedTask.GetAwaiter().GetResult();
+                    return default!;
+                }
             }
         }
     }

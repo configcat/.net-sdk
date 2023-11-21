@@ -20,22 +20,24 @@ internal static class SerializationExtensions
     };
 #endif
 
-    public static T? Deserialize<T>(this string json) => json.AsSpan().Deserialize<T>();
+    public static T? Deserialize<T>(this string json) => json.AsMemory().Deserialize<T>();
 
-    public static T? Deserialize<T>(this ReadOnlySpan<char> json)
+    // NOTE: It would be better to use ReadOnlySpan<char>, however when the full string is wrapped in a span, json.ToString() result in a copy of the string.
+    // This is not the case with ReadOnlyMemory<char>, so we use that until support for .NET 4.5 support is dropped.
+    public static T? Deserialize<T>(this ReadOnlyMemory<char> json)
     {
 #if USE_NEWTONSOFT_JSON
         using var stringReader = new StringReader(json.ToString());
         using var reader = new JsonTextReader(stringReader);
         return Serializer.Deserialize<T>(reader);
 #else
-        return JsonSerializer.Deserialize<T>(json);
+        return JsonSerializer.Deserialize<T>(json.Span);
 #endif
     }
 
-    public static T? DeserializeOrDefault<T>(this string json) => json.AsSpan().DeserializeOrDefault<T>();
+    public static T? DeserializeOrDefault<T>(this string json) => json.AsMemory().DeserializeOrDefault<T>();
 
-    public static T? DeserializeOrDefault<T>(this ReadOnlySpan<char> json)
+    public static T? DeserializeOrDefault<T>(this ReadOnlyMemory<char> json)
     {
         try
         {

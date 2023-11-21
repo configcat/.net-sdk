@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ConfigCat.Client.Override;
 
-internal sealed class LocalFileDataSource : IOverrideDataSource
+internal sealed class LocalFileDataSource : IOverrideDataSource, IDisposable
 {
     private const int WAIT_TIME_FOR_UNLOCK = 200; // ms
     private const int MAX_WAIT_ITERATIONS = 50; // ms

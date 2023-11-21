@@ -34,6 +34,7 @@ test_script:
 - dotnet test src\ConfigCat.Client.Tests\ConfigCat.Client.Tests.csproj -f netcoreapp3.1 -c %configuration% --no-build
 - dotnet test src\ConfigCat.Client.Tests\ConfigCat.Client.Tests.csproj -f net5.0 -c %configuration% --no-build
 - dotnet test src\ConfigCat.Client.Tests\ConfigCat.Client.Tests.csproj -f net6.0 -c %configuration% --no-build
+- dotnet test src\ConfigCat.Client.Tests\ConfigCat.Client.Tests.csproj -f net8.0 -c %configuration% --no-build
 artifacts:
 - path: artifacts\ConfigCat.Client.*.*nupkg
   name: NuGet

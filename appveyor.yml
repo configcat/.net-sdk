@@ -1,5 +1,5 @@
 environment:
-  build_version: 8.2.0
+  build_version: 9.0.0
 version: $(build_version)-{build}
 image: Visual Studio 2022
 configuration: Release
@@ -16,11 +16,14 @@ dotnet_csproj:
   file_version: $(build_version)
   informational_version: $(build_version)
 install:
-- cmd: dotnet tool install -g InheritDocTool
-build_script: 
+- ps: |
+    dotnet tool install -g InheritDocTool
+    Invoke-WebRequest 'https://dot.net/v1/dotnet-install.ps1' -OutFile dotnet-install.ps1
+    ./dotnet-install.ps1 -Channel 8.0
+build_script:
 - cmd: echo __BUILD__
 - dotnet restore src/ConfigCatClient.sln
-- dotnet build -c %configuration% /p:ContinuousIntegrationBuild=true src/ConfigCatClient.sln 
+- dotnet build -c %configuration% /p:ContinuousIntegrationBuild=true src/ConfigCatClient.sln
 after_build:
 - cmd: echo __PACK__
 - inheritdoc -o
@@ -31,9 +34,10 @@ test_script:
 - dotnet test src\ConfigCat.Client.Tests\ConfigCat.Client.Tests.csproj -f netcoreapp3.1 -c %configuration% --no-build
 - dotnet test src\ConfigCat.Client.Tests\ConfigCat.Client.Tests.csproj -f net5.0 -c %configuration% --no-build
 - dotnet test src\ConfigCat.Client.Tests\ConfigCat.Client.Tests.csproj -f net6.0 -c %configuration% --no-build
+- dotnet test src\ConfigCat.Client.Tests\ConfigCat.Client.Tests.csproj -f net8.0 -c %configuration% --no-build
 artifacts:
 - path: artifacts\ConfigCat.Client.*.*nupkg
-  name: NuGet 
+  name: NuGet
 notifications:
 - provider: Email
   to:

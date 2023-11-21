@@ -192,26 +192,22 @@ public sealed class ConfigCatClient : IConfigCatClient
 
         if (disposing)
         {
-            if (this.configService is IDisposable disposable)
-            {
-                disposable.Dispose();
-            }
-
-            this.overrideDataSource?.Dispose();
+            (this.configService as IDisposable)?.Dispose();
+            (this.overrideDataSource as IDisposable)?.Dispose();
         }
         else
         {
             // Execution gets here when consumer forgets to dispose the client instance.
             // In this case we need to make sure that background work is stopped,
             // otherwise it would go on endlessly, that is, we'd end up with a memory leak.
-            var autoPollConfigService = this.configService as AutoPollConfigService;
-            var localFileDataSource = this.overrideDataSource as LocalFileDataSource;
-            if (autoPollConfigService is not null || localFileDataSource is not null)
+            var configService = this.configService as IDisposable;
+            var localFileDataSource = this.overrideDataSource as IDisposable;
+            if (configService is not null || localFileDataSource is not null)
             {
                 Task.Run(() =>
                 {
-                    autoPollConfigService?.StopScheduler();
-                    localFileDataSource?.StopWatch();
+                    configService?.Dispose();
+                    localFileDataSource?.Dispose();
                 });
             }
         }

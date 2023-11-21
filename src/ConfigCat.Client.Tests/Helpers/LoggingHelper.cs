@@ -1,6 +1,6 @@
-using Moq;
-using System.Collections.Generic;
 using System;
+using System.Collections.Generic;
+using Moq;
 
 namespace ConfigCat.Client;
 

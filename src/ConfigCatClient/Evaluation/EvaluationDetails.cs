@@ -6,7 +6,7 @@ namespace ConfigCat.Client;
 /// <summary>
 /// The evaluated value and additional information about the evaluation of a feature flag or setting.
 /// </summary>
-public abstract record class EvaluationDetails
+public abstract class EvaluationDetails
 {
     internal static EvaluationDetails<TValue> FromEvaluateResult<TValue>(string key, TValue value, in EvaluateResult evaluateResult,
         DateTime? fetchTime, User? user)
@@ -106,7 +106,7 @@ public abstract record class EvaluationDetails
 }
 
 /// <inheritdoc/>
-public sealed record class EvaluationDetails<TValue> : EvaluationDetails
+public sealed class EvaluationDetails<TValue> : EvaluationDetails
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="EvaluationDetails{TValue}"/> class.

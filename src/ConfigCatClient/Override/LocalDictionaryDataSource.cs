@@ -20,8 +20,6 @@ internal sealed class LocalDictionaryDataSource : IOverrideDataSource
         }
     }
 
-    public void Dispose() { /* no need to dispose anything */ }
-
     public Dictionary<string, Setting> GetOverrides() => GetSettingsFromSource();
 
     public Task<Dictionary<string, Setting>> GetOverridesAsync(CancellationToken cancellationToken = default) => Task.FromResult(GetSettingsFromSource());

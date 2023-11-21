@@ -9,7 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\ConfigCatClient\ConfigCatClient.csproj" />  
     <!-- Use PackageReference instead of the ProjectReference above in your application. -->
-    <!--<PackageReference Include="ConfigCat.Client" Version="8.1.0" />-->
+    <!--<PackageReference Include="ConfigCat.Client" Version="9.0.0" />-->
   </ItemGroup>
 
 </Project>

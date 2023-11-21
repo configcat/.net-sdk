@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Diagnostics;
 using ConfigCat.Client;
 using Microsoft.AspNetCore.Mvc;
@@ -23,7 +23,7 @@ public class HomeController : Controller
         {
             Email = "configcat@example.com",
             Country = "Canada",
-            Custom = new Dictionary<string, string>
+            Custom =
             {
                 {"SubscriptionType", "Pro"},
                 {"Version", "1.0.0"}

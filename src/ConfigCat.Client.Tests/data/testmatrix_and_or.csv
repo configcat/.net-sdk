@@ -1,0 +1,15 @@
+Identifier;Email;Country;Custom1;mainFeature;dependentFeature;emailAnd;emailOr
+##null##;;;;public;Chicken;Cat;Cat
+;;;;public;Chicken;Cat;Cat
+jane@example.com;jane@example.com;##null##;##null##;public;Chicken;Cat;Jane
+john@example.com;john@example.com;##null##;##null##;public;Chicken;Cat;John
+a@example.com;a@example.com;USA;##null##;target;Cat;Cat;Cat
+mark@example.com;mark@example.com;USA;##null##;target;Dog;Cat;Mark
+nora@example.com;nora@example.com;USA;##null##;target;Falcon;Cat;Cat
+stern@msn.com;stern@msn.com;USA;##null##;target;Horse;Cat;Cat
+jane@sensitivecompany.com;jane@sensitivecompany.com;England;##null##;private;Chicken;Dog;Jane
+anna@sensitivecompany.com;anna@sensitivecompany.com;France;##null##;private;Chicken;Cat;Cat
+jane@sensitivecompany.com;jane@sensitivecompany.com;england;##null##;public;Chicken;Dog;Jane
+jane;jane;##null##;##null##;public;Chicken;Cat;Cat
+@sensitivecompany.com;@sensitivecompany.com;##null##;##null##;public;Chicken;Cat;Cat
+jane.sensitivecompany.com;jane.sensitivecompany.com;##null##;##null##;public;Chicken;Cat;Cat

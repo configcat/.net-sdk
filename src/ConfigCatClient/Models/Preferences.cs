@@ -1,3 +1,5 @@
+using ConfigCat.Client.Utils;
+
 #if USE_NEWTONSOFT_JSON
 using Newtonsoft.Json;
 #else
@@ -13,12 +15,25 @@ internal sealed class Preferences
 #else
     [JsonPropertyName("u")]
 #endif
-    public string? Url { get; set; }
+    public string? BaseUrl { get; set; }
+
+    private RedirectMode redirectMode;
 
 #if USE_NEWTONSOFT_JSON
     [JsonProperty(PropertyName = "r")]
 #else
     [JsonPropertyName("r")]
 #endif
-    public RedirectMode RedirectMode { get; set; }
+    public RedirectMode RedirectMode
+    {
+        get => this.redirectMode;
+        set => ModelHelper.SetEnum(ref this.redirectMode, value);
+    }
+
+#if USE_NEWTONSOFT_JSON
+    [JsonProperty(PropertyName = "s")]
+#else
+    [JsonPropertyName("s")]
+#endif
+    public string? Salt { get; set; }
 }

@@ -1,40 +1,39 @@
 using System;
+using System.Diagnostics;
 using System.Globalization;
 
 namespace ConfigCat.Client.Utils;
 
 internal static class DateTimeUtils
 {
-    public static string ToUnixTimeStamp(this DateTime dateTime)
+    public static long ToUnixTimeMilliseconds(this DateTime dateTime)
     {
+        // NOTE: Internally we should always work with UTC datetime values (as DateTimeKind.Unspecified can lead to incorrect results).
+        Debug.Assert(dateTime.Kind == DateTimeKind.Utc, "Non-UTC datetime encountered.");
+
 #if !NET45
-        var milliseconds = new DateTimeOffset(dateTime).ToUnixTimeMilliseconds();
+        return new DateTimeOffset(dateTime).ToUnixTimeMilliseconds();
 #else
         // Based on: https://github.com/dotnet/runtime/blob/v6.0.13/src/libraries/System.Private.CoreLib/src/System/DateTimeOffset.cs#L629
 
         const long unixEpochMilliseconds = 62_135_596_800_000L;
-        var milliseconds = dateTime.Ticks / TimeSpan.TicksPerMillisecond - unixEpochMilliseconds;
+        return dateTime.Ticks / TimeSpan.TicksPerMillisecond - unixEpochMilliseconds;
 #endif
-
-        return milliseconds.ToString(CultureInfo.InvariantCulture);
     }
 
-    public static bool TryParseUnixTimeStamp(ReadOnlySpan<char> span, out DateTime dateTime)
+    public static string ToUnixTimeStamp(this DateTime dateTime)
     {
-#if NET5_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
-        var slice = span;
-#else
-        var slice = span.ToString();
-#endif
+        return ToUnixTimeMilliseconds(dateTime).ToString(CultureInfo.InvariantCulture);
+    }
 
-        if (!long.TryParse(slice, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var milliseconds))
-        {
-            dateTime = default;
-            return false;
-        }
-
+    public static bool TryConvertFromUnixTimeMilliseconds(long milliseconds, out DateTime dateTime)
+    {
 #if !NET45
-        try { dateTime = DateTimeOffset.FromUnixTimeMilliseconds(milliseconds).UtcDateTime; }
+        try
+        {
+            dateTime = DateTimeOffset.FromUnixTimeMilliseconds(milliseconds).UtcDateTime;
+            return true;
+        }
         catch (ArgumentOutOfRangeException)
         {
             dateTime = default;
@@ -55,8 +54,31 @@ internal static class DateTimeUtils
 
         var ticks = (milliseconds + unixEpochMilliseconds) * TimeSpan.TicksPerMillisecond;
         dateTime = new DateTime(ticks, DateTimeKind.Utc);
-#endif
-
         return true;
+#endif
+    }
+
+    public static bool TryConvertFromUnixTimeSeconds(double seconds, out DateTime dateTime)
+    {
+        long milliseconds;
+        try { milliseconds = checked((long)(seconds * 1000)); }
+        catch (OverflowException)
+        {
+            dateTime = default;
+            return false;
+        }
+
+        return TryConvertFromUnixTimeMilliseconds(milliseconds, out dateTime);
+    }
+
+    public static bool TryParseUnixTimeStamp(ReadOnlySpan<char> span, out DateTime dateTime)
+    {
+        if (!long.TryParse(span.ToParsable(), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var milliseconds))
+        {
+            dateTime = default;
+            return false;
+        }
+
+        return TryConvertFromUnixTimeMilliseconds(milliseconds, out dateTime);
     }
 }

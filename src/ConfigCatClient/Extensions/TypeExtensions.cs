@@ -6,7 +6,7 @@ internal static class TypeExtensions
 {
     public static void EnsureSupportedSettingClrType(this Type type, string paramName)
     {
-        if (type != typeof(object) && type.ToSettingType() == SettingType.Unknown)
+        if (type != typeof(object) && type.ToSettingType() == Setting.UnknownType)
         {
             throw new ArgumentException($"Only the following types are supported: {typeof(string)}, {typeof(bool)}, {typeof(int)}, {typeof(long)}, {typeof(double)} and {typeof(object)} (both nullable and non-nullable).", paramName);
         }
@@ -31,7 +31,7 @@ internal static class TypeExtensions
             TypeCode.Double =>
                 SettingType.Double,
             _ =>
-                SettingType.Unknown,
+                Setting.UnknownType,
         };
     }
 }

@@ -1,0 +1,20 @@
+{
+  "configUrl": "https://app.configcat.com/v2/e7a75611-4256-49a5-9320-ce158755e3ba/08dbc325-7f69-4fd4-8af4-cf9f24ec8ac9/08dbc325-9a6b-4947-84e2-91529248278a/08dbc325-9ebd-4587-8171-88f76a3004cb",
+  "sdkKey": "configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ",
+  "tests": [
+    {
+      "key": "allinone",
+      "defaultValue": "",
+      "user": {
+        "Identifier": "12345",
+        "Email": "joe@example.com",
+        "Country": "[\"USA\"]",
+        "Version": "1.0.0",
+        "Number": "1.0",
+        "Date": "1693497500"
+      },
+      "returnValue": "default",
+      "expectedLog": "allinone.txt"
+    }
+  ]
+}

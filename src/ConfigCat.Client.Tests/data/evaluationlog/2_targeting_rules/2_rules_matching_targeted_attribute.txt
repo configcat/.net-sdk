@@ -1,0 +1,7 @@
+WARNING [3003] Cannot evaluate condition (User.Email IS ONE OF ['a@configcat.com', 'b@configcat.com']) for setting 'stringIsInDogDefaultCat' (the User.Email attribute is missing). You should set the User.Email attribute in order to make targeting work properly. Read more: https://configcat.com/docs/advanced/user-object/
+INFO [5000] Evaluating 'stringIsInDogDefaultCat' for User '{"Identifier":"12345","Custom1":"admin"}'
+  Evaluating targeting rules and applying the first match if any:
+  - IF User.Email IS ONE OF ['a@configcat.com', 'b@configcat.com'] THEN 'Dog' => cannot evaluate, the User.Email attribute is missing
+    The current targeting rule is ignored and the evaluation continues with the next rule.
+  - IF User.Custom1 IS ONE OF ['admin'] THEN 'Dog' => MATCH, applying rule
+  Returning 'Dog'.

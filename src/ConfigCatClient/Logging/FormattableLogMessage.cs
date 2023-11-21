@@ -5,7 +5,7 @@ using ConfigCat.Client.Utils;
 namespace ConfigCat.Client;
 
 /// <summary>
-/// Represents a plain log message or a log message format with names arguments.
+/// Represents a plain log message or a log message format with named arguments.
 /// </summary>
 public struct FormattableLogMessage : IFormattable
 {
@@ -51,17 +51,17 @@ public struct FormattableLogMessage : IFormattable
     /// <summary>
     /// Log message format.
     /// </summary>
-    public string Format => this.format ?? ToFormatString(this.invariantFormattedMessage ?? string.Empty);
+    public readonly string Format => this.format ?? ToFormatString(this.invariantFormattedMessage ?? string.Empty);
 
     /// <summary>
     /// Names of the named arguments.
     /// </summary>
-    public string[] ArgNames { get; }
+    public readonly string[] ArgNames { get; }
 
     /// <summary>
     /// Values of the named arguments.
     /// </summary>
-    public object?[] ArgValues { get; }
+    public readonly object?[] ArgValues { get; }
 
     private string? invariantFormattedMessage;
     /// <summary>
@@ -72,7 +72,7 @@ public struct FormattableLogMessage : IFormattable
     /// <summary>
     /// Returns the log message formatted using <see cref="CultureInfo.CurrentCulture"/>.
     /// </summary>
-    public override string ToString()
+    public override readonly string ToString()
     {
         return ToString(formatProvider: null);
     }
@@ -80,7 +80,7 @@ public struct FormattableLogMessage : IFormattable
     /// <summary>
     /// Returns the log message formatted using the specified <paramref name="formatProvider"/>.
     /// </summary>
-    public string ToString(IFormatProvider? formatProvider)
+    public readonly string ToString(IFormatProvider? formatProvider)
     {
         return this.format is not null
             ? string.Format(formatProvider, this.format, ArgValues)
@@ -88,7 +88,7 @@ public struct FormattableLogMessage : IFormattable
     }
 
     /// <inheritdoc/>
-    public string ToString(string? format, IFormatProvider? formatProvider)
+    public readonly string ToString(string? format, IFormatProvider? formatProvider)
     {
         return ToString(formatProvider);
     }

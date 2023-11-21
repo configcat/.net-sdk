@@ -1,0 +1,52 @@
+{
+  "configUrl": "https://app.configcat.com/v2/e7a75611-4256-49a5-9320-ce158755e3ba/08dbc325-7f69-4fd4-8af4-cf9f24ec8ac9/08dbc325-9e4e-4f59-86b2-5da50924b6ca/08dbc325-9ebd-4587-8171-88f76a3004cb",
+  "sdkKey": "configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/P4e3fAz_1ky2-Zg2e4cbkw",
+  "tests": [
+    {
+      "key": "stringContainsString75Cat0Dog25Falcon0HorseDefaultCat",
+      "defaultValue": "default",
+      "returnValue": "Cat",
+      "expectedLog": "options_within_targeting_rule_no_user.txt"
+    },
+    {
+      "key": "stringContainsString75Cat0Dog25Falcon0HorseDefaultCat",
+      "defaultValue": "default",
+      "user": {
+        "Identifier": "12345"
+      },
+      "returnValue": "Cat",
+      "expectedLog": "options_within_targeting_rule_no_targeted_attribute.txt"
+    },
+    {
+      "key": "stringContainsString75Cat0Dog25Falcon0HorseDefaultCat",
+      "defaultValue": "default",
+      "user": {
+        "Identifier": "12345",
+        "Email": "joe@example.com"
+      },
+      "returnValue": "Cat",
+      "expectedLog": "options_within_targeting_rule_not_matching_targeted_attribute.txt"
+    },
+    {
+      "key": "stringContainsString75Cat0Dog25Falcon0HorseDefaultCat",
+      "defaultValue": "default",
+      "user": {
+        "Identifier": "12345",
+        "Email": "joe@configcat.com"
+      },
+      "returnValue": "Cat",
+      "expectedLog": "options_within_targeting_rule_matching_targeted_attribute_no_options_attribute.txt"
+    },
+    {
+      "key": "stringContainsString75Cat0Dog25Falcon0HorseDefaultCat",
+      "defaultValue": "default",
+      "user": {
+        "Identifier": "12345",
+        "Email": "joe@configcat.com",
+        "Country": "US"
+      },
+      "returnValue": "Cat",
+      "expectedLog": "options_within_targeting_rule_matching_targeted_attribute_options_attribute.txt"
+    }
+  ]
+}

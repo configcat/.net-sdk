@@ -1,6 +1,5 @@
 using System;
 using ConfigCat.Client.ConfigService;
-using ConfigCat.Client.Evaluation;
 
 namespace ConfigCat.Client;
 
@@ -113,7 +112,7 @@ internal static partial class LoggerExtensions
         $"There is an existing client instance for the specified SDK Key. No new client instance will be created and the specified configuration action is ignored. Returning the existing client instance. SDK Key: '{sdkKey}'.",
         "SDK_KEY");
 
-    public static FormattableLogMessage TargetingIsNotPossible(this LoggerWrapper logger, string key) => logger.LogInterpolated(
+    public static FormattableLogMessage UserObjectIsMissing(this LoggerWrapper logger, string key) => logger.LogInterpolated(
         LogLevel.Warning, 3001,
         $"Cannot evaluate targeting rules and % options for setting '{key}' (User Object is missing). You should pass a User Object to the evaluation methods like `GetValue()`/`GetValueAsync()` in order to make targeting work properly. Read more: https://configcat.com/docs/advanced/user-object/",
         "KEY");
@@ -121,6 +120,26 @@ internal static partial class LoggerExtensions
     public static FormattableLogMessage DataGovernanceIsOutOfSync(this LoggerWrapper logger) => logger.Log(
         LogLevel.Warning, 3002,
         "The `dataGovernance` parameter specified at the client initialization is not in sync with the preferences on the ConfigCat Dashboard. Read more: https://configcat.com/docs/advanced/data-governance/");
+
+    public static FormattableLogMessage UserObjectAttributeIsMissing(this LoggerWrapper logger, string key, string attributeName) => logger.LogInterpolated(
+        LogLevel.Warning, 3003,
+        $"Cannot evaluate % options for setting '{key}' (the User.{attributeName} attribute is missing). You should set the User.{attributeName} attribute in order to make targeting work properly. Read more: https://configcat.com/docs/advanced/user-object/",
+        "KEY", "ATTRIBUTE_NAME", "ATTRIBUTE_NAME");
+
+    public static FormattableLogMessage UserObjectAttributeIsMissing(this LoggerWrapper logger, string condition, string key, string attributeName) => logger.LogInterpolated(
+        LogLevel.Warning, 3003,
+        $"Cannot evaluate condition ({condition}) for setting '{key}' (the User.{attributeName} attribute is missing). You should set the User.{attributeName} attribute in order to make targeting work properly. Read more: https://configcat.com/docs/advanced/user-object/",
+        "CONDITION", "KEY", "ATTRIBUTE_NAME", "ATTRIBUTE_NAME");
+
+    public static FormattableLogMessage UserObjectAttributeIsInvalid(this LoggerWrapper logger, string condition, string key, string reason, string attributeName) => logger.LogInterpolated(
+        LogLevel.Warning, 3004,
+        $"Cannot evaluate condition ({condition}) for setting '{key}' ({reason}). Please check the User.{attributeName} attribute and make sure that its value corresponds to the comparison operator.",
+        "CONDITION", "KEY", "REASON", "ATTRIBUTE_NAME");
+
+    public static FormattableLogMessage UserObjectAttributeIsAutoConverted(this LoggerWrapper logger, string condition, string key, string attributeName, string attributeValue) => logger.LogInterpolated(
+        LogLevel.Warning, 3005,
+        $"Evaluation of condition ({condition}) for setting '{key}' may not produce the expected result (the User.{attributeName} attribute is not a string value, thus it was automatically converted to the string value '{attributeValue}'). Please make sure that using a non-string value was intended.",
+        "CONDITION", "KEY", "ATTRIBUTE_NAME", "ATTRIBUTE_VALUE");
 
     public static FormattableLogMessage ConfigServiceCannotInitiateHttpCalls(this LoggerWrapper logger) => logger.Log(
         LogLevel.Warning, 3200,
@@ -144,7 +163,7 @@ internal static partial class LoggerExtensions
 
     #region Common info messages (5000-5999)
 
-    public static FormattableLogMessage SettingEvaluated(this LoggerWrapper logger, EvaluateLogger evaluateLog) => logger.LogInterpolated(
+    public static FormattableLogMessage SettingEvaluated(this LoggerWrapper logger, string evaluateLog) => logger.LogInterpolated(
         LogLevel.Info, 5000,
         $"{evaluateLog}",
         "EVALUATE_LOG");

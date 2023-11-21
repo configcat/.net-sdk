@@ -1,19 +1,37 @@
-﻿{
+{
+  "p": {
+    "s": "s449fLWNwiEFQ/AqfRj13pPHVdV9g3h0HAFzWtjpZgE="
+  },
   "f": {
     "disabledFeature": {
-      "v": false
+      "t": 0,
+      "v": {
+        "b": false
+      }
     },
     "enabledFeature": {
-      "v": true
+      "t": 0,
+      "v": {
+        "b": true
+      }
     },
     "intSetting": {
-      "v": 5
+      "t": 2,
+      "v": {
+        "i": 5
+      }
     },
     "doubleSetting": {
-      "v": 3.14
+      "t": 3,
+      "v": {
+        "d": 3.14
+      }
     },
     "stringSetting": {
-      "v": "test"
+      "t": 1,
+      "v": {
+        "s": "test"
+      }
     }
   }
 }

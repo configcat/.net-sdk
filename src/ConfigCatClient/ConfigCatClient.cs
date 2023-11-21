@@ -34,6 +34,37 @@ public sealed class ConfigCatClient : IConfigCatClient
     // which is good enough in these cases.
     private volatile User? defaultUser;
 
+    private static bool IsValidSdkKey(string sdkKey, bool customBaseUrl)
+    {
+        const string proxyPrefix = "configcat-proxy/";
+
+        if (customBaseUrl && sdkKey.Length > proxyPrefix.Length && sdkKey.StartsWith(proxyPrefix, StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        var components = sdkKey.Split('/');
+        const int keyLength = 22;
+
+        return components.Length switch
+        {
+            2 => components[0].Length == keyLength && components[1].Length == keyLength,
+            3 => components[0] == "configcat-sdk-1" && components[1].Length == keyLength && components[2].Length == keyLength,
+            _ => false
+        };
+    }
+
+    internal static string GetProductVersion(PollingMode pollingMode)
+    {
+        return $"{pollingMode.Identifier}-{Version}";
+    }
+
+    internal static string GetCacheKey(string sdkKey)
+    {
+        var key = $"{sdkKey}_{ConfigCatClientOptions.ConfigFileName}_{ProjectConfig.SerializationFormatVersion}";
+        return key.Sha1().ToHexString();
+    }
+
     /// <inheritdoc />
     public LogLevel LogLevel
     {
@@ -74,7 +105,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         this.configService = this.overrideBehaviour != OverrideBehaviour.LocalOnly
             ? DetermineConfigService(pollingMode,
                 new HttpConfigFetcher(options.CreateUri(sdkKey),
-                        $"{pollingMode.Identifier}-{Version}",
+                        GetProductVersion(pollingMode),
                         this.logger,
                         options.HttpClientHandler,
                         options.IsCustomBaseUrl,
@@ -110,7 +141,7 @@ public sealed class ConfigCatClient : IConfigCatClient
     /// <param name="sdkKey">SDK Key to access the ConfigCat config.</param>
     /// <param name="configurationAction">The action used to configure the client.</param>
     /// <exception cref="ArgumentNullException"><paramref name="sdkKey"/> is <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentException"><paramref name="sdkKey"/> is an empty string.</exception>
+    /// <exception cref="ArgumentException"><paramref name="sdkKey"/> is an empty string or in an invalid format.</exception>
     public static IConfigCatClient Get(string sdkKey, Action<ConfigCatClientOptions>? configurationAction = null)
     {
         if (sdkKey is null)
@@ -125,6 +156,11 @@ public sealed class ConfigCatClient : IConfigCatClient
 
         var options = new ConfigCatClientOptions();
         configurationAction?.Invoke(options);
+
+        if (options.FlagOverrides is not { OverrideBehaviour: OverrideBehaviour.LocalOnly } && !IsValidSdkKey(sdkKey, options.IsCustomBaseUrl))
+        {
+            throw new ArgumentException($"SDK Key '{sdkKey}' is invalid.", nameof(sdkKey));
+        }
 
         var instance = Instances.GetOrCreate(sdkKey, options, out var instanceAlreadyCreated);
 
@@ -665,12 +701,6 @@ public sealed class ConfigCatClient : IConfigCatClient
                 hooks),
             _ => throw new ArgumentException("Invalid polling mode.", nameof(pollingMode)),
         };
-    }
-
-    internal static string GetCacheKey(string sdkKey)
-    {
-        var key = $"{sdkKey}_{ConfigCatClientOptions.ConfigFileName}_{ProjectConfig.SerializationFormatVersion}";
-        return key.Hash();
     }
 
     /// <inheritdoc />

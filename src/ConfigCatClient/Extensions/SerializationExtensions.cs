@@ -2,6 +2,7 @@
 using System.IO;
 using Newtonsoft.Json;
 #else
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 #endif
@@ -12,6 +13,11 @@ internal static class SerializationExtensions
 {
 #if USE_NEWTONSOFT_JSON
     private static readonly JsonSerializer Serializer = JsonSerializer.Create();
+#else
+    private static readonly JsonSerializerOptions SerializerOptions = new()
+    {
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    };
 #endif
 
     public static T? Deserialize<T>(this string json) => json.AsSpan().Deserialize<T>();
@@ -46,7 +52,7 @@ internal static class SerializationExtensions
 #if USE_NEWTONSOFT_JSON
         return JsonConvert.SerializeObject(objectToSerialize);
 #else
-        return JsonSerializer.Serialize(objectToSerialize);
+        return JsonSerializer.Serialize(objectToSerialize, SerializerOptions);
 #endif
     }
 }

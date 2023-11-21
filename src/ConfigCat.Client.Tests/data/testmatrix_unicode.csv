@@ -1,0 +1,14 @@
+Identifier;Email;Country;🆃🅴🆇🆃;boolTextEqualsHashed;boolTextEqualsCleartext;boolTextNotEqualsHashed;boolTextNotEqualsCleartext;boolIsOneOfHashed;boolIsOneOfCleartext;boolIsNotOneOfHashed;boolIsNotOneOfCleartext;boolStartsWithHashed;boolStartsWithCleartext;boolNotStartsWithHashed;boolNotStartsWithCleartext;boolEndsWithHashed;boolEndsWithCleartext;boolNotEndsWithHashed;boolNotEndsWithCleartext;boolContainsCleartext;boolNotContainsCleartext;boolArrayContainsHashed;boolArrayContainsCleartext;boolArrayNotContainsHashed;boolArrayNotContainsCleartext
+1;;;ʄǟռƈʏ ȶɛӼȶ;True;True;False;False;False;False;True;True;False;False;True;True;False;False;True;True;False;True;False;False;False;False
+1;;;ʄaռƈʏ ȶɛӼȶ;False;False;True;True;False;False;True;True;False;False;True;True;False;False;True;True;False;True;False;False;False;False
+1;;;ÁRVÍZTŰRŐ tükörfúrógép;False;False;True;True;True;True;False;False;True;True;False;False;True;True;False;False;True;False;False;False;False;False
+1;;;árvíztűrő tükörfúrógép;False;False;True;True;False;False;True;True;False;False;True;True;True;True;False;False;True;False;False;False;False;False
+1;;;ÁRVÍZTŰRŐ TÜKÖRFÚRÓGÉP;False;False;True;True;False;False;True;True;True;True;False;False;False;False;True;True;True;False;False;False;False;False
+1;;;árvíztűrő TÜKÖRFÚRÓGÉP;False;False;True;True;False;False;True;True;False;False;True;True;False;False;True;True;False;True;False;False;False;False
+1;;;u𝖓𝖎𝖈𝖔𝖉e;False;False;True;True;True;True;False;False;True;True;False;False;True;True;False;False;True;False;False;False;False;False
+;;;𝖚𝖓𝖎𝖈𝖔𝖉e;False;False;True;True;False;False;True;True;False;False;True;True;True;True;False;False;True;False;False;False;False;False
+;;;u𝖓𝖎𝖈𝖔𝖉𝖊;False;False;True;True;False;False;True;True;True;True;False;False;False;False;True;True;True;False;False;False;False;False
+;;;𝖚𝖓𝖎𝖈𝖔𝖉𝖊;False;False;True;True;False;False;True;True;False;False;True;True;False;False;True;True;False;True;False;False;False;False
+1;;;["ÁRVÍZTŰRŐ tükörfúrógép", "unicode"];False;False;True;True;False;False;True;True;False;False;True;True;False;False;True;True;True;False;True;True;False;False
+1;;;["ÁRVÍZTŰRŐ", "tükörfúrógép", "u𝖓𝖎𝖈𝖔𝖉e"];False;False;True;True;False;False;True;True;False;False;True;True;False;False;True;True;True;False;True;True;False;False
+1;;;["ÁRVÍZTŰRŐ", "tükörfúrógép", "unicode"];False;False;True;True;False;False;True;True;False;False;True;True;False;False;True;True;True;False;False;False;True;True

@@ -1,0 +1,5 @@
+INFO [5000] Evaluating 'string75Cat0Dog25Falcon0HorseCustomAttr' for User '{"Identifier":"12345","Country":"US"}'
+  Evaluating % options based on the User.Country attribute:
+  - Computing hash in the [0..99] range from User.Country => 70 (this value is sticky and consistent across all SDKs)
+  - Hash value 70 selects % option 1 (75%), 'Cat'.
+  Returning 'Cat'.

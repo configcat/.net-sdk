@@ -57,6 +57,44 @@ public class ConfigCatClientTests
         using var _ = ConfigCatClient.Get(sdkKey!);
     }
 
+    [DataRow("sdk-key-90123456789012", false, false)]
+    [DataRow("sdk-key-9012345678901/1234567890123456789012", false, false)]
+    [DataRow("sdk-key-90123456789012/123456789012345678901", false, false)]
+    [DataRow("sdk-key-90123456789012/12345678901234567890123", false, false)]
+    [DataRow("sdk-key-901234567890123/1234567890123456789012", false, false)]
+    [DataRow("sdk-key-90123456789012/1234567890123456789012", false, true)]
+    [DataRow("configcat-sdk-1/sdk-key-90123456789012", false, false)]
+    [DataRow("configcat-sdk-1/sdk-key-9012345678901/1234567890123456789012", false, false)]
+    [DataRow("configcat-sdk-1/sdk-key-90123456789012/123456789012345678901", false, false)]
+    [DataRow("configcat-sdk-1/sdk-key-90123456789012/12345678901234567890123", false, false)]
+    [DataRow("configcat-sdk-1/sdk-key-901234567890123/1234567890123456789012", false, false)]
+    [DataRow("configcat-sdk-1/sdk-key-90123456789012/1234567890123456789012", false, true)]
+    [DataRow("configcat-sdk-2/sdk-key-90123456789012/1234567890123456789012", false, false)]
+    [DataRow("configcat-proxy/", false, false)]
+    [DataRow("configcat-proxy/", true, false)]
+    [DataRow("configcat-proxy/sdk-key-90123456789012", false, false)]
+    [DataRow("configcat-proxy/sdk-key-90123456789012", true, true)]
+    [DataTestMethod]
+    [DoNotParallelize]
+    public void SdkKeyFormat_ShouldBeValidated(string sdkKey, bool customBaseUrl, bool isValid)
+    {
+        Action<ConfigCatClientOptions>? configureOptions = customBaseUrl
+            ? o => o.BaseUrl = new Uri("https://my-configcat-proxy")
+            : null;
+
+        if (isValid)
+        {
+            using var _ = ConfigCatClient.Get(sdkKey, configureOptions);
+        }
+        else
+        {
+            Assert.ThrowsException<ArgumentException>(() =>
+            {
+                using var _ = ConfigCatClient.Get(sdkKey, configureOptions);
+            });
+        }
+    }
+
     [ExpectedException(typeof(ArgumentOutOfRangeException))]
     [TestMethod]
     [DoNotParallelize]
@@ -83,7 +121,7 @@ public class ConfigCatClientTests
     [DoNotParallelize]
     public void CreateAnInstance_WhenLoggerIsNull_ShouldCreateAnInstance()
     {
-        using var client = ConfigCatClient.Get("hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf", options =>
+        using var client = ConfigCatClient.Get("hsdrTr4sxbHdSgdhHRZds3/GsdrTr4sxbHdSgdhHRZds3", options =>
         {
             options.Logger = null;
         });
@@ -95,7 +133,7 @@ public class ConfigCatClientTests
     [DoNotParallelize]
     public void CreateAnInstance_WithSdkKey_ShouldCreateAnInstance()
     {
-        using var _ = ConfigCatClient.Get("hsdrTr4sxbHdSgdhHRZds346hdgsS2vfsgf/GsdrTr4sxbHdSgdhHRZds346hdOPsSgvfsgf");
+        using var _ = ConfigCatClient.Get("hsdrTr4sxbHdSgdhHRZds3/GsdrTr4sxbHdSgdhHRZds3");
     }
 
     [TestMethod]
@@ -149,8 +187,12 @@ public class ConfigCatClientTests
 
         const string defaultValue = "Victory for the Firstborn!";
 
+        this.configServiceMock
+            .Setup(m => m.GetConfig())
+            .Throws<Exception>();
+
         this.evaluatorMock
-            .Setup(m => m.Evaluate(It.IsAny<Setting>(), It.IsAny<string>(), defaultValue, null))
+            .Setup(m => m.Evaluate(It.IsAny<It.IsAnyType>(), ref It.Ref<EvaluateContext>.IsAny, out It.Ref<It.IsAnyType>.IsAny))
             .Throws<Exception>();
 
         var client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, new Hooks());
@@ -178,8 +220,12 @@ public class ConfigCatClientTests
 
         const string defaultValue = "Victory for the Firstborn!";
 
+        this.configServiceMock
+            .Setup(m => m.GetConfigAsync(It.IsAny<CancellationToken>()))
+            .Throws<Exception>();
+
         this.evaluatorMock
-            .Setup(m => m.Evaluate(It.IsAny<Setting>(), It.IsAny<string>(), defaultValue, null))
+            .Setup(m => m.Evaluate(It.IsAny<It.IsAnyType>(), ref It.Ref<EvaluateContext>.IsAny, out It.Ref<It.IsAnyType>.IsAny))
             .Throws<Exception>();
 
         var client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, new Hooks());
@@ -240,8 +286,8 @@ public class ConfigCatClientTests
         Assert.AreSame(user, actual.User);
         Assert.IsNotNull(actual.ErrorMessage);
         Assert.IsNull(actual.ErrorException);
-        Assert.IsNull(actual.MatchedEvaluationRule);
-        Assert.IsNull(actual.MatchedEvaluationPercentageRule);
+        Assert.IsNull(actual.MatchedTargetingRule);
+        Assert.IsNull(actual.MatchedPercentageOption);
     }
 
     [DataRow(false)]
@@ -292,8 +338,8 @@ public class ConfigCatClientTests
         Assert.IsNull(actual.User);
         Assert.IsNull(actual.ErrorMessage);
         Assert.IsNull(actual.ErrorException);
-        Assert.IsNull(actual.MatchedEvaluationRule);
-        Assert.IsNull(actual.MatchedEvaluationPercentageRule);
+        Assert.IsNull(actual.MatchedTargetingRule);
+        Assert.IsNull(actual.MatchedPercentageOption);
     }
 
     [DataRow(false)]
@@ -346,8 +392,8 @@ public class ConfigCatClientTests
         Assert.AreSame(user, actual.User);
         Assert.IsNull(actual.ErrorMessage);
         Assert.IsNull(actual.ErrorException);
-        Assert.IsNotNull(actual.MatchedEvaluationRule);
-        Assert.IsNull(actual.MatchedEvaluationPercentageRule);
+        Assert.IsNotNull(actual.MatchedTargetingRule);
+        Assert.IsNull(actual.MatchedPercentageOption);
     }
 
     [DataRow(false)]
@@ -400,8 +446,8 @@ public class ConfigCatClientTests
         Assert.AreSame(user, actual.User);
         Assert.IsNull(actual.ErrorMessage);
         Assert.IsNull(actual.ErrorException);
-        Assert.IsNull(actual.MatchedEvaluationRule);
-        Assert.IsNotNull(actual.MatchedEvaluationPercentageRule);
+        Assert.IsNull(actual.MatchedTargetingRule);
+        Assert.IsNotNull(actual.MatchedPercentageOption);
     }
 
     [DataRow(false)]
@@ -443,8 +489,8 @@ public class ConfigCatClientTests
         Assert.IsNull(actual.User);
         Assert.AreEqual(errorMessage, actual.ErrorMessage);
         Assert.IsInstanceOfType(actual.ErrorException, typeof(ApplicationException));
-        Assert.IsNull(actual.MatchedEvaluationRule);
-        Assert.IsNull(actual.MatchedEvaluationPercentageRule);
+        Assert.IsNull(actual.MatchedTargetingRule);
+        Assert.IsNull(actual.MatchedPercentageOption);
     }
 
     [DataRow(false)]
@@ -463,7 +509,7 @@ public class ConfigCatClientTests
         var timeStamp = ProjectConfig.GenerateTimeStamp();
 
         this.evaluatorMock
-            .Setup(m => m.Evaluate(It.IsAny<Setting>(), It.IsAny<string>(), defaultValue, It.IsAny<User>()))
+            .Setup(m => m.Evaluate(It.IsAny<It.IsAnyType>(), ref It.Ref<EvaluateContext>.IsAny, out It.Ref<It.IsAnyType>.IsAny))
             .Throws(new ApplicationException(errorMessage));
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
@@ -506,8 +552,8 @@ public class ConfigCatClientTests
         Assert.AreSame(user, actual.User);
         Assert.AreEqual(errorMessage, actual.ErrorMessage);
         Assert.IsInstanceOfType(actual.ErrorException, typeof(ApplicationException));
-        Assert.IsNull(actual.MatchedEvaluationRule);
-        Assert.IsNull(actual.MatchedEvaluationPercentageRule);
+        Assert.IsNull(actual.MatchedTargetingRule);
+        Assert.IsNull(actual.MatchedPercentageOption);
 
         Assert.AreEqual(1, flagEvaluatedEvents.Count);
         Assert.AreSame(actual, flagEvaluatedEvents[0].EvaluationDetails);
@@ -575,8 +621,8 @@ public class ConfigCatClientTests
             Assert.AreSame(user, actualDetails.User);
             Assert.IsNull(actualDetails.ErrorMessage);
             Assert.IsNull(actualDetails.ErrorException);
-            Assert.IsNotNull(actualDetails.MatchedEvaluationRule);
-            Assert.IsNull(actualDetails.MatchedEvaluationPercentageRule);
+            Assert.IsNotNull(actualDetails.MatchedTargetingRule);
+            Assert.IsNull(actualDetails.MatchedPercentageOption);
 
             var flagEvaluatedDetails = flagEvaluatedEvents.Select(e => e.EvaluationDetails).FirstOrDefault(details => details.Key == expectedItem.Key);
 
@@ -594,7 +640,7 @@ public class ConfigCatClientTests
 
         this.configServiceMock.Setup(m => m.GetConfig()).Returns(ProjectConfig.Empty);
         this.configServiceMock.Setup(m => m.GetConfigAsync(It.IsAny<CancellationToken>())).ReturnsAsync(ProjectConfig.Empty);
-        var o = new SettingsWithPreferences();
+        var o = new Config();
 
         using IConfigCatClient client = new ConfigCatClient(this.configServiceMock.Object, this.loggerMock.Object, this.evaluatorMock.Object, new Hooks());
 
@@ -621,6 +667,10 @@ public class ConfigCatClientTests
     public async Task GetAllValueDetails_ConfigServiceThrowException_ShouldReturnEmptyEnumerable(bool isAsync)
     {
         // Arrange
+
+        this.configServiceMock
+            .Setup(m => m.GetConfig())
+            .Throws<Exception>();
 
         this.configServiceMock
             .Setup(m => m.GetConfigAsync(It.IsAny<CancellationToken>()))
@@ -658,7 +708,7 @@ public class ConfigCatClientTests
         var timeStamp = ProjectConfig.GenerateTimeStamp();
 
         this.evaluatorMock
-            .Setup(m => m.Evaluate(It.IsAny<Setting>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<User>()))
+            .Setup(m => m.Evaluate(It.IsAny<It.IsAnyType>(), ref It.Ref<EvaluateContext>.IsAny, out It.Ref<It.IsAnyType>.IsAny))
             .Throws(new ApplicationException(errorMessage));
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
@@ -707,8 +757,8 @@ public class ConfigCatClientTests
             Assert.AreSame(user, actualDetails.User);
             Assert.AreEqual(errorMessage, actualDetails.ErrorMessage);
             Assert.IsInstanceOfType(actualDetails.ErrorException, typeof(ApplicationException));
-            Assert.IsNull(actualDetails.MatchedEvaluationRule);
-            Assert.IsNull(actualDetails.MatchedEvaluationPercentageRule);
+            Assert.IsNull(actualDetails.MatchedTargetingRule);
+            Assert.IsNull(actualDetails.MatchedPercentageOption);
 
             var flagEvaluatedDetails = flagEvaluatedEvents.Select(e => e.EvaluationDetails).FirstOrDefault(details => details.Key == key);
 
@@ -779,8 +829,8 @@ public class ConfigCatClientTests
     {
         // Arrange
 
-        this.configServiceMock.Setup(m => m.GetConfigAsync(It.IsAny<CancellationToken>())).ReturnsAsync(ProjectConfig.Empty);
-        var o = new SettingsWithPreferences();
+        this.configServiceMock.Setup(m => m.GetConfig()).Returns(ProjectConfig.Empty);
+        var o = new Config();
 
         IConfigCatClient instance = new ConfigCatClient(
             this.configServiceMock.Object,
@@ -1160,11 +1210,11 @@ public class ConfigCatClientTests
 
         // Act
 
-        using var client1 = ConfigCatClient.Get("test", Configure);
+        using var client1 = ConfigCatClient.Get("test-67890123456789012/1234567890123456789012", Configure);
         var warnings1 = warnings.ToArray();
 
         warnings.Clear();
-        using var client2 = ConfigCatClient.Get("test", passConfigureToSecondGet ? Configure : null);
+        using var client2 = ConfigCatClient.Get("test-67890123456789012/1234567890123456789012", passConfigureToSecondGet ? Configure : null);
         var warnings2 = warnings.ToArray();
 
         // Assert
@@ -1189,7 +1239,7 @@ public class ConfigCatClientTests
     {
         // Arrange
 
-        var client1 = ConfigCatClient.Get("test", options => options.PollingMode = PollingModes.ManualPoll);
+        var client1 = ConfigCatClient.Get("test-67890123456789012/1234567890123456789012", options => options.PollingMode = PollingModes.ManualPoll);
 
         // Act
 
@@ -1211,7 +1261,7 @@ public class ConfigCatClientTests
     {
         // Arrange
 
-        var client1 = ConfigCatClient.Get("test", options => options.PollingMode = PollingModes.ManualPoll);
+        var client1 = ConfigCatClient.Get("test-67890123456789012/1234567890123456789012", options => options.PollingMode = PollingModes.ManualPoll);
 
         // Act
 
@@ -1221,7 +1271,7 @@ public class ConfigCatClientTests
 
         var instanceCount2 = ConfigCatClient.Instances.GetAliveCount();
 
-        var client2 = ConfigCatClient.Get("test", options => options.PollingMode = PollingModes.ManualPoll);
+        var client2 = ConfigCatClient.Get("test-67890123456789012/1234567890123456789012", options => options.PollingMode = PollingModes.ManualPoll);
 
         var instanceCount3 = ConfigCatClient.Instances.GetAliveCount();
 
@@ -1248,8 +1298,8 @@ public class ConfigCatClientTests
     {
         // Arrange
 
-        var client1 = ConfigCatClient.Get("test1", options => options.PollingMode = PollingModes.AutoPoll());
-        var client2 = ConfigCatClient.Get("test2", options => options.PollingMode = PollingModes.ManualPoll);
+        var client1 = ConfigCatClient.Get("test1-7890123456789012/1234567890123456789012", options => options.PollingMode = PollingModes.AutoPoll());
+        var client2 = ConfigCatClient.Get("test2-7890123456789012/1234567890123456789012", options => options.PollingMode = PollingModes.ManualPoll);
 
         // Act
 
@@ -1283,8 +1333,8 @@ public class ConfigCatClientTests
             // because that could interfere with this test: when raising the event, the service acquires a strong reference to the client,
             // which would temporarily prevent the client from being GCd. This could break the test in the case of unlucky timing.
             // Setting maxInitWaitTime to zero prevents this because then the event is raised immediately at creation.
-            var client1 = ConfigCatClient.Get("test1", options => options.PollingMode = PollingModes.AutoPoll(maxInitWaitTime: TimeSpan.Zero));
-            var client2 = ConfigCatClient.Get("test2", options => options.PollingMode = PollingModes.ManualPoll);
+            var client1 = ConfigCatClient.Get("test1-7890123456789012/1234567890123456789012", options => options.PollingMode = PollingModes.AutoPoll(maxInitWaitTime: TimeSpan.Zero));
+            var client2 = ConfigCatClient.Get("test2-7890123456789012/1234567890123456789012", options => options.PollingMode = PollingModes.ManualPoll);
 
             instanceCount = ConfigCatClient.Instances.GetAliveCount();
 
@@ -1316,7 +1366,7 @@ public class ConfigCatClientTests
         [MethodImpl(MethodImplOptions.NoInlining)]
         static void CreateClients(out int instanceCount)
         {
-            var client = ConfigCatClient.Get("test1", options => options.PollingMode = PollingModes.AutoPoll(maxInitWaitTime: TimeSpan.Zero));
+            var client = ConfigCatClient.Get("test1-7890123456789012/1234567890123456789012", options => options.PollingMode = PollingModes.AutoPoll(maxInitWaitTime: TimeSpan.Zero));
 
             client.ConfigChanged += (_, e) =>
             {

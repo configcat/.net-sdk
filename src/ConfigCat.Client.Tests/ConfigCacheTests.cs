@@ -228,21 +228,21 @@ public class ConfigCacheTests
         loggerMock.Verify(l => l.Log(LogLevel.Error, 2200, ref It.Ref<FormattableLogMessage>.IsAny, It.Is<Exception>(ex => ex is ApplicationException)), Times.Once);
     }
 
-    [DataRow("test1", "147c5b4c2b2d7c77e1605b1a4309f0ea6684a0c6")]
-    [DataRow("test2", "c09513b1756de9e4bc48815ec7a142b2441ed4d5")]
+    [DataRow("test1", "7f845c43ecc95e202b91e271435935e6d1391e5d")]
+    [DataRow("test2", "a78b7e323ef543a272c74540387566a22415148a")]
     [DataTestMethod]
     public void CacheKeyGeneration_ShouldBePlatformIndependent(string sdkKey, string expectedCacheKey)
     {
         Assert.AreEqual(expectedCacheKey, ConfigCatClient.GetCacheKey(sdkKey));
     }
 
-    private const string PayloadTestConfigJson = "{\"p\":{\"u\":\"https://cdn-global.configcat.com\",\"r\":0},\"f\":{\"testKey\":{\"v\":\"testValue\",\"t\":1,\"p\":[],\"r\":[]}}}";
+    private const string PayloadTestConfigJson = "{\"p\":{\"u\":\"https://cdn-global.configcat.com\",\"r\":0,\"s\":\"FUkC6RADjzF0vXrDSfJn7BcEBag9afw1Y6jkqjMP9BA=\"},\"f\":{\"testKey\":{\"t\":1,\"v\":{\"s\":\"testValue\"}}}}";
     [DataRow(PayloadTestConfigJson, "2023-06-14T15:27:15.8440000Z", "test-etag", "1686756435844\ntest-etag\n" + PayloadTestConfigJson)]
     [DataTestMethod]
     public void CachePayloadSerialization_ShouldBePlatformIndependent(string configJson, string timeStamp, string httpETag, string expectedPayload)
     {
         var timeStampDateTime = DateTimeOffset.ParseExact(timeStamp, "o", CultureInfo.InvariantCulture).UtcDateTime;
-        var pc = new ProjectConfig(configJson, configJson.Deserialize<SettingsWithPreferences>(), timeStampDateTime, httpETag);
+        var pc = new ProjectConfig(configJson, configJson.Deserialize<Config>(), timeStampDateTime, httpETag);
 
         Assert.AreEqual(expectedPayload, ProjectConfig.Serialize(pc));
     }

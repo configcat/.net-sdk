@@ -1,12 +1,5 @@
 using System;
-using System.Diagnostics;
 using ConfigCat.Client.Evaluation;
-
-#if USE_NEWTONSOFT_JSON
-using JsonValue = Newtonsoft.Json.Linq.JValue;
-#else
-using JsonValue = System.Text.Json.JsonElement;
-#endif
 
 namespace ConfigCat.Client;
 
@@ -15,72 +8,22 @@ namespace ConfigCat.Client;
 /// </summary>
 public abstract record class EvaluationDetails
 {
-    private static void EnsureValidSettingValue(JsonValue value, ref SettingType settingType, string? unsupportedTypeError)
-    {
-        // Setting type is not known (it's not present in the config JSON, it's an unsupported value coming from a flag override, etc.)?
-        if (settingType == SettingType.Unknown)
-        {
-            // Let's try to infer it from the JSON value.
-            settingType = value.DetermineSettingType();
-
-            if (settingType == SettingType.Unknown)
-            {
-                throw new ArgumentException(unsupportedTypeError ?? $"Setting value '{value}' is of an unsupported type.", nameof(value));
-            }
-        }
-    }
-
-    private static EvaluationDetails<TValue> Create<TValue>(string key, JsonValue value)
-    {
-        return new EvaluationDetails<TValue>(key, value.ConvertTo<TValue>());
-    }
-
-    internal static EvaluationDetails<TValue> FromEvaluateResult<TValue>(string key, in EvaluateResult evaluateResult, SettingType settingType, string? unsupportedTypeError,
+    internal static EvaluationDetails<TValue> FromEvaluateResult<TValue>(string key, TValue value, in EvaluateResult evaluateResult,
         DateTime? fetchTime, User? user)
     {
-        // NOTE: We've already checked earlier in the call chain that TValue is an allowed type (see also TypeExtensions.EnsureSupportedSettingClrType).
-        Debug.Assert(typeof(TValue) == typeof(object) || typeof(TValue).ToSettingType() != SettingType.Unknown, "Type is not supported.");
-
-        var value = evaluateResult.Value;
-        EnsureValidSettingValue(value, ref settingType, unsupportedTypeError);
-
-        EvaluationDetails<TValue> instance;
-
-        if (typeof(TValue) != typeof(object))
+        var instance = new EvaluationDetails<TValue>(key, value)
         {
-            if (settingType != typeof(TValue).ToSettingType())
-            {
-                throw new InvalidOperationException($"The type of a setting must match the type of the setting's default value.{Environment.NewLine}Setting's type was {settingType} but the default value's type was {typeof(TValue)}.{Environment.NewLine}Please use a default value which corresponds to the setting type {settingType}.");
-            }
-
-            instance = Create<TValue>(key, value);
-        }
-        else
-        {
-            EvaluationDetails evaluationDetails = new EvaluationDetails<object>(key, value.ConvertToObject(settingType));
-            instance = (EvaluationDetails<TValue>)evaluationDetails;
-        }
-
-        instance.Initialize(evaluateResult, fetchTime, user);
-        return instance;
-    }
-
-    internal static EvaluationDetails FromEvaluateResult(string key, in EvaluateResult evaluateResult, SettingType settingType, string? unsupportedTypeError,
-        DateTime? fetchTime, User? user)
-    {
-        var value = evaluateResult.Value;
-        EnsureValidSettingValue(value, ref settingType, unsupportedTypeError);
-
-        EvaluationDetails instance = settingType switch
-        {
-            SettingType.Boolean => Create<bool>(key, value),
-            SettingType.String => Create<string>(key, value),
-            SettingType.Int => Create<int>(key, value),
-            SettingType.Double => Create<double>(key, value),
-            _ => throw new ArgumentOutOfRangeException(nameof(settingType), settingType, null)
+            User = user,
+            VariationId = evaluateResult.VariationId,
+            MatchedTargetingRule = evaluateResult.MatchedTargetingRule,
+            MatchedPercentageOption = evaluateResult.MatchedPercentageOption
         };
 
-        instance.Initialize(evaluateResult, fetchTime, user);
+        if (fetchTime is not null)
+        {
+            instance.FetchTime = fetchTime.Value;
+        }
+
         return instance;
     }
 
@@ -106,18 +49,6 @@ public abstract record class EvaluationDetails
     private protected EvaluationDetails(string key)
     {
         Key = key;
-    }
-
-    private void Initialize(in EvaluateResult evaluateResult, DateTime? fetchTime, User? user)
-    {
-        VariationId = evaluateResult.VariationId;
-        if (fetchTime is not null)
-        {
-            FetchTime = fetchTime.Value;
-        }
-        User = user;
-        MatchedEvaluationRule = evaluateResult.MatchedTargetingRule;
-        MatchedEvaluationPercentageRule = evaluateResult.MatchedPercentageOption;
     }
 
     /// <summary>
@@ -166,12 +97,12 @@ public abstract record class EvaluationDetails
     /// <summary>
     /// The targeting rule which was used to select the evaluated value (if any).
     /// </summary>
-    public ITargetingRule? MatchedEvaluationRule { get; set; }
+    public ITargetingRule? MatchedTargetingRule { get; set; }
 
     /// <summary>
     /// The percentage option which was used to select the evaluated value (if any).
     /// </summary>
-    public IPercentageOption? MatchedEvaluationPercentageRule { get; set; }
+    public IPercentageOption? MatchedPercentageOption { get; set; }
 }
 
 /// <inheritdoc/>

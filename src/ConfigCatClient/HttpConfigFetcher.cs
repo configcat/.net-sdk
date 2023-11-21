@@ -6,9 +6,9 @@ using System.Threading;
 using System.Threading.Tasks;
 
 #if NET45
-using ResponseWithBody = System.Tuple<System.Net.Http.HttpResponseMessage, string?, ConfigCat.Client.SettingsWithPreferences?>;
+using ResponseWithBody = System.Tuple<System.Net.Http.HttpResponseMessage, string?, ConfigCat.Client.Config?>;
 #else
-using ResponseWithBody = System.ValueTuple<System.Net.Http.HttpResponseMessage, string?, ConfigCat.Client.SettingsWithPreferences?>;
+using ResponseWithBody = System.ValueTuple<System.Net.Http.HttpResponseMessage, string?, ConfigCat.Client.Config?>;
 #endif
 
 namespace ConfigCat.Client;
@@ -177,7 +177,7 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                 var responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 #endif
 
-                var config = responseBody.DeserializeOrDefault<SettingsWithPreferences>();
+                var config = responseBody.DeserializeOrDefault<Config>();
                 if (config is null)
                 {
                     return new ResponseWithBody(response, null, null);
@@ -185,7 +185,7 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
 
                 if (config.Preferences is not null)
                 {
-                    var newBaseUrl = config.Preferences.Url;
+                    var newBaseUrl = config.Preferences.BaseUrl;
 
                     if (newBaseUrl is null || requestUri.Host == new Uri(newBaseUrl).Host)
                     {

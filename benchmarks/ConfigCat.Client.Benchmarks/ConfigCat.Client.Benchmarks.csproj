@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>net48;net6.0</TargetFrameworks>
+    <LangVersion>10.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <WarningsAsErrors>nullable</WarningsAsErrors>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\src\ConfigCatClient.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.13.5" />
+    <PackageReference Include="ConfigCat.Client" Version="8.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ConfigCatClient\ConfigCatClient.csproj">
+      <AdditionalProperties>Configuration=Benchmark</AdditionalProperties>
+      <Aliases>from_project</Aliases>
+    </ProjectReference>
+    <ProjectReference Include="..\NewVersionLib\NewVersionLib.csproj" />
+    <ProjectReference Include="..\OldVersionLib\OldVersionLib.csproj" />
+  </ItemGroup>
+
+  <Target Name="ChangeAliasOfReferencedNuget" BeforeTargets="FindReferenceAssembliesForReferences;ResolveReferences">
+    <ItemGroup>
+      <ReferencePath Condition="'%(FileName)' == 'ConfigCat.Client'">
+        <Aliases>from_nuget</Aliases>
+      </ReferencePath>
+    </ItemGroup>
+  </Target>
+
+</Project>

@@ -1,0 +1,7 @@
+INFO [5000] Evaluating 'emailAnd' for User '{"Identifier":"12345","Email":"jane@configcat.com"}'
+  Evaluating targeting rules and applying the first match if any:
+  - IF User.Email STARTS WITH ANY OF [<1 hashed value>] => true
+    AND User.Email CONTAINS ANY OF ['@'] => true
+    AND User.Email ENDS WITH ANY OF [<1 hashed value>] => false, skipping the remaining AND conditions
+    THEN 'Dog' => no match
+  Returning 'Cat'.

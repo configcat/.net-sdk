@@ -305,6 +305,11 @@ indent_size = 2
 charset = utf-8
 indent_size = 2
 
+# Json files
+[*.json]
+charset = utf-8
+indent_size = 2
+
 # Shell scripts
 [*.sh]
 end_of_line = lf

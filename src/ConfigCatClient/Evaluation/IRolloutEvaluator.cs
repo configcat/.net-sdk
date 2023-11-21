@@ -1,6 +1,8 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace ConfigCat.Client.Evaluation;
 
 internal interface IRolloutEvaluator
 {
-    EvaluateResult Evaluate(Setting setting, string key, string? logDefaultValue, User? user);
+    EvaluateResult Evaluate<T>(T defaultValue, ref EvaluateContext context, [NotNull] out T returnValue);
 }

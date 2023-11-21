@@ -86,7 +86,7 @@ public class DataGovernanceTests
             DataGovernance = DataGovernance.Global
         };
 
-        var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
+        var responsesRegistry = new Dictionary<string, Config>
         {
             { GlobalCdnUri.Host, CreateResponse() }
         };
@@ -111,7 +111,7 @@ public class DataGovernanceTests
             DataGovernance = DataGovernance.EuOnly
         };
 
-        var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
+        var responsesRegistry = new Dictionary<string, Config>
         {
             {GlobalCdnUri.Host, CreateResponse()},
             {EuOnlyCdnUri.Host, CreateResponse()}
@@ -139,7 +139,7 @@ public class DataGovernanceTests
             DataGovernance = DataGovernance.Global
         };
 
-        var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
+        var responsesRegistry = new Dictionary<string, Config>
         {
             {GlobalCdnUri.Host, CreateResponse(ConfigCatClientOptions.BaseUrlEu, RedirectMode.Should, false)},
             {EuOnlyCdnUri.Host, CreateResponse(ConfigCatClientOptions.BaseUrlEu, RedirectMode.No, true)}
@@ -168,7 +168,7 @@ public class DataGovernanceTests
             DataGovernance = DataGovernance.EuOnly
         };
 
-        var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
+        var responsesRegistry = new Dictionary<string, Config>
         {
             {EuOnlyCdnUri.Host, CreateResponse(ConfigCatClientOptions.BaseUrlEu)}
         };
@@ -188,7 +188,7 @@ public class DataGovernanceTests
     {
         // Arrange
 
-        var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
+        var responsesRegistry = new Dictionary<string, Config>
         {
             {CustomCdnUri.Host, CreateResponse()}
         };
@@ -215,7 +215,7 @@ public class DataGovernanceTests
     {
         // Arrange
 
-        var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
+        var responsesRegistry = new Dictionary<string, Config>
         {
             {CustomCdnUri.Host, CreateResponse()}
         };
@@ -242,7 +242,7 @@ public class DataGovernanceTests
     {
         // Arrange
 
-        var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
+        var responsesRegistry = new Dictionary<string, Config>
         {
             {GlobalCdnUri.Host, CreateResponse(ForcedCdnUri, RedirectMode.Force, false)},
             {ForcedCdnUri.Host, CreateResponse(ForcedCdnUri, RedirectMode.Force, true)}
@@ -270,7 +270,7 @@ public class DataGovernanceTests
     {
         // Arrange
 
-        var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
+        var responsesRegistry = new Dictionary<string, Config>
         {
             {EuOnlyCdnUri.Host, CreateResponse(ForcedCdnUri, RedirectMode.Force, false)},
             {ForcedCdnUri.Host, CreateResponse(ForcedCdnUri, RedirectMode.Force, true)}
@@ -298,7 +298,7 @@ public class DataGovernanceTests
     {
         // Arrange
 
-        var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
+        var responsesRegistry = new Dictionary<string, Config>
         {
             {CustomCdnUri.Host, CreateResponse(ForcedCdnUri, RedirectMode.Force, false)},
             {ForcedCdnUri.Host, CreateResponse(ForcedCdnUri, RedirectMode.Force, true)}
@@ -327,7 +327,7 @@ public class DataGovernanceTests
     {
         // Arrange
 
-        var responsesRegistry = new Dictionary<string, SettingsWithPreferences>
+        var responsesRegistry = new Dictionary<string, Config>
         {
             {GlobalCdnUri.Host, CreateResponse(EuOnlyCdnUri, RedirectMode.Should, false)},
             {EuOnlyCdnUri.Host, CreateResponse(GlobalCdnUri, RedirectMode.Should, false)}
@@ -351,7 +351,7 @@ public class DataGovernanceTests
     internal static async Task<SortedList<byte, HttpRequestMessage>> Fetch(
         string sdkKey,
         ConfigCatClientOptions fetchConfig,
-        Dictionary<string, SettingsWithPreferences> responsesRegistry,
+        Dictionary<string, Config> responsesRegistry,
         byte fetchInvokeCount = 1)
     {
         // Arrange
@@ -400,13 +400,13 @@ public class DataGovernanceTests
         return requests;
     }
 
-    private static SettingsWithPreferences CreateResponse(Uri? url = null, RedirectMode redirectMode = RedirectMode.No, bool withSettings = true)
+    private static Config CreateResponse(Uri? url = null, RedirectMode redirectMode = RedirectMode.No, bool withSettings = true)
     {
-        var response = new SettingsWithPreferences
+        var response = new Config
         {
             Preferences = new Preferences
             {
-                Url = (url ?? ConfigCatClientOptions.BaseUrlGlobal).ToString(),
+                BaseUrl = (url ?? ConfigCatClientOptions.BaseUrlGlobal).ToString(),
                 RedirectMode = redirectMode
             },
         };

@@ -1,0 +1,4 @@
+INFO [5000] Evaluating 'stringContainsDogDefaultCat' for User '{"Identifier":"12345","Email":"joe@configcat.com"}'
+  Evaluating targeting rules and applying the first match if any:
+  - IF User.Email CONTAINS ANY OF ['@configcat.com'] THEN 'Dog' => MATCH, applying rule
+  Returning 'Dog'.

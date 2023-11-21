@@ -21,8 +21,4 @@ public enum SettingType : byte
     /// Decimal number type.
     /// </summary>
     Double = 3,
-    /// <summary>
-    /// Unknown type.
-    /// </summary>
-    Unknown = byte.MaxValue,
 }

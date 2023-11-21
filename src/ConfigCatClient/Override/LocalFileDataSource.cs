@@ -111,7 +111,7 @@ internal sealed class LocalFileDataSource : IOverrideDataSource
                         break;
                     }
 
-                    var deserialized = content.Deserialize<SettingsWithPreferences>()
+                    var deserialized = content.Deserialize<Config>()
                         ?? throw new InvalidOperationException("Invalid config JSON content: " + content);
                     this.overrideValues = deserialized.Settings;
                     break;

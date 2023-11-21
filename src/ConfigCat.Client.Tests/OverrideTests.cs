@@ -346,7 +346,7 @@ public class OverrideTests
 
         var fakeHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK);
 
-        using var client = ConfigCatClient.Get("localhost", options =>
+        using var client = ConfigCatClient.Get("localhost-123456789012/1234567890123456789012", options =>
         {
             options.FlagOverrides = FlagOverrides.LocalDictionary(dict, OverrideBehaviour.LocalOverRemote);
             options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, GetJsonContent("false"));
@@ -370,7 +370,7 @@ public class OverrideTests
 
         var fakeHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK);
 
-        using var client = ConfigCatClient.Get("localhost", options =>
+        using var client = ConfigCatClient.Get("localhost-123456789012/1234567890123456789012", options =>
         {
             options.FlagOverrides = FlagOverrides.LocalDictionary(dict, OverrideBehaviour.LocalOverRemote);
             options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, GetJsonContent("false"));
@@ -394,7 +394,7 @@ public class OverrideTests
 
         var fakeHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK);
 
-        using var client = ConfigCatClient.Get("localhost", options =>
+        using var client = ConfigCatClient.Get("localhost-123456789012/1234567890123456789012", options =>
         {
             options.FlagOverrides = FlagOverrides.LocalDictionary(dict, OverrideBehaviour.RemoteOverLocal);
             options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, GetJsonContent("false"));
@@ -418,7 +418,7 @@ public class OverrideTests
 
         var fakeHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK);
 
-        using var client = ConfigCatClient.Get("localhost", options =>
+        using var client = ConfigCatClient.Get("localhost-123456789012/1234567890123456789012", options =>
         {
             options.FlagOverrides = FlagOverrides.LocalDictionary(dict, OverrideBehaviour.RemoteOverLocal);
             options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, GetJsonContent("false"));
@@ -522,10 +522,10 @@ public class OverrideTests
 
         Assert.AreEqual(expectedEvaluatedValue, actualEvaluatedValue);
 
-        var overrideValueSettingType = overrideValue.DetermineSettingType();
+        overrideValue.ToSettingValue(out var overrideValueSettingType);
         var expectedEvaluatedValues = new KeyValuePair<string, object?>[]
         {
-             new(key, overrideValueSettingType != SettingType.Unknown ? overrideValue : null)
+             new(key, overrideValueSettingType != Setting.UnknownType ? overrideValue : null)
         };
         CollectionAssert.AreEquivalent(expectedEvaluatedValues, actualEvaluatedValues.ToArray());
     }
@@ -559,7 +559,7 @@ public class OverrideTests
         const string key = "flag";
         var overrideValue =
 #if USE_NEWTONSOFT_JSON
-            overrideValueJson.Deserialize<Newtonsoft.Json.Linq.JToken>();
+            overrideValueJson.Deserialize<Newtonsoft.Json.Linq.JToken>()!;
 #else
             overrideValueJson.Deserialize<System.Text.Json.JsonElement>();
 #endif
@@ -583,13 +583,18 @@ public class OverrideTests
             var actualEvaluatedValues = client.GetAllValues(user: null);
 
             Assert.AreEqual(expectedEvaluatedValue, actualEvaluatedValue);
-            var overrideValueSettingType = overrideValue.DetermineSettingType();
+
+            var unwrappedOverrideValue = overrideValue is JsonValue jsonValue
+                ? jsonValue.ToSettingValue(out var overrideValueSettingType)
+                : overrideValue.ToSettingValue(out overrideValueSettingType);
+
             var expectedEvaluatedValues = new KeyValuePair<string, object?>[]
             {
-                new(key, overrideValueSettingType != SettingType.Unknown
-                    ? (overrideValue is JsonValue jsonValue ? jsonValue.ConvertToObject(overrideValueSettingType) : overrideValue)
+                new(key, overrideValueSettingType != Setting.UnknownType
+                    ? unwrappedOverrideValue.GetValue(overrideValueSettingType)
                     : null)
             };
+
             CollectionAssert.AreEquivalent(expectedEvaluatedValues, actualEvaluatedValues.ToArray());
         }
         finally
@@ -603,7 +608,7 @@ public class OverrideTests
 
     private static string GetJsonContent(string value)
     {
-        return $"{{ \"f\": {{ \"fakeKey\": {{ \"v\": \"{value}\", \"p\": [] ,\"r\": [] }} }} }}";
+        return "{\"f\":{\"fakeKey\":{\"t\":1,\"v\":{\"s\":\"" + value + "\"}}}}";
     }
 
     private static async Task CreateFileAndWriteContent(string path, string content)

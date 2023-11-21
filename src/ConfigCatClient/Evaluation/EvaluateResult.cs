@@ -1,23 +1,18 @@
-#if USE_NEWTONSOFT_JSON
-using JsonValue = Newtonsoft.Json.Linq.JValue;
-#else
-using JsonValue = System.Text.Json.JsonElement;
-#endif
-
 namespace ConfigCat.Client.Evaluation;
 
 internal readonly struct EvaluateResult
 {
-    public EvaluateResult(JsonValue value, string? variationId, RolloutRule? matchedTargetingRule = null, RolloutPercentageItem? matchedPercentageOption = null)
+    public EvaluateResult(SettingValueContainer selectedValue, TargetingRule? matchedTargetingRule = null, PercentageOption? matchedPercentageOption = null)
     {
-        Value = value;
-        VariationId = variationId;
-        MatchedTargetingRule = matchedTargetingRule;
-        MatchedPercentageOption = matchedPercentageOption;
+        this.selectedValue = selectedValue;
+        this.MatchedTargetingRule = matchedTargetingRule;
+        this.MatchedPercentageOption = matchedPercentageOption;
     }
 
-    public JsonValue Value { get; }
-    public string? VariationId { get; }
-    public RolloutRule? MatchedTargetingRule { get; }
-    public RolloutPercentageItem? MatchedPercentageOption { get; }
+    private readonly SettingValueContainer selectedValue;
+    public SettingValue Value => this.selectedValue.Value;
+    public string? VariationId => this.selectedValue.VariationId;
+
+    public readonly TargetingRule? MatchedTargetingRule;
+    public readonly PercentageOption? MatchedPercentageOption;
 }

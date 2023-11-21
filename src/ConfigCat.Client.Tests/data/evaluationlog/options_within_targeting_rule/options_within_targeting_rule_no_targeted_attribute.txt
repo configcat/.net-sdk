@@ -1,0 +1,6 @@
+WARNING [3003] Cannot evaluate condition (User.Email CONTAINS ANY OF ['@configcat.com']) for setting 'stringContainsString75Cat0Dog25Falcon0HorseDefaultCat' (the User.Email attribute is missing). You should set the User.Email attribute in order to make targeting work properly. Read more: https://configcat.com/docs/advanced/user-object/
+INFO [5000] Evaluating 'stringContainsString75Cat0Dog25Falcon0HorseDefaultCat' for User '{"Identifier":"12345"}'
+  Evaluating targeting rules and applying the first match if any:
+  - IF User.Email CONTAINS ANY OF ['@configcat.com'] THEN % options => cannot evaluate, the User.Email attribute is missing
+    The current targeting rule is ignored and the evaluation continues with the next rule.
+  Returning 'Cat'.

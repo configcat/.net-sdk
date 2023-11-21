@@ -1,0 +1,14 @@
+{
+  "jsonOverride": "test_list_truncation.json",
+  "tests": [
+    {
+      "key": "booleanKey1",
+      "defaultValue": false,
+      "user": {
+        "Identifier": "12"
+      },
+      "returnValue": true,
+      "expectedLog": "list_truncation.txt"
+    }
+  ]
+}

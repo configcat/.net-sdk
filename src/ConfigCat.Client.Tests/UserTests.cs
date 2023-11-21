@@ -1,4 +1,5 @@
-using System.Collections.Generic;
+using System;
+using System.Globalization;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ConfigCat.Client.Tests;
@@ -20,7 +21,7 @@ public class UserTests
 
         // Act
 
-        var actualAttributes = user.AllAttributes;
+        var actualAttributes = user.GetAllAttributes();
 
         // Assert
 
@@ -45,7 +46,7 @@ public class UserTests
 
             Country = "US",
 
-            Custom = new Dictionary<string, string?>
+            Custom =
             {
                 { "myCustomAttribute", "myCustomAttributeValue"},
                 { nameof(User.Identifier), "myIdentifier"},
@@ -56,7 +57,7 @@ public class UserTests
 
         // Act
 
-        var actualAttributes = user.AllAttributes;
+        var actualAttributes = user.GetAllAttributes();
 
         // Assert
 
@@ -93,7 +94,7 @@ public class UserTests
 
             Country = "US",
 
-            Custom = new Dictionary<string, string?>
+            Custom =
             {
                 { attributeName, attributeValue}
             }
@@ -101,7 +102,7 @@ public class UserTests
 
         // Act
 
-        var actualAttributes = user.AllAttributes;
+        var actualAttributes = user.GetAllAttributes();
 
         // Assert
 
@@ -122,6 +123,6 @@ public class UserTests
         var user = new User(identifier);
 
         Assert.AreEqual(expectedValue, user.Identifier);
-        Assert.AreEqual(expectedValue, user.AllAttributes[nameof(User.Identifier)]);
+        Assert.AreEqual(expectedValue, user.GetAllAttributes()[nameof(User.Identifier)]);
     }
 }

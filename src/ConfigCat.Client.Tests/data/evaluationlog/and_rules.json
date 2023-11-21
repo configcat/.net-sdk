@@ -1,0 +1,22 @@
+{
+  "configUrl": "https://app.configcat.com/v2/e7a75611-4256-49a5-9320-ce158755e3ba/08dbc325-7f69-4fd4-8af4-cf9f24ec8ac9/08dbc325-9d5e-4988-891c-fd4a45790bd1/08dbc325-9ebd-4587-8171-88f76a3004cb",
+  "sdkKey": "configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/ByMO9yZNn02kXcm72lnY1A",
+  "tests": [
+    {
+      "key": "emailAnd",
+      "defaultValue": "default",
+      "returnValue": "Cat",
+      "expectedLog": "and_rules_no_user.txt"
+    },
+    {
+      "key": "emailAnd",
+      "defaultValue": "default",
+      "user": {
+        "Identifier": "12345",
+        "Email": "jane@configcat.com"
+      },
+      "returnValue": "Cat",
+      "expectedLog": "and_rules_user.txt"
+    }
+  ]
+}

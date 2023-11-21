@@ -340,7 +340,7 @@ public class BasicConfigCatClientIntegrationTests
     public async Task Http_Timeout_Test_Async()
     {
         var response = $"{{ \"f\": {{ \"fakeKey\": {{ \"v\": \"fakeValue\", \"p\": [] ,\"r\": [] }} }} }}";
-        using IConfigCatClient manualPollClient = ConfigCatClient.Get("fake", options =>
+        using IConfigCatClient manualPollClient = ConfigCatClient.Get("fake-67890123456789012/1234567890123456789012", options =>
         {
             options.PollingMode = PollingModes.ManualPoll;
             options.Logger = ConsoleLogger;
@@ -357,7 +357,7 @@ public class BasicConfigCatClientIntegrationTests
     public void Http_Timeout_Test_Sync()
     {
         var response = $"{{ \"f\": {{ \"fakeKey\": {{ \"v\": \"fakeValue\", \"p\": [] ,\"r\": [] }} }} }}";
-        using IConfigCatClient manualPollClient = ConfigCatClient.Get("fake", options =>
+        using IConfigCatClient manualPollClient = ConfigCatClient.Get("fake-67890123456789012/1234567890123456789012", options =>
         {
             options.PollingMode = PollingModes.ManualPoll;
             options.Logger = ConsoleLogger;
@@ -374,7 +374,7 @@ public class BasicConfigCatClientIntegrationTests
     {
         var now = DateTimeOffset.UtcNow;
         var response = $"{{ \"f\": {{ \"fakeKey\": {{ \"v\": \"fakeValue\", \"p\": [] ,\"r\": [] }} }} }}";
-        using IConfigCatClient manualPollClient = ConfigCatClient.Get("fake", options =>
+        using IConfigCatClient manualPollClient = ConfigCatClient.Get("fake-67890123456789012/1234567890123456789012", options =>
         {
             options.PollingMode = PollingModes.AutoPoll(maxInitWaitTime: TimeSpan.FromSeconds(1));
             options.Logger = ConsoleLogger;
@@ -390,7 +390,7 @@ public class BasicConfigCatClientIntegrationTests
     {
         var now = DateTimeOffset.UtcNow;
         var response = $"{{ \"f\": {{ \"fakeKey\": {{ \"v\": \"fakeValue\", \"p\": [] ,\"r\": [] }} }} }}";
-        using IConfigCatClient manualPollClient = ConfigCatClient.Get("fake", options =>
+        using IConfigCatClient manualPollClient = ConfigCatClient.Get("fake-67890123456789012/1234567890123456789012", options =>
         {
             options.PollingMode = PollingModes.AutoPoll(maxInitWaitTime: TimeSpan.FromSeconds(1));
             options.Logger = ConsoleLogger;
@@ -407,7 +407,7 @@ public class BasicConfigCatClientIntegrationTests
         var defer = new ManualResetEvent(false);
         var now = DateTimeOffset.UtcNow;
         var response = $"{{ \"f\": {{ \"fakeKey\": {{ \"v\": \"fakeValue\", \"p\": [] ,\"r\": [] }} }} }}";
-        using IConfigCatClient manualPollClient = ConfigCatClient.Get("fake", options =>
+        using IConfigCatClient manualPollClient = ConfigCatClient.Get("fake-67890123456789012/1234567890123456789012", options =>
         {
             options.Logger = ConsoleLogger;
             options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, response, TimeSpan.FromSeconds(5));
@@ -426,7 +426,7 @@ public class BasicConfigCatClientIntegrationTests
         var defer = new ManualResetEvent(false);
         var now = DateTimeOffset.UtcNow;
         var response = $"{{ \"f\": {{ \"fakeKey\": {{ \"v\": \"fakeValue\", \"p\": [] ,\"r\": [] }} }} }}";
-        using IConfigCatClient manualPollClient = ConfigCatClient.Get("fake", options =>
+        using IConfigCatClient manualPollClient = ConfigCatClient.Get("fake-67890123456789012/1234567890123456789012", options =>
         {
             options.Logger = ConsoleLogger;
             options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, response, TimeSpan.FromSeconds(5));
@@ -447,7 +447,7 @@ public class BasicConfigCatClientIntegrationTests
     public void Ensure_Multiple_Requests_Doesnt_Interfere_In_ValueTasks()
     {
         var response = $"{{ \"f\": {{ \"fakeKey\": {{ \"v\": \"fakeValue\", \"p\": [] ,\"r\": [] }} }} }}";
-        using IConfigCatClient manualPollClient = ConfigCatClient.Get("fake", options =>
+        using IConfigCatClient manualPollClient = ConfigCatClient.Get("fake-67890123456789012/1234567890123456789012", options =>
         {
             options.Logger = ConsoleLogger;
             options.PollingMode = PollingModes.ManualPoll;

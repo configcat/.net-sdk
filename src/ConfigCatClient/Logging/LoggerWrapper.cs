@@ -19,15 +19,15 @@ internal sealed class LoggerWrapper : IConfigCatLogger
         this.hooks = hooks;
     }
 
-    private bool TargetLogEnabled(LogLevel targetTrace)
+    public bool IsEnabled(LogLevel level)
     {
-        return (byte)targetTrace <= (byte)LogLevel;
+        return (byte)level <= (byte)LogLevel;
     }
 
     /// <inheritdoc />
     public void Log(LogLevel level, LogEventId eventId, ref FormattableLogMessage message, Exception? exception = null)
     {
-        if (TargetLogEnabled(level))
+        if (IsEnabled(level))
         {
             this.logger.Log(level, eventId, ref message, exception);
         }

@@ -14,34 +14,36 @@ internal static class SerializationExtensions
 #if USE_NEWTONSOFT_JSON
     private static readonly JsonSerializer Serializer = JsonSerializer.Create();
 #else
-    private static readonly JsonSerializerOptions SerializerOptions = new()
+    private static readonly JsonSerializerOptions TolerantSerializerOptions = new()
     {
+        AllowTrailingCommas = true,
+        ReadCommentHandling = JsonCommentHandling.Skip,
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 #endif
 
-    public static T? Deserialize<T>(this string json) => json.AsMemory().Deserialize<T>();
+    public static T? Deserialize<T>(this string json, bool tolerant = false) => json.AsMemory().Deserialize<T>(tolerant);
 
     // NOTE: It would be better to use ReadOnlySpan<char>, however when the full string is wrapped in a span, json.ToString() result in a copy of the string.
     // This is not the case with ReadOnlyMemory<char>, so we use that until support for .NET 4.5 support is dropped.
-    public static T? Deserialize<T>(this ReadOnlyMemory<char> json)
+    public static T? Deserialize<T>(this ReadOnlyMemory<char> json, bool tolerant = false)
     {
 #if USE_NEWTONSOFT_JSON
         using var stringReader = new StringReader(json.ToString());
         using var reader = new JsonTextReader(stringReader);
         return Serializer.Deserialize<T>(reader);
 #else
-        return JsonSerializer.Deserialize<T>(json.Span);
+        return JsonSerializer.Deserialize<T>(json.Span, tolerant ? TolerantSerializerOptions : null);
 #endif
     }
 
-    public static T? DeserializeOrDefault<T>(this string json) => json.AsMemory().DeserializeOrDefault<T>();
+    public static T? DeserializeOrDefault<T>(this string json, bool tolerant = false) => json.AsMemory().DeserializeOrDefault<T>(tolerant);
 
-    public static T? DeserializeOrDefault<T>(this ReadOnlyMemory<char> json)
+    public static T? DeserializeOrDefault<T>(this ReadOnlyMemory<char> json, bool tolerant = false)
     {
         try
         {
-            return json.Deserialize<T>();
+            return json.Deserialize<T>(tolerant);
         }
         catch
         {
@@ -54,7 +56,7 @@ internal static class SerializationExtensions
 #if USE_NEWTONSOFT_JSON
         return JsonConvert.SerializeObject(objectToSerialize);
 #else
-        return JsonSerializer.Serialize(objectToSerialize, SerializerOptions);
+        return JsonSerializer.Serialize(objectToSerialize, TolerantSerializerOptions);
 #endif
     }
 }

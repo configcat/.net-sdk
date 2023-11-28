@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 
 #if USE_NEWTONSOFT_JSON
 using JsonValue = Newtonsoft.Json.Linq.JValue;
@@ -471,6 +473,67 @@ public class OverrideTests
         Assert.AreEqual("modified", client.GetValue("fakeKey", string.Empty));
 
         File.Delete(SampleFileToCreate);
+    }
+
+    [TestMethod]
+    public async Task LocalFile_TolerantJsonParsing_SimplifiedConfig()
+    {
+        const string key = "flag";
+        const bool expectedEvaluatedValue = true;
+        var overrideValue = expectedEvaluatedValue.ToString(CultureInfo.InvariantCulture).ToLowerInvariant();
+
+        var filePath = Path.GetTempFileName();
+        File.WriteAllText(filePath, $"{{ \"flags\": {{ \"{key}\": {overrideValue} }}, /* comment */ }}");
+
+        try
+        {
+            using var client = ConfigCatClient.Get("localhost", options =>
+            {
+                options.PollingMode = PollingModes.ManualPoll;
+                options.FlagOverrides = FlagOverrides.LocalFile(filePath, autoReload: false, OverrideBehaviour.LocalOnly);
+            });
+            var actualEvaluatedValue = await client.GetValueAsync<bool?>(key, null);
+
+            Assert.AreEqual(expectedEvaluatedValue, actualEvaluatedValue);
+        }
+        finally
+        {
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+            }
+        }
+    }
+
+    [TestMethod]
+    public async Task LocalFile_TolerantJsonParsing_ComplexConfig()
+    {
+        const string key = "flag";
+        const bool expectedEvaluatedValue = true;
+        var overrideValue = expectedEvaluatedValue.ToString(CultureInfo.InvariantCulture).ToLowerInvariant();
+        var settingType = ((int)SettingType.Boolean).ToString(CultureInfo.InvariantCulture);
+
+        var filePath = Path.GetTempFileName();
+        File.WriteAllText(filePath, $"{{ \"f\": {{ \"{key}\": {{ \"t\": {settingType}, \"v\": {{ \"b\": {overrideValue} }} }} }}, /* comment */ }}");
+
+        try
+        {
+            using var client = ConfigCatClient.Get("localhost", options =>
+            {
+                options.PollingMode = PollingModes.ManualPoll;
+                options.FlagOverrides = FlagOverrides.LocalFile(filePath, autoReload: false, OverrideBehaviour.LocalOnly);
+            });
+            var actualEvaluatedValue = await client.GetValueAsync<bool?>(key, null);
+
+            Assert.AreEqual(expectedEvaluatedValue, actualEvaluatedValue);
+        }
+        finally
+        {
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+            }
+        }
     }
 
     [DataRow(true, false, true)]

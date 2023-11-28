@@ -21,6 +21,11 @@ public struct FormattableLogMessage : IFormattable
             message.GetArguments() ?? ArrayUtils.EmptyArray<object?>());
     }
 
+    private readonly string? format;
+    private readonly string[]? argNames;
+    private readonly object?[]? argValues;
+    private string? invariantFormattedMessage;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="FormattableLogMessage"/> struct from a plain log message.
     /// </summary>
@@ -28,8 +33,8 @@ public struct FormattableLogMessage : IFormattable
     {
         this.invariantFormattedMessage = message ?? throw new ArgumentNullException(nameof(message));
         this.format = null;
-        ArgNames = ArrayUtils.EmptyArray<string>();
-        ArgValues = ArrayUtils.EmptyArray<object?>();
+        this.argNames = null;
+        this.argValues = null;
     }
 
     /// <summary>
@@ -38,8 +43,8 @@ public struct FormattableLogMessage : IFormattable
     public FormattableLogMessage(string format, string[] argNames, object?[] argValues)
     {
         this.format = format ?? throw new ArgumentNullException(nameof(format));
-        ArgNames = argNames ?? throw new ArgumentNullException(nameof(argNames));
-        ArgValues = argValues ?? throw new ArgumentNullException(nameof(argValues));
+        this.argNames = argNames ?? throw new ArgumentNullException(nameof(argNames));
+        this.argValues = argValues ?? throw new ArgumentNullException(nameof(argValues));
         if (argNames.Length != argValues.Length)
         {
             throw new ArgumentException($"Number of argument names ({argNames.Length}) and argument values ({argValues.Length}) mismatch.", nameof(argNames));
@@ -47,7 +52,6 @@ public struct FormattableLogMessage : IFormattable
         this.invariantFormattedMessage = null;
     }
 
-    private readonly string? format;
     /// <summary>
     /// Log message format.
     /// </summary>
@@ -56,14 +60,13 @@ public struct FormattableLogMessage : IFormattable
     /// <summary>
     /// Names of the named arguments.
     /// </summary>
-    public readonly string[] ArgNames { get; }
+    public readonly string[] ArgNames => this.argNames ?? ArrayUtils.EmptyArray<string>();
 
     /// <summary>
     /// Values of the named arguments.
     /// </summary>
-    public readonly object?[] ArgValues { get; }
+    public readonly object?[] ArgValues => this.argValues ?? ArrayUtils.EmptyArray<object?>();
 
-    private string? invariantFormattedMessage;
     /// <summary>
     /// The log message formatted using <see cref="CultureInfo.InvariantCulture"/>.
     /// </summary>

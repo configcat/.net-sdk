@@ -49,6 +49,6 @@ internal struct ConditionContainer : IConditionProvider
     public readonly Condition? GetCondition(bool throwIfInvalid = true)
     {
         return this.condition as Condition
-            ?? (!throwIfInvalid ? null : throw new InvalidOperationException("Condition is missing or invalid."));
+            ?? (!throwIfInvalid ? null : throw new InvalidConfigModelException("Condition is missing or invalid."));
     }
 }

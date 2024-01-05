@@ -64,7 +64,7 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
         public static IEnumerable<object?[]> GetTests() => MatrixTestRunner<SensitiveTestsDescriptor>.GetTests();
     }
 
-    public class VariationIdTestsDescriptor : IMatrixTestDescriptor, IVariationIdMatrixText
+    public class VariationIdTestsDescriptor : IMatrixTestDescriptor, IVariationIdMatrixTest
     {
         //https://app.configcat.com/v2/e7a75611-4256-49a5-9320-ce158755e3ba/08d5a03c-feb7-af1e-a1fa-40b3329f8bed/08dbc4dc-30c6-4969-8e4c-03f6a8764199/244cf8b0-f604-11e8-b543-f23c917f9d8d
         public ConfigLocation ConfigLocation => new ConfigLocation.Cdn("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/spQnkRTIPEWVivZkWM84lQ");

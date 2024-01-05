@@ -111,8 +111,7 @@ internal sealed class LocalFileDataSource : IOverrideDataSource, IDisposable
                         break;
                     }
 
-                    var deserialized = content.Deserialize<Config>(tolerant: true)
-                        ?? throw new InvalidOperationException("Invalid config JSON content: " + content);
+                    var deserialized = Config.Deserialize(content.AsMemory(), tolerant: true);
                     this.overrideValues = deserialized.Settings;
                     break;
                 }

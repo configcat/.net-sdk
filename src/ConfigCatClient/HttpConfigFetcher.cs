@@ -5,12 +5,6 @@ using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 
-#if NET45
-using ResponseWithBody = System.Tuple<System.Net.Http.HttpResponseMessage, string?, ConfigCat.Client.Config?>;
-#else
-using ResponseWithBody = System.ValueTuple<System.Net.Http.HttpResponseMessage, string?, ConfigCat.Client.Config?>;
-#endif
-
 namespace ConfigCat.Client;
 
 internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
@@ -85,22 +79,24 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
         {
             var responseWithBody = await FetchRequestAsync(lastConfig.HttpETag, this.requestUri).ConfigureAwait(false);
 
-            var response = responseWithBody.Item1;
+            var response = responseWithBody.Response;
 
             switch (response.StatusCode)
             {
                 case HttpStatusCode.OK:
-                    if (responseWithBody.Item2 is null)
+                    var config = responseWithBody.Config;
+                    if (config is null)
                     {
-                        logMessage = this.logger.FetchReceived200WithInvalidBody();
-                        return FetchResult.Failure(lastConfig, logMessage.InvariantFormattedMessage);
+                        var exception = responseWithBody.Exception;
+                        logMessage = this.logger.FetchReceived200WithInvalidBody(exception);
+                        return FetchResult.Failure(lastConfig, logMessage.InvariantFormattedMessage, exception);
                     }
 
                     return FetchResult.Success(new ProjectConfig
                     (
                         httpETag: response.Headers.ETag?.Tag,
-                        configJson: responseWithBody.Item2,
-                        config: responseWithBody.Item3,
+                        configJson: responseWithBody.ResponseBody,
+                        config: config,
                         timeStamp: ProjectConfig.GenerateTimeStamp()
                     ));
 
@@ -177,11 +173,9 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                 var responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 #endif
 
-                var config = responseBody.DeserializeOrDefault<Config>();
-                if (config is null)
-                {
-                    return new ResponseWithBody(response, null, null);
-                }
+                Config config;
+                try { config = Config.Deserialize(responseBody.AsMemory()); }
+                catch (Exception ex) { return new ResponseWithBody(response, responseBody, ex); }
 
                 if (config.Preferences is not null)
                 {
@@ -224,7 +218,7 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                 return new ResponseWithBody(response, responseBody, config);
             }
 
-            return new ResponseWithBody(response, null, null);
+            return new ResponseWithBody(response, null, (Exception?)null);
         }
     }
 
@@ -276,5 +270,29 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
     {
         this.cancellationTokenSource.Cancel();
         this.httpClient?.Dispose();
+    }
+
+    private readonly struct ResponseWithBody
+    {
+        private readonly object? configOrException;
+
+        public ResponseWithBody(HttpResponseMessage response, string responseBody, Config config)
+        {
+            Response = response;
+            ResponseBody = responseBody;
+            this.configOrException = config;
+        }
+
+        public ResponseWithBody(HttpResponseMessage response, string? responseBody, Exception? exception)
+        {
+            Response = response;
+            ResponseBody = responseBody;
+            this.configOrException = exception;
+        }
+
+        public HttpResponseMessage Response { get; }
+        public string? ResponseBody { get; }
+        public Config? Config => this.configOrException as Config;
+        public Exception? Exception => this.configOrException as Exception;
     }
 }

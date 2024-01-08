@@ -53,7 +53,7 @@ internal static partial class LoggerExtensions
 
     public static FormattableLogMessage FetchFailedDueToUnexpectedError(this LoggerWrapper logger, Exception ex) => logger.Log(
         LogLevel.Error, 1103, ex,
-        "Unexpected error occurred while trying to fetch config JSON.");
+        "Unexpected error occurred while trying to fetch config JSON. It is most likely due to a local network issue. Please make sure your application can reach the ConfigCat CDN servers (or your proxy server) over HTTP.");
 
     public static FormattableLogMessage FetchFailedDueToRedirectLoop(this LoggerWrapper logger) => logger.Log(
         LogLevel.Error, 1104,

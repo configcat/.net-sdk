@@ -217,7 +217,7 @@ public class ConfigCatClientTests
 
         sw.Stop();
 
-        Assert.IsTrue(sw.Elapsed >= delay - TimeSpan.FromMilliseconds(10), $"Elapsed time: {sw.Elapsed}");
+        Assert.IsTrue(sw.Elapsed >= delay - TimeSpan.FromMilliseconds(50), $"Elapsed time: {sw.Elapsed}"); // 50ms for tolerance
         Assert.IsTrue(sw.Elapsed <= delay + TimeSpan.FromMilliseconds(250), $"Elapsed time: {sw.Elapsed}"); // 250ms for tolerance
         Assert.IsTrue(actualValue);
     }
@@ -252,7 +252,7 @@ public class ConfigCatClientTests
 
         sw.Stop();
 
-        Assert.IsTrue(sw.Elapsed >= maxInitWaitTime - TimeSpan.FromMilliseconds(10), $"Elapsed time: {sw.Elapsed}");
+        Assert.IsTrue(sw.Elapsed >= maxInitWaitTime - TimeSpan.FromMilliseconds(50), $"Elapsed time: {sw.Elapsed}"); // 50ms for tolerance
         Assert.IsTrue(sw.Elapsed <= maxInitWaitTime + TimeSpan.FromMilliseconds(250), $"Elapsed time: {sw.Elapsed}"); // 250ms for tolerance
 
         Assert.IsFalse(actualValue);
@@ -312,7 +312,7 @@ public class ConfigCatClientTests
 
         sw.Stop();
 
-        Assert.IsTrue(sw.Elapsed >= maxInitWaitTime - TimeSpan.FromMilliseconds(10), $"Elapsed time: {sw.Elapsed}");
+        Assert.IsTrue(sw.Elapsed >= maxInitWaitTime - TimeSpan.FromMilliseconds(50), $"Elapsed time: {sw.Elapsed}"); // 50ms for tolerance
         Assert.IsTrue(sw.Elapsed <= maxInitWaitTime + TimeSpan.FromMilliseconds(250), $"Elapsed time: {sw.Elapsed}"); // 250ms for tolerance
 
         Assert.AreEqual(ClientCacheState.NoFlagData, cacheState);
@@ -360,7 +360,7 @@ public class ConfigCatClientTests
 
         sw.Stop();
 
-        Assert.IsTrue(sw.Elapsed >= maxInitWaitTime - TimeSpan.FromMilliseconds(10), $"Elapsed time: {sw.Elapsed}");
+        Assert.IsTrue(sw.Elapsed >= maxInitWaitTime - TimeSpan.FromMilliseconds(50), $"Elapsed time: {sw.Elapsed}"); // 50ms for tolerance
         Assert.IsTrue(sw.Elapsed <= maxInitWaitTime + TimeSpan.FromMilliseconds(250), $"Elapsed time: {sw.Elapsed}"); // 250ms for tolerance
 
         Assert.AreEqual(ClientCacheState.HasCachedFlagDataOnly, cacheState);

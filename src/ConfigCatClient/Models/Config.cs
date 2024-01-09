@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
@@ -39,6 +40,12 @@ internal sealed class Config : IConfig
     , IJsonOnDeserialized
 #endif
 {
+    public static Config Deserialize(ReadOnlyMemory<char> configJson, bool tolerant = false)
+    {
+        return configJson.Deserialize<Config>(tolerant)
+            ?? throw new ArgumentException("Invalid config JSON content: " + configJson, nameof(configJson));
+    }
+
 #if USE_NEWTONSOFT_JSON
     [JsonProperty(PropertyName = "p")]
 #else

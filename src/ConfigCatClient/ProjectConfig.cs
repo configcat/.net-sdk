@@ -87,11 +87,7 @@ internal sealed class ProjectConfig
         string? configJson;
         if (configJsonSpan.Length > 0)
         {
-            config = configJsonSpan.DeserializeOrDefault<Config>();
-            if (config is null)
-            {
-                throw new FormatException("Invalid config JSON content: " + configJsonSpan.ToString());
-            }
+            config = Config.Deserialize(configJsonSpan);
             configJson = configJsonSpan.ToString();
         }
         else

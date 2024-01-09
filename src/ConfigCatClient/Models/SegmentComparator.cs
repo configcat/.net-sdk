@@ -8,10 +8,10 @@ public enum SegmentComparator : byte
     /// <summary>
     /// IS IN SEGMENT - It matches when the conditions of the specified segment are evaluated to true.
     /// </summary>
-    IsIn,
+    IsIn = 0,
 
     /// <summary>
     /// IS NOT IN SEGMENT - It matches when the conditions of the specified segment are evaluated to false.
     /// </summary>
-    IsNotIn,
+    IsNotIn = 1,
 }

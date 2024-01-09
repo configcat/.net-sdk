@@ -23,7 +23,7 @@ public interface IMatrixTestDescriptor
     public string MatrixResultFileName { get; }
 }
 
-public interface IVariationIdMatrixText { }
+public interface IVariationIdMatrixTest { }
 
 public class MatrixTestRunnerBase<TDescriptor> where TDescriptor : IMatrixTestDescriptor, new()
 {
@@ -34,7 +34,7 @@ public class MatrixTestRunnerBase<TDescriptor> where TDescriptor : IMatrixTestDe
 
     public MatrixTestRunnerBase()
     {
-        this.isVariationIdMatrixTest = DescriptorInstance is IVariationIdMatrixText;
+        this.isVariationIdMatrixTest = DescriptorInstance is IVariationIdMatrixTest;
         this.config = DescriptorInstance.ConfigLocation.FetchConfigCached().Settings;
     }
 

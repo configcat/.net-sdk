@@ -53,14 +53,14 @@ internal static partial class LoggerExtensions
 
     public static FormattableLogMessage FetchFailedDueToUnexpectedError(this LoggerWrapper logger, Exception ex) => logger.Log(
         LogLevel.Error, 1103, ex,
-        "Unexpected error occurred while trying to fetch config JSON.");
+        "Unexpected error occurred while trying to fetch config JSON. It is most likely due to a local network issue. Please make sure your application can reach the ConfigCat CDN servers (or your proxy server) over HTTP.");
 
     public static FormattableLogMessage FetchFailedDueToRedirectLoop(this LoggerWrapper logger) => logger.Log(
         LogLevel.Error, 1104,
         "Redirection loop encountered while trying to fetch config JSON. Please contact us at https://configcat.com/support/");
 
-    public static FormattableLogMessage FetchReceived200WithInvalidBody(this LoggerWrapper logger) => logger.Log(
-        LogLevel.Error, 1105,
+    public static FormattableLogMessage FetchReceived200WithInvalidBody(this LoggerWrapper logger, Exception? ex) => logger.Log(
+        LogLevel.Error, 1105, ex,
         "Fetching config JSON was successful but the HTTP response content was invalid.");
 
     public static FormattableLogMessage FetchReceived304WhenLocalCacheIsEmpty(this LoggerWrapper logger, int statusCode, string? reasonPhrase) => logger.LogInterpolated(

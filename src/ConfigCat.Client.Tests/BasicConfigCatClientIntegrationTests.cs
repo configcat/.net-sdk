@@ -460,4 +460,19 @@ public class BasicConfigCatClientIntegrationTests
             manualPollClient.ForceRefresh();
         });
     }
+
+    [DataTestMethod]
+    [DataRow("specialCharacters", "äöüÄÖÜçéèñışğâ¢™✓😀", "äöüÄÖÜçéèñışğâ¢™✓😀")]
+    [DataRow("specialCharactersHashed", "äöüÄÖÜçéèñışğâ¢™✓😀", "äöüÄÖÜçéèñışğâ¢™✓😀")]
+    public async Task SpecialCharacters_Works(string settingKey, string userId, string expectedValue)
+    {
+        // https://app.configcat.com/v2/e7a75611-4256-49a5-9320-ce158755e3ba/08d5a03c-feb7-af1e-a1fa-40b3329f8bed/08dc016a-675e-4aa2-8492-6f572ad98037/244cf8b0-f604-11e8-b543-f23c917f9d8d
+        using var client = ConfigCatClient.Get("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/u28_1qNyZ0Wz-ldYHIU7-g", options =>
+        {
+            options.PollingMode = PollingModes.LazyLoad();
+        });
+
+        var actual = await client.GetValueAsync(settingKey, "NOT_CAT", new User(userId));
+        Assert.AreEqual(expectedValue, actual);
+    }
 }

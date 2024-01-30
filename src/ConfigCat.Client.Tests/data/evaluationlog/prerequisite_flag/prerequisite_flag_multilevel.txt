@@ -1,0 +1,24 @@
+INFO [5000] Evaluating 'dependentFeatureMultipleLevels'
+  Evaluating targeting rules and applying the first match if any:
+  - IF Flag 'intermediateFeature' EQUALS 'True'
+    (
+      Evaluating prerequisite flag 'intermediateFeature':
+      Evaluating targeting rules and applying the first match if any:
+      - IF Flag 'mainFeatureWithoutUserCondition' EQUALS 'True'
+        (
+          Evaluating prerequisite flag 'mainFeatureWithoutUserCondition':
+          Prerequisite flag evaluation result: 'True'.
+          Condition (Flag 'mainFeatureWithoutUserCondition' EQUALS 'True') evaluates to true.
+        ) => true
+        AND Flag 'mainFeatureWithoutUserCondition' EQUALS 'True'
+        (
+          Evaluating prerequisite flag 'mainFeatureWithoutUserCondition':
+          Prerequisite flag evaluation result: 'True'.
+          Condition (Flag 'mainFeatureWithoutUserCondition' EQUALS 'True') evaluates to true.
+        ) => true
+        THEN 'True' => MATCH, applying rule
+      Prerequisite flag evaluation result: 'True'.
+      Condition (Flag 'intermediateFeature' EQUALS 'True') evaluates to true.
+    )
+    THEN 'Dog' => MATCH, applying rule
+  Returning 'Dog'.

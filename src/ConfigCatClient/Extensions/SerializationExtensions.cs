@@ -83,7 +83,7 @@ internal static class SerializationExtensions
                 var highSurrogate = ushort.Parse(match.Value.AsSpan(2, 4).ToParsable(), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture);
                 var lowSurrogate = ushort.Parse(match.Value.AsSpan(8, 4).ToParsable(), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture);
                 return char.ConvertFromUtf32(char.ConvertToUtf32((char)highSurrogate, (char)lowSurrogate));
-            });
+            }, RegexOptions.CultureInvariant, TimeSpan.FromSeconds(5));
         }
         return json;
 #endif

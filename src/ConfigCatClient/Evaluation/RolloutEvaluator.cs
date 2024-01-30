@@ -864,11 +864,11 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         }
         else if (attributeValue is string[] stringArray)
         {
-            return stringArray.Serialize();
+            return stringArray.Serialize(unescapeAstral: true);
         }
         else if (attributeValue.TryConvertNumericToDouble(out var number))
         {
-            return number.ToString(CultureInfo.InvariantCulture);
+            return number.ToString(CultureInfo.InvariantCulture).Replace("E", "e");
         }
         else if (attributeValue.TryConvertDateTimeToDateTimeOffset(out var dateTimeOffset))
         {

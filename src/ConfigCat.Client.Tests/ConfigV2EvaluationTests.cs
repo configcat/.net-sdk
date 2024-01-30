@@ -588,6 +588,72 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
     }
 
     [DataTestMethod]
+    [DataRow("numberToStringConversion", .12345, "1")]
+    [DataRow("numberToStringConversion", "decimal:0.12345", "1")]
+    [DataRow("numberToStringConversionInt", (sbyte)125, "4")]
+    [DataRow("numberToStringConversionInt", (byte)125, "4")]
+    [DataRow("numberToStringConversionInt", (short)125, "4")]
+    [DataRow("numberToStringConversionInt", (ushort)125, "4")]
+    [DataRow("numberToStringConversionInt", 125, "4")]
+    [DataRow("numberToStringConversionInt", 125u, "4")]
+    [DataRow("numberToStringConversionInt", 125L, "4")]
+    [DataRow("numberToStringConversionInt", 125ul, "4")]
+    [DataRow("numberToStringConversionPositiveExp", -1.23456789e96, "2")]
+    [DataRow("numberToStringConversionNegativeExp", -12345.6789E-100, "4")]
+    [DataRow("numberToStringConversionNaN", double.NaN, "3")]
+    [DataRow("numberToStringConversionPositiveInf", double.PositiveInfinity, "4")]
+    [DataRow("numberToStringConversionNegativeInf", double.NegativeInfinity, "3")]
+    [DataRow("dateToStringConversion", "datetime:2023-03-31T23:59:59.9990000Z", "3")]
+    [DataRow("dateToStringConversion", "datetimeoffset:2023-03-31T23:59:59.9990000Z", "3")]
+    [DataRow("dateToStringConversion", 1680307199.999, "3")]
+    [DataRow("dateToStringConversion", "decimal:1680307199.999", "3")]
+    [DataRow("dateToStringConversionNaN", double.NaN, "3")]
+    [DataRow("dateToStringConversionPositiveInf", double.PositiveInfinity, "1")]
+    [DataRow("dateToStringConversionNegativeInf", double.NegativeInfinity, "5")]
+    [DataRow("stringArrayToStringConversion", new[] { "read", "Write", " eXecute " }, "4")]
+    [DataRow("stringArrayToStringConversionEmpty", new string[0], "5")]
+    [DataRow("stringArrayToStringConversionSpecialChars", new[] { "+<>%\"'\\/\t\r\n" }, "3")]
+    [DataRow("stringArrayToStringConversionUnicode", new[] { "äöüÄÖÜçéèñışğâ¢™✓😀" }, "2")]
+    public void ComparisonAttributeConversionToCanonicalStringRepresentation_Test(string key, object customAttributeValue, string expectedReturnValue)
+    {
+        var config = new ConfigLocation.LocalFile("data", "comparison_attribute_conversion.json").FetchConfig();
+
+        var logger = new Mock<IConfigCatLogger>().Object.AsWrapper();
+        var evaluator = new RolloutEvaluator(logger);
+
+        if (customAttributeValue is string s)
+        {
+            const string decimalPrefix = "decimal:", dateTimePrefix = "datetime:", dateTimeOffsetPrefix = "datetimeoffset:";
+            if (s.StartsWith(decimalPrefix, StringComparison.Ordinal))
+            {
+                customAttributeValue = decimal.Parse(s.Substring(decimalPrefix.Length));
+            }
+            else if (s.StartsWith(dateTimePrefix, StringComparison.Ordinal))
+            {
+                var dateTimeStyle = s.EndsWith("Z", StringComparison.Ordinal) ? DateTimeStyles.AdjustToUniversal : DateTimeStyles.None;
+                customAttributeValue = DateTime.ParseExact(s.Substring(dateTimePrefix.Length), "o", CultureInfo.InvariantCulture, dateTimeStyle);
+            }
+            else if (s.StartsWith(dateTimeOffsetPrefix, StringComparison.Ordinal))
+            {
+                customAttributeValue = DateTimeOffset.ParseExact(s.Substring(dateTimeOffsetPrefix.Length), "o", CultureInfo.InvariantCulture);
+            }
+        }
+
+        var user = new User("12345")
+        {
+            Custom =
+            {
+                ["Custom1"] = customAttributeValue
+            }
+        };
+
+        const string defaultValue = "default";
+        var actualReturnValue = evaluator.Evaluate(config!.Settings, key, defaultValue, user, remoteConfig: null, logger).Value;
+
+        Assert.AreEqual(expectedReturnValue, actualReturnValue);
+    }
+
+    [DataTestMethod]
     [DataRow("isoneof", "no trim")]
     [DataRow("isnotoneof", "no trim")]
     [DataRow("isoneofhashed", "no trim")]

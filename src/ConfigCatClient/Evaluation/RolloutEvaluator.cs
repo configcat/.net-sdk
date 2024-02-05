@@ -2,7 +2,6 @@ using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Linq;
 using System.Text;
 using ConfigCat.Client.Utils;
 using ConfigCat.Client.Versioning;
@@ -35,9 +34,9 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
             logBuilder.Append($"Evaluating '{context.Key}'");
 
-            if (context.IsUserAvailable)
+            if (context.User is not null)
             {
-                logBuilder.Append($" for User '{context.UserAttributes.Serialize()}'");
+                logBuilder.Append($" for User '{context.User.GetAllAttributes().Serialize()}'");
             }
 
             logBuilder.IncreaseIndent();
@@ -178,7 +177,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
     {
         var logBuilder = context.LogBuilder;
 
-        if (!context.IsUserAvailable)
+        if (context.User is null)
         {
             logBuilder?.NewLine("Skipping % options because the User Object is missing.");
 
@@ -192,9 +191,20 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             return false;
         }
 
-        var percentageOptionsAttributeName = context.Setting.PercentageOptionsAttribute ?? nameof(User.Identifier);
+        var percentageOptionsAttributeName = context.Setting.PercentageOptionsAttribute;
+        object? percentageOptionsAttributeValue;
 
-        if (!context.UserAttributes.TryGetValue(percentageOptionsAttributeName, out var percentageOptionsAttributeValue))
+        if (percentageOptionsAttributeName is null)
+        {
+            percentageOptionsAttributeName = nameof(User.Identifier);
+            percentageOptionsAttributeValue = context.User.Identifier;
+        }
+        else
+        {
+            percentageOptionsAttributeValue = context.User.GetAttribute(percentageOptionsAttributeName);
+        }
+
+        if (percentageOptionsAttributeValue is null)
         {
             logBuilder?.NewLine().Append($"Skipping % options because the User.{percentageOptionsAttributeName} attribute is missing.");
 
@@ -334,7 +344,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         var logBuilder = context.LogBuilder;
         logBuilder?.AppendUserCondition(condition);
 
-        if (!context.IsUserAvailable)
+        if (context.User is null)
         {
             if (!context.IsMissingUserObjectLogged)
             {
@@ -347,8 +357,9 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         }
 
         var userAttributeName = condition.ComparisonAttribute ?? throw new InvalidOperationException("Comparison attribute name is missing.");
+        var userAttributeValue = context.User.GetAttribute(userAttributeName);
 
-        if (!context.UserAttributes.TryGetValue(userAttributeName, out var userAttributeValue) || userAttributeValue is string { Length: 0 })
+        if (userAttributeValue is null || userAttributeValue is string { Length: 0 })
         {
             this.logger.UserObjectAttributeIsMissing(condition.ToString(), context.Key, userAttributeName);
             error = string.Format(CultureInfo.InvariantCulture, MissingUserAttributeError, userAttributeName);
@@ -723,7 +734,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             throw new InvalidOperationException($"Circular dependency detected between the following depending flags: {dependencyCycle}.");
         }
 
-        var prerequisiteFlagContext = new EvaluateContext(prerequisiteFlagKey!, prerequisiteFlag!, ref context);
+        var prerequisiteFlagContext = new EvaluateContext(prerequisiteFlagKey!, prerequisiteFlag!, context);
 
         logBuilder?
             .NewLine("(")
@@ -762,7 +773,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         var logBuilder = context.LogBuilder;
         logBuilder?.AppendSegmentCondition(condition);
 
-        if (!context.IsUserAvailable)
+        if (context.User is null)
         {
             if (!context.IsMissingUserObjectLogged)
             {

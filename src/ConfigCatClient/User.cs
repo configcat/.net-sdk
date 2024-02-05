@@ -78,6 +78,18 @@ public class User
         get => this.custom ??= new Dictionary<string, object>();
         set => this.custom = value;
     }
+
+    internal object? GetAttribute(string name)
+    {
+        return name switch
+        {
+            nameof(Identifier) => Identifier,
+            nameof(Email) => Email,
+            nameof(Country) => Country,
+            _ => this.custom is not null && this.custom.TryGetValue(name, out var value) ? value : null
+        };
+    }
+
     /// <summary>
     /// Returns all attributes of the user.
     /// </summary>

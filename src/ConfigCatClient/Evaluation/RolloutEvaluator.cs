@@ -868,7 +868,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         }
         else if (attributeValue.TryConvertNumericToDouble(out var number))
         {
-            var format = Math.Abs(number) is > 1e-7 and < 1e21
+            var format = Math.Abs(number) is >= 1e-6 and < 1e21
                 ? "0.#################"
                 : "0.#################e+0";
             return number.ToString(format, CultureInfo.InvariantCulture);

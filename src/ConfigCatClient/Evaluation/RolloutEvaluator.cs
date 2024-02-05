@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 using ConfigCat.Client.Utils;
 using ConfigCat.Client.Versioning;
@@ -942,8 +943,11 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         if (attributeValue is string[] stringArray
             || attributeValue is string json && (stringArray = json.DeserializeOrDefault<string[]>()!) is not null)
         {
-            error = null;
-            return stringArray;
+            if (!Array.Exists(stringArray, item => item is null))
+            {
+                error = null;
+                return stringArray;
+            }
         }
 
         error = HandleInvalidUserAttribute(condition, key, attributeName, $"'{attributeValue}' is not a valid string array");

@@ -111,7 +111,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         }
 
         var percentageOptions = context.Setting.PercentageOptions;
-        if (percentageOptions.Length > 0 && TryEvaluatePercentageOptions(percentageOptions, targetingRule: null, ref context, out evaluateResult))
+        if (percentageOptions.Length > 0 && TryEvaluatePercentageOptions(percentageOptions, matchedTargetingRule: null, ref context, out evaluateResult))
         {
             return evaluateResult;
         }
@@ -173,7 +173,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return false;
     }
 
-    private bool TryEvaluatePercentageOptions(PercentageOption[] percentageOptions, TargetingRule? targetingRule, ref EvaluateContext context, out EvaluateResult result)
+    private bool TryEvaluatePercentageOptions(PercentageOption[] percentageOptions, TargetingRule? matchedTargetingRule, ref EvaluateContext context, out EvaluateResult result)
     {
         var logBuilder = context.LogBuilder;
 
@@ -244,10 +244,13 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                 continue;
             }
 
-            var percentageOptionValue = percentageOption.Value.GetValue(throwIfInvalid: false);
-            logBuilder?.NewLine().Append($"- Hash value {hashValue} selects % option {i + 1} ({percentageOption.Percentage}%), '{percentageOptionValue ?? EvaluateLogHelper.InvalidValuePlaceholder}'.");
+            if (logBuilder is not null)
+            {
+                var percentageOptionValue = percentageOption.Value.GetValue(throwIfInvalid: false) ?? EvaluateLogHelper.InvalidValuePlaceholder;
+                logBuilder.NewLine().Append($"- Hash value {hashValue} selects % option {i + 1} ({percentageOption.Percentage}%), '{percentageOptionValue}'.");
+            }
 
-            result = new EvaluateResult(percentageOption, matchedTargetingRule: targetingRule, matchedPercentageOption: percentageOption);
+            result = new EvaluateResult(percentageOption, matchedTargetingRule, matchedPercentageOption: percentageOption);
             return true;
         }
 

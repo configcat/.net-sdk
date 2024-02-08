@@ -30,6 +30,12 @@
       },
       "returnValue": "Horse",
       "expectedLog": "prerequisite_flag.txt"
+    },
+    {
+      "key": "dependentFeatureMultipleLevels",
+      "defaultValue": "default",
+      "returnValue": "Dog",
+      "expectedLog": "prerequisite_flag_multilevel.txt"
     }
   ]
 }

@@ -34,9 +34,9 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
             logBuilder.Append($"Evaluating '{context.Key}'");
 
-            if (context.IsUserAvailable)
+            if (context.User is not null)
             {
-                logBuilder.Append($" for User '{context.UserAttributes.Serialize()}'");
+                logBuilder.Append($" for User '{context.User.GetAllAttributes().Serialize()}'");
             }
 
             logBuilder.IncreaseIndent();
@@ -111,7 +111,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         }
 
         var percentageOptions = context.Setting.PercentageOptions;
-        if (percentageOptions.Length > 0 && TryEvaluatePercentageOptions(percentageOptions, targetingRule: null, ref context, out evaluateResult))
+        if (percentageOptions.Length > 0 && TryEvaluatePercentageOptions(percentageOptions, matchedTargetingRule: null, ref context, out evaluateResult))
         {
             return evaluateResult;
         }
@@ -173,11 +173,11 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return false;
     }
 
-    private bool TryEvaluatePercentageOptions(PercentageOption[] percentageOptions, TargetingRule? targetingRule, ref EvaluateContext context, out EvaluateResult result)
+    private bool TryEvaluatePercentageOptions(PercentageOption[] percentageOptions, TargetingRule? matchedTargetingRule, ref EvaluateContext context, out EvaluateResult result)
     {
         var logBuilder = context.LogBuilder;
 
-        if (!context.IsUserAvailable)
+        if (context.User is null)
         {
             logBuilder?.NewLine("Skipping % options because the User Object is missing.");
 
@@ -191,9 +191,20 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             return false;
         }
 
-        var percentageOptionsAttributeName = context.Setting.PercentageOptionsAttribute ?? nameof(User.Identifier);
+        var percentageOptionsAttributeName = context.Setting.PercentageOptionsAttribute;
+        object? percentageOptionsAttributeValue;
 
-        if (!context.UserAttributes.TryGetValue(percentageOptionsAttributeName, out var percentageOptionsAttributeValue))
+        if (percentageOptionsAttributeName is null)
+        {
+            percentageOptionsAttributeName = nameof(User.Identifier);
+            percentageOptionsAttributeValue = context.User.Identifier;
+        }
+        else
+        {
+            percentageOptionsAttributeValue = context.User.GetAttribute(percentageOptionsAttributeName);
+        }
+
+        if (percentageOptionsAttributeValue is null)
         {
             logBuilder?.NewLine().Append($"Skipping % options because the User.{percentageOptionsAttributeName} attribute is missing.");
 
@@ -233,10 +244,13 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                 continue;
             }
 
-            var percentageOptionValue = percentageOption.Value.GetValue(throwIfInvalid: false);
-            logBuilder?.NewLine().Append($"- Hash value {hashValue} selects % option {i + 1} ({percentageOption.Percentage}%), '{percentageOptionValue ?? EvaluateLogHelper.InvalidValuePlaceholder}'.");
+            if (logBuilder is not null)
+            {
+                var percentageOptionValue = percentageOption.Value.GetValue(throwIfInvalid: false) ?? EvaluateLogHelper.InvalidValuePlaceholder;
+                logBuilder.NewLine().Append($"- Hash value {hashValue} selects % option {i + 1} ({percentageOption.Percentage}%), '{percentageOptionValue}'.");
+            }
 
-            result = new EvaluateResult(percentageOption, matchedTargetingRule: targetingRule, matchedPercentageOption: percentageOption);
+            result = new EvaluateResult(percentageOption, matchedTargetingRule, matchedPercentageOption: percentageOption);
             return true;
         }
 
@@ -284,7 +298,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                     break;
 
                 case PrerequisiteFlagCondition prerequisiteFlagCondition:
-                    conditionResult = EvaluatePrerequisiteFlagCondition(prerequisiteFlagCondition, ref context, out error);
+                    conditionResult = EvaluatePrerequisiteFlagCondition(prerequisiteFlagCondition, ref context);
                     newLineBeforeThen = true;
                     break;
 
@@ -333,7 +347,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         var logBuilder = context.LogBuilder;
         logBuilder?.AppendUserCondition(condition);
 
-        if (!context.IsUserAvailable)
+        if (context.User is null)
         {
             if (!context.IsMissingUserObjectLogged)
             {
@@ -346,8 +360,9 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         }
 
         var userAttributeName = condition.ComparisonAttribute ?? throw new InvalidOperationException("Comparison attribute name is missing.");
+        var userAttributeValue = context.User.GetAttribute(userAttributeName);
 
-        if (!context.UserAttributes.TryGetValue(userAttributeName, out var userAttributeValue) || userAttributeValue is string { Length: 0 })
+        if (userAttributeValue is null || userAttributeValue is string { Length: 0 })
         {
             this.logger.UserObjectAttributeIsMissing(condition.ToString(), context.Key, userAttributeName);
             error = string.Format(CultureInfo.InvariantCulture, MissingUserAttributeError, userAttributeName);
@@ -693,10 +708,8 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return negate;
     }
 
-    private bool EvaluatePrerequisiteFlagCondition(PrerequisiteFlagCondition condition, ref EvaluateContext context, out string? error)
+    private bool EvaluatePrerequisiteFlagCondition(PrerequisiteFlagCondition condition, ref EvaluateContext context)
     {
-        error = null;
-
         var logBuilder = context.LogBuilder;
         logBuilder?.AppendPrerequisiteFlagCondition(condition);
 
@@ -722,7 +735,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             throw new InvalidOperationException($"Circular dependency detected between the following depending flags: {dependencyCycle}.");
         }
 
-        var prerequisiteFlagContext = new EvaluateContext(prerequisiteFlagKey!, prerequisiteFlag!, ref context);
+        var prerequisiteFlagContext = new EvaluateContext(prerequisiteFlagKey!, prerequisiteFlag!, context);
 
         logBuilder?
             .NewLine("(")
@@ -744,7 +757,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         };
 
         logBuilder?
-            .NewLine().Append($"Prerequisite flag evaluation result: '{prerequisiteFlagValue ?? EvaluateLogHelper.InvalidValuePlaceholder}'.")
+            .NewLine().Append($"Prerequisite flag evaluation result: '{prerequisiteFlagValue}'.")
             .NewLine("Condition (")
                 .AppendPrerequisiteFlagCondition(condition)
                 .Append(") evaluates to ").AppendEvaluationResult(result).Append(".")
@@ -761,7 +774,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         var logBuilder = context.LogBuilder;
         logBuilder?.AppendSegmentCondition(condition);
 
-        if (!context.IsUserAvailable)
+        if (context.User is null)
         {
             if (!context.IsMissingUserObjectLogged)
             {
@@ -864,11 +877,14 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         }
         else if (attributeValue is string[] stringArray)
         {
-            return stringArray.Serialize();
+            return stringArray.Serialize(unescapeAstral: true);
         }
         else if (attributeValue.TryConvertNumericToDouble(out var number))
         {
-            return number.ToString(CultureInfo.InvariantCulture);
+            var format = Math.Abs(number) is >= 1e-6 and < 1e21
+                ? "0.#################"
+                : "0.#################e+0";
+            return number.ToString(format, CultureInfo.InvariantCulture);
         }
         else if (attributeValue.TryConvertDateTimeToDateTimeOffset(out var dateTimeOffset))
         {
@@ -939,8 +955,11 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         if (attributeValue is string[] stringArray
             || attributeValue is string json && (stringArray = json.DeserializeOrDefault<string[]>()!) is not null)
         {
-            error = null;
-            return stringArray;
+            if (!Array.Exists(stringArray, item => item is null))
+            {
+                error = null;
+                return stringArray;
+            }
         }
 
         error = HandleInvalidUserAttribute(condition, key, attributeName, $"'{attributeValue}' is not a valid string array");

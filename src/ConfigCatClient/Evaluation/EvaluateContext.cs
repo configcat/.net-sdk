@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client.Evaluation;
@@ -8,15 +7,8 @@ internal struct EvaluateContext
 {
     public readonly string Key;
     public readonly Setting Setting;
+    public readonly User? User;
     public readonly IReadOnlyDictionary<string, Setting> Settings;
-
-    private readonly User? user;
-
-    [MemberNotNullWhen(true, nameof(UserAttributes))]
-    public readonly bool IsUserAvailable => this.user is not null;
-
-    private IReadOnlyDictionary<string, object>? userAttributes;
-    public IReadOnlyDictionary<string, object>? UserAttributes => this.userAttributes ??= this.user?.GetAllAttributes();
 
     private List<string>? visitedFlags;
     public List<string> VisitedFlags => this.visitedFlags ??= new List<string>();
@@ -30,19 +22,17 @@ internal struct EvaluateContext
     {
         this.Key = key;
         this.Setting = setting;
-        this.user = user;
+        this.User = user;
         this.Settings = settings;
 
-        this.userAttributes = null;
         this.visitedFlags = null;
         this.IsMissingUserObjectLogged = this.IsMissingUserObjectAttributeLogged = false;
         this.LogBuilder = null; // initialized by RolloutEvaluator.Evaluate
     }
 
-    public EvaluateContext(string key, Setting setting, ref EvaluateContext dependentFlagContext)
-        : this(key, setting, dependentFlagContext.user, dependentFlagContext.Settings)
+    public EvaluateContext(string key, Setting setting, in EvaluateContext dependentFlagContext)
+        : this(key, setting, dependentFlagContext.User, dependentFlagContext.Settings)
     {
-        this.userAttributes = dependentFlagContext.UserAttributes;
         this.visitedFlags = dependentFlagContext.VisitedFlags; // crucial to use the property here to make sure the list is created!
         this.LogBuilder = dependentFlagContext.LogBuilder;
     }

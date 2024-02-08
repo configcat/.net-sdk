@@ -1,0 +1,777 @@
+{
+  "p": {
+    "u": "https://test-cdn-eu.configcat.com",
+    "r": 0,
+    "s": "zsVN1DQ9Oa2FjFc96MvPfMM5Vs+KKV00NyybJZipyf4="
+  },
+  "f": {
+    "arraycontainsanyof": {
+      "t": 1,
+      "r": [
+        {
+          "c": [
+            {
+              "u": {
+                "a": "Country",
+                "c": 34,
+                "l": [
+                  " USA "
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "34 trim"
+            },
+            "i": "99c90883"
+          }
+        }
+      ],
+      "v": {
+        "s": "no trim"
+      },
+      "i": "9c66d87c"
+    },
+    "arraycontainsanyofhashed": {
+      "t": 1,
+      "r": [
+        {
+          "c": [
+            {
+              "u": {
+                "a": "Country",
+                "c": 26,
+                "l": [
+                  " 028fdb841bf3b2cc27fce407da08f87acd3a58a08c67d819cdb9351857b14237 "
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "26 trim"
+            },
+            "i": "706c94b6"
+          }
+        }
+      ],
+      "v": {
+        "s": "no trim"
+      },
+      "i": "3b342be3"
+    },
+    "arraynotcontainsanyof": {
+      "t": 1,
+      "r": [
+        {
+          "c": [
+            {
+              "u": {
+                "a": "Country",
+                "c": 35,
+                "l": [
+                  " USA "
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "no trim"
+            },
+            "i": "4eeb2176"
+          }
+        }
+      ],
+      "v": {
+        "s": "35 trim"
+      },
+      "i": "98bc8ebb"
+    },
+    "arraynotcontainsanyofhashed": {
+      "t": 1,
+      "r": [
+        {
+          "c": [
+            {
+              "u": {
+                "a": "Country",
+                "c": 27,
+                "l": [
+                  " 60b747c290642863f9a6c68773ed309a9fb02c6c1ae65c77037046918f4c1d3c "
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "no trim"
+            },
+            "i": "8f248790"
+          }
+        }
+      ],
+      "v": {
+        "s": "27 trim"
+      },
+      "i": "278ddbe9"
+    },
+    "containsanyof": {
+      "t": 1,
+      "r": [
+        {
+          "c": [
+            {
+              "u": {
+                "a": "Identifier",
+                "c": 2,
+                "l": [
+                  " 12345 "
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "2 trim"
+            },
+            "i": "f750380a"
+          }
+        }
+      ],
+      "v": {
+        "s": "no trim"
+      },
+      "i": "c3ab37cf"
+    },
+    "endswithanyof": {
+      "t": 1,
+      "r": [
+        {
+          "c": [
+            {
+              "u": {
+                "a": "Identifier",
+                "c": 32,
+                "l": [
+                  " 12345 "
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "32 trim"
+            },
+            "i": "0ac9e321"
+          }
+        }
+      ],
+      "v": {
+        "s": "no trim"
+      },
+      "i": "777456df"
+    },
+    "endswithanyofhashed": {
+      "t": 1,
+      "r": [
+        {
+          "c": [
+            {
+              "u": {
+                "a": "Identifier",
+                "c": 24,
+                "l": [
+                  " 5_a6ce5e2838d4e0c27cd705c90f39e60d79056062983c39951668cf947ec406c2 "
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "24 trim"
+            },
+            "i": "0364bf98"
+          }
+        }
+      ],
+      "v": {
+        "s": "no trim"
+      },
+      "i": "2f6fc77b"
+    },
+    "equals": {
+      "t": 1,
+      "r": [
+        {
+          "c": [
+            {
+              "u": {
+                "a": "Identifier",
+                "c": 28,
+                "s": " 12345 "
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "28 trim"
+            },
+            "i": "f2a682ca"
+          }
+        }
+      ],
+      "v": {
+        "s": "no trim"
+      },
+      "i": "0f806923"
+    },
+    "equalshashed": {
+      "t": 1,
+      "r": [
+        {
+          "c": [
+            {
+              "u": {
+                "a": "Identifier",
+                "c": 20,
+                "s": " a2868640b1fe24c98e50b168756d83fd03779dd4349d6ddab5d7d6ef8dad13bd "
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "20 trim"
+            },
+            "i": "6f1798e9"
+          }
+        }
+      ],
+      "v": {
+        "s": "no trim"
+      },
+      "i": "771ecd4d"
+    },
+    "isnotoneof": {
+      "t": 1,
+      "r": [
+        {
+          "c": [
+            {
+              "u": {
+                "a": "Identifier",
+                "c": 1,
+                "l": [
+                  " 12345 "
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "no trim"
+            },
+            "i": "79d49e05"
+          }
+        }
+      ],
+      "v": {
+        "s": "1 trim"
+      },
+      "i": "61d13448"
+    },
+    "isnotoneofhashed": {
+      "t": 1,
+      "r": [
+        {
+          "c": [
+            {
+              "u": {
+                "a": "Identifier",
+                "c": 1,
+                "l": [
+                  " 12345 "
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "no trim"
+            },
+            "i": "1c2df623"
+          }
+        }
+      ],
+      "v": {
+        "s": "17 trim"
+      },
+      "i": "0bc3daa1"
+    },
+    "isoneof": {
+      "t": 1,
+      "r": [
+        {
+          "c": [
+            {
+              "u": {
+                "a": "Identifier",
+                "c": 0,
+                "l": [
+                  " 12345 "
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "0 trim"
+            },
+            "i": "308f0749"
+          }
+        }
+      ],
+      "v": {
+        "s": "no trim"
+      },
+      "i": "90984858"
+    },
+    "isoneofhashed": {
+      "t": 1,
+      "r": [
+        {
+          "c": [
+            {
+              "u": {
+                "a": "Identifier",
+                "c": 16,
+                "l": [
+                  " 55ce90920d20fc0bf8078471062a85f82cc5ea2226012a901a5045775bace0f4 "
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "16 trim"
+            },
+            "i": "cd78a85d"
+          }
+        }
+      ],
+      "v": {
+        "s": "no trim"
+      },
+      "i": "30b9483f"
+    },
+    "notcontainsanyof": {
+      "t": 1,
+      "r": [
+        {
+          "c": [
+            {
+              "u": {
+                "a": "Identifier",
+                "c": 3,
+                "l": [
+                  " 12345 "
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "no trim"
+            },
+            "i": "4b8760c4"
+          }
+        }
+      ],
+      "v": {
+        "s": "3 trim"
+      },
+      "i": "f91ecf16"
+    },
+    "notendswithanyof": {
+      "t": 1,
+      "r": [
+        {
+          "c": [
+            {
+              "u": {
+                "a": "Identifier",
+                "c": 33,
+                "l": [
+                  " 12345 "
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "no trim"
+            },
+            "i": "b0d7203e"
+          }
+        }
+      ],
+      "v": {
+        "s": "33 trim"
+      },
+      "i": "89740c7e"
+    },
+    "notendswithanyofhashed": {
+      "t": 1,
+      "r": [
+        {
+          "c": [
+            {
+              "u": {
+                "a": "Identifier",
+                "c": 25,
+                "l": [
+                  " 5_c517fc957907e30b6a790540a20172a3a5d3a7458a85e340a7b1a1ac982be278 "
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "no trim"
+            },
+            "i": "059f59e3"
+          }
+        }
+      ],
+      "v": {
+        "s": "25 trim"
+      },
+      "i": "c1e95c48"
+    },
+    "notequals": {
+      "t": 1,
+      "r": [
+        {
+          "c": [
+            {
+              "u": {
+                "a": "Identifier",
+                "c": 29,
+                "s": " 12345 "
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "no trim"
+            },
+            "i": "af1f1e95"
+          }
+        }
+      ],
+      "v": {
+        "s": "29 trim"
+      },
+      "i": "219e6bac"
+    },
+    "notequalshashed": {
+      "t": 1,
+      "r": [
+        {
+          "c": [
+            {
+              "u": {
+                "a": "Identifier",
+                "c": 21,
+                "s": " 31ceae14b865b0842e93fdc3a42a7e45780ccc41772ca9355db50e09d81e13ef "
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "no trim"
+            },
+            "i": "9fe2b26b"
+          }
+        }
+      ],
+      "v": {
+        "s": "21 trim"
+      },
+      "i": "9211e9f1"
+    },
+    "notstartwithanyof": {
+      "t": 1,
+      "r": [
+        {
+          "c": [
+            {
+              "u": {
+                "a": "Identifier",
+                "c": 31,
+                "l": [
+                  " 12345 "
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "no trim"
+            },
+            "i": "ebe3ed2d"
+          }
+        }
+      ],
+      "v": {
+        "s": "31 trim"
+      },
+      "i": "7deb7219"
+    },
+    "notstartwithanyofhashed": {
+      "t": 1,
+      "r": [
+        {
+          "c": [
+            {
+              "u": {
+                "a": "Identifier",
+                "c": 23,
+                "l": [
+                  " 5_3643bbdd1bce4021fe4dbd55e6cc2f4902e4f50e592597d1a2d0e944fb7dfb42 "
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "no trim"
+            },
+            "i": "7b606e54"
+          }
+        }
+      ],
+      "v": {
+        "s": "23 trim"
+      },
+      "i": "edec740e"
+    },
+    "semvergreater": {
+      "t": 1,
+      "r": [
+        {
+          "c": [
+            {
+              "u": {
+                "a": "Version",
+                "c": 8,
+                "s": " 0.1.1 "
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "8 trim"
+            },
+            "i": "25edfdc1"
+          }
+        }
+      ],
+      "v": {
+        "s": "no trim"
+      },
+      "i": "cb0224fd"
+    },
+    "semvergreaterequals": {
+      "t": 1,
+      "r": [
+        {
+          "c": [
+            {
+              "u": {
+                "a": "Version",
+                "c": 9,
+                "s": " 0.1.1 "
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "9 trim"
+            },
+            "i": "d8960b43"
+          }
+        }
+      ],
+      "v": {
+        "s": "no trim"
+      },
+      "i": "530ea45c"
+    },
+    "semverisnotoneof": {
+      "t": 1,
+      "r": [
+        {
+          "c": [
+            {
+              "u": {
+                "a": "Version",
+                "c": 5,
+                "l": [
+                  " 1.0.1 "
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "5 trim"
+            },
+            "i": "cb1bad57"
+          }
+        }
+      ],
+      "v": {
+        "s": "no trim"
+      },
+      "i": "4a7025a4"
+    },
+    "semverisoneof": {
+      "t": 1,
+      "r": [
+        {
+          "c": [
+            {
+              "u": {
+                "a": "Version",
+                "c": 4,
+                "l": [
+                  " 1.0.0 "
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "4 trim"
+            },
+            "i": "6cc37494"
+          }
+        }
+      ],
+      "v": {
+        "s": "no trim"
+      },
+      "i": "842a56b5"
+    },
+    "semverless": {
+      "t": 1,
+      "r": [
+        {
+          "c": [
+            {
+              "u": {
+                "a": "Version",
+                "c": 6,
+                "s": " 1.0.1 "
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "6 trim"
+            },
+            "i": "64c04b67"
+          }
+        }
+      ],
+      "v": {
+        "s": "no trim"
+      },
+      "i": "ae58de40"
+    },
+    "semverlessequals": {
+      "t": 1,
+      "r": [
+        {
+          "c": [
+            {
+              "u": {
+                "a": "Version",
+                "c": 7,
+                "s": " 1.0.1 "
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "7 trim"
+            },
+            "i": "7c62748d"
+          }
+        }
+      ],
+      "v": {
+        "s": "no trim"
+      },
+      "i": "631a1888"
+    },
+    "startwithanyof": {
+      "t": 1,
+      "r": [
+        {
+          "c": [
+            {
+              "u": {
+                "a": "Identifier",
+                "c": 30,
+                "l": [
+                  " 12345 "
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "30 trim"
+            },
+            "i": "475a9c4f"
+          }
+        }
+      ],
+      "v": {
+        "s": "no trim"
+      },
+      "i": "5a73105a"
+    },
+    "startwithanyofhashed": {
+      "t": 1,
+      "r": [
+        {
+          "c": [
+            {
+              "u": {
+                "a": "Identifier",
+                "c": 22,
+                "l": [
+                  " 5_3e052709552ca9d5bd6c459cb7ab0389f3210f6aafc3d006a2481635e9614a7c "
+                ]
+              }
+            }
+          ],
+          "s": {
+            "v": {
+              "s": "22 trim"
+            },
+            "i": "7650175d"
+          }
+        }
+      ],
+      "v": {
+        "s": "no trim"
+      },
+      "i": "a38edbee"
+    }
+  }
+}

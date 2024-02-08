@@ -2,9 +2,10 @@
 using System.IO;
 using Newtonsoft.Json;
 #else
+using System.Globalization;
 using System.Text.Encodings.Web;
 using System.Text.Json;
-using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 #endif
 
 namespace System;
@@ -51,12 +52,40 @@ internal static class SerializationExtensions
         }
     }
 
-    public static string Serialize<T>(this T objectToSerialize)
+    public static string Serialize<T>(this T objectToSerialize, bool unescapeAstral = false)
     {
 #if USE_NEWTONSOFT_JSON
         return JsonConvert.SerializeObject(objectToSerialize);
 #else
-        return JsonSerializer.Serialize(objectToSerialize, TolerantSerializerOptions);
+        var json = JsonSerializer.Serialize(objectToSerialize, TolerantSerializerOptions);
+        if (unescapeAstral)
+        {
+            // NOTE: There's no easy way to configure System.Text.Json not to encode surrogate pairs (i.e. Unicode code points above U+FFFF).
+            // The only way of doing it during serialization (https://github.com/dotnet/runtime/issues/54193#issuecomment-861155179) needs unsafe code,
+            // which we want to avoid in this project. So, we resort to the following regex-based workaround:
+            json = Regex.Replace(json, @"\\u[dD][89abAB][0-9a-fA-F]{2}\\u[dD][c-fC-F][0-9a-fA-F]{2}", match =>
+            {
+                // Ignore possible matches that aren't really escaped ('\\uD800\uDC00', '\\\\uD800\uDC00', etc.)
+                var isEscaped = true;
+                for (var i = match.Index - 1; i >= 0; i--)
+                {
+                    if (json[i] != '\\')
+                    {
+                        break;
+                    }
+                    isEscaped = !isEscaped;
+                }
+                if (!isEscaped)
+                {
+                    return match.Value;
+                }
+
+                var highSurrogate = ushort.Parse(match.Value.AsSpan(2, 4).ToParsable(), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture);
+                var lowSurrogate = ushort.Parse(match.Value.AsSpan(8, 4).ToParsable(), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture);
+                return char.ConvertFromUtf32(char.ConvertToUtf32((char)highSurrogate, (char)lowSurrogate));
+            }, RegexOptions.CultureInvariant, TimeSpan.FromSeconds(5));
+        }
+        return json;
 #endif
     }
 }

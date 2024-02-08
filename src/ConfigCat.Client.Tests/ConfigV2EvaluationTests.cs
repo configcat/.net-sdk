@@ -586,4 +586,190 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
 
         Assert.AreEqual(expectedReturnValue, evaluationDetails.Value);
     }
+
+    [DataTestMethod]
+    [DataRow("numberToStringConversion", .12345, "1")]
+    [DataRow("numberToStringConversion", "decimal:0.12345", "1")]
+    [DataRow("numberToStringConversionInt", (sbyte)125, "4")]
+    [DataRow("numberToStringConversionInt", (byte)125, "4")]
+    [DataRow("numberToStringConversionInt", (short)125, "4")]
+    [DataRow("numberToStringConversionInt", (ushort)125, "4")]
+    [DataRow("numberToStringConversionInt", 125, "4")]
+    [DataRow("numberToStringConversionInt", 125u, "4")]
+    [DataRow("numberToStringConversionInt", 125L, "4")]
+    [DataRow("numberToStringConversionInt", 125ul, "4")]
+    [DataRow("numberToStringConversionPositiveExp", -1.23456789e96, "2")]
+    [DataRow("numberToStringConversionNegativeExp", -12345.6789E-100, "4")]
+    [DataRow("numberToStringConversionNaN", double.NaN, "3")]
+    [DataRow("numberToStringConversionPositiveInf", double.PositiveInfinity, "4")]
+    [DataRow("numberToStringConversionNegativeInf", double.NegativeInfinity, "3")]
+    [DataRow("dateToStringConversion", "datetime:2023-03-31T23:59:59.9990000Z", "3")]
+    [DataRow("dateToStringConversion", "datetimeoffset:2023-03-31T23:59:59.9990000Z", "3")]
+    [DataRow("dateToStringConversion", 1680307199.999, "3")]
+    [DataRow("dateToStringConversion", "decimal:1680307199.999", "3")]
+    [DataRow("dateToStringConversionNaN", double.NaN, "3")]
+    [DataRow("dateToStringConversionPositiveInf", double.PositiveInfinity, "1")]
+    [DataRow("dateToStringConversionNegativeInf", double.NegativeInfinity, "5")]
+    [DataRow("stringArrayToStringConversion", new[] { "read", "Write", " eXecute " }, "4")]
+    [DataRow("stringArrayToStringConversionEmpty", new string[0], "5")]
+    [DataRow("stringArrayToStringConversionSpecialChars", new[] { "+<>%\"'\\/\t\r\n" }, "3")]
+    [DataRow("stringArrayToStringConversionUnicode", new[] { "äöüÄÖÜçéèñışğâ¢™✓😀" }, "2")]
+    public void ComparisonAttributeConversionToCanonicalStringRepresentation_Test(string key, object customAttributeValue, string expectedReturnValue)
+    {
+        var config = new ConfigLocation.LocalFile("data", "comparison_attribute_conversion.json").FetchConfig();
+
+        var logger = new Mock<IConfigCatLogger>().Object.AsWrapper();
+        var evaluator = new RolloutEvaluator(logger);
+
+        if (customAttributeValue is string s)
+        {
+            const string decimalPrefix = "decimal:", dateTimePrefix = "datetime:", dateTimeOffsetPrefix = "datetimeoffset:";
+            if (s.StartsWith(decimalPrefix, StringComparison.Ordinal))
+            {
+                customAttributeValue = decimal.Parse(s.Substring(decimalPrefix.Length));
+            }
+            else if (s.StartsWith(dateTimePrefix, StringComparison.Ordinal))
+            {
+                var dateTimeStyle = s.EndsWith("Z", StringComparison.Ordinal) ? DateTimeStyles.AdjustToUniversal : DateTimeStyles.None;
+                customAttributeValue = DateTime.ParseExact(s.Substring(dateTimePrefix.Length), "o", CultureInfo.InvariantCulture, dateTimeStyle);
+            }
+            else if (s.StartsWith(dateTimeOffsetPrefix, StringComparison.Ordinal))
+            {
+                customAttributeValue = DateTimeOffset.ParseExact(s.Substring(dateTimeOffsetPrefix.Length), "o", CultureInfo.InvariantCulture);
+            }
+        }
+
+        var user = new User("12345")
+        {
+            Custom =
+            {
+                ["Custom1"] = customAttributeValue
+            }
+        };
+
+        const string defaultValue = "default";
+        var actualReturnValue = evaluator.Evaluate(config!.Settings, key, defaultValue, user, remoteConfig: null, logger).Value;
+
+        Assert.AreEqual(expectedReturnValue, actualReturnValue);
+    }
+
+    [DataTestMethod]
+    [DataRow("isoneof", "no trim")]
+    [DataRow("isnotoneof", "no trim")]
+    [DataRow("isoneofhashed", "no trim")]
+    [DataRow("isnotoneofhashed", "no trim")]
+    [DataRow("equalshashed", "no trim")]
+    [DataRow("notequalshashed", "no trim")]
+    [DataRow("arraycontainsanyofhashed", "no trim")]
+    [DataRow("arraynotcontainsanyofhashed", "no trim")]
+    [DataRow("equals", "no trim")]
+    [DataRow("notequals", "no trim")]
+    [DataRow("startwithanyof", "no trim")]
+    [DataRow("notstartwithanyof", "no trim")]
+    [DataRow("endswithanyof", "no trim")]
+    [DataRow("notendswithanyof", "no trim")]
+    [DataRow("arraycontainsanyof", "no trim")]
+    [DataRow("arraynotcontainsanyof", "no trim")]
+    [DataRow("startwithanyofhashed", "no trim")]
+    [DataRow("notstartwithanyofhashed", "no trim")]
+    [DataRow("endswithanyofhashed", "no trim")]
+    [DataRow("notendswithanyofhashed", "no trim")]
+    //semver comparators user values trimmed because of backward compatibility
+    [DataRow("semverisoneof", "4 trim")]
+    [DataRow("semverisnotoneof", "5 trim")]
+    [DataRow("semverless", "6 trim")]
+    [DataRow("semverlessequals", "7 trim")]
+    [DataRow("semvergreater", "8 trim")]
+    [DataRow("semvergreaterequals", "9 trim")]
+    //number and date comparators user values trimmed because of backward compatibility
+    [DataRow("numberequals", "10 trim")]
+    [DataRow("numbernotequals", "11 trim")]
+    [DataRow("numberless", "12 trim")]
+    [DataRow("numberlessequals", "13 trim")]
+    [DataRow("numbergreater", "14 trim")]
+    [DataRow("numbergreaterequals", "15 trim")]
+    [DataRow("datebefore", "18 trim")]
+    [DataRow("dateafter", "19 trim")]
+    //"contains any of" and "not contains any of" is a special case, the not trimmed user attribute checked against not trimmed comparator values.
+    [DataRow("containsanyof", "no trim")]
+    [DataRow("notcontainsanyof", "no trim")]
+    public void ComparisonAttributeTrimming_Test(string key, string expectedReturnValue)
+    {
+        var config = new ConfigLocation.LocalFile("data", "comparison_attribute_trimming.json").FetchConfig();
+
+        var logger = new Mock<IConfigCatLogger>().Object.AsWrapper();
+        var evaluator = new RolloutEvaluator(logger);
+
+        var user = new User(" 12345 ")
+        {
+            Country = "[\" USA \"]",
+            Custom =
+            {
+                ["Version"] = " 1.0.0 ",
+                ["Number"] = " 3 ",
+                ["Date"] = " 1705253400 "
+            }
+        };
+
+        const string defaultValue = "default";
+        var actualReturnValue = evaluator.Evaluate(config!.Settings, key, defaultValue, user, remoteConfig: null, logger).Value;
+
+        Assert.AreEqual(expectedReturnValue, actualReturnValue);
+    }
+
+    [DataTestMethod]
+    [DataRow("isoneof", "no trim")]
+    [DataRow("isnotoneof", "no trim")]
+    [DataRow("containsanyof", "no trim")]
+    [DataRow("notcontainsanyof", "no trim")]
+    [DataRow("isoneofhashed", "no trim")]
+    [DataRow("isnotoneofhashed", "no trim")]
+    [DataRow("equalshashed", "no trim")]
+    [DataRow("notequalshashed", "no trim")]
+    [DataRow("arraycontainsanyofhashed", "no trim")]
+    [DataRow("arraynotcontainsanyofhashed", "no trim")]
+    [DataRow("equals", "no trim")]
+    [DataRow("notequals", "no trim")]
+    [DataRow("startwithanyof", "no trim")]
+    [DataRow("notstartwithanyof", "no trim")]
+    [DataRow("endswithanyof", "no trim")]
+    [DataRow("notendswithanyof", "no trim")]
+    [DataRow("arraycontainsanyof", "no trim")]
+    [DataRow("arraynotcontainsanyof", "no trim")]
+    [DataRow("startwithanyofhashed", "default")]
+    [DataRow("notstartwithanyofhashed", "default")]
+    [DataRow("endswithanyofhashed", "default")]
+    [DataRow("notendswithanyofhashed", "default")]
+    //semver comparator values trimmed because of backward compatibility
+    [DataRow("semverisoneof", "4 trim")]
+    [DataRow("semverisnotoneof", "5 trim")]
+    [DataRow("semverless", "6 trim")]
+    [DataRow("semverlessequals", "7 trim")]
+    [DataRow("semvergreater", "8 trim")]
+    [DataRow("semvergreaterequals", "9 trim")]
+    public void ComparisonValueTrimming_Test(string key, string expectedReturnValue)
+    {
+        var config = new ConfigLocation.LocalFile("data", "comparison_value_trimming.json").FetchConfig();
+
+        var logger = new Mock<IConfigCatLogger>().Object.AsWrapper();
+        var evaluator = new RolloutEvaluator(logger);
+
+        var user = new User("12345")
+        {
+            Country = "[\"USA\"]",
+            Custom =
+            {
+                ["Version"] = "1.0.0",
+                ["Number"] = "3",
+                ["Date"] = "1705253400"
+            }
+        };
+
+        const string defaultValue = "default";
+        string actualReturnValue;
+        try { actualReturnValue = evaluator.Evaluate(config!.Settings, key, defaultValue, user, remoteConfig: null, logger).Value; }
+        catch (InvalidOperationException) { actualReturnValue = defaultValue; }
+
+        Assert.AreEqual(expectedReturnValue, actualReturnValue);
+    }
 }

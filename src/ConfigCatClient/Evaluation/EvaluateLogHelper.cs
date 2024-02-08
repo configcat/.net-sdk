@@ -121,7 +121,7 @@ internal static class EvaluateLogHelper
 
     public static IndentedTextBuilder AppendPrerequisiteFlagCondition(this IndentedTextBuilder builder, PrerequisiteFlagCondition condition)
     {
-        var prerequisiteFlagKey = condition.PrerequisiteFlagKey;
+        var prerequisiteFlagKey = condition.PrerequisiteFlagKey ?? InvalidReferencePlaceholder;
         var comparator = condition.Comparator;
         var comparisonValue = condition.ComparisonValue.GetValue(throwIfInvalid: false);
 

@@ -298,7 +298,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                     break;
 
                 case PrerequisiteFlagCondition prerequisiteFlagCondition:
-                    conditionResult = EvaluatePrerequisiteFlagCondition(prerequisiteFlagCondition, ref context, out error);
+                    conditionResult = EvaluatePrerequisiteFlagCondition(prerequisiteFlagCondition, ref context);
                     newLineBeforeThen = true;
                     break;
 
@@ -708,10 +708,8 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return negate;
     }
 
-    private bool EvaluatePrerequisiteFlagCondition(PrerequisiteFlagCondition condition, ref EvaluateContext context, out string? error)
+    private bool EvaluatePrerequisiteFlagCondition(PrerequisiteFlagCondition condition, ref EvaluateContext context)
     {
-        error = null;
-
         var logBuilder = context.LogBuilder;
         logBuilder?.AppendPrerequisiteFlagCondition(condition);
 
@@ -759,7 +757,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         };
 
         logBuilder?
-            .NewLine().Append($"Prerequisite flag evaluation result: '{prerequisiteFlagValue ?? EvaluateLogHelper.InvalidValuePlaceholder}'.")
+            .NewLine().Append($"Prerequisite flag evaluation result: '{prerequisiteFlagValue}'.")
             .NewLine("Condition (")
                 .AppendPrerequisiteFlagCondition(condition)
                 .Append(") evaluates to ").AppendEvaluationResult(result).Append(".")

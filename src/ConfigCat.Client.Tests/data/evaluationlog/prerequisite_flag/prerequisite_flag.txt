@@ -4,26 +4,26 @@ INFO [5000] Evaluating 'dependentFeature' for User '{"Identifier":"12345","Email
     (
       Evaluating prerequisite flag 'mainFeature':
       Evaluating targeting rules and applying the first match if any:
-      - IF User.Email ENDS WITH ANY OF [<1 hashed value>] => false, skipping the remaining AND conditions
+      - IF User.Email ENDS WITH ANY OF [<1 hashed value>] => not met, skipping the remaining AND conditions
         THEN 'private' => no match
-      - IF User.Country IS ONE OF [<1 hashed value>] => true
+      - IF User.Country IS ONE OF [<1 hashed value>] => met
         AND User IS NOT IN SEGMENT 'Beta Users'
         (
           Evaluating segment 'Beta Users':
-          - IF User.Email IS ONE OF [<2 hashed values>] => false, skipping the remaining AND conditions
+          - IF User.Email IS ONE OF [<2 hashed values>] => not met, skipping the remaining AND conditions
           Segment evaluation result: User IS NOT IN SEGMENT.
-          Condition (User IS NOT IN SEGMENT 'Beta Users') evaluates to true.
-        ) => true
+          Condition (User IS NOT IN SEGMENT 'Beta Users') is met.
+        ) => met
         AND User IS NOT IN SEGMENT 'Developers'
         (
           Evaluating segment 'Developers':
-          - IF User.Email IS ONE OF [<2 hashed values>] => false, skipping the remaining AND conditions
+          - IF User.Email IS ONE OF [<2 hashed values>] => not met, skipping the remaining AND conditions
           Segment evaluation result: User IS NOT IN SEGMENT.
-          Condition (User IS NOT IN SEGMENT 'Developers') evaluates to true.
-        ) => true
+          Condition (User IS NOT IN SEGMENT 'Developers') is met.
+        ) => met
         THEN 'target' => MATCH, applying rule
       Prerequisite flag evaluation result: 'target'.
-      Condition (Flag 'mainFeature' EQUALS 'target') evaluates to true.
+      Condition (Flag 'mainFeature' EQUALS 'target') is met.
     )
     THEN % options => MATCH, applying rule
     Evaluating % options based on the User.Identifier attribute:

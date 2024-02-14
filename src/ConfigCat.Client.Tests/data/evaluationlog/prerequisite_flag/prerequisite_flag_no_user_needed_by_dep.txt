@@ -7,7 +7,7 @@ INFO [5000] Evaluating 'dependentFeatureWithUserCondition'
     (
       Evaluating prerequisite flag 'mainFeatureWithoutUserCondition':
       Prerequisite flag evaluation result: 'True'.
-      Condition (Flag 'mainFeatureWithoutUserCondition' EQUALS 'True') evaluates to true.
+      Condition (Flag 'mainFeatureWithoutUserCondition' EQUALS 'True') is met.
     )
     THEN % options => MATCH, applying rule
     Skipping % options because the User Object is missing.

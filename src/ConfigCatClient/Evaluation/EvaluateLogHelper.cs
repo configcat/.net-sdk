@@ -15,7 +15,7 @@ internal static class EvaluateLogHelper
 
     public static IndentedTextBuilder AppendEvaluationResult(this IndentedTextBuilder builder, bool result)
     {
-        return builder.Append(result ? "true" : "false");
+        return builder.Append(result ? "met" : "not met");
     }
 
     private static IndentedTextBuilder AppendUserCondition(this IndentedTextBuilder builder, string? comparisonAttribute, UserComparator comparator, object? comparisonValue)

@@ -760,7 +760,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             .NewLine().Append($"Prerequisite flag evaluation result: '{prerequisiteFlagValue}'.")
             .NewLine("Condition (")
                 .AppendPrerequisiteFlagCondition(condition)
-                .Append(") evaluates to ").AppendEvaluationResult(result).Append(".")
+                .Append(") is ").AppendEvaluationResult(result).Append(".")
             .DecreaseIndent()
             .NewLine(")");
 
@@ -818,7 +818,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
             logBuilder.NewLine("Condition (").AppendSegmentCondition(condition).Append(")");
             (error is null
-                ? logBuilder.Append(" evaluates to ").AppendEvaluationResult(result)
+                ? logBuilder.Append(" is ").AppendEvaluationResult(result)
                 : logBuilder.Append(" failed to evaluate"))
                 .Append(".");
 

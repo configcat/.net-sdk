@@ -4,7 +4,7 @@ INFO [5000] Evaluating 'featureWithNegatedSegmentTargetingCleartext' for User '{
   - IF User IS NOT IN SEGMENT 'Beta users (cleartext)'
     (
       Evaluating segment 'Beta users (cleartext)':
-      - IF User.Email IS ONE OF ['jane@example.com', 'john@example.com'] => false, skipping the remaining AND conditions
+      - IF User.Email IS ONE OF ['jane@example.com', 'john@example.com'] => not met, skipping the remaining AND conditions
       Segment evaluation result: cannot evaluate, the User.Email attribute is missing.
       Condition (User IS NOT IN SEGMENT 'Beta users (cleartext)') failed to evaluate.
     )

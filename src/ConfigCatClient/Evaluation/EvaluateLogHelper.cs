@@ -14,11 +14,6 @@ internal static class EvaluateLogHelper
 
     internal const int StringListMaxLength = 10;
 
-    public static IndentedTextBuilder AppendEvaluationResult(this IndentedTextBuilder builder, bool result)
-    {
-        return builder.Append(result ? "true" : "false");
-    }
-
     private static IndentedTextBuilder AppendUserCondition(this IndentedTextBuilder builder, string? comparisonAttribute, UserComparator comparator, object? comparisonValue)
     {
         return builder.Append($"User.{comparisonAttribute} {comparator.ToDisplayText()} '{comparisonValue ?? InvalidValuePlaceholder}'");
@@ -148,9 +143,14 @@ internal static class EvaluateLogHelper
         return builder.Append($"User {comparator.ToDisplayText()} '{segmentName}'");
     }
 
+    public static IndentedTextBuilder AppendConditionResult(this IndentedTextBuilder builder, bool result)
+    {
+        return builder.Append(result ? "true" : "false");
+    }
+
     public static IndentedTextBuilder AppendConditionConsequence(this IndentedTextBuilder builder, bool result)
     {
-        builder.Append(" => ").AppendEvaluationResult(result);
+        builder.Append(" => ").AppendConditionResult(result);
         return result ? builder : builder.Append(", skipping the remaining AND conditions");
     }
 

@@ -711,12 +711,17 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
     private bool EvaluatePrerequisiteFlagCondition(PrerequisiteFlagCondition condition, ref EvaluateContext context)
     {
         var logBuilder = context.LogBuilder;
-        logBuilder?.AppendPrerequisiteFlagCondition(condition);
+        logBuilder?.AppendPrerequisiteFlagCondition(condition, context.Settings);
 
+        Setting? prerequisiteFlag;
         var prerequisiteFlagKey = condition.PrerequisiteFlagKey;
-        if (prerequisiteFlagKey is null || !context.Settings.TryGetValue(prerequisiteFlagKey, out var prerequisiteFlag))
+        if (prerequisiteFlagKey is null)
         {
-            throw new InvalidOperationException("Prerequisite flag key is missing or invalid.");
+            throw new InvalidOperationException("Prerequisite flag key is missing.");
+        }
+        else if (!context.Settings.TryGetValue(prerequisiteFlagKey, out prerequisiteFlag))
+        {
+            throw new InvalidOperationException("Prerequisite flag is missing.");
         }
 
         var comparisonValue = EnsureComparisonValue(condition.ComparisonValue.GetValue(throwIfInvalid: false));
@@ -759,7 +764,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         logBuilder?
             .NewLine().Append($"Prerequisite flag evaluation result: '{prerequisiteFlagValue}'.")
             .NewLine("Condition (")
-                .AppendPrerequisiteFlagCondition(condition)
+                .AppendPrerequisiteFlagCondition(condition, context.Settings)
                 .Append(") evaluates to ").AppendEvaluationResult(result).Append(".")
             .DecreaseIndent()
             .NewLine(")");

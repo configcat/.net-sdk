@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Globalization;
 using ConfigCat.Client.Utils;
 
@@ -64,6 +65,8 @@ internal static class EvaluateLogHelper
 
     public static IndentedTextBuilder AppendUserCondition(this IndentedTextBuilder builder, UserCondition condition)
     {
+        var comparisonAttribute = condition.ComparisonAttribute ?? InvalidNamePlaceholder;
+
         return condition.Comparator switch
         {
             UserComparator.IsOneOf or
@@ -78,7 +81,7 @@ internal static class EvaluateLogHelper
             UserComparator.TextNotEndsWithAnyOf or
             UserComparator.ArrayContainsAnyOf or
             UserComparator.ArrayNotContainsAnyOf =>
-                builder.AppendUserCondition(condition.ComparisonAttribute, condition.Comparator, condition.StringListValue, isSensitive: false),
+                builder.AppendUserCondition(comparisonAttribute, condition.Comparator, condition.StringListValue, isSensitive: false),
 
             UserComparator.SemVerLess or
             UserComparator.SemVerLessOrEquals or
@@ -86,7 +89,7 @@ internal static class EvaluateLogHelper
             UserComparator.SemVerGreaterOrEquals or
             UserComparator.TextEquals or
             UserComparator.TextNotEquals =>
-                builder.AppendUserCondition(condition.ComparisonAttribute, condition.Comparator, condition.StringValue, isSensitive: false),
+                builder.AppendUserCondition(comparisonAttribute, condition.Comparator, condition.StringValue, isSensitive: false),
 
             UserComparator.NumberEquals or
             UserComparator.NumberNotEquals or
@@ -94,7 +97,7 @@ internal static class EvaluateLogHelper
             UserComparator.NumberLessOrEquals or
             UserComparator.NumberGreater or
             UserComparator.NumberGreaterOrEquals =>
-                builder.AppendUserCondition(condition.ComparisonAttribute, condition.Comparator, condition.DoubleValue),
+                builder.AppendUserCondition(comparisonAttribute, condition.Comparator, condition.DoubleValue),
 
             UserComparator.SensitiveIsOneOf or
             UserComparator.SensitiveIsNotOneOf or
@@ -104,24 +107,28 @@ internal static class EvaluateLogHelper
             UserComparator.SensitiveTextNotEndsWithAnyOf or
             UserComparator.SensitiveArrayContainsAnyOf or
             UserComparator.SensitiveArrayNotContainsAnyOf =>
-                builder.AppendUserCondition(condition.ComparisonAttribute, condition.Comparator, condition.StringListValue, isSensitive: true),
+                builder.AppendUserCondition(comparisonAttribute, condition.Comparator, condition.StringListValue, isSensitive: true),
 
             UserComparator.DateTimeBefore or
             UserComparator.DateTimeAfter =>
-                builder.AppendUserCondition(condition.ComparisonAttribute, condition.Comparator, condition.DoubleValue, isDateTime: true),
+                builder.AppendUserCondition(comparisonAttribute, condition.Comparator, condition.DoubleValue, isDateTime: true),
 
             UserComparator.SensitiveTextEquals or
             UserComparator.SensitiveTextNotEquals =>
-                builder.AppendUserCondition(condition.ComparisonAttribute, condition.Comparator, condition.StringValue, isSensitive: true),
+                builder.AppendUserCondition(comparisonAttribute, condition.Comparator, condition.StringValue, isSensitive: true),
 
             _ =>
-                builder.AppendUserCondition(condition.ComparisonAttribute, condition.Comparator, condition.GetComparisonValue(throwIfInvalid: false)),
+                builder.AppendUserCondition(comparisonAttribute, condition.Comparator, condition.GetComparisonValue(throwIfInvalid: false)),
         };
     }
 
-    public static IndentedTextBuilder AppendPrerequisiteFlagCondition(this IndentedTextBuilder builder, PrerequisiteFlagCondition condition)
+    public static IndentedTextBuilder AppendPrerequisiteFlagCondition(this IndentedTextBuilder builder, PrerequisiteFlagCondition condition, IReadOnlyDictionary<string, Setting>? settings = null)
     {
-        var prerequisiteFlagKey = condition.PrerequisiteFlagKey ?? InvalidReferencePlaceholder;
+        var prerequisiteFlagKey =
+            condition.PrerequisiteFlagKey is null ? InvalidNamePlaceholder :
+            settings is not null && !settings.ContainsKey(condition.PrerequisiteFlagKey) ? InvalidReferencePlaceholder :
+            condition.PrerequisiteFlagKey;
+
         var comparator = condition.Comparator;
         var comparisonValue = condition.ComparisonValue.GetValue(throwIfInvalid: false);
 
@@ -133,8 +140,10 @@ internal static class EvaluateLogHelper
         var segment = condition.Segment;
         var comparator = condition.Comparator;
 
-        var segmentName = segment?.Name ??
-            (segment is null ? InvalidReferencePlaceholder : InvalidNamePlaceholder);
+        var segmentName =
+            segment is null ? InvalidReferencePlaceholder :
+            segment.Name is not { Length: > 0 } ? InvalidNamePlaceholder :
+            segment.Name;
 
         return builder.Append($"User {comparator.ToDisplayText()} '{segmentName}'");
     }

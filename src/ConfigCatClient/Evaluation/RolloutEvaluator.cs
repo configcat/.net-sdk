@@ -549,7 +549,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
             var index = item.IndexOf('_');
             if (index < 0
-                || !int.TryParse(item.AsSpan(0, index).ToParsable(), NumberStyles.None, CultureInfo.InvariantCulture, out var sliceLength)
+                || !int.TryParse(item.AsSpan(0, index).ToParsable(), NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, CultureInfo.InvariantCulture, out var sliceLength)
                 || (hash2 = item.AsSpan(index + 1)).IsEmpty)
             {
                 EnsureComparisonValue<string>(null);

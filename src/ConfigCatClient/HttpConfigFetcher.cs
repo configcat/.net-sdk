@@ -249,10 +249,12 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
 
         if (this.httpClientHandler is null)
         {
-            client = new HttpClient(new HttpClientHandler
+            var handler = new HttpClientHandler();
+            if (handler.SupportsAutomaticDecompression)
             {
-                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
-            });
+                handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+            }
+            client = new HttpClient(handler);
         }
         else
         {

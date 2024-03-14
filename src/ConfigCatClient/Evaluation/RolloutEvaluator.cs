@@ -254,7 +254,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             return true;
         }
 
-        throw new InvalidOperationException("Sum of percentage option percentages are less than 100.");
+        throw new InvalidOperationException("Sum of percentage option percentages is less than 100.");
     }
 
     private bool EvaluateConditions<TCondition>(TCondition[] conditions, TargetingRule? targetingRule, string contextSalt, ref EvaluateContext context, out string? error)

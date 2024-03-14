@@ -6,12 +6,12 @@ namespace ConfigCat.Client;
 public enum SegmentComparator : byte
 {
     /// <summary>
-    /// IS IN SEGMENT - It matches when the conditions of the specified segment are evaluated to true.
+    /// IS IN SEGMENT - Checks whether the conditions of the specified segment are evaluated to true.
     /// </summary>
     IsIn = 0,
 
     /// <summary>
-    /// IS NOT IN SEGMENT - It matches when the conditions of the specified segment are evaluated to false.
+    /// IS NOT IN SEGMENT - Checks whether the conditions of the specified segment are evaluated to false.
     /// </summary>
     IsNotIn = 1,
 }

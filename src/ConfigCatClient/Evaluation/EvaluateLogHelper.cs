@@ -64,10 +64,10 @@ internal static class EvaluateLogHelper
 
         return condition.Comparator switch
         {
-            UserComparator.IsOneOf or
-            UserComparator.IsNotOneOf or
-            UserComparator.ContainsAnyOf or
-            UserComparator.NotContainsAnyOf or
+            UserComparator.TextIsOneOf or
+            UserComparator.TextIsNotOneOf or
+            UserComparator.TextContainsAnyOf or
+            UserComparator.TextNotContainsAnyOf or
             UserComparator.SemVerIsOneOf or
             UserComparator.SemVerIsNotOneOf or
             UserComparator.TextStartsWithAnyOf or
@@ -94,8 +94,8 @@ internal static class EvaluateLogHelper
             UserComparator.NumberGreaterOrEquals =>
                 builder.AppendUserCondition(comparisonAttribute, condition.Comparator, condition.DoubleValue),
 
-            UserComparator.SensitiveIsOneOf or
-            UserComparator.SensitiveIsNotOneOf or
+            UserComparator.SensitiveTextIsOneOf or
+            UserComparator.SensitiveTextIsNotOneOf or
             UserComparator.SensitiveTextStartsWithAnyOf or
             UserComparator.SensitiveTextNotStartsWithAnyOf or
             UserComparator.SensitiveTextEndsWithAnyOf or
@@ -312,10 +312,10 @@ internal static class EvaluateLogHelper
     {
         return comparator switch
         {
-            UserComparator.IsOneOf or UserComparator.SensitiveIsOneOf or UserComparator.SemVerIsOneOf => "IS ONE OF",
-            UserComparator.IsNotOneOf or UserComparator.SensitiveIsNotOneOf or UserComparator.SemVerIsNotOneOf => "IS NOT ONE OF",
-            UserComparator.ContainsAnyOf => "CONTAINS ANY OF",
-            UserComparator.NotContainsAnyOf => "NOT CONTAINS ANY OF",
+            UserComparator.TextIsOneOf or UserComparator.SensitiveTextIsOneOf or UserComparator.SemVerIsOneOf => "IS ONE OF",
+            UserComparator.TextIsNotOneOf or UserComparator.SensitiveTextIsNotOneOf or UserComparator.SemVerIsNotOneOf => "IS NOT ONE OF",
+            UserComparator.TextContainsAnyOf => "CONTAINS ANY OF",
+            UserComparator.TextNotContainsAnyOf => "NOT CONTAINS ANY OF",
             UserComparator.SemVerLess or UserComparator.NumberLess => "<",
             UserComparator.SemVerLessOrEquals or UserComparator.NumberLessOrEquals => "<=",
             UserComparator.SemVerGreater or UserComparator.NumberGreater => ">",

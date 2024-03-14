@@ -383,16 +383,16 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                 return EvaluateSensitiveTextEquals(text, condition.StringValue,
                     EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, negate: comparator == UserComparator.SensitiveTextNotEquals);
 
-            case UserComparator.IsOneOf:
-            case UserComparator.IsNotOneOf:
+            case UserComparator.TextIsOneOf:
+            case UserComparator.TextIsNotOneOf:
                 text = GetUserAttributeValueAsText(userAttributeName, userAttributeValue, condition, context.Key);
-                return EvaluateIsOneOf(text, condition.StringListValue, negate: comparator == UserComparator.IsNotOneOf);
+                return EvaluateTextIsOneOf(text, condition.StringListValue, negate: comparator == UserComparator.TextIsNotOneOf);
 
-            case UserComparator.SensitiveIsOneOf:
-            case UserComparator.SensitiveIsNotOneOf:
+            case UserComparator.SensitiveTextIsOneOf:
+            case UserComparator.SensitiveTextIsNotOneOf:
                 text = GetUserAttributeValueAsText(userAttributeName, userAttributeValue, condition, context.Key);
-                return EvaluateSensitiveIsOneOf(text, condition.StringListValue,
-                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, negate: comparator == UserComparator.SensitiveIsNotOneOf);
+                return EvaluateSensitiveTextIsOneOf(text, condition.StringListValue,
+                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, negate: comparator == UserComparator.SensitiveTextIsNotOneOf);
 
             case UserComparator.TextStartsWithAnyOf:
             case UserComparator.TextNotStartsWithAnyOf:
@@ -416,10 +416,10 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                 return EvaluateSensitiveTextSliceEqualsAnyOf(text, condition.StringListValue,
                     EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, startsWith: false, negate: comparator == UserComparator.SensitiveTextNotEndsWithAnyOf);
 
-            case UserComparator.ContainsAnyOf:
-            case UserComparator.NotContainsAnyOf:
+            case UserComparator.TextContainsAnyOf:
+            case UserComparator.TextNotContainsAnyOf:
                 text = GetUserAttributeValueAsText(userAttributeName, userAttributeValue, condition, context.Key);
-                return EvaluateContainsAnyOf(text, condition.StringListValue, negate: comparator == UserComparator.NotContainsAnyOf);
+                return EvaluateTextContainsAnyOf(text, condition.StringListValue, negate: comparator == UserComparator.TextNotContainsAnyOf);
 
             case UserComparator.SemVerIsOneOf:
             case UserComparator.SemVerIsNotOneOf:
@@ -479,7 +479,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return hash.Equals(hexString: comparisonValue.AsSpan()) ^ negate;
     }
 
-    private static bool EvaluateIsOneOf(string text, string[]? comparisonValues, bool negate)
+    private static bool EvaluateTextIsOneOf(string text, string[]? comparisonValues, bool negate)
     {
         EnsureComparisonValue(comparisonValues);
 
@@ -494,7 +494,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return negate;
     }
 
-    private static bool EvaluateSensitiveIsOneOf(string text, string[]? comparisonValues, string configJsonSalt, string contextSalt, bool negate)
+    private static bool EvaluateSensitiveTextIsOneOf(string text, string[]? comparisonValues, string configJsonSalt, string contextSalt, bool negate)
     {
         EnsureComparisonValue(comparisonValues);
 
@@ -573,7 +573,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return negate;
     }
 
-    private static bool EvaluateContainsAnyOf(string text, string[]? comparisonValues, bool negate)
+    private static bool EvaluateTextContainsAnyOf(string text, string[]? comparisonValues, bool negate)
     {
         EnsureComparisonValue(comparisonValues);
 

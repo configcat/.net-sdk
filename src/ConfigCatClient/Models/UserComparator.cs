@@ -8,22 +8,22 @@ public enum UserComparator : byte
     /// <summary>
     /// IS ONE OF (cleartext) - It matches when the comparison attribute is equal to any of the comparison values.
     /// </summary>
-    IsOneOf = 0,
+    TextIsOneOf = 0,
 
     /// <summary>
     /// IS NOT ONE OF (cleartext) - It matches when the comparison attribute is not equal to any of the comparison values.
     /// </summary>
-    IsNotOneOf = 1,
+    TextIsNotOneOf = 1,
 
     /// <summary>
     /// CONTAINS ANY OF (cleartext) - It matches when the comparison attribute contains any comparison values as a substring.
     /// </summary>
-    ContainsAnyOf = 2,
+    TextContainsAnyOf = 2,
 
     /// <summary>
     /// NOT CONTAINS ANY OF (cleartext) - It matches when the comparison attribute does not contain any comparison values as a substring.
     /// </summary>
-    NotContainsAnyOf = 3,
+    TextNotContainsAnyOf = 3,
 
     /// <summary>
     /// IS ONE OF (semver) - It matches when the comparison attribute interpreted as a semantic version is equal to any of the comparison values.
@@ -88,12 +88,12 @@ public enum UserComparator : byte
     /// <summary>
     /// IS ONE OF (hashed) - It matches when the comparison attribute is equal to any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values).
     /// </summary>
-    SensitiveIsOneOf = 16,
+    SensitiveTextIsOneOf = 16,
 
     /// <summary>
     /// IS NOT ONE OF (hashed) - It matches when the comparison attribute is not equal to any of the comparison values (where the comparison is performed using the salted SHA256 hashes of the values).
     /// </summary>
-    SensitiveIsNotOneOf = 17,
+    SensitiveTextIsNotOneOf = 17,
 
     /// <summary>
     /// BEFORE (UTC datetime) - It matches when the comparison attribute interpreted as the seconds elapsed since <see href="https://en.wikipedia.org/wiki/Unix_time">Unix Epoch</see> is less than the comparison value.

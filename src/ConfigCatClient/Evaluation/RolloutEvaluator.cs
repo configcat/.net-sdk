@@ -254,7 +254,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             return true;
         }
 
-        throw new InvalidOperationException("Sum of percentage option percentages are less than 100.");
+        throw new InvalidOperationException("Sum of percentage option percentages is less than 100.");
     }
 
     private bool EvaluateConditions<TCondition>(TCondition[] conditions, TargetingRule? targetingRule, string contextSalt, ref EvaluateContext context, out string? error)
@@ -383,16 +383,16 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                 return EvaluateSensitiveTextEquals(text, condition.StringValue,
                     EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, negate: comparator == UserComparator.SensitiveTextNotEquals);
 
-            case UserComparator.IsOneOf:
-            case UserComparator.IsNotOneOf:
+            case UserComparator.TextIsOneOf:
+            case UserComparator.TextIsNotOneOf:
                 text = GetUserAttributeValueAsText(userAttributeName, userAttributeValue, condition, context.Key);
-                return EvaluateIsOneOf(text, condition.StringListValue, negate: comparator == UserComparator.IsNotOneOf);
+                return EvaluateTextIsOneOf(text, condition.StringListValue, negate: comparator == UserComparator.TextIsNotOneOf);
 
-            case UserComparator.SensitiveIsOneOf:
-            case UserComparator.SensitiveIsNotOneOf:
+            case UserComparator.SensitiveTextIsOneOf:
+            case UserComparator.SensitiveTextIsNotOneOf:
                 text = GetUserAttributeValueAsText(userAttributeName, userAttributeValue, condition, context.Key);
-                return EvaluateSensitiveIsOneOf(text, condition.StringListValue,
-                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, negate: comparator == UserComparator.SensitiveIsNotOneOf);
+                return EvaluateSensitiveTextIsOneOf(text, condition.StringListValue,
+                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, negate: comparator == UserComparator.SensitiveTextIsNotOneOf);
 
             case UserComparator.TextStartsWithAnyOf:
             case UserComparator.TextNotStartsWithAnyOf:
@@ -416,10 +416,10 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                 return EvaluateSensitiveTextSliceEqualsAnyOf(text, condition.StringListValue,
                     EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, startsWith: false, negate: comparator == UserComparator.SensitiveTextNotEndsWithAnyOf);
 
-            case UserComparator.ContainsAnyOf:
-            case UserComparator.NotContainsAnyOf:
+            case UserComparator.TextContainsAnyOf:
+            case UserComparator.TextNotContainsAnyOf:
                 text = GetUserAttributeValueAsText(userAttributeName, userAttributeValue, condition, context.Key);
-                return EvaluateContainsAnyOf(text, condition.StringListValue, negate: comparator == UserComparator.NotContainsAnyOf);
+                return EvaluateTextContainsAnyOf(text, condition.StringListValue, negate: comparator == UserComparator.TextNotContainsAnyOf);
 
             case UserComparator.SemVerIsOneOf:
             case UserComparator.SemVerIsNotOneOf:
@@ -479,7 +479,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return hash.Equals(hexString: comparisonValue.AsSpan()) ^ negate;
     }
 
-    private static bool EvaluateIsOneOf(string text, string[]? comparisonValues, bool negate)
+    private static bool EvaluateTextIsOneOf(string text, string[]? comparisonValues, bool negate)
     {
         EnsureComparisonValue(comparisonValues);
 
@@ -494,7 +494,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return negate;
     }
 
-    private static bool EvaluateSensitiveIsOneOf(string text, string[]? comparisonValues, string configJsonSalt, string contextSalt, bool negate)
+    private static bool EvaluateSensitiveTextIsOneOf(string text, string[]? comparisonValues, string configJsonSalt, string contextSalt, bool negate)
     {
         EnsureComparisonValue(comparisonValues);
 
@@ -549,7 +549,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
             var index = item.IndexOf('_');
             if (index < 0
-                || !int.TryParse(item.AsSpan(0, index).ToParsable(), NumberStyles.None, CultureInfo.InvariantCulture, out var sliceLength)
+                || !int.TryParse(item.AsSpan(0, index).ToParsable(), NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, CultureInfo.InvariantCulture, out var sliceLength)
                 || (hash2 = item.AsSpan(index + 1)).IsEmpty)
             {
                 EnsureComparisonValue<string>(null);
@@ -573,7 +573,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return negate;
     }
 
-    private static bool EvaluateContainsAnyOf(string text, string[]? comparisonValues, bool negate)
+    private static bool EvaluateTextContainsAnyOf(string text, string[]? comparisonValues, bool negate)
     {
         EnsureComparisonValue(comparisonValues);
 
@@ -711,12 +711,17 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
     private bool EvaluatePrerequisiteFlagCondition(PrerequisiteFlagCondition condition, ref EvaluateContext context)
     {
         var logBuilder = context.LogBuilder;
-        logBuilder?.AppendPrerequisiteFlagCondition(condition);
+        logBuilder?.AppendPrerequisiteFlagCondition(condition, context.Settings);
 
+        Setting? prerequisiteFlag;
         var prerequisiteFlagKey = condition.PrerequisiteFlagKey;
-        if (prerequisiteFlagKey is null || !context.Settings.TryGetValue(prerequisiteFlagKey, out var prerequisiteFlag))
+        if (prerequisiteFlagKey is null)
         {
-            throw new InvalidOperationException("Prerequisite flag key is missing or invalid.");
+            throw new InvalidOperationException("Prerequisite flag key is missing.");
+        }
+        else if (!context.Settings.TryGetValue(prerequisiteFlagKey, out prerequisiteFlag))
+        {
+            throw new InvalidOperationException("Prerequisite flag is missing.");
         }
 
         var comparisonValue = EnsureComparisonValue(condition.ComparisonValue.GetValue(throwIfInvalid: false));
@@ -759,8 +764,8 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         logBuilder?
             .NewLine().Append($"Prerequisite flag evaluation result: '{prerequisiteFlagValue}'.")
             .NewLine("Condition (")
-                .AppendPrerequisiteFlagCondition(condition)
-                .Append(") evaluates to ").AppendEvaluationResult(result).Append(".")
+                .AppendPrerequisiteFlagCondition(condition, context.Settings)
+                .Append(") evaluates to ").AppendConditionResult(result).Append(".")
             .DecreaseIndent()
             .NewLine(")");
 
@@ -818,7 +823,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
             logBuilder.NewLine("Condition (").AppendSegmentCondition(condition).Append(")");
             (error is null
-                ? logBuilder.Append(" evaluates to ").AppendEvaluationResult(result)
+                ? logBuilder.Append(" evaluates to ").AppendConditionResult(result)
                 : logBuilder.Append(" failed to evaluate"))
                 .Append(".");
 

@@ -6,12 +6,12 @@ namespace ConfigCat.Client;
 public enum PrerequisiteFlagComparator : byte
 {
     /// <summary>
-    /// EQUALS - It matches when the evaluated value of the specified prerequisite flag is equal to the comparison value.
+    /// EQUALS - Checks whether the evaluated value of the specified prerequisite flag is equal to the comparison value.
     /// </summary>
     Equals = 0,
 
     /// <summary>
-    /// NOT EQUALS - It matches when the evaluated value of the specified prerequisite flag is not equal to the comparison value.
+    /// NOT EQUALS - Checks whether the evaluated value of the specified prerequisite flag is not equal to the comparison value.
     /// </summary>
     NotEquals = 1
 }

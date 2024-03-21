@@ -13,7 +13,6 @@ public class UserTests
         var user = new User("id")
         {
             Email = "id@example.com",
-
             Country = "US"
         };
 
@@ -25,12 +24,17 @@ public class UserTests
 
         Assert.IsTrue(actualAttributes.TryGetValue(nameof(User.Email), out var s));
         Assert.AreEqual("id@example.com", s);
+        Assert.AreEqual("id@example.com", user.GetAttribute(nameof(User.Email)));
 
         Assert.IsTrue(actualAttributes.TryGetValue(nameof(User.Country), out s));
         Assert.AreEqual("US", s);
+        Assert.AreEqual("US", user.GetAttribute(nameof(User.Country)));
 
         Assert.IsTrue(actualAttributes.TryGetValue(nameof(User.Identifier), out s));
         Assert.AreEqual("id", s);
+        Assert.AreEqual("id", user.GetAttribute(nameof(User.Identifier)));
+
+        Assert.AreEqual(3, actualAttributes.Count);
     }
 
     [TestMethod]
@@ -41,9 +45,7 @@ public class UserTests
         var user = new User("id")
         {
             Email = "id@example.com",
-
             Country = "US",
-
             Custom =
             {
                 { "myCustomAttribute", "myCustomAttributeValue"},
@@ -59,13 +61,17 @@ public class UserTests
 
         // Assert
 
-        Assert.IsTrue(actualAttributes.TryGetValue(nameof(User.Identifier), out var s));
-        Assert.AreEqual("id", s);
-        Assert.AreNotEqual("myIdentifier", s);
+        Assert.IsTrue(actualAttributes.TryGetValue(nameof(User.Email), out var s));
+        Assert.AreEqual("id@example.com", s);
+        Assert.AreEqual("id@example.com", user.GetAttribute(nameof(User.Email)));
 
         Assert.IsTrue(actualAttributes.TryGetValue(nameof(User.Country), out s));
         Assert.AreEqual("US", s);
-        Assert.AreNotEqual("United States", s);
+        Assert.AreEqual("US", user.GetAttribute(nameof(User.Country)));
+
+        Assert.IsTrue(actualAttributes.TryGetValue(nameof(User.Identifier), out s));
+        Assert.AreEqual("id", s);
+        Assert.AreEqual("id", user.GetAttribute(nameof(User.Identifier)));
 
         Assert.IsTrue(actualAttributes.TryGetValue(nameof(User.Email), out s));
         Assert.AreEqual("id@example.com", s);
@@ -89,9 +95,7 @@ public class UserTests
         var user = new User("id")
         {
             Email = "id@example.com",
-
             Country = "US",
-
             Custom =
             {
                 { attributeName, attributeValue}
@@ -108,6 +112,7 @@ public class UserTests
 
         Assert.IsTrue(actualAttributes.TryGetValue(attributeName, out var s));
         Assert.AreEqual(attributeValue, s);
+        Assert.AreEqual(attributeValue, user.GetAttribute(attributeName));
     }
 
     [DataTestMethod()]
@@ -122,5 +127,6 @@ public class UserTests
 
         Assert.AreEqual(expectedValue, user.Identifier);
         Assert.AreEqual(expectedValue, user.GetAllAttributes()[nameof(User.Identifier)]);
+        Assert.AreEqual(expectedValue, user.GetAttribute(nameof(User.Identifier)));
     }
 }

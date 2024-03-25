@@ -45,7 +45,7 @@ internal sealed class UserCondition : Condition, IUserCondition
 #endif
     public string? ComparisonAttribute { get; set; }
 
-    string IUserCondition.ComparisonAttribute => ComparisonAttribute ?? throw new InvalidOperationException("Comparison attribute name is missing.");
+    string IUserCondition.ComparisonAttribute => ComparisonAttribute ?? throw new InvalidConfigModelException("Comparison attribute name is missing.");
 
     private UserComparator comparator = UnknownComparator;
 
@@ -105,7 +105,7 @@ internal sealed class UserCondition : Condition, IUserCondition
     {
         return ModelHelper.IsValidOneOf(this.comparisonValue)
             ? this.comparisonValue
-            : (!throwIfInvalid ? null : throw new InvalidOperationException("Comparison value is missing or invalid."));
+            : (!throwIfInvalid ? null : throw new InvalidConfigModelException("Comparison value is missing or invalid."));
     }
 
     public override string ToString()

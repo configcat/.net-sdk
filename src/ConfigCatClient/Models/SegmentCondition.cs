@@ -40,7 +40,7 @@ internal sealed class SegmentCondition : Condition, ISegmentCondition
     [JsonIgnore]
     public Segment? Segment { get; private set; }
 
-    ISegment ISegmentCondition.Segment => Segment ?? throw new InvalidOperationException("Segment reference is invalid.");
+    ISegment ISegmentCondition.Segment => Segment ?? throw new InvalidConfigModelException("Segment reference is invalid.");
 
     private SegmentComparator comparator = UnknownComparator;
 

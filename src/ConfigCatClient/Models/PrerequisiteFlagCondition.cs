@@ -43,7 +43,7 @@ internal sealed class PrerequisiteFlagCondition : Condition, IPrerequisiteFlagCo
 #endif
     public string? PrerequisiteFlagKey { get; set; }
 
-    string IPrerequisiteFlagCondition.PrerequisiteFlagKey => PrerequisiteFlagKey ?? throw new InvalidOperationException("Prerequisite flag key is missing.");
+    string IPrerequisiteFlagCondition.PrerequisiteFlagKey => PrerequisiteFlagKey ?? throw new InvalidConfigModelException("Prerequisite flag key is missing.");
 
     private PrerequisiteFlagComparator comparator = UnknownComparator;
 

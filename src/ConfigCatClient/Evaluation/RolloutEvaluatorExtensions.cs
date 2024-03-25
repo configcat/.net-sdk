@@ -15,14 +15,16 @@ internal static class RolloutEvaluatorExtensions
         if (settings is null)
         {
             logMessage = logger.ConfigJsonIsNotPresent(key, nameof(defaultValue), defaultValue);
-            return EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: remoteConfig?.TimeStamp, user, logMessage.InvariantFormattedMessage);
+            return EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: remoteConfig?.TimeStamp, user,
+                logMessage.InvariantFormattedMessage, errorCode: EvaluationErrorCode.ConfigJsonNotAvailable);
         }
 
         if (!settings.TryGetValue(key, out var setting))
         {
             var availableKeys = new StringListFormatter(settings.Keys).ToString();
             logMessage = logger.SettingEvaluationFailedDueToMissingKey(key, nameof(defaultValue), defaultValue, availableKeys);
-            return EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: remoteConfig?.TimeStamp, user, logMessage.InvariantFormattedMessage);
+            return EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: remoteConfig?.TimeStamp, user,
+                logMessage.InvariantFormattedMessage, errorCode: EvaluationErrorCode.SettingKeyMissing);
         }
 
         var evaluateContext = new EvaluateContext(key, setting, user, settings);
@@ -65,7 +67,8 @@ internal static class RolloutEvaluatorExtensions
             {
                 exceptionList ??= new List<Exception>();
                 exceptionList.Add(ex);
-                evaluationDetails = EvaluationDetails.FromDefaultValue<object?>(kvp.Key, defaultValue: null, fetchTime: remoteConfig?.TimeStamp, user, ex.Message, ex);
+                evaluationDetails = EvaluationDetails.FromDefaultValue<object?>(kvp.Key, defaultValue: null, fetchTime: remoteConfig?.TimeStamp, user,
+                    ex.Message, ex, GetErrorCode(ex));
             }
 
             evaluationDetailsArray[index++] = evaluationDetails;
@@ -84,5 +87,15 @@ internal static class RolloutEvaluatorExtensions
         }
 
         return true;
+    }
+
+    internal static EvaluationErrorCode GetErrorCode(Exception exception)
+    {
+        return exception switch
+        {
+            EvaluationErrorException evaluationErrorException => evaluationErrorException.ErrorCode,
+            InvalidConfigModelException => EvaluationErrorCode.InvalidConfigModel,
+            _ => EvaluationErrorCode.UnexpectedError,
+        };
     }
 }

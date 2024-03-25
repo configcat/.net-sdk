@@ -282,7 +282,8 @@ public sealed class ConfigCatClient : IConfigCatClient
         catch (Exception ex)
         {
             this.logger.SettingEvaluationError(nameof(GetValue), key, nameof(defaultValue), defaultValue, ex);
-            evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user, ex.Message, ex);
+            evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user,
+                ex.Message, ex, RolloutEvaluatorExtensions.GetErrorCode(ex));
             value = defaultValue;
         }
 
@@ -322,7 +323,8 @@ public sealed class ConfigCatClient : IConfigCatClient
         catch (Exception ex)
         {
             this.logger.SettingEvaluationError(nameof(GetValueAsync), key, nameof(defaultValue), defaultValue, ex);
-            evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user, ex.Message, ex);
+            evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user,
+                ex.Message, ex, RolloutEvaluatorExtensions.GetErrorCode(ex));
             value = defaultValue;
         }
 
@@ -356,7 +358,8 @@ public sealed class ConfigCatClient : IConfigCatClient
         catch (Exception ex)
         {
             this.logger.SettingEvaluationError(nameof(GetValueDetails), key, nameof(defaultValue), defaultValue, ex);
-            evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user, ex.Message, ex);
+            evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user,
+                ex.Message, ex, RolloutEvaluatorExtensions.GetErrorCode(ex));
         }
 
         this.hooks.RaiseFlagEvaluated(evaluationDetails);
@@ -393,7 +396,8 @@ public sealed class ConfigCatClient : IConfigCatClient
         catch (Exception ex)
         {
             this.logger.SettingEvaluationError(nameof(GetValueDetailsAsync), key, nameof(defaultValue), defaultValue, ex);
-            evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user, ex.Message, ex);
+            evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user,
+                ex.Message, ex, RolloutEvaluatorExtensions.GetErrorCode(ex));
         }
 
         this.hooks.RaiseFlagEvaluated(evaluationDetails);

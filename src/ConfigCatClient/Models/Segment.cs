@@ -38,7 +38,7 @@ internal sealed class Segment : ISegment
 #endif
     public string? Name { get; set; }
 
-    string ISegment.Name => Name ?? throw new InvalidOperationException("Segment name is missing.");
+    string ISegment.Name => Name ?? throw new InvalidConfigModelException("Segment name is missing.");
 
     private UserCondition[]? conditions;
 

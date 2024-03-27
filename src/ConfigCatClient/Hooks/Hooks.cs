@@ -34,15 +34,15 @@ internal class Hooks : IProvidesHooks
     }
 
     /// <inheritdoc/>
-    public event EventHandler? ClientReady
+    public event EventHandler<ClientReadyEventArgs>? ClientReady
     {
         add { this.eventHandlers.ClientReady += value; }
         remove { this.eventHandlers.ClientReady -= value; }
     }
 
-    internal void RaiseClientReady()
+    internal void RaiseClientReady(ClientCacheState cacheState)
     {
-        this.eventHandlers.ClientReady?.Invoke(this.client, EventArgs.Empty);
+        this.eventHandlers.ClientReady?.Invoke(this.client, new ClientReadyEventArgs(cacheState));
     }
 
     /// <inheritdoc/>
@@ -85,7 +85,7 @@ internal class Hooks : IProvidesHooks
     {
         private static void Noop(Delegate? _) { /* This method is for keeping SonarQube happy. */ }
 
-        public virtual EventHandler? ClientReady { get => null; set => Noop(value); }
+        public virtual EventHandler<ClientReadyEventArgs>? ClientReady { get => null; set => Noop(value); }
         public virtual EventHandler<FlagEvaluatedEventArgs>? FlagEvaluated { get => null; set => Noop(value); }
         public virtual EventHandler<ConfigChangedEventArgs>? ConfigChanged { get => null; set => Noop(value); }
         public virtual EventHandler<ConfigCatClientErrorEventArgs>? Error { get => null; set => Noop(value); }
@@ -93,7 +93,7 @@ internal class Hooks : IProvidesHooks
 
     private sealed class ActualEventHandlers : EventHandlers
     {
-        public override EventHandler? ClientReady { get; set; }
+        public override EventHandler<ClientReadyEventArgs>? ClientReady { get; set; }
         public override EventHandler<FlagEvaluatedEventArgs>? FlagEvaluated { get; set; }
         public override EventHandler<ConfigChangedEventArgs>? ConfigChanged { get; set; }
         public override EventHandler<ConfigCatClientErrorEventArgs>? Error { get; set; }

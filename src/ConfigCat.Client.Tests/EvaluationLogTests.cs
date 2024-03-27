@@ -180,7 +180,7 @@ public class EvaluationLogTests
     {
         var filePath = Path.Combine(TestDataRootPath, testSetName + ".json");
         var fileContent = File.ReadAllText(filePath);
-        var testSet = SerializationExtensions.Deserialize<TestSet>(fileContent);
+        var testSet = fileContent.AsMemory().Deserialize<TestSet>();
 
         foreach (var testCase in testSet!.tests ?? ArrayUtils.EmptyArray<TestCase>())
         {
@@ -200,10 +200,10 @@ public class EvaluationLogTests
 
     private static void RunTest(string testSetName, string? sdkKey, string? baseUrlOrOverrideFileName, string key, string? defaultValue, string? userObject, string? expectedReturnValue, string expectedLogFileName)
     {
-        var defaultValueParsed = defaultValue?.Deserialize<JsonValue>()!.ToSettingValue(out var settingType).GetValue();
-        var expectedReturnValueParsed = expectedReturnValue?.Deserialize<JsonValue>()!.ToSettingValue(out _).GetValue();
+        var defaultValueParsed = defaultValue?.AsMemory().Deserialize<JsonValue>()!.ToSettingValue(out var settingType).GetValue();
+        var expectedReturnValueParsed = expectedReturnValue?.AsMemory().Deserialize<JsonValue>()!.ToSettingValue(out _).GetValue();
 
-        var userObjectParsed = userObject?.Deserialize<Dictionary<string, string>?>();
+        var userObjectParsed = userObject?.AsMemory().Deserialize<Dictionary<string, string>?>();
         User? user;
         if (userObjectParsed is not null)
         {

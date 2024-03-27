@@ -19,7 +19,8 @@ public class DeserializerTests
             return settings;
         };
 
-        Assert.IsNotNull("{\"p\": {\"u\": \"http://example.com\", \"r\": 0}}".DeserializeOrDefault<Config>());
+        var config = Config.Deserialize("{\"p\": {\"u\": \"http://example.com\", \"r\": 0}}".AsMemory(), tolerant: false);
+        Assert.IsNotNull(config);
     }
 
     [DataRow(false)]

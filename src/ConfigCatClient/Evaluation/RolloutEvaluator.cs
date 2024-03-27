@@ -958,7 +958,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
     private string[]? GetUserAttributeValueAsStringArray(string attributeName, object attributeValue, UserCondition condition, string key, out string? error)
     {
         if (attributeValue is string[] stringArray
-            || attributeValue is string json && (stringArray = json.DeserializeOrDefault<string[]>()!) is not null)
+            || attributeValue is string json && (stringArray = json.AsMemory().DeserializeOrDefault<string[]>()!) is not null)
         {
             if (!Array.Exists(stringArray, item => item is null))
             {

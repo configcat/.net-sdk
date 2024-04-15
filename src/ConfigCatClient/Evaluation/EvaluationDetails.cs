@@ -86,6 +86,11 @@ public abstract class EvaluationDetails
     public bool IsDefaultValue { get; set; }
 
     /// <summary>
+    /// The code identifying the reason for the error in case evaluation failed.
+    /// </summary>
+    public EvaluationErrorCode ErrorCode { get; set; }
+
+    /// <summary>
     /// Error message in case evaluation failed.
     /// </summary>
     public string? ErrorMessage { get; set; }
@@ -94,8 +99,6 @@ public abstract class EvaluationDetails
     /// The <see cref="Exception"/> object related to the error in case evaluation failed (if any).
     /// </summary>
     public Exception? ErrorException { get; set; }
-
-    public EvaluationErrorCode ErrorCode { get; set; }
 
     /// <summary>
     /// The targeting rule (if any) that matched during the evaluation and was used to return the evaluated value.

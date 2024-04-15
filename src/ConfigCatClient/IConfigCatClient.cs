@@ -41,6 +41,7 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="key"/> is an empty string.</exception>
     /// <exception cref="ArgumentException"><typeparamref name="T"/> is not an allowed type.</exception>
+    [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
     T GetValue<T>(string key, T defaultValue, User? user = null);
 
     /// <summary>
@@ -92,6 +93,7 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="key"/> is an empty string.</exception>
     /// <exception cref="ArgumentException"><typeparamref name="T"/> is not an allowed type.</exception>
+    [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
     EvaluationDetails<T> GetValueDetails<T>(string key, T defaultValue, User? user = null);
 
     /// <summary>
@@ -129,6 +131,7 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// </para>
     /// </remarks>
     /// <returns>The collection of keys.</returns>
+    [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
     IReadOnlyCollection<string> GetAllKeys();
 
     /// <summary>
@@ -150,6 +153,7 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// </remarks>
     /// <param name="user">The User Object to use for evaluating targeting rules and percentage options.</param>
     /// <returns>The dictionary containing the keys and values.</returns>
+    [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
     IReadOnlyDictionary<string, object?> GetAllValues(User? user = null);
 
     /// <summary>
@@ -172,6 +176,7 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// </remarks>
     /// <param name="user">The User Object to use for evaluating targeting rules and percentage options.</param>
     /// <returns>The list of values along with evaluation details.</returns>
+    [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
     IReadOnlyList<EvaluationDetails> GetAllValueDetails(User? user = null);
 
     /// <summary>
@@ -193,6 +198,7 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// </para>
     /// </remarks>
     /// <returns>The refresh result.</returns>
+    [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
     RefreshResult ForceRefresh();
 
     /// <summary>

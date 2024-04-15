@@ -265,6 +265,7 @@ public sealed class ConfigCatClient : IConfigCatClient
     }
 
     /// <inheritdoc />
+    [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
     public T GetValue<T>(string key, T defaultValue, User? user = null)
     {
         if (key is null)
@@ -341,6 +342,7 @@ public sealed class ConfigCatClient : IConfigCatClient
     }
 
     /// <inheritdoc />
+    [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
     public EvaluationDetails<T> GetValueDetails<T>(string key, T defaultValue, User? user = null)
     {
         if (key is null)
@@ -411,6 +413,7 @@ public sealed class ConfigCatClient : IConfigCatClient
     }
 
     /// <inheritdoc />
+    [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
     public IReadOnlyCollection<string> GetAllKeys()
     {
         const string defaultReturnValue = "empty collection";
@@ -455,6 +458,7 @@ public sealed class ConfigCatClient : IConfigCatClient
     }
 
     /// <inheritdoc />
+    [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
     public IReadOnlyDictionary<string, object?> GetAllValues(User? user = null)
     {
         const string defaultReturnValue = "empty dictionary";
@@ -525,6 +529,7 @@ public sealed class ConfigCatClient : IConfigCatClient
     }
 
     /// <inheritdoc />
+    [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
     public IReadOnlyList<EvaluationDetails> GetAllValueDetails(User? user = null)
     {
         const string defaultReturnValue = "empty list";
@@ -591,6 +596,7 @@ public sealed class ConfigCatClient : IConfigCatClient
     }
 
     /// <inheritdoc />
+    [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
     public RefreshResult ForceRefresh()
     {
         try

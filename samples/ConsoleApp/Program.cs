@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using ConfigCat.Client;
 
 // Creating the ConfigCat client instance using the SDK Key
@@ -21,5 +21,5 @@ var user = new User("<SOME USERID>")
 };
 
 // Accessing feature flag or setting value
-var value = client.GetValue("isPOCFeatureEnabled", false, user);
+var value = await client.GetValueAsync("isPOCFeatureEnabled", false, user);
 Console.WriteLine($"isPOCFeatureEnabled: {value}");

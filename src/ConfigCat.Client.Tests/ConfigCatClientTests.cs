@@ -249,7 +249,7 @@ public class ConfigCatClientTests
     [DataRow(false)]
     [DataRow(true)]
     [DataTestMethod]
-    public async Task GetValueDetails_ShouldReturnCorrectEvaluationDetails_SettingIsNotAvailable(bool isAsync)
+    public async Task GetValueDetails_ShouldReturnCorrectEvaluationDetails_ConfigJsonIsNotAvailable(bool isAsync)
     {
         // Arrange
 
@@ -284,6 +284,62 @@ public class ConfigCatClientTests
         Assert.IsNull(actual.VariationId);
         Assert.AreEqual(DateTime.MinValue, actual.FetchTime);
         Assert.AreSame(user, actual.User);
+        Assert.AreEqual(EvaluationErrorCode.ConfigJsonNotAvailable, actual.ErrorCode);
+        Assert.IsNotNull(actual.ErrorMessage);
+        Assert.IsNull(actual.ErrorException);
+        Assert.IsNull(actual.MatchedTargetingRule);
+        Assert.IsNull(actual.MatchedPercentageOption);
+    }
+
+    [DataRow(false)]
+    [DataRow(true)]
+    [DataTestMethod]
+    public async Task GetValueDetails_ShouldReturnCorrectEvaluationDetails_SettingIsMissing(bool isAsync)
+    {
+        // Arrange
+
+        const string key = "does-not-exist";
+        const bool defaultValue = false;
+
+        const string cacheKey = "123";
+        var configJsonFilePath = Path.Combine("data", "sample_variationid_v5.json");
+        var timeStamp = ProjectConfig.GenerateTimeStamp();
+
+        var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
+            onFetch: _ => FetchResult.Success(ConfigHelper.FromFile(configJsonFilePath, httpETag: "12345", timeStamp)),
+            configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
+            {
+                return new ManualPollConfigService(this.fetcherMock.Object, cacheParams, loggerWrapper);
+            },
+            out var configService, out _);
+
+        if (isAsync)
+        {
+            await client.ForceRefreshAsync();
+        }
+        else
+        {
+            client.ForceRefresh();
+        }
+
+        var user = new User("a@configcat.com") { Email = "a@configcat.com" };
+
+        // Act
+
+        var actual = isAsync
+            ? await client.GetValueDetailsAsync(key, defaultValue, user)
+            : client.GetValueDetails(key, defaultValue, user);
+
+        // Assert
+
+        Assert.IsNotNull(actual);
+        Assert.AreEqual(key, actual.Key);
+        Assert.AreEqual(defaultValue, actual.Value);
+        Assert.IsTrue(actual.IsDefaultValue);
+        Assert.IsNull(actual.VariationId);
+        Assert.AreEqual(timeStamp, actual.FetchTime);
+        Assert.AreSame(user, actual.User);
+        Assert.AreEqual(EvaluationErrorCode.SettingKeyMissing, actual.ErrorCode);
         Assert.IsNotNull(actual.ErrorMessage);
         Assert.IsNull(actual.ErrorException);
         Assert.IsNull(actual.MatchedTargetingRule);
@@ -336,6 +392,7 @@ public class ConfigCatClientTests
         Assert.AreEqual("a0e56eda", actual.VariationId);
         Assert.AreEqual(timeStamp, actual.FetchTime);
         Assert.IsNull(actual.User);
+        Assert.AreEqual(EvaluationErrorCode.None, actual.ErrorCode);
         Assert.IsNull(actual.ErrorMessage);
         Assert.IsNull(actual.ErrorException);
         Assert.IsNull(actual.MatchedTargetingRule);
@@ -390,6 +447,7 @@ public class ConfigCatClientTests
         Assert.AreEqual("67787ae4", actual.VariationId);
         Assert.AreEqual(timeStamp, actual.FetchTime);
         Assert.AreSame(user, actual.User);
+        Assert.AreEqual(EvaluationErrorCode.None, actual.ErrorCode);
         Assert.IsNull(actual.ErrorMessage);
         Assert.IsNull(actual.ErrorException);
         Assert.IsNotNull(actual.MatchedTargetingRule);
@@ -444,6 +502,7 @@ public class ConfigCatClientTests
         Assert.AreEqual("67787ae4", actual.VariationId);
         Assert.AreEqual(timeStamp, actual.FetchTime);
         Assert.AreSame(user, actual.User);
+        Assert.AreEqual(EvaluationErrorCode.None, actual.ErrorCode);
         Assert.IsNull(actual.ErrorMessage);
         Assert.IsNull(actual.ErrorException);
         Assert.IsNull(actual.MatchedTargetingRule);
@@ -487,6 +546,7 @@ public class ConfigCatClientTests
         Assert.IsNull(actual.VariationId);
         Assert.AreEqual(DateTime.MinValue, actual.FetchTime);
         Assert.IsNull(actual.User);
+        Assert.AreEqual(EvaluationErrorCode.UnexpectedError, actual.ErrorCode);
         Assert.AreEqual(errorMessage, actual.ErrorMessage);
         Assert.IsInstanceOfType(actual.ErrorException, typeof(ApplicationException));
         Assert.IsNull(actual.MatchedTargetingRule);
@@ -550,6 +610,7 @@ public class ConfigCatClientTests
         Assert.IsNull(actual.VariationId);
         Assert.AreEqual(timeStamp, actual.FetchTime);
         Assert.AreSame(user, actual.User);
+        Assert.AreEqual(EvaluationErrorCode.UnexpectedError, actual.ErrorCode);
         Assert.AreEqual(errorMessage, actual.ErrorMessage);
         Assert.IsInstanceOfType(actual.ErrorException, typeof(ApplicationException));
         Assert.IsNull(actual.MatchedTargetingRule);
@@ -619,6 +680,7 @@ public class ConfigCatClientTests
             Assert.AreEqual(expectedItem.VariationId, actualDetails.VariationId);
             Assert.AreEqual(timeStamp, actualDetails.FetchTime);
             Assert.AreSame(user, actualDetails.User);
+            Assert.AreEqual(EvaluationErrorCode.None, actualDetails.ErrorCode);
             Assert.IsNull(actualDetails.ErrorMessage);
             Assert.IsNull(actualDetails.ErrorException);
             Assert.IsNotNull(actualDetails.MatchedTargetingRule);
@@ -755,6 +817,7 @@ public class ConfigCatClientTests
             Assert.IsNull(actualDetails.VariationId);
             Assert.AreEqual(timeStamp, actualDetails.FetchTime);
             Assert.AreSame(user, actualDetails.User);
+            Assert.AreEqual(EvaluationErrorCode.UnexpectedError, actualDetails.ErrorCode);
             Assert.AreEqual(errorMessage, actualDetails.ErrorMessage);
             Assert.IsInstanceOfType(actualDetails.ErrorException, typeof(ApplicationException));
             Assert.IsNull(actualDetails.MatchedTargetingRule);

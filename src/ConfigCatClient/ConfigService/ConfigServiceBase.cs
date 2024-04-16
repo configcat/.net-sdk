@@ -80,7 +80,7 @@ internal abstract class ConfigServiceBase : IDisposable
         else
         {
             var logMessage = this.Logger.ConfigServiceCannotInitiateHttpCalls();
-            return RefreshResult.Failure(logMessage.InvariantFormattedMessage);
+            return RefreshResult.Failure(RefreshErrorCode.OfflineClient, logMessage.InvariantFormattedMessage);
         }
     }
 
@@ -117,7 +117,7 @@ internal abstract class ConfigServiceBase : IDisposable
         else
         {
             var logMessage = this.Logger.ConfigServiceCannotInitiateHttpCalls();
-            return RefreshResult.Failure(logMessage.InvariantFormattedMessage);
+            return RefreshResult.Failure(RefreshErrorCode.OfflineClient, logMessage.InvariantFormattedMessage);
         }
     }
 

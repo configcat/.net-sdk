@@ -266,6 +266,7 @@ public class OverrideTests
         Assert.IsTrue(client.GetValue("nonexisting", false));
 
         Assert.IsFalse(refreshResult.IsSuccess);
+        Assert.AreEqual(RefreshErrorCode.LocalOnlyClient, refreshResult.ErrorCode);
         StringAssert.Contains(refreshResult.ErrorMessage, nameof(OverrideBehaviour.LocalOnly));
         Assert.IsNull(refreshResult.ErrorException);
     }
@@ -333,6 +334,7 @@ public class OverrideTests
         Assert.IsTrue(client.GetValue("nonexisting", false));
 
         Assert.IsFalse(refreshResult.IsSuccess);
+        Assert.AreEqual(RefreshErrorCode.LocalOnlyClient, refreshResult.ErrorCode);
         StringAssert.Contains(refreshResult.ErrorMessage, nameof(OverrideBehaviour.LocalOnly));
         Assert.IsNull(refreshResult.ErrorException);
     }

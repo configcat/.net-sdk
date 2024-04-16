@@ -594,7 +594,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         catch (Exception ex)
         {
             this.logger.ForceRefreshError(nameof(ForceRefresh), ex);
-            return RefreshResult.Failure(ex.Message, ex);
+            return RefreshResult.Failure(RefreshErrorCode.UnexpectedError, ex.Message, ex);
         }
     }
 
@@ -612,7 +612,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         catch (Exception ex)
         {
             this.logger.ForceRefreshError(nameof(ForceRefreshAsync), ex);
-            return RefreshResult.Failure(ex.Message, ex);
+            return RefreshResult.Failure(RefreshErrorCode.UnexpectedError, ex.Message, ex);
         }
     }
 

@@ -1040,6 +1040,7 @@ public class ConfigCatClientTests
         this.configServiceMock.Verify(m => m.RefreshConfigAsync(It.IsAny<CancellationToken>()), Times.Once);
 
         Assert.IsTrue(result.IsSuccess);
+        Assert.AreEqual(RefreshErrorCode.None, result.ErrorCode);
         Assert.IsNull(result.ErrorMessage);
         Assert.IsNull(result.ErrorException);
     }
@@ -1065,6 +1066,7 @@ public class ConfigCatClientTests
         this.configServiceMock.Verify(m => m.RefreshConfig(), Times.Once);
 
         Assert.IsTrue(result.IsSuccess);
+        Assert.AreEqual(RefreshErrorCode.None, result.ErrorCode);
         Assert.IsNull(result.ErrorMessage);
         Assert.IsNull(result.ErrorException);
     }
@@ -1090,6 +1092,7 @@ public class ConfigCatClientTests
         this.configServiceMock.Verify(m => m.RefreshConfigAsync(It.IsAny<CancellationToken>()), Times.Once);
 
         Assert.IsTrue(result.IsSuccess);
+        Assert.AreEqual(RefreshErrorCode.None, result.ErrorCode);
         Assert.IsNull(result.ErrorMessage);
         Assert.IsNull(result.ErrorException);
     }
@@ -1117,6 +1120,7 @@ public class ConfigCatClientTests
         this.loggerMock.Verify(m => m.Log(LogLevel.Error, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
 
         Assert.IsFalse(result.IsSuccess);
+        Assert.AreEqual(RefreshErrorCode.UnexpectedError, result.ErrorCode);
         Assert.AreEqual(exception.Message, result.ErrorMessage);
         Assert.AreSame(exception, result.ErrorException);
     }
@@ -1144,6 +1148,7 @@ public class ConfigCatClientTests
         this.loggerMock.Verify(m => m.Log(LogLevel.Error, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
 
         Assert.IsFalse(result.IsSuccess);
+        Assert.AreEqual(RefreshErrorCode.UnexpectedError, result.ErrorCode);
         Assert.AreEqual(exception.Message, result.ErrorMessage);
         Assert.AreSame(exception, result.ErrorException);
     }
@@ -1599,6 +1604,7 @@ public class ConfigCatClientTests
             Assert.AreEqual(etag2, ParseETagAsInt32((await configService.GetConfigAsync()).HttpETag));
 
             Assert.IsTrue(refreshResult.IsSuccess);
+            Assert.AreEqual(RefreshErrorCode.None, refreshResult.ErrorCode);
             Assert.IsNull(refreshResult.ErrorMessage);
             Assert.IsNull(refreshResult.ErrorException);
 
@@ -1615,6 +1621,7 @@ public class ConfigCatClientTests
             Assert.AreEqual(etag3, ParseETagAsInt32((await configService.GetConfigAsync()).HttpETag));
 
             Assert.IsTrue(refreshResult.IsSuccess);
+            Assert.AreEqual(RefreshErrorCode.None, refreshResult.ErrorCode);
             Assert.IsNull(refreshResult.ErrorMessage);
             Assert.IsNull(refreshResult.ErrorException);
         }
@@ -1729,6 +1736,7 @@ public class ConfigCatClientTests
             Assert.AreEqual(etag1, ParseETagAsInt32((await configService.GetConfigAsync()).HttpETag));
 
             Assert.IsFalse(refreshResult.IsSuccess);
+            Assert.AreEqual(RefreshErrorCode.OfflineClient, refreshResult.ErrorCode);
             StringAssert.Contains(refreshResult.ErrorMessage, "offline mode");
             Assert.IsNull(refreshResult.ErrorException);
 
@@ -1743,6 +1751,7 @@ public class ConfigCatClientTests
             Assert.AreEqual(etag1, ParseETagAsInt32((await configService.GetConfigAsync()).HttpETag));
 
             Assert.IsFalse(refreshResult.IsSuccess);
+            Assert.AreEqual(RefreshErrorCode.OfflineClient, refreshResult.ErrorCode);
             StringAssert.Contains(refreshResult.ErrorMessage, "offline mode");
             Assert.IsNull(refreshResult.ErrorException);
         }
@@ -1776,7 +1785,7 @@ public class ConfigCatClientTests
         var onFetch = (ProjectConfig latestConfig, CancellationToken _) =>
         {
             var logMessage = loggerWrapper.FetchFailedDueToUnexpectedError(errorException);
-            return FetchResult.Failure(latestConfig, errorMessage: logMessage.InvariantFormattedMessage, errorException: errorException);
+            return FetchResult.Failure(latestConfig, RefreshErrorCode.HttpRequestFailure, errorMessage: logMessage.InvariantFormattedMessage, errorException: errorException);
         };
         this.fetcherMock.Setup(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>())).ReturnsAsync(onFetch);
 

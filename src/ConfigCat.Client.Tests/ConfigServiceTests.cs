@@ -750,7 +750,7 @@ public class ConfigServiceTests
         cache.Set(null!, cachedPc);
 
         this.fetcherMock.Setup(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>())).ReturnsAsync(
-            failure ? FetchResult.Failure(fetchedPc, "network error") : FetchResult.NotModified(fetchedPc));
+            failure ? FetchResult.Failure(fetchedPc, RefreshErrorCode.HttpRequestFailure, "network error") : FetchResult.NotModified(fetchedPc));
 
         var config = PollingModes.AutoPoll(pollInterval, maxInitWaitTime);
         var service = new AutoPollConfigService(config,

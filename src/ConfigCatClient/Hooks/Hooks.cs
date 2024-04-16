@@ -39,6 +39,9 @@ internal class Hooks : IProvidesHooks
     public void RaiseFlagEvaluated(EvaluationDetails evaluationDetails)
         => this.events.RaiseFlagEvaluated(this.client, evaluationDetails);
 
+    public void RaiseConfigFetched(RefreshResult result, bool isInitiatedByUser)
+        => this.events.RaiseConfigFetched(this.client, result, isInitiatedByUser);
+
     public void RaiseConfigChanged(IConfig newConfig)
         => this.events.RaiseConfigChanged(this.client, newConfig);
 
@@ -57,6 +60,12 @@ internal class Hooks : IProvidesHooks
         remove { this.events.FlagEvaluated -= value; }
     }
 
+    public event EventHandler<ConfigFetchedEventArgs>? ConfigFetched
+    {
+        add { this.events.ConfigFetched += value; }
+        remove { this.events.ConfigFetched -= value; }
+    }
+
     public event EventHandler<ConfigChangedEventArgs>? ConfigChanged
     {
         add { this.events.ConfigChanged += value; }
@@ -73,11 +82,13 @@ internal class Hooks : IProvidesHooks
     {
         public virtual void RaiseClientReady(IConfigCatClient? client) { /* intentional no-op */ }
         public virtual void RaiseFlagEvaluated(IConfigCatClient? client, EvaluationDetails evaluationDetails) { /* intentional no-op */ }
+        public virtual void RaiseConfigFetched(IConfigCatClient? client, RefreshResult result, bool isInitiatedByUser) { /* intentional no-op */ }
         public virtual void RaiseConfigChanged(IConfigCatClient? client, IConfig newConfig) { /* intentional no-op */ }
         public virtual void RaiseError(IConfigCatClient? client, string message, Exception? exception) { /* intentional no-op */ }
 
         public virtual event EventHandler? ClientReady { add { /* intentional no-op */ } remove { /* intentional no-op */ } }
         public virtual event EventHandler<FlagEvaluatedEventArgs>? FlagEvaluated { add { /* intentional no-op */ } remove { /* intentional no-op */ } }
+        public virtual event EventHandler<ConfigFetchedEventArgs>? ConfigFetched { add { /* intentional no-op */ } remove { /* intentional no-op */ } }
         public virtual event EventHandler<ConfigChangedEventArgs>? ConfigChanged { add { /* intentional no-op */ } remove { /* intentional no-op */ } }
         public virtual event EventHandler<ConfigCatClientErrorEventArgs>? Error { add { /* intentional no-op */ } remove { /* intentional no-op */ } }
     }
@@ -94,6 +105,11 @@ internal class Hooks : IProvidesHooks
             FlagEvaluated?.Invoke(client, new FlagEvaluatedEventArgs(evaluationDetails));
         }
 
+        public override void RaiseConfigFetched(IConfigCatClient? client, RefreshResult result, bool isInitiatedByUser)
+        {
+            ConfigFetched?.Invoke(client, new ConfigFetchedEventArgs(result, isInitiatedByUser));
+        }
+
         public override void RaiseConfigChanged(IConfigCatClient? client, IConfig newConfig)
         {
             ConfigChanged?.Invoke(client, new ConfigChangedEventArgs(newConfig));
@@ -106,6 +122,7 @@ internal class Hooks : IProvidesHooks
 
         public override event EventHandler? ClientReady;
         public override event EventHandler<FlagEvaluatedEventArgs>? FlagEvaluated;
+        public override event EventHandler<ConfigFetchedEventArgs>? ConfigFetched;
         public override event EventHandler<ConfigChangedEventArgs>? ConfigChanged;
         public override event EventHandler<ConfigCatClientErrorEventArgs>? Error;
     }

@@ -18,7 +18,12 @@ public interface IProvidesHooks
     event EventHandler<FlagEvaluatedEventArgs>? FlagEvaluated;
 
     /// <summary>
-    /// Occurs after the locally cached config has been updated.
+    /// Occurs after attempting to refresh the locally cached config by fetching the latest version from the remote server.
+    /// </summary>
+    event EventHandler<ConfigFetchedEventArgs>? ConfigFetched;
+
+    /// <summary>
+    /// Occurs after the locally cached config has been updated to a newer version.
     /// </summary>
     event EventHandler<ConfigChangedEventArgs>? ConfigChanged;
 

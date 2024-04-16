@@ -168,6 +168,9 @@ public class ConfigServiceTests
         var configChangedEvents = new ConcurrentQueue<ConfigChangedEventArgs>();
         hooks.ConfigChanged += (s, e) => configChangedEvents.Enqueue(e);
 
+        var configFetchedEvents = new ConcurrentQueue<ConfigFetchedEventArgs>();
+        hooks.ConfigFetched += (s, e) => configFetchedEvents.Enqueue(e);
+
         this.cacheMock
             .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(cachedPc);
@@ -196,6 +199,12 @@ public class ConfigServiceTests
         Assert.IsTrue(configChangedEvents.TryDequeue(out var configChangedEvent));
         Assert.AreSame(fetchedPc.Config, configChangedEvent.NewConfig);
         Assert.AreEqual(0, configChangedEvents.Count);
+
+        Assert.AreEqual(1, configFetchedEvents.Count);
+        Assert.IsTrue(configFetchedEvents.TryDequeue(out var configFetchedEvent));
+        Assert.IsTrue(configFetchedEvent.IsInitiatedByUser);
+        Assert.IsTrue(configFetchedEvent.Result.IsSuccess);
+        Assert.AreEqual(RefreshErrorCode.None, configFetchedEvent.Result.ErrorCode);
     }
 
     [TestMethod]
@@ -416,6 +425,9 @@ public class ConfigServiceTests
         var clientReadyEventCount = 0;
         hooks.ClientReady += (s, e) => Interlocked.Increment(ref clientReadyEventCount);
 
+        var configFetchedEventCount = 0;
+        hooks.ConfigFetched += (s, e) => Interlocked.Increment(ref configFetchedEventCount);
+
         this.cacheMock
             .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(cachedPc);
@@ -439,6 +451,8 @@ public class ConfigServiceTests
         this.cacheMock.Verify(m => m.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Never);
 
         Assert.AreEqual(1, Volatile.Read(ref clientReadyEventCount));
+
+        Assert.AreEqual(0, Volatile.Read(ref configFetchedEventCount));
     }
 
     [TestMethod]
@@ -454,6 +468,9 @@ public class ConfigServiceTests
 
         var clientReadyEventCount = 0;
         hooks.ClientReady += (s, e) => Interlocked.Increment(ref clientReadyEventCount);
+
+        var configFetchedEvents = new ConcurrentQueue<ConfigFetchedEventArgs>();
+        hooks.ConfigFetched += (s, e) => configFetchedEvents.Enqueue(e);
 
         byte callOrder = 1;
 
@@ -488,6 +505,12 @@ public class ConfigServiceTests
         this.cacheMock.Verify(m => m.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Once);
 
         Assert.AreEqual(1, Volatile.Read(ref clientReadyEventCount));
+
+        Assert.AreEqual(1, configFetchedEvents.Count);
+        Assert.IsTrue(configFetchedEvents.TryDequeue(out var configFetchedEvent));
+        Assert.IsTrue(configFetchedEvent.IsInitiatedByUser);
+        Assert.IsTrue(configFetchedEvent.Result.IsSuccess);
+        Assert.AreEqual(RefreshErrorCode.None, configFetchedEvent.Result.ErrorCode);
     }
 
     [TestMethod]
@@ -503,6 +526,9 @@ public class ConfigServiceTests
 
         var configChangedEvents = new ConcurrentQueue<ConfigChangedEventArgs>();
         hooks.ConfigChanged += (s, e) => configChangedEvents.Enqueue(e);
+
+        var configFetchedEvents = new ConcurrentQueue<ConfigFetchedEventArgs>();
+        hooks.ConfigFetched += (s, e) => configFetchedEvents.Enqueue(e);
 
         this.cacheMock
             .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -531,6 +557,12 @@ public class ConfigServiceTests
         Assert.IsTrue(configChangedEvents.TryDequeue(out var configChangedEvent));
         Assert.AreSame(fetchedPc.Config, configChangedEvent.NewConfig);
         Assert.AreEqual(0, configChangedEvents.Count);
+
+        Assert.AreEqual(1, configFetchedEvents.Count);
+        Assert.IsTrue(configFetchedEvents.TryDequeue(out var configFetchedEvent));
+        Assert.IsTrue(configFetchedEvent.IsInitiatedByUser);
+        Assert.IsTrue(configFetchedEvent.Result.IsSuccess);
+        Assert.AreEqual(RefreshErrorCode.None, configFetchedEvent.Result.ErrorCode);
     }
 
     [TestMethod]
@@ -624,6 +656,9 @@ public class ConfigServiceTests
         var clientReadyTcs = new TaskCompletionSource<object?>();
         hooks.ClientReady += (s, e) => clientReadyTcs.TrySetResult(default);
 
+        var configFetchedEventCount = 0;
+        hooks.ConfigFetched += (s, e) => Interlocked.Increment(ref configFetchedEventCount);
+
         var cache = new InMemoryConfigCache();
         cache.Set(null!, cachedPc);
 
@@ -667,6 +702,8 @@ public class ConfigServiceTests
         {
             Assert.IsTrue(clientReadyCalled);
         }
+
+        Assert.AreEqual(0, Volatile.Read(ref configFetchedEventCount));
     }
 
     [DataRow(false)]
@@ -686,6 +723,9 @@ public class ConfigServiceTests
 
         var clientReadyTcs = new TaskCompletionSource<object?>();
         hooks.ClientReady += (s, e) => clientReadyTcs.TrySetResult(default);
+
+        var configFetchedEvents = new ConcurrentQueue<ConfigFetchedEventArgs>();
+        hooks.ConfigFetched += (s, e) => configFetchedEvents.Enqueue(e);
 
         var cache = new InMemoryConfigCache();
         cache.Set(null!, cachedPc);
@@ -710,9 +750,13 @@ public class ConfigServiceTests
 
             // Allow some time for other initalization callbacks to execute.
             using var cts = new CancellationTokenSource();
-            var task = await Task.WhenAny(clientReadyTcs.Task, Task.Delay(maxInitWaitTime, cts.Token));
+            var clientReadyTask = Task.Run(async () => await clientReadyTcs.Task);
+            var task = await Task.WhenAny(clientReadyTask, Task.Delay(maxInitWaitTime, cts.Token));
             cts.Cancel();
-            clientReadyCalled = task == clientReadyTcs.Task && task.Status == TaskStatus.RanToCompletion;
+            clientReadyCalled = task == clientReadyTask && task.Status == TaskStatus.RanToCompletion;
+
+            // Wait for the hook event handlers to execute (as that might not happen if the service got disposed immediately).
+            SpinWait.SpinUntil(() => configFetchedEvents.TryPeek(out _), TimeSpan.FromSeconds(1));
         }
 
         // Assert
@@ -722,6 +766,12 @@ public class ConfigServiceTests
         this.fetcherMock.Verify(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>()), Times.Once);
 
         Assert.IsTrue(clientReadyCalled);
+
+        Assert.AreEqual(1, configFetchedEvents.Count);
+        Assert.IsTrue(configFetchedEvents.TryDequeue(out var configFetchedEvent));
+        Assert.IsFalse(configFetchedEvent.IsInitiatedByUser);
+        Assert.IsTrue(configFetchedEvent.Result.IsSuccess);
+        Assert.AreEqual(RefreshErrorCode.None, configFetchedEvent.Result.ErrorCode);
     }
 
     [DataRow(false, false, true)]
@@ -745,6 +795,9 @@ public class ConfigServiceTests
 
         var clientReadyTcs = new TaskCompletionSource<object?>();
         hooks.ClientReady += (s, e) => clientReadyTcs.TrySetResult(default);
+
+        var configFetchedEvents = new ConcurrentQueue<ConfigFetchedEventArgs>();
+        hooks.ConfigFetched += (s, e) => configFetchedEvents.Enqueue(e);
 
         var cache = new InMemoryConfigCache();
         cache.Set(null!, cachedPc);
@@ -770,9 +823,13 @@ public class ConfigServiceTests
 
             // Allow some time for other initalization callbacks to execute.
             using var cts = new CancellationTokenSource();
-            var task = await Task.WhenAny(clientReadyTcs.Task, Task.Delay(maxInitWaitTime, cts.Token));
+            var clientReadyTask = Task.Run(async () => await clientReadyTcs.Task);
+            var task = await Task.WhenAny(clientReadyTask, Task.Delay(maxInitWaitTime, cts.Token));
             cts.Cancel();
-            clientReadyCalled = task == clientReadyTcs.Task && task.Status == TaskStatus.RanToCompletion;
+            clientReadyCalled = task == clientReadyTask && task.Status == TaskStatus.RanToCompletion;
+
+            // Wait for the hook event handlers to execute (as that might not happen if the service got disposed immediately).
+            SpinWait.SpinUntil(() => configFetchedEvents.TryPeek(out _), TimeSpan.FromSeconds(1));
         }
 
         // Assert
@@ -782,6 +839,12 @@ public class ConfigServiceTests
         this.fetcherMock.Verify(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>()), Times.Once);
 
         Assert.IsTrue(clientReadyCalled);
+
+        Assert.IsTrue(configFetchedEvents.Count > 0);
+        Assert.IsTrue(configFetchedEvents.TryDequeue(out var configFetchedEvent));
+        Assert.IsFalse(configFetchedEvent.IsInitiatedByUser);
+        Assert.AreEqual(failure, !configFetchedEvent.Result.IsSuccess);
+        Assert.AreEqual(failure ? RefreshErrorCode.HttpRequestFailure : RefreshErrorCode.None, configFetchedEvent.Result.ErrorCode);
     }
 
     [DataRow(false)]
@@ -800,6 +863,9 @@ public class ConfigServiceTests
 
         var clientReadyEventCount = 0;
         hooks.ClientReady += (s, e) => Interlocked.Increment(ref clientReadyEventCount);
+
+        var configFetchedEventCount = 0;
+        hooks.ConfigFetched += (s, e) => Interlocked.Increment(ref configFetchedEventCount);
 
         var cache = new InMemoryConfigCache();
         cache.Set(null!, cachedPc);
@@ -841,6 +907,8 @@ public class ConfigServiceTests
         }
 
         Assert.AreEqual(1, Volatile.Read(ref clientReadyEventCount));
+
+        Assert.AreEqual(0, Volatile.Read(ref configFetchedEventCount));
     }
 
     [DataRow(false)]
@@ -859,6 +927,9 @@ public class ConfigServiceTests
 
         var clientReadyEventCount = 0;
         hooks.ClientReady += (s, e) => Interlocked.Increment(ref clientReadyEventCount);
+
+        var configFetchedEvents = new ConcurrentQueue<ConfigFetchedEventArgs>();
+        hooks.ConfigFetched += (s, e) => configFetchedEvents.Enqueue(e);
 
         var cache = new InMemoryConfigCache();
         cache.Set(null!, cachedPc);
@@ -900,5 +971,11 @@ public class ConfigServiceTests
         }
 
         Assert.AreEqual(1, Volatile.Read(ref clientReadyEventCount));
+
+        Assert.IsTrue(configFetchedEvents.Count > 0);
+        Assert.IsTrue(configFetchedEvents.TryDequeue(out var configFetchedEvent));
+        Assert.IsFalse(configFetchedEvent.IsInitiatedByUser);
+        Assert.IsTrue(configFetchedEvent.Result.IsSuccess);
+        Assert.AreEqual(RefreshErrorCode.None, configFetchedEvent.Result.ErrorCode);
     }
 }

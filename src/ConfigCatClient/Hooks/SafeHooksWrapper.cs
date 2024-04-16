@@ -21,16 +21,24 @@ internal readonly struct SafeHooksWrapper
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public void RaiseClientReady() => Hooks.RaiseClientReady();
+    public void RaiseClientReady()
+        => Hooks.RaiseClientReady();
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public void RaiseFlagEvaluated(EvaluationDetails evaluationDetails) => Hooks.RaiseFlagEvaluated(evaluationDetails);
+    public void RaiseFlagEvaluated(EvaluationDetails evaluationDetails)
+        => Hooks.RaiseFlagEvaluated(evaluationDetails);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public void RaiseConfigChanged(IConfig newConfig) => Hooks.RaiseConfigChanged(newConfig);
+    public void RaiseConfigFetched(RefreshResult result, bool isInitiatedByUser)
+        => Hooks.RaiseConfigFetched(result, isInitiatedByUser);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public void RaiseError(string message, Exception? exception) => Hooks.RaiseError(message, exception);
+    public void RaiseConfigChanged(IConfig newConfig)
+        => Hooks.RaiseConfigChanged(newConfig);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public void RaiseError(string message, Exception? exception)
+        => Hooks.RaiseError(message, exception);
 
     public static implicit operator SafeHooksWrapper(Hooks? hooks) => hooks is not null ? new SafeHooksWrapper(hooks) : default;
 }

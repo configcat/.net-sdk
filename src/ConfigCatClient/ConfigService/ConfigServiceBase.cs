@@ -74,7 +74,7 @@ internal abstract class ConfigServiceBase : IDisposable
         if (!IsOffline)
         {
             var latestConfig = this.ConfigCache.Get(this.CacheKey);
-            var configWithFetchResult = RefreshConfigCore(latestConfig);
+            var configWithFetchResult = RefreshConfigCore(latestConfig, isInitiatedByUser: true);
             return RefreshResult.From(configWithFetchResult.Item2);
         }
         else
@@ -84,7 +84,7 @@ internal abstract class ConfigServiceBase : IDisposable
         }
     }
 
-    protected ConfigWithFetchResult RefreshConfigCore(ProjectConfig latestConfig)
+    protected ConfigWithFetchResult RefreshConfigCore(ProjectConfig latestConfig, bool isInitiatedByUser)
     {
         var fetchResult = this.ConfigFetcher.Fetch(latestConfig);
 
@@ -96,11 +96,11 @@ internal abstract class ConfigServiceBase : IDisposable
             latestConfig = fetchResult.Config;
         }
 
-        OnConfigFetched(fetchResult.Config);
+        OnConfigFetched(fetchResult, isInitiatedByUser);
 
         if (fetchResult.IsSuccess)
         {
-            OnConfigChanged(fetchResult.Config);
+            OnConfigChanged(fetchResult);
         }
 
         return new ConfigWithFetchResult(latestConfig, fetchResult);
@@ -111,7 +111,7 @@ internal abstract class ConfigServiceBase : IDisposable
         if (!IsOffline)
         {
             var latestConfig = await this.ConfigCache.GetAsync(this.CacheKey, cancellationToken).ConfigureAwait(false);
-            var configWithFetchResult = await RefreshConfigCoreAsync(latestConfig, cancellationToken).ConfigureAwait(false);
+            var configWithFetchResult = await RefreshConfigCoreAsync(latestConfig, isInitiatedByUser: true, cancellationToken).ConfigureAwait(false);
             return RefreshResult.From(configWithFetchResult.Item2);
         }
         else
@@ -121,7 +121,7 @@ internal abstract class ConfigServiceBase : IDisposable
         }
     }
 
-    protected async Task<ConfigWithFetchResult> RefreshConfigCoreAsync(ProjectConfig latestConfig, CancellationToken cancellationToken)
+    protected async Task<ConfigWithFetchResult> RefreshConfigCoreAsync(ProjectConfig latestConfig, bool isInitiatedByUser, CancellationToken cancellationToken)
     {
         var fetchResult = await this.ConfigFetcher.FetchAsync(latestConfig, cancellationToken).ConfigureAwait(false);
 
@@ -133,23 +133,26 @@ internal abstract class ConfigServiceBase : IDisposable
             latestConfig = fetchResult.Config;
         }
 
-        OnConfigFetched(fetchResult.Config);
+        OnConfigFetched(fetchResult, isInitiatedByUser);
 
         if (fetchResult.IsSuccess)
         {
-            OnConfigChanged(fetchResult.Config);
+            OnConfigChanged(fetchResult);
         }
 
         return new ConfigWithFetchResult(latestConfig, fetchResult);
     }
 
-    protected virtual void OnConfigFetched(ProjectConfig newConfig) { }
+    protected virtual void OnConfigFetched(in FetchResult fetchResult, bool isInitiatedByUser)
+    {
+        this.Hooks.RaiseConfigFetched(RefreshResult.From(fetchResult), isInitiatedByUser);
+    }
 
-    protected virtual void OnConfigChanged(ProjectConfig newConfig)
+    protected virtual void OnConfigChanged(in FetchResult fetchResult)
     {
         this.Logger.Debug("config changed");
 
-        this.Hooks.RaiseConfigChanged(newConfig.Config ?? new Config());
+        this.Hooks.RaiseConfigChanged(fetchResult.Config.Config ?? new Config());
     }
 
     public bool IsOffline

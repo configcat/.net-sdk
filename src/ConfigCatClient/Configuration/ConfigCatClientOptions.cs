@@ -128,6 +128,13 @@ public class ConfigCatClientOptions : IProvidesHooks
     }
 
     /// <inheritdoc/>
+    public event EventHandler<ConfigFetchedEventArgs>? ConfigFetched
+    {
+        add { this.hooks.ConfigFetched += value; }
+        remove { this.hooks.ConfigFetched -= value; }
+    }
+
+    /// <inheritdoc/>
     public event EventHandler<ConfigChangedEventArgs>? ConfigChanged
     {
         add { this.hooks.ConfigChanged += value; }

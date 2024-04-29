@@ -50,7 +50,7 @@ public class HttpConfigFetcherTests
     }
 
     [TestMethod]
-    public async Task HttpConfigFetcher_ResponseHttpCodeIsUnexpected_ShouldReturnsPassedConfig()
+    public async Task HttpConfigFetcher_ResponseHttpCodeIsUnexpected_ShouldReturnPassedConfig()
     {
         // Arrange
 
@@ -68,6 +68,7 @@ public class HttpConfigFetcherTests
         // Assert
 
         Assert.IsTrue(actual.IsFailure);
+        Assert.AreEqual(RefreshErrorCode.InvalidSdkKey, actual.ErrorCode);
         Assert.IsNotNull(actual.ErrorMessage);
         Assert.IsNull(actual.ErrorException);
         Assert.AreNotSame(lastConfig, actual.Config);
@@ -96,6 +97,7 @@ public class HttpConfigFetcherTests
         // Assert
 
         Assert.IsTrue(actual.IsFailure);
+        Assert.AreEqual(RefreshErrorCode.HttpRequestFailure, actual.ErrorCode);
         Assert.IsNotNull(actual.ErrorMessage);
         Assert.AreSame(exception, actual.ErrorException);
         Assert.AreEqual(lastConfig, actual.Config);

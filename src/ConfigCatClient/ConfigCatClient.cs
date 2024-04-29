@@ -293,7 +293,8 @@ public sealed class ConfigCatClient : IConfigCatClient
         catch (Exception ex)
         {
             Logger.SettingEvaluationError(nameof(GetValue), key, nameof(defaultValue), defaultValue, ex);
-            evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user, ex.Message, ex);
+            evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user,
+                ex.Message, ex, RolloutEvaluatorExtensions.GetErrorCode(ex));
             value = defaultValue;
         }
 
@@ -333,7 +334,8 @@ public sealed class ConfigCatClient : IConfigCatClient
         catch (Exception ex)
         {
             Logger.SettingEvaluationError(nameof(GetValueAsync), key, nameof(defaultValue), defaultValue, ex);
-            evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user, ex.Message, ex);
+            evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user,
+                ex.Message, ex, RolloutEvaluatorExtensions.GetErrorCode(ex));
             value = defaultValue;
         }
 
@@ -368,7 +370,8 @@ public sealed class ConfigCatClient : IConfigCatClient
         catch (Exception ex)
         {
             Logger.SettingEvaluationError(nameof(GetValueDetails), key, nameof(defaultValue), defaultValue, ex);
-            evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user, ex.Message, ex);
+            evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user,
+                ex.Message, ex, RolloutEvaluatorExtensions.GetErrorCode(ex));
         }
 
         this.hooks.RaiseFlagEvaluated(evaluationDetails);
@@ -405,7 +408,8 @@ public sealed class ConfigCatClient : IConfigCatClient
         catch (Exception ex)
         {
             Logger.SettingEvaluationError(nameof(GetValueDetailsAsync), key, nameof(defaultValue), defaultValue, ex);
-            evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user, ex.Message, ex);
+            evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user,
+                ex.Message, ex, RolloutEvaluatorExtensions.GetErrorCode(ex));
         }
 
         this.hooks.RaiseFlagEvaluated(evaluationDetails);
@@ -606,7 +610,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         catch (Exception ex)
         {
             Logger.ForceRefreshError(nameof(ForceRefresh), ex);
-            return RefreshResult.Failure(ex.Message, ex);
+            return RefreshResult.Failure(RefreshErrorCode.UnexpectedError, ex.Message, ex);
         }
     }
 
@@ -624,7 +628,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         catch (Exception ex)
         {
             Logger.ForceRefreshError(nameof(ForceRefreshAsync), ex);
-            return RefreshResult.Failure(ex.Message, ex);
+            return RefreshResult.Failure(RefreshErrorCode.UnexpectedError, ex.Message, ex);
         }
     }
 
@@ -770,6 +774,13 @@ public sealed class ConfigCatClient : IConfigCatClient
     {
         add { this.hooks.FlagEvaluated += value; }
         remove { this.hooks.FlagEvaluated -= value; }
+    }
+
+    /// <inheritdoc/>
+    public event EventHandler<ConfigFetchedEventArgs>? ConfigFetched
+    {
+        add { this.hooks.ConfigFetched += value; }
+        remove { this.hooks.ConfigFetched -= value; }
     }
 
     /// <inheritdoc/>

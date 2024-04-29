@@ -22,7 +22,11 @@ internal sealed class NullConfigService : IConfigService
 
     public ValueTask<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default) => new ValueTask<ProjectConfig>(ProjectConfig.Empty);
 
-    public RefreshResult RefreshConfig() { return RefreshResult.Failure($"Client is configured to use the {nameof(OverrideBehaviour.LocalOnly)} override behavior, which prevents making HTTP requests."); }
+    public RefreshResult RefreshConfig()
+    {
+        return RefreshResult.Failure(RefreshErrorCode.LocalOnlyClient,
+            $"Client is configured to use the {nameof(OverrideBehaviour.LocalOnly)} override behavior, which prevents making HTTP requests.");
+    }
 
     public ValueTask<RefreshResult> RefreshConfigAsync(CancellationToken cancellationToken = default) => new ValueTask<RefreshResult>(RefreshConfig());
 

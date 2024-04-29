@@ -233,7 +233,7 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
         var logger = new Mock<IConfigCatLogger>().Object.AsWrapper();
         var evaluator = new RolloutEvaluator(logger);
 
-        var ex = Assert.ThrowsException<InvalidOperationException>(() => evaluator.Evaluate<object?>(config!.Settings, key, defaultValue: null, user: null, remoteConfig: null, logger));
+        var ex = Assert.ThrowsException<InvalidConfigModelException>(() => evaluator.Evaluate<object?>(config!.Settings, key, defaultValue: null, user: null, remoteConfig: null, logger));
 
         StringAssert.Contains(ex.Message, "Circular dependency detected");
         StringAssert.Contains(ex.Message, dependencyCycle);

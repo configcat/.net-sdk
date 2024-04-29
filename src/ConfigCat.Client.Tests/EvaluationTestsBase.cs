@@ -112,7 +112,7 @@ public abstract class EvaluationTestsBase
             this.logger,
         };
 
-        var ex = Assert.ThrowsException<InvalidOperationException>(() =>
+        var ex = Assert.ThrowsException<EvaluationErrorException>(() =>
         {
             try { EvaluateMethodDefinition.MakeGenericMethod(settingClrType).Invoke(null, args); }
             catch (TargetInvocationException ex) { throw ex.InnerException!; }

@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using System.IO;
+using System.Threading.Tasks;
 using ConfigCat.Client;
 
 namespace SampleApplication
@@ -56,7 +57,7 @@ namespace SampleApplication
             }
         }
 
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             var filePath = Path.Combine(Environment.CurrentDirectory, "configcat.log");
             var logLevel = LogLevel.Warning; // Log only WARNING and higher entries (warnings and errors).
@@ -67,7 +68,7 @@ namespace SampleApplication
                 options.PollingMode = PollingModes.AutoPoll(pollInterval: TimeSpan.FromSeconds(5));
             });
 
-            var feature = client.GetValue("keyNotExists", "N/A");
+            var feature = await client.GetValueAsync("keyNotExists", "N/A");
 
             Console.ReadKey();
         }

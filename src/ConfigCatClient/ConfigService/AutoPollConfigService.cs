@@ -10,8 +10,8 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
 {
     private readonly TimeSpan pollInterval;
     private readonly TimeSpan maxInitWaitTime;
-    private readonly CancellationTokenSource initializationCancellationTokenSource = new(); // used for signalling initialization
-    private CancellationTokenSource? timerCancellationTokenSource = new(); // used for signalling background work to stop
+    private readonly CancellationTokenSource initSignalCancellationTokenSource = new(); // used for signalling initialization ready
+    private CancellationTokenSource timerCancellationTokenSource = new(); // used for signalling background work to stop
 
     internal AutoPollConfigService(
         AutoPoll options,
@@ -35,31 +35,38 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
         this.pollInterval = options.PollInterval;
         this.maxInitWaitTime = options.MaxInitWaitTime >= TimeSpan.Zero ? options.MaxInitWaitTime : Timeout.InfiniteTimeSpan;
 
-        this.initializationCancellationTokenSource.Token.Register(this.Hooks.RaiseClientReady, useSynchronizationContext: false);
-        if (options.MaxInitWaitTime > TimeSpan.Zero)
+        var initialCacheSyncUpTask = SyncUpWithCacheAsync(WaitForReadyCancellationToken);
+
+        // This task will complete when either initalization ready is signalled by cancelling initializationCancellationTokenSource or maxInitWaitTime passes.
+        // If the service gets disposed before any of these events happen, the task will also complete, but with a canceled status.
+        InitializationTask = WaitForInitializationAsync(WaitForReadyCancellationToken);
+
+        ReadyTask = GetReadyTask(InitializationTask, async initializationTask =>
         {
-            this.initializationCancellationTokenSource.CancelAfter(options.MaxInitWaitTime);
-        }
-        else if (options.MaxInitWaitTime == TimeSpan.Zero)
-        {
-            this.initializationCancellationTokenSource.Cancel();
-        }
+            // In Auto Polling mode, maxInitWaitTime takes precedence over waiting for initial cache sync-up, that is,
+            // ClientReady is always raised after maxInitWaitTime has passed, regardless of whether initial cache sync-up has finished or not.
+            await initializationTask.ConfigureAwait(false);
+            return GetCacheState(this.ConfigCache.LocalCachedConfig);
+        });
 
         if (!isOffline && startTimer)
         {
-            StartScheduler();
+            StartScheduler(initialCacheSyncUpTask, this.timerCancellationTokenSource.Token);
         }
     }
+
+    internal Task<bool> InitializationTask { get; }
+
+    public Task<ClientCacheState> ReadyTask { get; }
 
     protected override void DisposeSynchronized(bool disposing)
     {
         // Background work should stop under all circumstances
-        this.timerCancellationTokenSource!.Cancel();
+        this.timerCancellationTokenSource.Cancel();
 
         if (disposing)
         {
             this.timerCancellationTokenSource.Dispose();
-            this.timerCancellationTokenSource = null;
         }
 
         base.DisposeSynchronized(disposing);
@@ -69,19 +76,23 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
     {
         if (disposing)
         {
-            this.initializationCancellationTokenSource.Dispose();
+            this.initSignalCancellationTokenSource.Dispose();
         }
 
         base.Dispose(disposing);
     }
 
-    private bool IsInitialized => this.initializationCancellationTokenSource.IsCancellationRequested;
+    private bool IsInitialized => InitializationTask.Status == TaskStatus.RanToCompletion;
 
     private void SignalInitialization()
     {
         try
         {
-            this.initializationCancellationTokenSource.Cancel();
+            if (!this.initSignalCancellationTokenSource.IsCancellationRequested)
+            {
+                this.initSignalCancellationTokenSource.Cancel();
+                this.initSignalCancellationTokenSource.Dispose();
+            }
         }
         catch (ObjectDisposedException)
         {
@@ -92,18 +103,11 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
         }
     }
 
-    internal bool WaitForInitialization()
-    {
-        // An infinite timeout would also work but we limit waiting to MaxInitWaitTime for maximum safety.
-        return this.initializationCancellationTokenSource.Token.WaitHandle.WaitOne(this.maxInitWaitTime);
-    }
-
-    internal async Task<bool> WaitForInitializationAsync(CancellationToken cancellationToken = default)
+    private async Task<bool> WaitForInitializationAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            // An infinite timeout would also work but we limit waiting to MaxInitWaitTime for maximum safety.
-            await Task.Delay(this.maxInitWaitTime, this.initializationCancellationTokenSource.Token)
+            await Task.Delay(this.maxInitWaitTime, this.initSignalCancellationTokenSource.Token)
                 .WaitAsync(cancellationToken).ConfigureAwait(false);
 
             return false;
@@ -124,7 +128,9 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
                 return cachedConfig;
             }
 
-            WaitForInitialization();
+            // NOTE: We go sync over async here, however it's safe to do that in this case as
+            // the task will be completed on a thread pool thread (either by the polling loop or a timer callback).
+            InitializationTask.GetAwaiter().GetResult();
         }
 
         return this.ConfigCache.Get(base.CacheKey);
@@ -140,7 +146,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
                 return cachedConfig;
             }
 
-            await WaitForInitializationAsync(cancellationToken).ConfigureAwait(false);
+            await InitializationTask.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
 
         return await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(false);
@@ -154,31 +160,30 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
 
     protected override void SetOnlineCoreSynchronized()
     {
-        StartScheduler();
+        StartScheduler(null, this.timerCancellationTokenSource.Token);
     }
 
     protected override void SetOfflineCoreSynchronized()
     {
-        this.timerCancellationTokenSource!.Cancel();
+        this.timerCancellationTokenSource.Cancel();
         this.timerCancellationTokenSource.Dispose();
         this.timerCancellationTokenSource = new CancellationTokenSource();
     }
 
-    private void StartScheduler()
+    private void StartScheduler(Task<ProjectConfig>? initialCacheSyncUpTask, CancellationToken stopToken)
     {
         Task.Run(async () =>
         {
             var isFirstIteration = true;
 
-            while (Synchronize(static @this => @this.timerCancellationTokenSource?.Token, this) is { } cancellationToken
-                && !cancellationToken.IsCancellationRequested)
+            while (!stopToken.IsCancellationRequested)
             {
                 try
                 {
                     var scheduledNextTime = DateTime.UtcNow.Add(this.pollInterval);
                     try
                     {
-                        await PollCoreAsync(isFirstIteration, cancellationToken).ConfigureAwait(false);
+                        await PollCoreAsync(isFirstIteration, initialCacheSyncUpTask, stopToken).ConfigureAwait(false);
                     }
                     catch (Exception ex) when (ex is not OperationCanceledException)
                     {
@@ -188,7 +193,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
                     var realNextTime = scheduledNextTime.Subtract(DateTime.UtcNow);
                     if (realNextTime > TimeSpan.Zero)
                     {
-                        await Task.Delay(realNextTime, cancellationToken).ConfigureAwait(false);
+                        await Task.Delay(realNextTime, stopToken).ConfigureAwait(false);
                     }
                 }
                 catch (OperationCanceledException)
@@ -201,15 +206,19 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
                 }
 
                 isFirstIteration = false;
+                initialCacheSyncUpTask = null; // allow GC to collect the task and its result
             }
-        });
+        }, stopToken);
     }
 
-    private async ValueTask PollCoreAsync(bool isFirstIteration, CancellationToken cancellationToken)
+    private async ValueTask PollCoreAsync(bool isFirstIteration, Task<ProjectConfig>? initialCacheSyncUpTask, CancellationToken cancellationToken)
     {
         if (isFirstIteration)
         {
-            var latestConfig = await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(false);
+            var latestConfig = initialCacheSyncUpTask is not null
+                ? await initialCacheSyncUpTask.WaitAsync(cancellationToken).ConfigureAwait(false)
+                : await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(false);
+
             if (latestConfig.IsExpired(expiration: this.pollInterval))
             {
                 if (!IsOffline)
@@ -232,12 +241,18 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
         }
     }
 
-    internal void StopScheduler()
+    public override ClientCacheState GetCacheState(ProjectConfig cachedConfig)
     {
-        Synchronize(static @this =>
+        if (cachedConfig.IsEmpty)
         {
-            @this.timerCancellationTokenSource?.Cancel();
-            return default(object);
-        }, this);
+            return ClientCacheState.NoFlagData;
+        }
+
+        if (cachedConfig.IsExpired(this.pollInterval))
+        {
+            return ClientCacheState.HasCachedFlagDataOnly;
+        }
+
+        return ClientCacheState.HasUpToDateFlagData;
     }
 }

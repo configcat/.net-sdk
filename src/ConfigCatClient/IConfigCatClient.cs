@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using ConfigCat.Client.Configuration;
 
 namespace ConfigCat.Client;
 
@@ -22,6 +23,11 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// It is important to provide an argument for the <paramref name="defaultValue"/> parameter, specifically for the <typeparamref name="T"/> generic type parameter,
     /// that matches the type of the feature flag or setting you are evaluating.<br/>
     /// Please refer to <see href="https://configcat.com/docs/sdk-reference/dotnet/#setting-type-mapping">this table</see> for the corresponding types.
+    /// <para>
+    /// Please be aware that calling this method on a thread pool thread or the main UI thread is safe only when the client is set up to use Auto or Manual Polling and in-memory caching.
+    /// Otherwise execution may involve I/O-bound (e.g. network) operations, because of which the executing thread may be blocked for a longer period of time. This can result in an unresponsive application.
+    /// In the case of problematic setups, it is recommended to use either the async version of the method or snaphots (see <see cref="Snapshot"/>).
+    /// </para>
     /// </remarks>
     /// <typeparam name="T">
     /// The type of the value. Only the following types are allowed:
@@ -35,6 +41,7 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="key"/> is an empty string.</exception>
     /// <exception cref="ArgumentException"><typeparamref name="T"/> is not an allowed type.</exception>
+    [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
     T GetValue<T>(string key, T defaultValue, User? user = null);
 
     /// <summary>
@@ -68,6 +75,11 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// It is important to provide an argument for the <paramref name="defaultValue"/> parameter, specifically for the <typeparamref name="T"/> generic type parameter,
     /// that matches the type of the feature flag or setting you are evaluating.<br/>
     /// Please refer to <see href="https://configcat.com/docs/sdk-reference/dotnet/#setting-type-mapping">this table</see> for the corresponding types.
+    /// <para>
+    /// Please be aware that calling this method on a thread pool thread or the main UI thread is safe only when the client is set up to use Auto or Manual Polling and in-memory caching.
+    /// Otherwise execution may involve I/O-bound (e.g. network) operations, because of which the executing thread may be blocked for a longer period of time. This can result in an unresponsive application.
+    /// In the case of problematic setups, it is recommended to use either the async version of the method or snaphots (see <see cref="Snapshot"/>).
+    /// </para>
     /// </remarks>
     /// <typeparam name="T">
     /// The type of the value. Only the following types are allowed:
@@ -81,6 +93,7 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="key"/> is an empty string.</exception>
     /// <exception cref="ArgumentException"><typeparamref name="T"/> is not an allowed type.</exception>
+    [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
     EvaluationDetails<T> GetValueDetails<T>(string key, T defaultValue, User? user = null);
 
     /// <summary>
@@ -110,7 +123,15 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// <summary>
     /// Returns all setting keys synchronously.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Please be aware that calling this method on a thread pool thread or the main UI thread is safe only when the client is set up to use Auto or Manual Polling and in-memory caching.
+    /// Otherwise execution may involve I/O-bound (e.g. network) operations, because of which the executing thread may be blocked for a longer period of time. This can result in an unresponsive application.
+    /// In the case of problematic setups, it is recommended to use either the async version of the method or snaphots (see <see cref="Snapshot"/>).
+    /// </para>
+    /// </remarks>
     /// <returns>The collection of keys.</returns>
+    [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
     IReadOnlyCollection<string> GetAllKeys();
 
     /// <summary>
@@ -123,8 +144,16 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// <summary>
     /// Returns the keys and values of all feature flags and settings synchronously.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Please be aware that calling this method on a thread pool thread or the main UI thread is safe only when the client is set up to use Auto or Manual Polling and in-memory caching.
+    /// Otherwise execution may involve I/O-bound (e.g. network) operations, because of which the executing thread may be blocked for a longer period of time. This can result in an unresponsive application.
+    /// In the case of problematic setups, it is recommended to use either the async version of the method or snaphots (see <see cref="Snapshot"/>).
+    /// </para>
+    /// </remarks>
     /// <param name="user">The User Object to use for evaluating targeting rules and percentage options.</param>
     /// <returns>The dictionary containing the keys and values.</returns>
+    [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
     IReadOnlyDictionary<string, object?> GetAllValues(User? user = null);
 
     /// <summary>
@@ -138,8 +167,16 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// <summary>
     /// Returns the values along with evaluation details of all feature flags and settings synchronously.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Please be aware that calling this method on a thread pool thread or the main UI thread is safe only when the client is set up to use Auto or Manual Polling and in-memory caching.
+    /// Otherwise execution may involve I/O-bound (e.g. network) operations, because of which the executing thread may be blocked for a longer period of time. This can result in an unresponsive application.
+    /// In the case of problematic setups, it is recommended to use either the async version of the method or snaphots (see <see cref="Snapshot"/>).
+    /// </para>
+    /// </remarks>
     /// <param name="user">The User Object to use for evaluating targeting rules and percentage options.</param>
     /// <returns>The list of values along with evaluation details.</returns>
+    [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
     IReadOnlyList<EvaluationDetails> GetAllValueDetails(User? user = null);
 
     /// <summary>
@@ -153,7 +190,15 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// <summary>
     /// Refreshes the locally cached config by fetching the latest version from the remote server synchronously.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Please be aware that calling this method on a thread pool thread or the main UI thread is not safe as
+    /// execution involves I/O-bound (e.g. network) operations, because of which the executing thread may be blocked for a longer period of time. This can result in an unresponsive application.
+    /// In the case of problematic setups, it is recommended to either use the async version of the method or call the method on a dedicated background thread.
+    /// </para>
+    /// </remarks>
     /// <returns>The refresh result.</returns>
+    [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
     RefreshResult ForceRefresh();
 
     /// <summary>
@@ -162,6 +207,27 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the refresh result.</returns>
     Task<RefreshResult> ForceRefreshAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Waits for the client to initialize (i.e. to raise the <see cref="IProvidesHooks.ClientReady"/> event).
+    /// </summary>
+    /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the state of the local cache at the time the initialization was completed.</returns>
+    Task<ClientCacheState> WaitForReadyAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Captures the current state of the client.
+    /// The resulting snapshot can be used to evaluate feature flags and settings based on the captured state synchronously,
+    /// without any underlying I/O-bound operations, which could block the executing thread for a longer period of time.
+    /// </summary>
+    /// <remarks>
+    /// The operation captures the in-memory stored config data. It does not attempt to update it by contacting the remote server.
+    /// It does not synchronize with the user-provided custom cache (see <see cref="ConfigCatClientOptions.ConfigCache"/>) either.<br/>
+    /// Therefore, it is recommended to use snapshots in conjunction with the Auto Polling mode, where the SDK automatically updates the local cache in the background.<br/>
+    /// For other polling modes, you'll need to manually initiate a cache refresh by invoking <see cref="ForceRefresh"/> or <see cref="ForceRefreshAsync"/>.
+    /// </remarks>
+    /// <returns>The snapshot object.</returns>
+    ConfigCatClientSnapshot Snapshot();
 
     /// <summary>
     /// Sets the default user.

@@ -647,9 +647,9 @@ public class OverrideTests
         const string key = "flag";
         var overrideValue =
 #if USE_NEWTONSOFT_JSON
-            overrideValueJson.Deserialize<Newtonsoft.Json.Linq.JToken>()!;
+            overrideValueJson.AsMemory().Deserialize<Newtonsoft.Json.Linq.JToken>();
 #else
-            overrideValueJson.Deserialize<System.Text.Json.JsonElement>();
+            overrideValueJson.AsMemory().Deserialize<System.Text.Json.JsonElement>();
 #endif
 
         var filePath = Path.GetTempFileName();

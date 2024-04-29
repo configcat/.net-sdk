@@ -13,12 +13,9 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: true
 
 jobs:
-  build-test:
-    name: Build & test
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ macos-latest, ubuntu-latest ]
+  build-test-ubuntu:
+    name: Build & test (Ubuntu)
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-dotnet@v1
@@ -34,5 +31,21 @@ jobs:
         run: |
           dotnet test src/ConfigCat.Client.Tests/ConfigCat.Client.Tests.csproj -c Release -f netcoreapp3.1 --no-restore
           dotnet test src/ConfigCat.Client.Tests/ConfigCat.Client.Tests.csproj -c Release -f net5.0 --no-restore
+          dotnet test src/ConfigCat.Client.Tests/ConfigCat.Client.Tests.csproj -c Release -f net6.0 --no-restore
+          dotnet test src/ConfigCat.Client.Tests/ConfigCat.Client.Tests.csproj -c Release -f net8.0 --no-restore
+  build-test-macos:
+    name: Build & test (macOS)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: | 
+            6.0.x
+            8.0.x
+      - name: Restore
+        run: dotnet restore src
+      - name: Test
+        run: |
           dotnet test src/ConfigCat.Client.Tests/ConfigCat.Client.Tests.csproj -c Release -f net6.0 --no-restore
           dotnet test src/ConfigCat.Client.Tests/ConfigCat.Client.Tests.csproj -c Release -f net8.0 --no-restore

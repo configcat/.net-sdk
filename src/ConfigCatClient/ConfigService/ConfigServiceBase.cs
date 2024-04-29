@@ -29,6 +29,9 @@ internal abstract class ConfigServiceBase : IDisposable
     protected readonly string CacheKey;
     protected readonly SafeHooksWrapper Hooks;
 
+    private CancellationTokenSource? waitForReadyCancellationTokenSource;
+    protected CancellationToken WaitForReadyCancellationToken => this.waitForReadyCancellationTokenSource?.Token ?? new CancellationToken(canceled: true);
+
     protected ConfigServiceBase(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline, SafeHooksWrapper hooks)
     {
         this.ConfigFetcher = configFetcher;
@@ -37,12 +40,23 @@ internal abstract class ConfigServiceBase : IDisposable
         this.Logger = logger;
         this.Hooks = hooks;
         this.status = isOffline ? Status.Offline : Status.Online;
+        this.waitForReadyCancellationTokenSource = new CancellationTokenSource();
     }
 
     /// <remarks>
     /// Note for inheritors. Beware, this method is called within a lock statement.
     /// </remarks>
-    protected virtual void DisposeSynchronized(bool disposing) { }
+    protected virtual void DisposeSynchronized(bool disposing)
+    {
+        // If waiting for ready state is still in progress, it should stop.
+        this.waitForReadyCancellationTokenSource?.Cancel();
+
+        if (disposing)
+        {
+            this.waitForReadyCancellationTokenSource?.Dispose();
+            this.waitForReadyCancellationTokenSource = null;
+        }
+    }
 
     protected virtual void Dispose(bool disposing)
     {
@@ -68,6 +82,8 @@ internal abstract class ConfigServiceBase : IDisposable
 
         Dispose(true);
     }
+
+    public ProjectConfig GetInMemoryConfig() => this.ConfigCache.LocalCachedConfig;
 
     public virtual RefreshResult RefreshConfig()
     {
@@ -218,11 +234,28 @@ internal abstract class ConfigServiceBase : IDisposable
         logAction?.Invoke(this.Logger);
     }
 
-    protected TResult Synchronize<TState, TResult>(Func<TState, TResult> func, TState state)
+    public abstract ClientCacheState GetCacheState(ProjectConfig cachedConfig);
+
+    protected Task<ProjectConfig> SyncUpWithCacheAsync(CancellationToken cancellationToken)
     {
-        lock (this.syncObj)
+        return this.ConfigCache.GetAsync(this.CacheKey, cancellationToken).AsTask();
+    }
+
+    protected async Task<ClientCacheState> GetReadyTask<TState>(TState state, Func<TState, Task<ClientCacheState>> waitForReadyAsync)
+    {
+        ClientCacheState cacheState;
+        try { cacheState = await waitForReadyAsync(state).ConfigureAwait(false); }
+        finally
         {
-            return func(state);
+            lock (this.syncObj)
+            {
+                this.waitForReadyCancellationTokenSource?.Dispose();
+                this.waitForReadyCancellationTokenSource = null;
+            }
         }
+
+        this.Hooks.RaiseClientReady(cacheState);
+
+        return cacheState;
     }
 }

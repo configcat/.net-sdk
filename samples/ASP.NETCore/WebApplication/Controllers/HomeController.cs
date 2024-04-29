@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using ConfigCat.Client;
 using Microsoft.AspNetCore.Mvc;
 using WebApplication.Models;
@@ -15,9 +15,9 @@ public class HomeController : Controller
         this.configCatClient = configCatClient;
     }
 
-    public IActionResult Index()
+    public async Task<IActionResult> Index()
     {
-        ViewData["Message1"] = this.configCatClient.GetValue("isAwesomeFeatureEnabled", false);
+        ViewData["Message1"] = await this.configCatClient.GetValueAsync("isAwesomeFeatureEnabled", false);
 
         var userObject = new User("<Some UserID>")
         {
@@ -30,7 +30,7 @@ public class HomeController : Controller
             }
         };
 
-        ViewData["Message2"] = this.configCatClient.GetValue("isPOCFeatureEnabled", false, userObject);
+        ViewData["Message2"] = await this.configCatClient.GetValueAsync("isPOCFeatureEnabled", false, userObject);
 
         return View();
     }

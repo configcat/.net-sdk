@@ -21,8 +21,8 @@ internal readonly struct SafeHooksWrapper
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public void RaiseClientReady()
-        => Hooks.RaiseClientReady();
+    public void RaiseClientReady(ClientCacheState cacheState)
+        => Hooks.RaiseClientReady(cacheState);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public void RaiseFlagEvaluated(EvaluationDetails evaluationDetails)

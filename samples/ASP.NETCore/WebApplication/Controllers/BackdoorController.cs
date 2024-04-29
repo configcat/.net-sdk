@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -23,9 +23,9 @@ public class BackdoorController : Controller
     // This endpoint can be called by Configcat Webhooks https://configcat.com/docs/advanced/notifications-webhooks
     [HttpGet]
     [Route("configcatchanged")]
-    public IActionResult ConfigCatChanged()
+    public async Task<IActionResult> ConfigCatChanged()
     {
-        this.configCatClient.ForceRefresh();
+        await this.configCatClient.ForceRefreshAsync();
 
         return Ok("configCatClient.ForceRefresh() invoked");
     }

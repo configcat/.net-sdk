@@ -122,19 +122,19 @@ public class ConfigServiceTests
         this.cacheMock
             .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(cachedPc)
-            .Callback(() => Assert.AreEqual(1, callOrder++))
+            .Callback(() => Assert.IsTrue(callOrder++ is 1 or 2))
             .Verifiable();
 
         this.fetcherMock
             .Setup(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>()))
             .ReturnsAsync(FetchResult.Success(fetchedPc))
-            .Callback(() => Assert.AreEqual(2, callOrder++))
+            .Callback(() => Assert.AreEqual(3, callOrder++))
             .Verifiable();
 
         this.cacheMock
             .Setup(m => m.SetAsync(It.IsAny<string>(), fetchedPc, It.IsAny<CancellationToken>()))
             .Returns(default(ValueTask))
-            .Callback(() => Assert.AreEqual(3, callOrder))
+            .Callback(() => Assert.AreEqual(4, callOrder))
             .Verifiable();
 
         using var service = new LazyLoadConfigService(
@@ -237,6 +237,8 @@ public class ConfigServiceTests
             this.loggerMock.Object.AsWrapper(),
             startTimer: false);
 
+        this.cacheMock.Invocations.Clear();
+
         // Act
 
         await service.GetConfigAsync();
@@ -259,6 +261,8 @@ public class ConfigServiceTests
         var fetchedPc = CreateFreshPc(timeStamp);
 
         var wd = new ManualResetEventSlim(false);
+
+        this.cacheMock.SetupGet(m => m.LocalCachedConfig).Returns(cachedPc);
 
         this.cacheMock
             .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -304,6 +308,8 @@ public class ConfigServiceTests
         var cachedPc = CreateUpToDatePc(timeStamp, pollInterval);
         var fetchedPc = CreateFreshPc(timeStamp);
 
+        this.cacheMock.SetupGet(m => m.LocalCachedConfig).Returns(cachedPc);
+
         this.cacheMock
             .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(cachedPc);
@@ -322,6 +328,8 @@ public class ConfigServiceTests
             new CacheParameters(this.cacheMock.Object, cacheKey: null!),
             this.loggerMock.Object.AsWrapper(),
             startTimer: false);
+
+        this.cacheMock.Invocations.Clear();
 
         // Act
 
@@ -345,6 +353,8 @@ public class ConfigServiceTests
 
         long counter = 0;
         long e1, e2;
+
+        this.cacheMock.SetupGet(m => m.LocalCachedConfig).Returns(cachedPc);
 
         this.cacheMock
             .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -386,6 +396,8 @@ public class ConfigServiceTests
 
         long counter = -1;
         long e1;
+
+        this.cacheMock.SetupGet(m => m.LocalCachedConfig).Returns(cachedPc);
 
         this.cacheMock
             .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -438,6 +450,8 @@ public class ConfigServiceTests
             this.loggerMock.Object.AsWrapper(),
             hooks: hooks);
 
+        this.cacheMock.Invocations.Clear();
+
         // Act
 
         var projectConfig = await service.GetConfigAsync();
@@ -477,16 +491,16 @@ public class ConfigServiceTests
         this.cacheMock
             .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(cachedPc)
-            .Callback(() => Assert.AreEqual(1, callOrder++));
+            .Callback(() => Assert.IsTrue(callOrder++ is 1 or 2));
 
         this.fetcherMock
             .Setup(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>()))
             .ReturnsAsync(FetchResult.Success(fetchedPc))
-            .Callback(() => Assert.AreEqual(2, callOrder++));
+            .Callback(() => Assert.AreEqual(3, callOrder++));
 
         this.cacheMock
             .Setup(m => m.SetAsync(It.IsAny<string>(), fetchedPc, It.IsAny<CancellationToken>()))
-            .Callback(() => Assert.AreEqual(3, callOrder++))
+            .Callback(() => Assert.AreEqual(4, callOrder++))
             .Returns(default(ValueTask));
 
         using var service = new ManualPollConfigService(
@@ -500,7 +514,7 @@ public class ConfigServiceTests
 
         // Assert
 
-        this.cacheMock.Verify(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+        this.cacheMock.Verify(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
         this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Once);
         this.cacheMock.Verify(m => m.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Once);
 
@@ -653,8 +667,8 @@ public class ConfigServiceTests
 
         var hooks = new Hooks();
 
-        var clientReadyTcs = new TaskCompletionSource<object?>();
-        hooks.ClientReady += (s, e) => clientReadyTcs.TrySetResult(default);
+        var clientReadyCalled = false;
+        hooks.ClientReady += (s, e) => Volatile.Write(ref clientReadyCalled, true);
 
         var configFetchedEventCount = 0;
         hooks.ConfigFetched += (s, e) => Interlocked.Increment(ref configFetchedEventCount);
@@ -674,19 +688,12 @@ public class ConfigServiceTests
 
         // Act
 
-        var clientReadyCalled = false;
         ProjectConfig actualPc;
         using (service)
         {
             if (waitForClientReady)
             {
-                await service.WaitForInitializationAsync();
-
-                // Allow some time for other initalization callbacks to execute.
-                using var cts = new CancellationTokenSource();
-                var task = await Task.WhenAny(clientReadyTcs.Task, Task.Delay(maxInitWaitTime, cts.Token));
-                cts.Cancel();
-                clientReadyCalled = task == clientReadyTcs.Task && task.Status == TaskStatus.RanToCompletion;
+                await service.ReadyTask;
             }
 
             actualPc = isAsync ? await service.GetConfigAsync() : service.GetConfig();
@@ -977,5 +984,114 @@ public class ConfigServiceTests
         Assert.IsFalse(configFetchedEvent.IsInitiatedByUser);
         Assert.IsTrue(configFetchedEvent.Result.IsSuccess);
         Assert.AreEqual(RefreshErrorCode.None, configFetchedEvent.Result.ErrorCode);
+    }
+
+    [DataTestMethod]
+    [DataRow(nameof(PollingModes.AutoPoll))]
+    [DataRow(nameof(PollingModes.LazyLoad))]
+    [DataRow(nameof(PollingModes.ManualPoll))]
+    public async Task GetInMemoryConfig_ImmediatelyReturnsEmptyConfig_WhenExternalCacheIsTrulyAsynchronous(string pollingMode)
+    {
+        // Arrange
+
+        var pollInterval = TimeSpan.FromSeconds(30);
+        var timeStamp = ProjectConfig.GenerateTimeStamp();
+        var cachedPc = CreateUpToDatePc(timeStamp, pollInterval);
+        var cachedPcSerialized = ProjectConfig.Serialize(cachedPc);
+
+        var delay = TimeSpan.FromSeconds(1);
+
+        var externalCache = new Mock<IConfigCatCache>();
+        externalCache
+            .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns(async (string _, CancellationToken _) => { await Task.Delay(delay); return cachedPcSerialized; });
+
+        var logger = this.loggerMock.Object.AsWrapper();
+
+        var service = CreateConfigService(pollingMode, pollInterval, maxInitWaitTime: TimeSpan.Zero, cacheTimeToLive: pollInterval,
+            new CacheParameters(new ExternalConfigCache(externalCache.Object, logger), cacheKey: null!),
+            this.fetcherMock.Object, logger);
+
+        using var _ = service as IDisposable;
+
+        // Act
+
+        var inMemoryConfig = service.GetInMemoryConfig();
+
+        await Task.Delay(delay + delay);
+
+        var inMemoryConfig2 = service.GetInMemoryConfig();
+
+        // Assert
+
+        Assert.IsTrue(inMemoryConfig.IsEmpty);
+
+        Assert.IsFalse(inMemoryConfig2.IsEmpty);
+        Assert.AreEqual(cachedPcSerialized, ProjectConfig.Serialize(inMemoryConfig2));
+    }
+
+    [DataTestMethod]
+    [DataRow(nameof(PollingModes.AutoPoll))]
+    [DataRow(nameof(PollingModes.LazyLoad))]
+    [DataRow(nameof(PollingModes.ManualPoll))]
+    public void GetInMemoryConfig_ImmediatelyReturnsCachedConfig_WhenExternalCacheIsNotTrulyAsynchronous(string pollingMode)
+    {
+        // Arrange
+
+        var pollInterval = TimeSpan.FromSeconds(30);
+        var timeStamp = ProjectConfig.GenerateTimeStamp();
+        var cachedPc = CreateUpToDatePc(timeStamp, pollInterval);
+        var cachedPcSerialized = ProjectConfig.Serialize(cachedPc);
+
+        var externalCache = new Mock<IConfigCatCache>();
+        externalCache
+            .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(cachedPcSerialized);
+
+        var logger = this.loggerMock.Object.AsWrapper();
+
+        ProjectConfig.Serialize(cachedPc);
+
+        var service = CreateConfigService(pollingMode, pollInterval, maxInitWaitTime: TimeSpan.Zero, cacheTimeToLive: pollInterval,
+            new CacheParameters(new ExternalConfigCache(externalCache.Object, logger), cacheKey: null!),
+            this.fetcherMock.Object, logger);
+
+        using var _ = service as IDisposable;
+
+        // Act
+
+        var inMemoryConfig = service.GetInMemoryConfig();
+
+        // Assert
+
+        Assert.IsFalse(inMemoryConfig.IsEmpty);
+        Assert.AreEqual(cachedPcSerialized, ProjectConfig.Serialize(inMemoryConfig));
+    }
+
+    private static IConfigService CreateConfigService(string pollingMode, TimeSpan pollInterval, TimeSpan maxInitWaitTime, TimeSpan cacheTimeToLive, CacheParameters cacheParams,
+        IConfigFetcher configFetcher, LoggerWrapper logger)
+    {
+        return pollingMode switch
+        {
+            nameof(PollingModes.AutoPoll) => new AutoPollConfigService(
+                PollingModes.AutoPoll(pollInterval, maxInitWaitTime),
+                configFetcher,
+                cacheParams,
+                logger,
+                startTimer: false),
+
+            nameof(PollingModes.LazyLoad) => new LazyLoadConfigService(
+                configFetcher,
+                cacheParams,
+                logger,
+                cacheTimeToLive),
+
+            nameof(PollingModes.ManualPoll) => new ManualPollConfigService(
+                configFetcher,
+                cacheParams,
+                logger),
+
+            _ => throw new InvalidOperationException(),
+        };
     }
 }

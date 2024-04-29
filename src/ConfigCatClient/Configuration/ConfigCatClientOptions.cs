@@ -114,7 +114,7 @@ public class ConfigCatClientOptions : IProvidesHooks
     }
 
     /// <inheritdoc/>
-    public event EventHandler? ClientReady
+    public event EventHandler<ClientReadyEventArgs>? ClientReady
     {
         add { this.hooks.ClientReady += value; }
         remove { this.hooks.ClientReady -= value; }

@@ -11,8 +11,12 @@ internal sealed class NullConfigService : IConfigService
     {
         this.logger = logger;
 
-        hooks.RaiseClientReady();
+        hooks.RaiseClientReady(ClientCacheState.HasLocalOverrideFlagDataOnly);
     }
+
+    public Task<ClientCacheState> ReadyTask => Task.FromResult(ClientCacheState.HasLocalOverrideFlagDataOnly);
+
+    public ProjectConfig GetInMemoryConfig() => ProjectConfig.Empty;
 
     public ProjectConfig GetConfig() => ProjectConfig.Empty;
 
@@ -34,4 +38,6 @@ internal sealed class NullConfigService : IConfigService
     {
         this.logger.ConfigServiceMethodHasNoEffectDueToOverrideBehavior(nameof(OverrideBehaviour.LocalOnly), nameof(SetOnline));
     }
+
+    public ClientCacheState GetCacheState(ProjectConfig config) => ClientCacheState.HasLocalOverrideFlagDataOnly;
 }

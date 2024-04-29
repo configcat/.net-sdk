@@ -23,8 +23,6 @@ internal static class SerializationExtensions
     };
 #endif
 
-    public static T? Deserialize<T>(this string json, bool tolerant = false) => json.AsMemory().Deserialize<T>(tolerant);
-
     // NOTE: It would be better to use ReadOnlySpan<char>, however when the full string is wrapped in a span, json.ToString() result in a copy of the string.
     // This is not the case with ReadOnlyMemory<char>, so we use that until support for .NET 4.5 support is dropped.
     public static T? Deserialize<T>(this ReadOnlyMemory<char> json, bool tolerant = false)
@@ -37,8 +35,6 @@ internal static class SerializationExtensions
         return JsonSerializer.Deserialize<T>(json.Span, tolerant ? TolerantSerializerOptions : null);
 #endif
     }
-
-    public static T? DeserializeOrDefault<T>(this string json, bool tolerant = false) => json.AsMemory().DeserializeOrDefault<T>(tolerant);
 
     public static T? DeserializeOrDefault<T>(this ReadOnlyMemory<char> json, bool tolerant = false)
     {

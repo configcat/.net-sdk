@@ -60,7 +60,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                 // The latter case is handled by SettingValue.GetValue<T> below.
                 if (context.Setting.SettingType != Setting.UnknownType && context.Setting.SettingType != expectedSettingType)
                 {
-                    throw new InvalidOperationException(
+                    throw new EvaluationErrorException(EvaluationErrorCode.SettingValueTypeMismatch,
                         "The type of a setting must match the type of the specified default value. "
                         + $"Setting's type was {context.Setting.SettingType} but the default value's type was {typeof(T)}. "
                         + $"Please use a default value which corresponds to the setting type {context.Setting.SettingType}. "
@@ -153,7 +153,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             var percentageOptions = targetingRule.PercentageOptions;
             if (percentageOptions is not { Length: > 0 })
             {
-                throw new InvalidOperationException("Targeting rule THEN part is missing or invalid.");
+                throw new InvalidConfigModelException("Targeting rule THEN part is missing or invalid.");
             }
 
             logBuilder?.IncreaseIndent();
@@ -254,7 +254,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             return true;
         }
 
-        throw new InvalidOperationException("Sum of percentage option percentages is less than 100.");
+        throw new InvalidConfigModelException("Sum of percentage option percentages is less than 100.");
     }
 
     private bool EvaluateConditions<TCondition>(TCondition[] conditions, TargetingRule? targetingRule, string contextSalt, ref EvaluateContext context, out string? error)
@@ -359,7 +359,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             return false;
         }
 
-        var userAttributeName = condition.ComparisonAttribute ?? throw new InvalidOperationException("Comparison attribute name is missing.");
+        var userAttributeName = condition.ComparisonAttribute ?? throw new InvalidConfigModelException("Comparison attribute name is missing.");
         var userAttributeValue = context.User.GetAttribute(userAttributeName);
 
         if (userAttributeValue is null || userAttributeValue is string { Length: 0 })
@@ -459,7 +459,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                     EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, negate: comparator == UserComparator.SensitiveArrayNotContainsAnyOf);
 
             default:
-                throw new InvalidOperationException("Comparison operator is invalid.");
+                throw new InvalidConfigModelException("Comparison operator is invalid.");
         }
     }
 
@@ -717,11 +717,11 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         var prerequisiteFlagKey = condition.PrerequisiteFlagKey;
         if (prerequisiteFlagKey is null)
         {
-            throw new InvalidOperationException("Prerequisite flag key is missing.");
+            throw new InvalidConfigModelException("Prerequisite flag key is missing.");
         }
         else if (!context.Settings.TryGetValue(prerequisiteFlagKey, out prerequisiteFlag))
         {
-            throw new InvalidOperationException("Prerequisite flag is missing.");
+            throw new InvalidConfigModelException("Prerequisite flag is missing.");
         }
 
         var comparisonValue = EnsureComparisonValue(condition.ComparisonValue.GetValue(throwIfInvalid: false));
@@ -729,7 +729,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         var expectedSettingType = comparisonValue.GetType().ToSettingType();
         if (prerequisiteFlag.SettingType != Setting.UnknownType && prerequisiteFlag.SettingType != expectedSettingType)
         {
-            throw new InvalidOperationException($"Type mismatch between comparison value '{comparisonValue}' and prerequisite flag '{prerequisiteFlagKey}'.");
+            throw new InvalidConfigModelException($"Type mismatch between comparison value '{comparisonValue}' and prerequisite flag '{prerequisiteFlagKey}'.");
         }
 
         context.VisitedFlags.Add(context.Key);
@@ -737,7 +737,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         {
             context.VisitedFlags.Add(prerequisiteFlagKey!);
             var dependencyCycle = new StringListFormatter(context.VisitedFlags).ToString("a", CultureInfo.InvariantCulture);
-            throw new InvalidOperationException($"Circular dependency detected between the following depending flags: {dependencyCycle}.");
+            throw new InvalidConfigModelException($"Circular dependency detected between the following depending flags: {dependencyCycle}.");
         }
 
         var prerequisiteFlagContext = new EvaluateContext(prerequisiteFlagKey!, prerequisiteFlag!, context);
@@ -758,7 +758,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         {
             PrerequisiteFlagComparator.Equals => prerequisiteFlagValue.Equals(comparisonValue),
             PrerequisiteFlagComparator.NotEquals => !prerequisiteFlagValue.Equals(comparisonValue),
-            _ => throw new InvalidOperationException("Comparison operator is invalid.")
+            _ => throw new InvalidConfigModelException("Comparison operator is invalid.")
         };
 
         logBuilder?
@@ -791,11 +791,11 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             return false;
         }
 
-        var segment = condition.Segment ?? throw new InvalidOperationException("Segment reference is invalid.");
+        var segment = condition.Segment ?? throw new InvalidConfigModelException("Segment reference is invalid.");
 
         if (segment.Name is not { Length: > 0 })
         {
-            throw new InvalidOperationException("Segment name is missing.");
+            throw new InvalidConfigModelException("Segment name is missing.");
         }
 
         logBuilder?
@@ -810,7 +810,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         {
             SegmentComparator.IsIn => segmentResult,
             SegmentComparator.IsNotIn => !segmentResult,
-            _ => throw new InvalidOperationException("Comparison operator is invalid.")
+            _ => throw new InvalidConfigModelException("Comparison operator is invalid.")
         };
 
         if (logBuilder is not null)
@@ -865,13 +865,13 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
     private static string EnsureConfigJsonSalt([NotNull] string? value)
     {
-        return value ?? throw new InvalidOperationException("Config JSON salt is missing.");
+        return value ?? throw new InvalidConfigModelException("Config JSON salt is missing.");
     }
 
     [return: NotNull]
     private static T EnsureComparisonValue<T>([NotNull] T? value)
     {
-        return value ?? throw new InvalidOperationException("Comparison value is missing or invalid.");
+        return value ?? throw new InvalidConfigModelException("Comparison value is missing or invalid.");
     }
 
     private static string UserAttributeValueToString(object attributeValue)

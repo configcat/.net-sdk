@@ -28,14 +28,15 @@ public abstract class EvaluationDetails
     }
 
     internal static EvaluationDetails<TValue> FromDefaultValue<TValue>(string key, TValue defaultValue, DateTime? fetchTime, User? user,
-        string? errorMessage = null, Exception? errorException = null)
+        string errorMessage, Exception? errorException = null, EvaluationErrorCode errorCode = EvaluationErrorCode.UnexpectedError)
     {
         var instance = new EvaluationDetails<TValue>(key, defaultValue)
         {
             User = user,
             IsDefaultValue = true,
             ErrorMessage = errorMessage,
-            ErrorException = errorException
+            ErrorException = errorException,
+            ErrorCode = errorCode,
         };
 
         if (fetchTime is not null)
@@ -83,6 +84,11 @@ public abstract class EvaluationDetails
     /// is used as the result of the evaluation.
     /// </summary>
     public bool IsDefaultValue { get; set; }
+
+    /// <summary>
+    /// The code identifying the reason for the error in case evaluation failed.
+    /// </summary>
+    public EvaluationErrorCode ErrorCode { get; set; }
 
     /// <summary>
     /// Error message in case evaluation failed.

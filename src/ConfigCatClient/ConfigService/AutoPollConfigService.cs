@@ -146,10 +146,10 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
         return await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(false);
     }
 
-    protected override void OnConfigFetched(ProjectConfig newConfig)
+    protected override void OnConfigFetched(in FetchResult fetchResult, bool isInitiatedByUser)
     {
-        base.OnConfigFetched(newConfig);
         SignalInitialization();
+        base.OnConfigFetched(fetchResult, isInitiatedByUser);
     }
 
     protected override void SetOnlineCoreSynchronized()
@@ -214,7 +214,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
             {
                 if (!IsOffline)
                 {
-                    await RefreshConfigCoreAsync(latestConfig, cancellationToken).ConfigureAwait(false);
+                    await RefreshConfigCoreAsync(latestConfig, isInitiatedByUser: false, cancellationToken).ConfigureAwait(false);
                 }
             }
             else
@@ -227,7 +227,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
             if (!IsOffline)
             {
                 var latestConfig = await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(false);
-                await RefreshConfigCoreAsync(latestConfig, cancellationToken).ConfigureAwait(false);
+                await RefreshConfigCoreAsync(latestConfig, isInitiatedByUser: false, cancellationToken).ConfigureAwait(false);
             }
         }
     }

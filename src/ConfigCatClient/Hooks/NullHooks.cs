@@ -4,7 +4,7 @@ internal sealed class NullHooks : Hooks
 {
     public static readonly NullHooks Instance = new();
 
-    private NullHooks() : base(new EventHandlers()) { }
+    private NullHooks() : base(new Events()) { }
 
     public override bool TryDisconnect()
     {

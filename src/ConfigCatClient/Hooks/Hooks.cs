@@ -5,27 +5,27 @@ namespace ConfigCat.Client;
 
 internal class Hooks : IProvidesHooks
 {
-    private static readonly EventHandlers DisconnectedEventHandlers = new();
+    private static readonly Events DisconnectedEvents = new();
 
-    private volatile EventHandlers eventHandlers;
+    private volatile Events events;
     private IConfigCatClient? client; // should be null only in case of testing
 
-    protected Hooks(EventHandlers eventHandlers)
+    protected Hooks(Events events)
     {
-        this.eventHandlers = eventHandlers;
+        this.events = events;
     }
 
-    public Hooks() : this(new ActualEventHandlers()) { }
+    public Hooks() : this(new RealEvents()) { }
 
     public virtual bool TryDisconnect()
     {
-        // Replacing the current EventHandlers object (eventHandlers) with a special instance of EventHandlers (DisconnectedEventHandlers) achieves multiple things:
+        // Replacing the current Events object (this.events) with a special instance of Events (DisconnectedEvents) achieves multiple things:
         // 1. determines whether the hooks instance has already been disconnected or not,
         // 2. removes implicit references to subscriber objects (so this instance won't keep them alive under any circumstances),
         // 3. makes sure that future subscriptions are ignored from this point on.
-        var originalEventHandlers = Interlocked.Exchange(ref this.eventHandlers, DisconnectedEventHandlers);
+        var originalEvents = Interlocked.Exchange(ref this.events, DisconnectedEvents);
 
-        return !ReferenceEquals(originalEventHandlers, DisconnectedEventHandlers);
+        return !ReferenceEquals(originalEvents, DisconnectedEvents);
     }
 
     public virtual void SetSender(IConfigCatClient client)
@@ -33,69 +33,97 @@ internal class Hooks : IProvidesHooks
         this.client = client;
     }
 
-    /// <inheritdoc/>
+    public void RaiseClientReady()
+        => this.events.RaiseClientReady(this.client);
+
+    public void RaiseFlagEvaluated(EvaluationDetails evaluationDetails)
+        => this.events.RaiseFlagEvaluated(this.client, evaluationDetails);
+
+    public void RaiseConfigFetched(RefreshResult result, bool isInitiatedByUser)
+        => this.events.RaiseConfigFetched(this.client, result, isInitiatedByUser);
+
+    public void RaiseConfigChanged(IConfig newConfig)
+        => this.events.RaiseConfigChanged(this.client, newConfig);
+
+    public void RaiseError(string message, Exception? exception)
+        => this.events.RaiseError(this.client, message, exception);
+
     public event EventHandler? ClientReady
     {
-        add { this.eventHandlers.ClientReady += value; }
-        remove { this.eventHandlers.ClientReady -= value; }
+        add { this.events.ClientReady += value; }
+        remove { this.events.ClientReady -= value; }
     }
 
-    internal void RaiseClientReady()
-    {
-        this.eventHandlers.ClientReady?.Invoke(this.client, EventArgs.Empty);
-    }
-
-    /// <inheritdoc/>
     public event EventHandler<FlagEvaluatedEventArgs>? FlagEvaluated
     {
-        add { this.eventHandlers.FlagEvaluated += value; }
-        remove { this.eventHandlers.FlagEvaluated -= value; }
+        add { this.events.FlagEvaluated += value; }
+        remove { this.events.FlagEvaluated -= value; }
     }
 
-    internal void RaiseFlagEvaluated(EvaluationDetails evaluationDetails)
+    public event EventHandler<ConfigFetchedEventArgs>? ConfigFetched
     {
-        this.eventHandlers.FlagEvaluated?.Invoke(this.client, new FlagEvaluatedEventArgs(evaluationDetails));
+        add { this.events.ConfigFetched += value; }
+        remove { this.events.ConfigFetched -= value; }
     }
 
-    /// <inheritdoc/>
     public event EventHandler<ConfigChangedEventArgs>? ConfigChanged
     {
-        add { this.eventHandlers.ConfigChanged += value; }
-        remove { this.eventHandlers.ConfigChanged -= value; }
+        add { this.events.ConfigChanged += value; }
+        remove { this.events.ConfigChanged -= value; }
     }
 
-    internal void RaiseConfigChanged(IConfig newConfig)
-    {
-        this.eventHandlers.ConfigChanged?.Invoke(this.client, new ConfigChangedEventArgs(newConfig));
-    }
-
-    /// <inheritdoc/>
     public event EventHandler<ConfigCatClientErrorEventArgs>? Error
     {
-        add { this.eventHandlers.Error += value; }
-        remove { this.eventHandlers.Error -= value; }
+        add { this.events.Error += value; }
+        remove { this.events.Error -= value; }
     }
 
-    internal void RaiseError(string message, Exception? exception)
+    public class Events : IProvidesHooks
     {
-        this.eventHandlers.Error?.Invoke(this.client, new ConfigCatClientErrorEventArgs(message, exception));
+        public virtual void RaiseClientReady(IConfigCatClient? client) { /* intentional no-op */ }
+        public virtual void RaiseFlagEvaluated(IConfigCatClient? client, EvaluationDetails evaluationDetails) { /* intentional no-op */ }
+        public virtual void RaiseConfigFetched(IConfigCatClient? client, RefreshResult result, bool isInitiatedByUser) { /* intentional no-op */ }
+        public virtual void RaiseConfigChanged(IConfigCatClient? client, IConfig newConfig) { /* intentional no-op */ }
+        public virtual void RaiseError(IConfigCatClient? client, string message, Exception? exception) { /* intentional no-op */ }
+
+        public virtual event EventHandler? ClientReady { add { /* intentional no-op */ } remove { /* intentional no-op */ } }
+        public virtual event EventHandler<FlagEvaluatedEventArgs>? FlagEvaluated { add { /* intentional no-op */ } remove { /* intentional no-op */ } }
+        public virtual event EventHandler<ConfigFetchedEventArgs>? ConfigFetched { add { /* intentional no-op */ } remove { /* intentional no-op */ } }
+        public virtual event EventHandler<ConfigChangedEventArgs>? ConfigChanged { add { /* intentional no-op */ } remove { /* intentional no-op */ } }
+        public virtual event EventHandler<ConfigCatClientErrorEventArgs>? Error { add { /* intentional no-op */ } remove { /* intentional no-op */ } }
     }
 
-    protected class EventHandlers
+    private sealed class RealEvents : Events
     {
-        private static void Noop(Delegate? _) { /* This method is for keeping SonarQube happy. */ }
+        public override void RaiseClientReady(IConfigCatClient? client)
+        {
+            ClientReady?.Invoke(client, EventArgs.Empty);
+        }
 
-        public virtual EventHandler? ClientReady { get => null; set => Noop(value); }
-        public virtual EventHandler<FlagEvaluatedEventArgs>? FlagEvaluated { get => null; set => Noop(value); }
-        public virtual EventHandler<ConfigChangedEventArgs>? ConfigChanged { get => null; set => Noop(value); }
-        public virtual EventHandler<ConfigCatClientErrorEventArgs>? Error { get => null; set => Noop(value); }
-    }
+        public override void RaiseFlagEvaluated(IConfigCatClient? client, EvaluationDetails evaluationDetails)
+        {
+            FlagEvaluated?.Invoke(client, new FlagEvaluatedEventArgs(evaluationDetails));
+        }
 
-    private sealed class ActualEventHandlers : EventHandlers
-    {
-        public override EventHandler? ClientReady { get; set; }
-        public override EventHandler<FlagEvaluatedEventArgs>? FlagEvaluated { get; set; }
-        public override EventHandler<ConfigChangedEventArgs>? ConfigChanged { get; set; }
-        public override EventHandler<ConfigCatClientErrorEventArgs>? Error { get; set; }
+        public override void RaiseConfigFetched(IConfigCatClient? client, RefreshResult result, bool isInitiatedByUser)
+        {
+            ConfigFetched?.Invoke(client, new ConfigFetchedEventArgs(result, isInitiatedByUser));
+        }
+
+        public override void RaiseConfigChanged(IConfigCatClient? client, IConfig newConfig)
+        {
+            ConfigChanged?.Invoke(client, new ConfigChangedEventArgs(newConfig));
+        }
+
+        public override void RaiseError(IConfigCatClient? client, string message, Exception? exception)
+        {
+            Error?.Invoke(client, new ConfigCatClientErrorEventArgs(message, exception));
+        }
+
+        public override event EventHandler? ClientReady;
+        public override event EventHandler<FlagEvaluatedEventArgs>? FlagEvaluated;
+        public override event EventHandler<ConfigFetchedEventArgs>? ConfigFetched;
+        public override event EventHandler<ConfigChangedEventArgs>? ConfigChanged;
+        public override event EventHandler<ConfigCatClientErrorEventArgs>? Error;
     }
 }

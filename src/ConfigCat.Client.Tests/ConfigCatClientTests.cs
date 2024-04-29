@@ -249,7 +249,7 @@ public class ConfigCatClientTests
     [DataRow(false)]
     [DataRow(true)]
     [DataTestMethod]
-    public async Task GetValueDetails_ShouldReturnCorrectEvaluationDetails_SettingIsNotAvailable(bool isAsync)
+    public async Task GetValueDetails_ShouldReturnCorrectEvaluationDetails_ConfigJsonIsNotAvailable(bool isAsync)
     {
         // Arrange
 
@@ -284,6 +284,62 @@ public class ConfigCatClientTests
         Assert.IsNull(actual.VariationId);
         Assert.AreEqual(DateTime.MinValue, actual.FetchTime);
         Assert.AreSame(user, actual.User);
+        Assert.AreEqual(EvaluationErrorCode.ConfigJsonNotAvailable, actual.ErrorCode);
+        Assert.IsNotNull(actual.ErrorMessage);
+        Assert.IsNull(actual.ErrorException);
+        Assert.IsNull(actual.MatchedTargetingRule);
+        Assert.IsNull(actual.MatchedPercentageOption);
+    }
+
+    [DataRow(false)]
+    [DataRow(true)]
+    [DataTestMethod]
+    public async Task GetValueDetails_ShouldReturnCorrectEvaluationDetails_SettingIsMissing(bool isAsync)
+    {
+        // Arrange
+
+        const string key = "does-not-exist";
+        const bool defaultValue = false;
+
+        const string cacheKey = "123";
+        var configJsonFilePath = Path.Combine("data", "sample_variationid_v5.json");
+        var timeStamp = ProjectConfig.GenerateTimeStamp();
+
+        var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
+            onFetch: _ => FetchResult.Success(ConfigHelper.FromFile(configJsonFilePath, httpETag: "12345", timeStamp)),
+            configServiceFactory: (fetcher, cacheParams, loggerWrapper) =>
+            {
+                return new ManualPollConfigService(this.fetcherMock.Object, cacheParams, loggerWrapper);
+            },
+            out var configService, out _);
+
+        if (isAsync)
+        {
+            await client.ForceRefreshAsync();
+        }
+        else
+        {
+            client.ForceRefresh();
+        }
+
+        var user = new User("a@configcat.com") { Email = "a@configcat.com" };
+
+        // Act
+
+        var actual = isAsync
+            ? await client.GetValueDetailsAsync(key, defaultValue, user)
+            : client.GetValueDetails(key, defaultValue, user);
+
+        // Assert
+
+        Assert.IsNotNull(actual);
+        Assert.AreEqual(key, actual.Key);
+        Assert.AreEqual(defaultValue, actual.Value);
+        Assert.IsTrue(actual.IsDefaultValue);
+        Assert.IsNull(actual.VariationId);
+        Assert.AreEqual(timeStamp, actual.FetchTime);
+        Assert.AreSame(user, actual.User);
+        Assert.AreEqual(EvaluationErrorCode.SettingKeyMissing, actual.ErrorCode);
         Assert.IsNotNull(actual.ErrorMessage);
         Assert.IsNull(actual.ErrorException);
         Assert.IsNull(actual.MatchedTargetingRule);
@@ -336,6 +392,7 @@ public class ConfigCatClientTests
         Assert.AreEqual("a0e56eda", actual.VariationId);
         Assert.AreEqual(timeStamp, actual.FetchTime);
         Assert.IsNull(actual.User);
+        Assert.AreEqual(EvaluationErrorCode.None, actual.ErrorCode);
         Assert.IsNull(actual.ErrorMessage);
         Assert.IsNull(actual.ErrorException);
         Assert.IsNull(actual.MatchedTargetingRule);
@@ -390,6 +447,7 @@ public class ConfigCatClientTests
         Assert.AreEqual("67787ae4", actual.VariationId);
         Assert.AreEqual(timeStamp, actual.FetchTime);
         Assert.AreSame(user, actual.User);
+        Assert.AreEqual(EvaluationErrorCode.None, actual.ErrorCode);
         Assert.IsNull(actual.ErrorMessage);
         Assert.IsNull(actual.ErrorException);
         Assert.IsNotNull(actual.MatchedTargetingRule);
@@ -444,6 +502,7 @@ public class ConfigCatClientTests
         Assert.AreEqual("67787ae4", actual.VariationId);
         Assert.AreEqual(timeStamp, actual.FetchTime);
         Assert.AreSame(user, actual.User);
+        Assert.AreEqual(EvaluationErrorCode.None, actual.ErrorCode);
         Assert.IsNull(actual.ErrorMessage);
         Assert.IsNull(actual.ErrorException);
         Assert.IsNull(actual.MatchedTargetingRule);
@@ -487,6 +546,7 @@ public class ConfigCatClientTests
         Assert.IsNull(actual.VariationId);
         Assert.AreEqual(DateTime.MinValue, actual.FetchTime);
         Assert.IsNull(actual.User);
+        Assert.AreEqual(EvaluationErrorCode.UnexpectedError, actual.ErrorCode);
         Assert.AreEqual(errorMessage, actual.ErrorMessage);
         Assert.IsInstanceOfType(actual.ErrorException, typeof(ApplicationException));
         Assert.IsNull(actual.MatchedTargetingRule);
@@ -550,6 +610,7 @@ public class ConfigCatClientTests
         Assert.IsNull(actual.VariationId);
         Assert.AreEqual(timeStamp, actual.FetchTime);
         Assert.AreSame(user, actual.User);
+        Assert.AreEqual(EvaluationErrorCode.UnexpectedError, actual.ErrorCode);
         Assert.AreEqual(errorMessage, actual.ErrorMessage);
         Assert.IsInstanceOfType(actual.ErrorException, typeof(ApplicationException));
         Assert.IsNull(actual.MatchedTargetingRule);
@@ -619,6 +680,7 @@ public class ConfigCatClientTests
             Assert.AreEqual(expectedItem.VariationId, actualDetails.VariationId);
             Assert.AreEqual(timeStamp, actualDetails.FetchTime);
             Assert.AreSame(user, actualDetails.User);
+            Assert.AreEqual(EvaluationErrorCode.None, actualDetails.ErrorCode);
             Assert.IsNull(actualDetails.ErrorMessage);
             Assert.IsNull(actualDetails.ErrorException);
             Assert.IsNotNull(actualDetails.MatchedTargetingRule);
@@ -755,6 +817,7 @@ public class ConfigCatClientTests
             Assert.IsNull(actualDetails.VariationId);
             Assert.AreEqual(timeStamp, actualDetails.FetchTime);
             Assert.AreSame(user, actualDetails.User);
+            Assert.AreEqual(EvaluationErrorCode.UnexpectedError, actualDetails.ErrorCode);
             Assert.AreEqual(errorMessage, actualDetails.ErrorMessage);
             Assert.IsInstanceOfType(actualDetails.ErrorException, typeof(ApplicationException));
             Assert.IsNull(actualDetails.MatchedTargetingRule);
@@ -977,6 +1040,7 @@ public class ConfigCatClientTests
         this.configServiceMock.Verify(m => m.RefreshConfigAsync(It.IsAny<CancellationToken>()), Times.Once);
 
         Assert.IsTrue(result.IsSuccess);
+        Assert.AreEqual(RefreshErrorCode.None, result.ErrorCode);
         Assert.IsNull(result.ErrorMessage);
         Assert.IsNull(result.ErrorException);
     }
@@ -1002,6 +1066,7 @@ public class ConfigCatClientTests
         this.configServiceMock.Verify(m => m.RefreshConfig(), Times.Once);
 
         Assert.IsTrue(result.IsSuccess);
+        Assert.AreEqual(RefreshErrorCode.None, result.ErrorCode);
         Assert.IsNull(result.ErrorMessage);
         Assert.IsNull(result.ErrorException);
     }
@@ -1027,6 +1092,7 @@ public class ConfigCatClientTests
         this.configServiceMock.Verify(m => m.RefreshConfigAsync(It.IsAny<CancellationToken>()), Times.Once);
 
         Assert.IsTrue(result.IsSuccess);
+        Assert.AreEqual(RefreshErrorCode.None, result.ErrorCode);
         Assert.IsNull(result.ErrorMessage);
         Assert.IsNull(result.ErrorException);
     }
@@ -1054,6 +1120,7 @@ public class ConfigCatClientTests
         this.loggerMock.Verify(m => m.Log(LogLevel.Error, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
 
         Assert.IsFalse(result.IsSuccess);
+        Assert.AreEqual(RefreshErrorCode.UnexpectedError, result.ErrorCode);
         Assert.AreEqual(exception.Message, result.ErrorMessage);
         Assert.AreSame(exception, result.ErrorException);
     }
@@ -1081,6 +1148,7 @@ public class ConfigCatClientTests
         this.loggerMock.Verify(m => m.Log(LogLevel.Error, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
 
         Assert.IsFalse(result.IsSuccess);
+        Assert.AreEqual(RefreshErrorCode.UnexpectedError, result.ErrorCode);
         Assert.AreEqual(exception.Message, result.ErrorMessage);
         Assert.AreSame(exception, result.ErrorException);
     }
@@ -1536,6 +1604,7 @@ public class ConfigCatClientTests
             Assert.AreEqual(etag2, ParseETagAsInt32((await configService.GetConfigAsync()).HttpETag));
 
             Assert.IsTrue(refreshResult.IsSuccess);
+            Assert.AreEqual(RefreshErrorCode.None, refreshResult.ErrorCode);
             Assert.IsNull(refreshResult.ErrorMessage);
             Assert.IsNull(refreshResult.ErrorException);
 
@@ -1552,6 +1621,7 @@ public class ConfigCatClientTests
             Assert.AreEqual(etag3, ParseETagAsInt32((await configService.GetConfigAsync()).HttpETag));
 
             Assert.IsTrue(refreshResult.IsSuccess);
+            Assert.AreEqual(RefreshErrorCode.None, refreshResult.ErrorCode);
             Assert.IsNull(refreshResult.ErrorMessage);
             Assert.IsNull(refreshResult.ErrorException);
         }
@@ -1666,6 +1736,7 @@ public class ConfigCatClientTests
             Assert.AreEqual(etag1, ParseETagAsInt32((await configService.GetConfigAsync()).HttpETag));
 
             Assert.IsFalse(refreshResult.IsSuccess);
+            Assert.AreEqual(RefreshErrorCode.OfflineClient, refreshResult.ErrorCode);
             StringAssert.Contains(refreshResult.ErrorMessage, "offline mode");
             Assert.IsNull(refreshResult.ErrorException);
 
@@ -1680,6 +1751,7 @@ public class ConfigCatClientTests
             Assert.AreEqual(etag1, ParseETagAsInt32((await configService.GetConfigAsync()).HttpETag));
 
             Assert.IsFalse(refreshResult.IsSuccess);
+            Assert.AreEqual(RefreshErrorCode.OfflineClient, refreshResult.ErrorCode);
             StringAssert.Contains(refreshResult.ErrorMessage, "offline mode");
             Assert.IsNull(refreshResult.ErrorException);
         }
@@ -1696,12 +1768,14 @@ public class ConfigCatClientTests
         var configJsonFilePath = Path.Combine("data", "sample_variationid_v5.json");
 
         var clientReadyEventCount = 0;
+        var configFetchedEvents = new List<ConfigFetchedEventArgs>();
         var configChangedEvents = new List<ConfigChangedEventArgs>();
         var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
         var errorEvents = new List<ConfigCatClientErrorEventArgs>();
 
         var hooks = new Hooks();
         hooks.ClientReady += (s, e) => clientReadyEventCount++;
+        hooks.ConfigFetched += (s, e) => configFetchedEvents.Add(e);
         hooks.ConfigChanged += (s, e) => configChangedEvents.Add(e);
         hooks.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
         hooks.Error += (s, e) => errorEvents.Add(e);
@@ -1713,7 +1787,7 @@ public class ConfigCatClientTests
         var onFetch = (ProjectConfig latestConfig, CancellationToken _) =>
         {
             var logMessage = loggerWrapper.FetchFailedDueToUnexpectedError(errorException);
-            return FetchResult.Failure(latestConfig, errorMessage: logMessage.InvariantFormattedMessage, errorException: errorException);
+            return FetchResult.Failure(latestConfig, RefreshErrorCode.HttpRequestFailure, errorMessage: logMessage.InvariantFormattedMessage, errorException: errorException);
         };
         this.fetcherMock.Setup(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>())).ReturnsAsync(onFetch);
 
@@ -1727,6 +1801,7 @@ public class ConfigCatClientTests
         var client = new ConfigCatClient(configService, this.loggerMock.Object, new RolloutEvaluator(loggerWrapper), hooks);
 
         Assert.AreEqual(1, clientReadyEventCount);
+        Assert.AreEqual(0, configFetchedEvents.Count);
         Assert.AreEqual(0, configChangedEvents.Count);
         Assert.AreEqual(0, flagEvaluatedEvents.Count);
         Assert.AreEqual(0, errorEvents.Count);
@@ -1734,6 +1809,10 @@ public class ConfigCatClientTests
         // 2. Fetch fails
         await client.ForceRefreshAsync();
 
+        Assert.AreEqual(1, configFetchedEvents.Count);
+        Assert.IsTrue(configFetchedEvents[0].IsInitiatedByUser);
+        Assert.IsFalse(configFetchedEvents[0].Result.IsSuccess);
+        Assert.AreEqual(RefreshErrorCode.HttpRequestFailure, configFetchedEvents[0].Result.ErrorCode);
         Assert.AreEqual(0, configChangedEvents.Count);
         Assert.AreEqual(1, errorEvents.Count);
         Assert.IsNotNull(errorEvents[0].Message);
@@ -1748,6 +1827,10 @@ public class ConfigCatClientTests
 
         await client.ForceRefreshAsync();
 
+        Assert.AreEqual(2, configFetchedEvents.Count);
+        Assert.IsTrue(configFetchedEvents[1].IsInitiatedByUser);
+        Assert.IsTrue(configFetchedEvents[1].Result.IsSuccess);
+        Assert.AreEqual(RefreshErrorCode.None, configFetchedEvents[1].Result.ErrorCode);
         Assert.AreEqual(1, configChangedEvents.Count);
         Assert.AreSame(config.Config, configChangedEvents[0].NewConfig);
 
@@ -1766,6 +1849,7 @@ public class ConfigCatClientTests
         client.Dispose();
 
         Assert.AreEqual(1, clientReadyEventCount);
+        Assert.AreEqual(2, configFetchedEvents.Count);
         Assert.AreEqual(1, configChangedEvents.Count);
         Assert.AreEqual(evaluationDetails.Count, flagEvaluatedEvents.Count);
         Assert.AreEqual(1, errorEvents.Count);
@@ -1778,11 +1862,13 @@ public class ConfigCatClientTests
     public async Task Hooks_RealClientRaisesEvents(bool subscribeViaOptions)
     {
         var clientReadyCallCount = 0;
+        var configFetchedEvents = new List<ConfigFetchedEventArgs>();
         var configChangedEvents = new List<ConfigChangedEventArgs>();
         var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
         var errorEvents = new List<ConfigCatClientErrorEventArgs>();
 
         EventHandler handleClientReady = (s, e) => clientReadyCallCount++;
+        EventHandler<ConfigFetchedEventArgs> handleConfigFetched = (s, e) => configFetchedEvents.Add(e);
         EventHandler<ConfigChangedEventArgs> handleConfigChanged = (s, e) => configChangedEvents.Add(e);
         EventHandler<FlagEvaluatedEventArgs> handleFlagEvaluated = (s, e) => flagEvaluatedEvents.Add(e);
         EventHandler<ConfigCatClientErrorEventArgs> handleError = (s, e) => errorEvents.Add(e);
@@ -1790,6 +1876,7 @@ public class ConfigCatClientTests
         void Subscribe(IProvidesHooks hooks)
         {
             hooks.ClientReady += handleClientReady;
+            hooks.ConfigFetched += handleConfigFetched;
             hooks.ConfigChanged += handleConfigChanged;
             hooks.FlagEvaluated += handleFlagEvaluated;
             hooks.Error += handleError;
@@ -1798,6 +1885,7 @@ public class ConfigCatClientTests
         void Unsubscribe(IProvidesHooks hooks)
         {
             hooks.ClientReady -= handleClientReady;
+            hooks.ConfigFetched -= handleConfigFetched;
             hooks.ConfigChanged -= handleConfigChanged;
             hooks.FlagEvaluated -= handleFlagEvaluated;
             hooks.Error -= handleError;
@@ -1826,6 +1914,7 @@ public class ConfigCatClientTests
         }
 
         Assert.AreEqual(subscribeViaOptions ? 2 : 0, clientReadyCallCount);
+        Assert.AreEqual(0, configFetchedEvents.Count);
         Assert.AreEqual(0, configChangedEvents.Count);
         Assert.AreEqual(0, flagEvaluatedEvents.Count);
         Assert.AreEqual(0, errorEvents.Count);
@@ -1833,6 +1922,11 @@ public class ConfigCatClientTests
         // 2. Fetch succeeds
         await client.ForceRefreshAsync();
 
+        Assert.AreEqual(2, configFetchedEvents.Count);
+        Assert.AreSame(configFetchedEvents[0], configFetchedEvents[1]);
+        Assert.IsTrue(configFetchedEvents[0].IsInitiatedByUser);
+        Assert.IsTrue(configFetchedEvents[0].Result.IsSuccess);
+        Assert.AreEqual(RefreshErrorCode.None, configFetchedEvents[1].Result.ErrorCode);
         Assert.AreEqual(2, configChangedEvents.Count);
         Assert.IsTrue(configChangedEvents[0].NewConfig.Settings.Any());
         Assert.AreSame(configChangedEvents[0], configChangedEvents[1]);
@@ -1873,6 +1967,7 @@ public class ConfigCatClientTests
         client.Dispose();
 
         Assert.AreEqual(subscribeViaOptions ? 2 : 0, clientReadyCallCount);
+        Assert.AreEqual(2, configFetchedEvents.Count);
         Assert.AreEqual(2, configChangedEvents.Count);
         Assert.AreEqual(evaluationDetails.Count * 2, flagEvaluatedEvents.Count);
         Assert.AreEqual(2, errorEvents.Count);

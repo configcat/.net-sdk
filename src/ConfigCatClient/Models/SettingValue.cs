@@ -83,14 +83,14 @@ internal struct SettingValue
             if (HasUnsupportedValue)
             {
                 var unsupportedValue = UnsupportedValue;
-                throw new InvalidOperationException(unsupportedValue is not null
+                throw new InvalidConfigModelException(unsupportedValue is not null
                     ? $"Setting value '{unsupportedValue}' is of an unsupported type ({unsupportedValue.GetType()})."
                     : "Setting value is null.");
             }
             // Value is missing or multiple values specified in the config JSON?
             else
             {
-                throw new InvalidOperationException("Setting value is missing or invalid.");
+                throw new InvalidConfigModelException("Setting value is missing or invalid.");
             }
         }
 
@@ -103,7 +103,7 @@ internal struct SettingValue
 
         if (value is null || value.GetType().ToSettingType() != settingType)
         {
-            return !throwIfInvalid ? null : throw new InvalidOperationException($"Setting value is not of the expected type {settingType}.");
+            return !throwIfInvalid ? null : throw new InvalidConfigModelException($"Setting value is not of the expected type {settingType}.");
         }
 
         return value;

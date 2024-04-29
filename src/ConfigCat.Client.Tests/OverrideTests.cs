@@ -4,8 +4,8 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using ConfigCat.Client.Evaluation;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Moq;
 
 #if USE_NEWTONSOFT_JSON
 using JsonValue = Newtonsoft.Json.Linq.JValue;
@@ -266,6 +266,7 @@ public class OverrideTests
         Assert.IsTrue(client.GetValue("nonexisting", false));
 
         Assert.IsFalse(refreshResult.IsSuccess);
+        Assert.AreEqual(RefreshErrorCode.LocalOnlyClient, refreshResult.ErrorCode);
         StringAssert.Contains(refreshResult.ErrorMessage, nameof(OverrideBehaviour.LocalOnly));
         Assert.IsNull(refreshResult.ErrorException);
     }
@@ -333,6 +334,7 @@ public class OverrideTests
         Assert.IsTrue(client.GetValue("nonexisting", false));
 
         Assert.IsFalse(refreshResult.IsSuccess);
+        Assert.AreEqual(RefreshErrorCode.LocalOnlyClient, refreshResult.ErrorCode);
         StringAssert.Contains(refreshResult.ErrorMessage, nameof(OverrideBehaviour.LocalOnly));
         Assert.IsNull(refreshResult.ErrorException);
     }
@@ -576,14 +578,37 @@ public class OverrideTests
             options.FlagOverrides = FlagOverrides.LocalDictionary(dictionary, OverrideBehaviour.LocalOnly);
         });
 
-        var method = typeof(IConfigCatClient).GetMethod(nameof(IConfigCatClient.GetValue))!
+        var method = typeof(IConfigCatClient).GetMethod(nameof(IConfigCatClient.GetValueDetails))!
             .GetGenericMethodDefinition()
             .MakeGenericMethod(defaultValue.GetType());
 
-        var actualEvaluatedValue = method.Invoke(client, new[] { key, defaultValue, null });
+        var actualEvaluatedValueDetails = (EvaluationDetails)method.Invoke(client, new[] { key, defaultValue, null })!;
+        var actualEvaluatedValue = actualEvaluatedValueDetails.Value;
         var actualEvaluatedValues = client.GetAllValues(user: null);
 
         Assert.AreEqual(expectedEvaluatedValue, actualEvaluatedValue);
+        if (!defaultValue.Equals(expectedEvaluatedValue))
+        {
+            Assert.IsFalse(actualEvaluatedValueDetails.IsDefaultValue);
+            Assert.AreEqual(EvaluationErrorCode.None, actualEvaluatedValueDetails.ErrorCode);
+            Assert.IsNull(actualEvaluatedValueDetails.ErrorMessage);
+            Assert.IsNull(actualEvaluatedValueDetails.ErrorException);
+        }
+        else
+        {
+            Assert.IsTrue(actualEvaluatedValueDetails.IsDefaultValue);
+            Assert.IsNotNull(actualEvaluatedValueDetails.ErrorMessage);
+            if (overrideValue.ToSettingValue(out _).HasUnsupportedValue)
+            {
+                Assert.AreEqual(EvaluationErrorCode.InvalidConfigModel, actualEvaluatedValueDetails.ErrorCode);
+                Assert.IsInstanceOfType(actualEvaluatedValueDetails.ErrorException, typeof(InvalidConfigModelException));
+            }
+            else
+            {
+                Assert.AreEqual(EvaluationErrorCode.SettingValueTypeMismatch, actualEvaluatedValueDetails.ErrorCode);
+                Assert.IsInstanceOfType(actualEvaluatedValueDetails.ErrorException, typeof(EvaluationErrorException));
+            }
+        }
 
         overrideValue.ToSettingValue(out var overrideValueSettingType);
         var expectedEvaluatedValues = new KeyValuePair<string, object?>[]
@@ -638,14 +663,41 @@ public class OverrideTests
                 options.FlagOverrides = FlagOverrides.LocalFile(filePath, autoReload: false, OverrideBehaviour.LocalOnly);
             });
 
-            var method = typeof(IConfigCatClient).GetMethod(nameof(IConfigCatClient.GetValue))!
+            var method = typeof(IConfigCatClient).GetMethod(nameof(IConfigCatClient.GetValueDetails))!
                 .GetGenericMethodDefinition()
                 .MakeGenericMethod(defaultValue.GetType());
 
-            var actualEvaluatedValue = method.Invoke(client, new[] { key, defaultValue, null });
+            var actualEvaluatedValueDetails = (EvaluationDetails)method.Invoke(client, new[] { key, defaultValue, null })!;
+            var actualEvaluatedValue = actualEvaluatedValueDetails.Value;
             var actualEvaluatedValues = client.GetAllValues(user: null);
 
             Assert.AreEqual(expectedEvaluatedValue, actualEvaluatedValue);
+            if (!defaultValue.Equals(expectedEvaluatedValue))
+            {
+                Assert.IsFalse(actualEvaluatedValueDetails.IsDefaultValue);
+                Assert.AreEqual(EvaluationErrorCode.None, actualEvaluatedValueDetails.ErrorCode);
+                Assert.IsNull(actualEvaluatedValueDetails.ErrorMessage);
+                Assert.IsNull(actualEvaluatedValueDetails.ErrorException);
+            }
+            else
+            {
+                Assert.IsTrue(actualEvaluatedValueDetails.IsDefaultValue);
+                Assert.IsNotNull(actualEvaluatedValueDetails.ErrorMessage);
+#if USE_NEWTONSOFT_JSON
+                if (overrideValue is not JsonValue overrideJsonValue || overrideJsonValue.ToSettingValue(out _).HasUnsupportedValue)
+#else
+                if (overrideValue.ToSettingValue(out _).HasUnsupportedValue)
+#endif
+                {
+                    Assert.AreEqual(EvaluationErrorCode.InvalidConfigModel, actualEvaluatedValueDetails.ErrorCode);
+                    Assert.IsInstanceOfType(actualEvaluatedValueDetails.ErrorException, typeof(InvalidConfigModelException));
+                }
+                else
+                {
+                    Assert.AreEqual(EvaluationErrorCode.SettingValueTypeMismatch, actualEvaluatedValueDetails.ErrorCode);
+                    Assert.IsInstanceOfType(actualEvaluatedValueDetails.ErrorException, typeof(EvaluationErrorException));
+                }
+            }
 
             var unwrappedOverrideValue = overrideValue is JsonValue jsonValue
                 ? jsonValue.ToSettingValue(out var overrideValueSettingType)

@@ -74,6 +74,7 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
     private async ValueTask<FetchResult> FetchInternalAsync(ProjectConfig lastConfig)
     {
         FormattableLogMessage logMessage;
+        RefreshErrorCode errorCode;
         Exception errorException;
         try
         {
@@ -89,7 +90,7 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                     {
                         var exception = responseWithBody.Exception;
                         logMessage = this.logger.FetchReceived200WithInvalidBody(exception);
-                        return FetchResult.Failure(lastConfig, logMessage.InvariantFormattedMessage, exception);
+                        return FetchResult.Failure(lastConfig, RefreshErrorCode.InvalidHttpResponseContent, logMessage.InvariantFormattedMessage, exception);
                     }
 
                     return FetchResult.Success(new ProjectConfig
@@ -104,7 +105,7 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                     if (lastConfig.IsEmpty)
                     {
                         logMessage = this.logger.FetchReceived304WhenLocalCacheIsEmpty((int)response.StatusCode, response.ReasonPhrase);
-                        return FetchResult.Failure(lastConfig, logMessage.InvariantFormattedMessage);
+                        return FetchResult.Failure(lastConfig, RefreshErrorCode.InvalidHttpResponseWhenLocalCacheIsEmpty, logMessage.InvariantFormattedMessage);
                     }
 
                     return FetchResult.NotModified(lastConfig.With(ProjectConfig.GenerateTimeStamp()));
@@ -114,13 +115,13 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                     logMessage = this.logger.FetchFailedDueToInvalidSdkKey();
 
                     // We update the timestamp for extra protection against flooding.
-                    return FetchResult.Failure(lastConfig.With(ProjectConfig.GenerateTimeStamp()), logMessage.InvariantFormattedMessage);
+                    return FetchResult.Failure(lastConfig.With(ProjectConfig.GenerateTimeStamp()), RefreshErrorCode.InvalidSdkKey, logMessage.InvariantFormattedMessage);
 
                 default:
                     logMessage = this.logger.FetchFailedDueToUnexpectedHttpResponse((int)response.StatusCode, response.ReasonPhrase);
 
                     ReInitializeHttpClient();
-                    return FetchResult.Failure(lastConfig, logMessage.InvariantFormattedMessage);
+                    return FetchResult.Failure(lastConfig, RefreshErrorCode.UnexpectedHttpResponse, logMessage.InvariantFormattedMessage);
             }
         }
         catch (OperationCanceledException) when (this.cancellationTokenSource.IsCancellationRequested)
@@ -135,21 +136,24 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
         catch (OperationCanceledException ex)
         {
             logMessage = this.logger.FetchFailedDueToRequestTimeout(this.timeout, ex);
+            errorCode = RefreshErrorCode.HttpRequestTimeout;
             errorException = ex;
         }
         catch (HttpRequestException ex) when (ex.InnerException is WebException { Status: WebExceptionStatus.SecureChannelFailure })
         {
             logMessage = this.logger.EstablishingSecureConnectionFailed(ex);
+            errorCode = RefreshErrorCode.HttpRequestFailure;
             errorException = ex;
         }
         catch (Exception ex)
         {
             logMessage = this.logger.FetchFailedDueToUnexpectedError(ex);
+            errorCode = RefreshErrorCode.HttpRequestFailure;
             errorException = ex;
         }
 
         ReInitializeHttpClient();
-        return FetchResult.Failure(lastConfig, logMessage.InvariantFormattedMessage, errorException);
+        return FetchResult.Failure(lastConfig, errorCode, logMessage.InvariantFormattedMessage, errorException);
     }
 
     private async ValueTask<ResponseWithBody> FetchRequestAsync(string? httpETag, Uri requestUri, sbyte maxExecutionCount = 3)

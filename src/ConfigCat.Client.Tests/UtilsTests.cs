@@ -8,7 +8,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace ConfigCat.Client.Tests;
 
 [TestClass]
-public class UtilsTest
+public class UtilsTests
 {
     [DataRow(new byte[] { }, "")]
     [DataRow(new byte[] { 0 }, "00")]

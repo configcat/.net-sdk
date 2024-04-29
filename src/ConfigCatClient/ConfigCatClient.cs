@@ -294,7 +294,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         {
             Logger.SettingEvaluationError(nameof(GetValue), key, nameof(defaultValue), defaultValue, ex);
             evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user,
-                ex.Message, ex, RolloutEvaluatorExtensions.GetErrorCode(ex));
+                ex.Message, ex, EvaluationHelper.GetErrorCode(ex));
             value = defaultValue;
         }
 
@@ -335,7 +335,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         {
             Logger.SettingEvaluationError(nameof(GetValueAsync), key, nameof(defaultValue), defaultValue, ex);
             evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user,
-                ex.Message, ex, RolloutEvaluatorExtensions.GetErrorCode(ex));
+                ex.Message, ex, EvaluationHelper.GetErrorCode(ex));
             value = defaultValue;
         }
 
@@ -371,7 +371,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         {
             Logger.SettingEvaluationError(nameof(GetValueDetails), key, nameof(defaultValue), defaultValue, ex);
             evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user,
-                ex.Message, ex, RolloutEvaluatorExtensions.GetErrorCode(ex));
+                ex.Message, ex, EvaluationHelper.GetErrorCode(ex));
         }
 
         this.hooks.RaiseFlagEvaluated(evaluationDetails);
@@ -409,7 +409,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         {
             Logger.SettingEvaluationError(nameof(GetValueDetailsAsync), key, nameof(defaultValue), defaultValue, ex);
             evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user,
-                ex.Message, ex, RolloutEvaluatorExtensions.GetErrorCode(ex));
+                ex.Message, ex, EvaluationHelper.GetErrorCode(ex));
         }
 
         this.hooks.RaiseFlagEvaluated(evaluationDetails);
@@ -424,7 +424,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         try
         {
             var settings = GetSettings();
-            if (!RolloutEvaluatorExtensions.CheckSettingsAvailable(settings.Value, Logger, defaultReturnValue))
+            if (!EvaluationHelper.CheckSettingsAvailable(settings.Value, Logger, defaultReturnValue))
             {
                 return ArrayUtils.EmptyArray<string>();
             }
@@ -444,7 +444,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         try
         {
             var settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(false);
-            if (!RolloutEvaluatorExtensions.CheckSettingsAvailable(settings.Value, Logger, defaultReturnValue))
+            if (!EvaluationHelper.CheckSettingsAvailable(settings.Value, Logger, defaultReturnValue))
             {
                 return ArrayUtils.EmptyArray<string>();
             }
@@ -597,6 +597,63 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
 
         return evaluationDetailsArray;
+    }
+
+    /// <inheritdoc />
+    [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
+    public KeyValuePair<string, T>? GetKeyAndValue<T>(string variationId)
+    {
+        if (variationId is null)
+        {
+            throw new ArgumentNullException(nameof(variationId));
+        }
+
+        if (variationId.Length == 0)
+        {
+            throw new ArgumentException("Variation ID cannot be empty.", nameof(variationId));
+        }
+
+        typeof(T).EnsureSupportedSettingClrType(nameof(T));
+
+        const string defaultReturnValue = "null";
+        try
+        {
+            var settings = GetSettings();
+            return EvaluationHelper.GetKeyAndValue<T>(settings.Value, variationId, Logger, defaultReturnValue);
+        }
+        catch (Exception ex)
+        {
+            Logger.SettingEvaluationError(nameof(GetKeyAndValue), defaultReturnValue, ex);
+            return null;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<KeyValuePair<string, T>?> GetKeyAndValueAsync<T>(string variationId, CancellationToken cancellationToken = default)
+    {
+        if (variationId is null)
+        {
+            throw new ArgumentNullException(nameof(variationId));
+        }
+
+        if (variationId.Length == 0)
+        {
+            throw new ArgumentException("Variation ID cannot be empty.", nameof(variationId));
+        }
+
+        typeof(T).EnsureSupportedSettingClrType(nameof(T));
+
+        const string defaultReturnValue = "null";
+        try
+        {
+            var settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(false);
+            return EvaluationHelper.GetKeyAndValue<T>(settings.Value, variationId, Logger, defaultReturnValue);
+        }
+        catch (Exception ex)
+        {
+            Logger.SettingEvaluationError(nameof(GetKeyAndValueAsync), defaultReturnValue, ex);
+            return null;
+        }
     }
 
     /// <inheritdoc />

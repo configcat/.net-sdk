@@ -60,7 +60,7 @@ public abstract class EvaluationTestsBase
     private delegate EvaluationDetails<object> EvaluateDelegate(IRolloutEvaluator evaluator, Dictionary<string, Setting> settings, string key, object defaultValue, User user,
         ProjectConfig remoteConfig, LoggerWrapper logger);
 
-    private static readonly MethodInfo EvaluateMethodDefinition = new EvaluateDelegate(RolloutEvaluatorExtensions.Evaluate).Method.GetGenericMethodDefinition();
+    private static readonly MethodInfo EvaluateMethodDefinition = new EvaluateDelegate(EvaluationHelper.Evaluate).Method.GetGenericMethodDefinition();
 
     [DataRow("stringDefaultCat", "", "Cat", typeof(string))]
     [DataRow("stringDefaultCat", "", "Cat", typeof(object))]

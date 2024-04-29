@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client.Evaluation;
 
-internal static class RolloutEvaluatorExtensions
+internal static class EvaluationHelper
 {
     public static EvaluationDetails<T> Evaluate<T>(this IRolloutEvaluator evaluator, Dictionary<string, Setting>? settings, string key, T defaultValue, User? user,
         ProjectConfig? remoteConfig, LoggerWrapper logger)
@@ -76,6 +77,94 @@ internal static class RolloutEvaluatorExtensions
 
         exceptions = exceptionList;
         return evaluationDetailsArray;
+    }
+
+    internal static KeyValuePair<string, T>? GetKeyAndValue<T>(Dictionary<string, Setting>? settings, string variationId, LoggerWrapper logger, string defaultReturnValue)
+    {
+        if (!CheckSettingsAvailable(settings, logger, defaultReturnValue))
+        {
+            return null;
+        }
+
+        if (FindKeyAndValue(settings, variationId, out var settingType) is { } kvp)
+        {
+            T value;
+
+            if (typeof(T) != typeof(object))
+            {
+                var expectedSettingType = typeof(T).ToSettingType();
+
+                // NOTE: We've already checked earlier in the call chain that T is an allowed type (see also TypeExtensions.EnsureSupportedSettingClrType).
+                Debug.Assert(expectedSettingType != Setting.UnknownType, "Type is not supported.");
+
+                value = kvp.Value.GetValue<T>(expectedSettingType)!;
+            }
+            else
+            {
+                value = (T)(settingType != Setting.UnknownType
+                    ? kvp.Value.GetValue(settingType)!
+                    : kvp.Value.GetValue()!);
+            }
+
+            return new KeyValuePair<string, T>(kvp.Key, value);
+        }
+
+        logger.SettingForVariationIdIsNotPresent(variationId);
+        return null;
+    }
+
+    private static KeyValuePair<string, SettingValue>? FindKeyAndValue(Dictionary<string, Setting> settings, string variationId, out SettingType settingType)
+    {
+        foreach (var kvp in settings)
+        {
+            var key = kvp.Key;
+            var setting = kvp.Value;
+
+            if (setting.VariationId == variationId)
+            {
+                settingType = setting.SettingType;
+                return new KeyValuePair<string, SettingValue>(key, setting.Value);
+            }
+
+            foreach (var targetingRule in setting.TargetingRules)
+            {
+                if (targetingRule.SimpleValue is { } simpleValue)
+                {
+                    if (simpleValue.VariationId == variationId)
+                    {
+                        settingType = setting.SettingType;
+                        return new KeyValuePair<string, SettingValue>(key, simpleValue.Value);
+                    }
+                }
+                else if (targetingRule.PercentageOptions is { Length: > 0 } percentageOptions)
+                {
+                    foreach (var percentageOption in percentageOptions)
+                    {
+                        if (percentageOption.VariationId == variationId)
+                        {
+                            settingType = setting.SettingType;
+                            return new KeyValuePair<string, SettingValue>(key, percentageOption.Value);
+                        }
+                    }
+                }
+                else
+                {
+                    throw new InvalidConfigModelException("Targeting rule THEN part is missing or invalid.");
+                }
+            }
+
+            foreach (var percentageOption in setting.PercentageOptions)
+            {
+                if (percentageOption.VariationId == variationId)
+                {
+                    settingType = setting.SettingType;
+                    return new KeyValuePair<string, SettingValue>(key, percentageOption.Value);
+                }
+            }
+        }
+
+        settingType = Setting.UnknownType;
+        return null;
     }
 
     internal static bool CheckSettingsAvailable([NotNullWhen(true)] Dictionary<string, Setting>? settings, LoggerWrapper logger, string defaultReturnValue)

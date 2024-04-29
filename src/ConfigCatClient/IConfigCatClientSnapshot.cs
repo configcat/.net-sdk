@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace ConfigCat.Client;
@@ -70,4 +70,19 @@ public interface IConfigCatClientSnapshot
     /// <exception cref="ArgumentException"><paramref name="key"/> is an empty string.</exception>
     /// <exception cref="ArgumentException"><typeparamref name="T"/> is not an allowed type.</exception>
     EvaluationDetails<T> GetValueDetails<T>(string key, T defaultValue, User? user = null);
+
+    /// <summary>
+    /// Returns the key of a feature flag or setting and its value identified by the given Variation ID (analytics) synchronously, based on the snapshot.
+    /// </summary>
+    /// <typeparam name="T">
+    /// The type of the value. Only the following types are allowed:
+    /// <see cref="string"/>, <see cref="bool"/>, <see cref="int"/>, <see cref="long"/>, <see cref="double"/> and <see cref="object"/> (both nullable and non-nullable).<br/>
+    /// The type must correspond to the setting type, otherwise <see langword="null"/> will be returned.
+    /// </typeparam>
+    /// <param name="variationId">The Variation ID.</param>
+    /// <returns>The key of the feature flag or setting and its value.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="variationId"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="variationId"/> is an empty string.</exception>
+    /// <exception cref="ArgumentException"><typeparamref name="T"/> is not an allowed type.</exception>
+    KeyValuePair<string, T>? GetKeyAndValue<T>(string variationId);
 }

@@ -91,6 +91,11 @@ internal static partial class LoggerExtensions
 
     #region SDK-specific error messages (2000-2999)
 
+    public static FormattableLogMessage SettingForVariationIdIsNotPresent(this LoggerWrapper logger, string variationId) => logger.LogInterpolated(
+        LogLevel.Error, 2011,
+        $"Could not find the setting for the specified variation ID: '{variationId}'.",
+        "VARIATION_ID");
+
     public static FormattableLogMessage EstablishingSecureConnectionFailed(this LoggerWrapper logger, Exception ex) => logger.Log(
         LogLevel.Error, 2100, ex,
         "Secure connection could not be established. Please make sure that your application is enabled to use TLS 1.2+. For more information, see https://stackoverflow.com/a/58195987/8656352");

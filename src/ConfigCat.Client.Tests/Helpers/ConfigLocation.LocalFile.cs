@@ -22,7 +22,11 @@ public partial record class ConfigLocation
             using Stream stream = File.OpenRead(FilePath);
             using StreamReader reader = new(stream);
             var configJson = reader.ReadToEnd();
+#if BENCHMARK_OLD
+            return configJson.Deserialize<Config>() ?? throw new InvalidOperationException("Invalid config JSON content: " + configJson);
+#else
             return Config.Deserialize(configJson.AsMemory());
+#endif
         }
     }
 }

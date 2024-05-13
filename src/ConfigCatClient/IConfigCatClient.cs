@@ -188,6 +188,46 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     Task<IReadOnlyList<EvaluationDetails>> GetAllValueDetailsAsync(User? user = null, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Returns the key of a feature flag or setting and its value identified by the given Variation ID (analytics) synchronously.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Please be aware that calling this method on a thread pool thread or the main UI thread is safe only when the client is set up to use Auto or Manual Polling and in-memory caching.
+    /// Otherwise execution may involve I/O-bound (e.g. network) operations, because of which the executing thread may be blocked for a longer period of time. This can result in an unresponsive application.
+    /// In the case of problematic setups, it is recommended to use either the async version of the method or snaphots (see <see cref="Snapshot"/>).
+    /// </para>
+    /// </remarks>
+    /// <typeparam name="T">
+    /// The type of the value. Only the following types are allowed:
+    /// <see cref="string"/>, <see cref="bool"/>, <see cref="int"/>, <see cref="long"/>, <see cref="double"/> and <see cref="object"/> (both nullable and non-nullable).<br/>
+    /// The type must correspond to the setting type, otherwise <see langword="null"/> will be returned.
+    /// </typeparam>
+    /// <param name="variationId">The Variation ID.</param>
+    /// <returns>The key of the feature flag or setting and its value.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="variationId"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="variationId"/> is an empty string.</exception>
+    /// <exception cref="ArgumentException"><typeparamref name="T"/> is not an allowed type.</exception>
+    [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
+    KeyValuePair<string, T>? GetKeyAndValue<T>(string variationId);
+
+    /// <summary>
+    /// Returns the key of a feature flag or setting and its value identified by the given Variation ID (analytics) asynchronously.
+    /// </summary>
+    /// <typeparam name="T">
+    /// The type of the value. Only the following types are allowed:
+    /// <see cref="string"/>, <see cref="bool"/>, <see cref="int"/>, <see cref="long"/>, <see cref="double"/> and <see cref="object"/> (both nullable and non-nullable).<br/>
+    /// The type must correspond to the setting type, otherwise <see langword="null"/> will be returned.
+    /// </typeparam>
+    /// <param name="variationId">The Variation ID.</param>
+    /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the key of the feature flag or setting and its value.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="variationId"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="variationId"/> is an empty string.</exception>
+    /// <exception cref="ArgumentException"><typeparamref name="T"/> is not an allowed type.</exception>
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> is canceled during the execution of the task.</exception>
+    Task<KeyValuePair<string, T>?> GetKeyAndValueAsync<T>(string variationId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Refreshes the locally cached config by fetching the latest version from the remote server synchronously.
     /// </summary>
     /// <remarks>

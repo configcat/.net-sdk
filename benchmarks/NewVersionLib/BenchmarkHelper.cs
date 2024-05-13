@@ -40,7 +40,7 @@ public static partial class BenchmarkHelper
                                     UserCondition =  new UserCondition()
                                     {
                                         ComparisonAttribute = nameof(User.Identifier),
-                                        Comparator = UserComparator.SensitiveIsOneOf,
+                                        Comparator = UserComparator.SensitiveTextIsOneOf,
                                         StringListValue = new[]
                                         {
                                             "61418c941ecda8031d08ab86ec821e676fde7b6a59cd16b1e7191503c2f8297d",
@@ -60,7 +60,7 @@ public static partial class BenchmarkHelper
                                     UserCondition =  new UserCondition()
                                     {
                                         ComparisonAttribute = nameof(User.Email),
-                                        Comparator = UserComparator.ContainsAnyOf,
+                                        Comparator = UserComparator.TextContainsAnyOf,
                                         StringListValue = new[] { "@example.com" }
                                     }
                                 },

@@ -142,4 +142,39 @@ public readonly struct ConfigCatClientSnapshot : IConfigCatClientSnapshot
         evaluationServices.Hooks.RaiseFlagEvaluated(evaluationDetails);
         return evaluationDetails;
     }
+
+    /// <inheritdoc/>>
+    public KeyValuePair<string, T>? GetKeyAndValue<T>(string variationId)
+    {
+        if (this.evaluationServicesOrFakeImpl is not EvaluationServices evaluationServices)
+        {
+            return this.evaluationServicesOrFakeImpl is not null
+                ? ((IConfigCatClientSnapshot)this.evaluationServicesOrFakeImpl).GetKeyAndValue<T>(variationId)
+                : null;
+        }
+
+        if (variationId is null)
+        {
+            throw new ArgumentNullException(nameof(variationId));
+        }
+
+        if (variationId.Length == 0)
+        {
+            throw new ArgumentException("Variation ID cannot be empty.", nameof(variationId));
+        }
+
+        typeof(T).EnsureSupportedSettingClrType(nameof(T));
+
+        const string defaultReturnValue = "null";
+        try
+        {
+            var settings = this.settings;
+            return EvaluationHelper.GetKeyAndValue<T>(settings.Value, variationId, evaluationServices.Logger, defaultReturnValue);
+        }
+        catch (Exception ex)
+        {
+            evaluationServices.Logger.SettingEvaluationError($"{nameof(ConfigCatClientSnapshot)}.{nameof(GetKeyAndValue)}", defaultReturnValue, ex);
+            return null;
+        }
+    }
 }

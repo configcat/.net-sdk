@@ -173,7 +173,7 @@ public readonly struct ConfigCatClientSnapshot : IConfigCatClientSnapshot
         }
         catch (Exception ex)
         {
-            evaluationServices.Logger.SettingEvaluationError(nameof(GetKeyAndValue), defaultReturnValue, ex);
+            evaluationServices.Logger.SettingEvaluationError($"{nameof(ConfigCatClientSnapshot)}.{nameof(GetKeyAndValue)}", defaultReturnValue, ex);
             return null;
         }
     }

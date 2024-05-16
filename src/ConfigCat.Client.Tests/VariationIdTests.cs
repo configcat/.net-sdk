@@ -58,7 +58,7 @@ public class VariationIdTests
     {
         using var client = CreateClient(isAsync, TestJson);
 
-        ConfigCatClientSnapshot snapshot;
+        IConfigCatClientSnapshot snapshot;
         EvaluationDetails[] allValueDetails =
             isAsync is null ? (snapshot = client.Snapshot()).GetAllKeys().Select(keys => snapshot.GetValueDetails<object?>(keys, null)).ToArray() :
             !isAsync.Value ? client.GetAllValueDetails().ToArray() :
@@ -80,7 +80,7 @@ public class VariationIdTests
     {
         using var client = CreateClient(isAsync, "{}");
 
-        ConfigCatClientSnapshot snapshot;
+        IConfigCatClientSnapshot snapshot;
         EvaluationDetails[] allValueDetails =
             isAsync is null ? (snapshot = client.Snapshot()).GetAllKeys().Select(keys => snapshot.GetValueDetails<object?>(keys, null)).ToArray() :
             !isAsync.Value ? client.GetAllValueDetails().ToArray() :

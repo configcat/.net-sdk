@@ -267,7 +267,7 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// For other polling modes, you'll need to manually initiate a cache refresh by invoking <see cref="ForceRefresh"/> or <see cref="ForceRefreshAsync"/>.
     /// </remarks>
     /// <returns>The snapshot object.</returns>
-    ConfigCatClientSnapshot Snapshot();
+    IConfigCatClientSnapshot Snapshot();
 
     /// <summary>
     /// Sets the default user.

@@ -791,7 +791,7 @@ public sealed class ConfigCatClient : IConfigCatClient
     }
 
     /// <inheritdoc />
-    public ConfigCatClientSnapshot Snapshot()
+    public IConfigCatClientSnapshot Snapshot()
     {
         var settings = GetSettings(syncWithExternalCache: false);
         var cacheState = this.configService.GetCacheState(settings.RemoteConfig ?? ProjectConfig.Empty);

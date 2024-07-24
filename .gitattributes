@@ -61,3 +61,6 @@
 #*.PDF   diff=astextplain
 #*.rtf   diff=astextplain
 #*.RTF   diff=astextplain
+
+# Make sure unix eol in shell scripts
+*.sh      eol=lf

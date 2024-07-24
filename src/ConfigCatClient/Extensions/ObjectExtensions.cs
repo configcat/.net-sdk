@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using ConfigCat.Client;
+using ConfigCat.Client.Utils;
 
 #if USE_NEWTONSOFT_JSON
 using JsonValue = Newtonsoft.Json.Linq.JValue;
@@ -70,19 +71,19 @@ internal static class ObjectExtensions
         {
             case Text.Json.JsonValueKind.String:
                 settingType = SettingType.String;
-                return new SettingValue { StringValue = value.ConvertTo<string>() };
+                return new SettingValue { StringValue = value.ConvertTo(SourceGenSerializationContext.Default.String) };
 
             case Text.Json.JsonValueKind.False or Text.Json.JsonValueKind.True:
                 settingType = SettingType.Boolean;
-                return new SettingValue { BoolValue = value.ConvertTo<bool>() };
+                return new SettingValue { BoolValue = value.ConvertTo(SourceGenSerializationContext.Default.Boolean) };
 
             case Text.Json.JsonValueKind.Number when value.TryGetInt32(out var _):
                 settingType = SettingType.Int;
-                return new SettingValue { IntValue = value.ConvertTo<int>() };
+                return new SettingValue { IntValue = value.ConvertTo(SourceGenSerializationContext.Default.Int32) };
 
             case Text.Json.JsonValueKind.Number when value.TryGetDouble(out var _):
                 settingType = SettingType.Double;
-                return new SettingValue { DoubleValue = value.ConvertTo<double>() };
+                return new SettingValue { DoubleValue = value.ConvertTo(SourceGenSerializationContext.Default.Double) };
         }
 #endif
 
@@ -136,18 +137,21 @@ internal static class ObjectExtensions
         return setting;
     }
 
+#if USE_NEWTONSOFT_JSON
     private static TValue ConvertTo<TValue>(this JsonValue value)
     {
         Debug.Assert(typeof(TValue) != typeof(object), "Conversion to object is not supported.");
-
-#if USE_NEWTONSOFT_JSON
         Debug.Assert(value.Type != Newtonsoft.Json.Linq.JTokenType.Null, "Tried to convert unexpected null value.");
         return Newtonsoft.Json.Linq.Extensions.Value<TValue>(value)!;
-#else
-        Debug.Assert(value.ValueKind != Text.Json.JsonValueKind.Null, "Tried to convert unexpected null value.");
-        return Text.Json.JsonSerializer.Deserialize<TValue>(value)!;
-#endif
     }
+#else
+    private static TValue ConvertTo<TValue>(this JsonValue value, Text.Json.Serialization.Metadata.JsonTypeInfo<TValue> jsonTypeInfo)
+    {
+        Debug.Assert(typeof(TValue) != typeof(object), "Conversion to object is not supported.");
+        Debug.Assert(value.ValueKind != Text.Json.JsonValueKind.Null, "Tried to convert unexpected null value.");
+        return Text.Json.JsonSerializer.Deserialize(value, jsonTypeInfo)!;
+    }
+#endif
 
     public static bool TryConvertNumericToDouble(this object value, out double number)
     {

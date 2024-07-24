@@ -93,20 +93,20 @@ public class User
     /// <summary>
     /// Returns all attributes of the user.
     /// </summary>
-    public IReadOnlyDictionary<string, object> GetAllAttributes()
+    internal Dictionary<string, TValue> GetAllAttributes<TValue>(Func<object, TValue> convertValue)
     {
-        var result = new Dictionary<string, object>();
+        var result = new Dictionary<string, TValue>();
 
-        result[nameof(Identifier)] = Identifier;
+        result[nameof(Identifier)] = convertValue(Identifier);
 
         if (Email is not null)
         {
-            result[nameof(Email)] = Email;
+            result[nameof(Email)] = convertValue(Email);
         }
 
         if (Country is not null)
         {
-            result[nameof(Country)] = Country;
+            result[nameof(Country)] = convertValue(Country);
         }
 
         if (this.custom is { Count: > 0 })
@@ -115,12 +115,20 @@ public class User
             {
                 if (item.Value is not null && item.Key is not (nameof(Identifier) or nameof(Email) or nameof(Country)))
                 {
-                    result.Add(item.Key, item.Value);
+                    result.Add(item.Key, convertValue(item.Value));
                 }
             }
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Returns all attributes of the user.
+    /// </summary>
+    public IReadOnlyDictionary<string, object> GetAllAttributes()
+    {
+        return GetAllAttributes(value => value);
     }
 
     /// <summary>

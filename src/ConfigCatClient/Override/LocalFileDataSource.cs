@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client.Override;
 
@@ -104,7 +105,7 @@ internal sealed class LocalFileDataSource : IOverrideDataSource, IDisposable
                 try
                 {
                     var content = File.ReadAllText(this.fullPath);
-                    var simplified = content.AsMemory().DeserializeOrDefault<SimplifiedConfig>(tolerant: true);
+                    var simplified = SerializationHelper.DeserializeSimplifiedConfig(content.AsMemory(), tolerant: true, throwOnError: false);
                     if (simplified?.Entries is not null)
                     {
                         this.overrideValues = simplified.Entries.ToDictionary(kv => kv.Key, kv => kv.Value.ToSetting());
@@ -152,13 +153,14 @@ internal sealed class LocalFileDataSource : IOverrideDataSource, IDisposable
         this.cancellationTokenSource.Cancel();
     }
 
-    private sealed class SimplifiedConfig
+    internal sealed class SimplifiedConfig
     {
 #if USE_NEWTONSOFT_JSON
         [Newtonsoft.Json.JsonProperty(PropertyName = "flags")]
+        public Dictionary<string, object>? Entries { get; set; }
 #else
         [System.Text.Json.Serialization.JsonPropertyName("flags")]
+        public Dictionary<string, System.Text.Json.JsonElement>? Entries { get; set; }
 #endif
-        public Dictionary<string, object>? Entries { get; set; }
     }
 }

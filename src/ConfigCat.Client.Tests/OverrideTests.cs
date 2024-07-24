@@ -653,7 +653,7 @@ public class OverrideTests
 #endif
 
         var filePath = Path.GetTempFileName();
-        File.WriteAllText(filePath, $"{{ \"flags\": {{ \"{key}\": {overrideValueJson} }} }}");
+        File.WriteAllText(filePath, $"{{ \"flags\": {{ \"{key}\": {overrideValueJson} }}, /* comment */ }}");
 
         try
         {

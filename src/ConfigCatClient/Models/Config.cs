@@ -42,7 +42,7 @@ internal sealed class Config : IConfig
 {
     public static Config Deserialize(ReadOnlyMemory<char> configJson, bool tolerant = false)
     {
-        return configJson.Deserialize<Config>(tolerant)
+        return SerializationHelper.DeserializeConfig(configJson, tolerant)
             ?? throw new ArgumentException("Invalid config JSON content: " + configJson, nameof(configJson));
     }
 

@@ -1,0 +1,12 @@
+{
+  "version": "1.0",
+  "defaultProvider": "cdnjs",
+  "libraries": [
+    {
+      "provider": "jsdelivr",
+      "library": "bootstrap@5.1.0",
+      "files": [ "dist/css/bootstrap.min.css", "dist/css/bootstrap.min.css.map" ],
+      "destination": "wwwroot/lib/bootstrap/"
+    }
+  ]
+}

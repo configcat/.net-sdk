@@ -32,7 +32,7 @@ internal partial class SourceGenSerializationContext : JsonSerializerContext
 }
 #endif
 
-internal static class SerializationHelper
+internal static partial class SerializationHelper
 {
 #if USE_NEWTONSOFT_JSON
     private static readonly JsonSerializer Serializer = JsonSerializer.Create();
@@ -219,12 +219,20 @@ internal static class SerializationHelper
         return Convert.ToString(value, CultureInfo.InvariantCulture);
     }
 
+#if NET7_0_OR_GREATER
+    [GeneratedRegex(@"\\u[dD][89abAB][0-9a-fA-F]{2}\\u[dD][c-fC-F][0-9a-fA-F]{2}", RegexOptions.CultureInvariant, 5000)]
+    private static partial Regex EscapedSurrogatePairsRegex();
+#else
+    private static readonly Regex EscapedSurrogatePairsRegexCached = new Regex(@"\\u[dD][89abAB][0-9a-fA-F]{2}\\u[dD][c-fC-F][0-9a-fA-F]{2}", RegexOptions.Compiled | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(5));
+    private static Regex EscapedSurrogatePairsRegex() => EscapedSurrogatePairsRegexCached;
+#endif
+
     private static string UnescapeAstralCodePoints(string json)
     {
         // NOTE: There's no easy way to configure System.Text.Json not to encode surrogate pairs (i.e. Unicode code points above U+FFFF).
         // The only way of doing it during serialization (https://github.com/dotnet/runtime/issues/54193#issuecomment-861155179) needs unsafe code,
         // which we want to avoid in this project. So, we resort to the following regex-based workaround:
-        return Regex.Replace(json, @"\\u[dD][89abAB][0-9a-fA-F]{2}\\u[dD][c-fC-F][0-9a-fA-F]{2}", match =>
+        return EscapedSurrogatePairsRegex().Replace(json, match =>
         {
             // Ignore possible matches that aren't really escaped ('\\uD800\uDC00', '\\\\uD800\uDC00', etc.)
             var isEscaped = true;
@@ -244,7 +252,7 @@ internal static class SerializationHelper
             var highSurrogate = ushort.Parse(match.Value.AsSpan(2, 4).ToParsable(), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture);
             var lowSurrogate = ushort.Parse(match.Value.AsSpan(8, 4).ToParsable(), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture);
             return char.ConvertFromUtf32(char.ConvertToUtf32((char)highSurrogate, (char)lowSurrogate));
-        }, RegexOptions.CultureInvariant, TimeSpan.FromSeconds(5));
+        });
     }
 #endif
         }

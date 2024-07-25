@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net45;net461;netstandard2.0;netstandard2.1;net5.0;net6.0</TargetFrameworks>
+    <TargetFrameworks>net45;net461;netstandard2.0;netstandard2.1;net5.0;net6.0;net8.0</TargetFrameworks>
     <AssemblyName>ConfigCat.Client</AssemblyName>
     <RootNamespace>ConfigCat.Client</RootNamespace>
     <SignAssembly>true</SignAssembly>
@@ -14,7 +14,7 @@
     <PackageProjectUrl>https://configcat.com/docs/sdk-reference/dotnet</PackageProjectUrl>
     <RepositoryUrl>https://github.com/ConfigCat/.net-sdk</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <LangVersion>10.0</LangVersion>
+    <LangVersion>12.0</LangVersion>
     <Nullable>enable</Nullable>
     <WarningsAsErrors>nullable</WarningsAsErrors>
     <PackageReleaseNotes>https://github.com/configcat/.net-sdk/releases</PackageReleaseNotes>

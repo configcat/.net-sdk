@@ -1,5 +1,6 @@
 using BlazorWasm;
 using ConfigCat.Client;
+using ConfigCat.Client.Extensions.Adapters;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 
@@ -21,7 +22,7 @@ builder.Services.AddSingleton<IConfigCatClient>(sp =>
     return ConfigCatClient.Get("PKDVCLf-Hq-h-kCzMp-L7Q/HhOWfwVtZ0mb30i9wi17GQ", options =>
     {
         options.PollingMode = PollingModes.AutoPoll();
-        options.Logger = new WebApplication.Adapters.ConfigCatToMSLoggerAdapter(logger);
+        options.Logger = new ConfigCatToMSLoggerAdapter(logger);
     });
 });
 

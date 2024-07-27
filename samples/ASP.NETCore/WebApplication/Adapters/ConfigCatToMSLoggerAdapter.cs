@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 
-namespace WebApplication.Adapters;
+namespace ConfigCat.Client.Extensions.Adapters;
 
 public class ConfigCatToMSLoggerAdapter : ConfigCat.Client.IConfigCatLogger
 {

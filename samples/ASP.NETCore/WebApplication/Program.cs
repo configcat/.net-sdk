@@ -1,11 +1,10 @@
-﻿using System;
+using System;
 using ConfigCat.Client;
+using ConfigCat.Client.Extensions.Adapters;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using WebApplication.Adapters;
 
 var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
 
@@ -22,7 +21,7 @@ builder.Services.AddSingleton<IConfigCatClient>(sp =>
 {
     var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<ConfigCatClient>>();
 
-    return ConfigCatClient.Get(configCatSdkKey, options =>
+    return ConfigCatClient.Get(configCatSdkKey!, options =>
     {
         options.PollingMode = PollingModes.LazyLoad(cacheTimeToLive: TimeSpan.FromSeconds(120));
         options.Logger = new ConfigCatToMSLoggerAdapter(logger);

@@ -1,3 +1,5 @@
+using ConfigCat.Client.Shims;
+
 namespace System.Threading.Tasks;
 
 internal static class TaskExtensions
@@ -51,16 +53,16 @@ internal static class TaskExtensions
 #if !NET45
             var cancellationTcs = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
             var cancellationTask = cancellationTcs.Task;
-            var tokenRegistration = cancellationToken.Register(() => cancellationTcs.TrySetCanceled(cancellationToken), useSynchronizationContext: false);
+            var tokenRegistration = cancellationToken.Register(() => cancellationTcs.TrySetCanceled(cancellationToken), useSynchronizationContext: TaskShim.ContinueOnCapturedContext);
 #else
             var cancellationTcs = new TaskCompletionSource<T>();
             var cancellationTask = cancellationTcs.Task.ContinueWith<T>(static _ => default!, cancellationToken, TaskContinuationOptions.None, TaskScheduler.Default);
-            var tokenRegistration = cancellationToken.Register(() => cancellationTcs.TrySetResult(default!), useSynchronizationContext: false);
+            var tokenRegistration = cancellationToken.Register(() => cancellationTcs.TrySetResult(default!), useSynchronizationContext: TaskShim.ContinueOnCapturedContext);
 #endif
 
             using (tokenRegistration)
             {
-                var completedTask = await Task.WhenAny(task, cancellationTask).ConfigureAwait(false);
+                var completedTask = await Task.WhenAny(task, cancellationTask).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
                 if (completedTask is Task<T> taskWithResult)
                 {
                     return taskWithResult.GetAwaiter().GetResult();

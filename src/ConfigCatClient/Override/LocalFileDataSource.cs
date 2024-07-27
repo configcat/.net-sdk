@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using ConfigCat.Client.Shims;
 using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client.Override;
@@ -55,7 +56,7 @@ internal sealed class LocalFileDataSource : IOverrideDataSource, IDisposable
         // It's better to acquire a CancellationToken here because the getter might throw if CTS got disposed.
         var cancellationToken = this.cancellationTokenSource.Token;
 
-        Task.Run(async () =>
+        TaskShim.Current.Run(async () =>
         {
             this.logger.LocalFileDataSourceStartsWatchingFile(this.fullPath);
 
@@ -65,14 +66,14 @@ internal sealed class LocalFileDataSource : IOverrideDataSource, IDisposable
                 {
                     try
                     {
-                        await WatchCoreAsync(cancellationToken).ConfigureAwait(false);
+                        await WatchCoreAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
                     }
                     catch (Exception ex) when (ex is not OperationCanceledException)
                     {
                         this.logger.LocalFileDataSourceErrorDuringWatching(this.fullPath, ex);
                     }
 
-                    await Task.Delay(FILE_POLL_INTERVAL, cancellationToken).ConfigureAwait(false);
+                    await TaskShim.Current.Delay(TimeSpan.FromMilliseconds(FILE_POLL_INTERVAL), cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
                 }
                 catch (OperationCanceledException)
                 {
@@ -83,6 +84,8 @@ internal sealed class LocalFileDataSource : IOverrideDataSource, IDisposable
                     this.logger.LocalFileDataSourceErrorDuringWatching(this.fullPath, ex);
                 }
             }
+
+            return default(object);
         });
     }
 
@@ -92,7 +95,7 @@ internal sealed class LocalFileDataSource : IOverrideDataSource, IDisposable
         if (lastWriteTime > this.fileLastWriteTime)
         {
             this.logger.LocalFileDataSourceReloadsFile(this.fullPath);
-            await ReloadFileAsync(isAsync: true, cancellationToken).ConfigureAwait(false);
+            await ReloadFileAsync(isAsync: true, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
         }
     }
 
@@ -125,7 +128,7 @@ internal sealed class LocalFileDataSource : IOverrideDataSource, IDisposable
 
                     if (isAsync)
                     {
-                        await Task.Delay(WAIT_TIME_FOR_UNLOCK, cancellationToken).ConfigureAwait(false);
+                        await TaskShim.Current.Delay(TimeSpan.FromMilliseconds(WAIT_TIME_FOR_UNLOCK), cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
                     }
                     else
                     {

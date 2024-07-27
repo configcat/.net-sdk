@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
+using ConfigCat.Client.Shims;
 
 namespace ConfigCat.Client;
 
@@ -79,14 +80,14 @@ internal class HttpClientConfigFetcher : IConfigCatConfigFetcher
 
         try
         {
-            var httpResponse = await httpClient.SendAsync(httpRequest, cancellationToken).ConfigureAwait(false);
+            var httpResponse = await httpClient.SendAsync(httpRequest, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 
             if (httpResponse.StatusCode == HttpStatusCode.OK)
             {
 #if NET5_0_OR_GREATER
-                var httpResponseBody = await httpResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                var httpResponseBody = await httpResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 #else
-                var httpResponseBody = await httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var httpResponseBody = await httpResponse.Content.ReadAsStringAsync().ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 #endif
 
                 return new FetchResponse(httpResponse.StatusCode, httpResponse.ReasonPhrase, httpResponse.Headers.ETag?.Tag, httpResponseBody);

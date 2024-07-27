@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
+using ConfigCat.Client.Shims;
 
 namespace ConfigCat.Client.ConfigService;
 
@@ -15,7 +16,7 @@ internal sealed class LazyLoadConfigService : ConfigServiceBase, IConfigService
         this.cacheTimeToLive = cacheTimeToLive;
 
         var initialCacheSyncUpTask = SyncUpWithCacheAsync(WaitForReadyCancellationToken);
-        ReadyTask = GetReadyTask(initialCacheSyncUpTask, async initialCacheSyncUpTask => GetCacheState(await initialCacheSyncUpTask.ConfigureAwait(false)));
+        ReadyTask = GetReadyTask(initialCacheSyncUpTask, async initialCacheSyncUpTask => GetCacheState(await initialCacheSyncUpTask.ConfigureAwait(TaskShim.ContinueOnCapturedContext)));
     }
 
     public Task<ClientCacheState> ReadyTask { get; }
@@ -43,7 +44,7 @@ internal sealed class LazyLoadConfigService : ConfigServiceBase, IConfigService
 
     public async ValueTask<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default)
     {
-        var cachedConfig = await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(false);
+        var cachedConfig = await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 
         if (cachedConfig.IsExpired(expiration: this.cacheTimeToLive))
         {
@@ -54,7 +55,7 @@ internal sealed class LazyLoadConfigService : ConfigServiceBase, IConfigService
 
             if (!IsOffline)
             {
-                var configWithFetchResult = await RefreshConfigCoreAsync(cachedConfig, isInitiatedByUser: false, cancellationToken).ConfigureAwait(false);
+                var configWithFetchResult = await RefreshConfigCoreAsync(cachedConfig, isInitiatedByUser: false, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
                 return configWithFetchResult.Item1;
             }
         }

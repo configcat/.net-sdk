@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
+using ConfigCat.Client.Shims;
 
 namespace ConfigCat.Client;
 
@@ -51,11 +52,11 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
     {
         lock (this.syncObj)
         {
-            this.pendingFetch ??= Task.Run(async () =>
+            this.pendingFetch ??= TaskShim.Current.Run(async () =>
             {
                 try
                 {
-                    return await FetchInternalAsync(lastConfig).ConfigureAwait(false);
+                    return await FetchInternalAsync(lastConfig).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
                 }
                 finally
                 {
@@ -77,7 +78,7 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
         Exception errorException;
         try
         {
-            var deserializedResponse = await FetchRequestAsync(lastConfig.HttpETag, this.requestUri).ConfigureAwait(false);
+            var deserializedResponse = await FetchRequestAsync(lastConfig.HttpETag, this.requestUri).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 
             var response = deserializedResponse.Response;
 
@@ -154,7 +155,7 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
         {
             var request = new FetchRequest(this.requestUri, httpETag, this.sdkInfoHeader, this.timeout);
 
-            var response = await this.configFetcher.FetchAsync(request, this.cancellationTokenSource.Token).ConfigureAwait(false);
+            var response = await this.configFetcher.FetchAsync(request, this.cancellationTokenSource.Token).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 
             if (response.StatusCode == HttpStatusCode.OK)
             {

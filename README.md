@@ -5,7 +5,11 @@
 - .NET Framework 4.5+
 - Other runtimes which implement .NET Standard 2.0+ like .NET Core 2.0+, Xamarin.Android 8.0+, Xamarin.iOS 10.14+, etc. (For more details, please refer to [this table](https://learn.microsoft.com/en-us/dotnet/standard/net-standard?tabs=net-standard-2-0).)
 
-https://configcat.com
+Starting with v9.3.0, the ConfigCat SDK can be used in applications that employ [trimmed self-contained](https://learn.microsoft.com/en-us/dotnet/core/deploying/trimming/trim-self-contained) or various ahead-of-time (AOT) compilation deployment models.
+The SDK has been tested with the following AOT solutions:
+* [Native AOT](https://learn.microsoft.com/en-us/dotnet/core/deploying/native-aot/) - see also [Sample .NET Console app](https://github.com/configcat/.net-sdk/tree/master/samples/ConsoleApp)
+* [Mono WebAssembly AOT/Emscripten (wasm-tools)](https://learn.microsoft.com/en-us/aspnet/core/blazor/webassembly-build-tools-and-aot?view=aspnetcore-8.0) - see also [Sample ASP.NET Core Blazor WebAssembly app](https://github.com/configcat/.net-sdk/tree/master/samples/BlazorWasm)
+* [IL2CPP](https://docs.unity3d.com/2021.3/Documentation/Manual/IL2CPP.html) - see also [Sample Unity WebGL scripts](https://github.com/configcat/.net-sdk/tree/master/samples/UnityWebGL)
 
 ConfigCat SDK for .NET provides easy integration for your application to ConfigCat.
 
@@ -48,7 +52,7 @@ var client = ConfigCatClient.Get("#YOUR-SDK-KEY#");
 
 ### 5. Get your setting value:
 ```c#
-var isMyAwesomeFeatureEnabled = client.GetValue("isMyAwesomeFeatureEnabled", false);
+var isMyAwesomeFeatureEnabled = await client.GetValueAsync("isMyAwesomeFeatureEnabled", false);
 
 if(isMyAwesomeFeatureEnabled)
 {
@@ -74,7 +78,7 @@ Read more about [Targeting here](https://configcat.com/docs/advanced/targeting).
 ```c#
 User currentUser = new User("435170f4-8a8b-4b67-a723-505ac7cdea92");
 
-var isMyAwesomeFeatureEnabled = client.GetValue(
+var isMyAwesomeFeatureEnabled = await client.GetValueAsync(
 	"isMyAwesomeFeatureEnabled",
 	defaultValue: false,
 	user: currentUser);
@@ -82,8 +86,10 @@ var isMyAwesomeFeatureEnabled = client.GetValue(
 
 ## Sample/Demo apps
   * [Sample Console App](https://github.com/configcat/.net-sdk/tree/master/samples/ConsoleApp)
-  * [Sample Web App](https://github.com/configcat/.net-sdk/tree/master/samples/ASP.NETCore)
-
+  * [Sample Multi Page Web App](https://github.com/configcat/.net-sdk/tree/master/samples/ASP.NETCore)
+  * [Sample Single Page Web App](https://github.com/configcat/.net-sdk/tree/master/samples/BlazorWasm)
+  * [Sample Mobile/Windows Store App](https://github.com/configcat/.net-sdk/tree/master/samples/MAUI)
+  
 ## Polling Modes
 The ConfigCat SDK supports 3 different polling mechanisms to acquire the setting values from ConfigCat. After latest setting values are downloaded, they are stored in the internal cache then all requests are served from there. Read more about Polling Modes and how to use them at [ConfigCat Docs](https://configcat.com/docs/sdk-reference/dotnet/).
 

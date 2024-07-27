@@ -2,7 +2,7 @@
 
 This is a simple .NET Core web application to demonstrate how to use the ConfigCat SDK.
 
-1. Install [.NET Core](https://dotnet.microsoft.com/download)
+1. Install the [.NET SDK](https://dotnet.microsoft.com/download)
 2. Change dir to `/WebApplication`
    ```bash
    cd WebApplication

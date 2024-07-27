@@ -13,4 +13,4 @@ Since NuGet packages cannot be referenced in Unity projects directly, the SDK's 
 * [System.Text.Json v6.0.0](https://www.nuget.org/packages/System.Text.Json/6.0.0)
 * [System.Threading.Tasks.Extensions v4.5.4](https://www.nuget.org/packages/System.Threading.Tasks.Extensions/4.5.4)
 
-Tested on Unity 2021.3 LTS.
+Tested on Unity 2021.3 LTS and 6000.0.

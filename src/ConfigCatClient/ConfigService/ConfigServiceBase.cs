@@ -161,6 +161,8 @@ internal abstract class ConfigServiceBase : IDisposable
 
     protected virtual void OnConfigFetched(in FetchResult fetchResult, bool isInitiatedByUser)
     {
+        this.Logger.Debug("config fetched");
+
         this.Hooks.RaiseConfigFetched(RefreshResult.From(fetchResult), isInitiatedByUser);
     }
 

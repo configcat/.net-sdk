@@ -18,7 +18,7 @@ public class HttpConfigFetcherTests
 
         var myHandler = new FakeHttpClientHandler();
 
-        var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), myHandler, false,
+        var instance = new DefaultConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), new HttpClientConfigFetcher(myHandler), false,
             TimeSpan.FromSeconds(30));
 
         // Act
@@ -37,7 +37,7 @@ public class HttpConfigFetcherTests
 
         var myHandler = new FakeHttpClientHandler();
 
-        var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), myHandler, false,
+        var instance = new DefaultConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), new HttpClientConfigFetcher(myHandler), false,
             TimeSpan.FromSeconds(30));
 
         // Act
@@ -56,7 +56,7 @@ public class HttpConfigFetcherTests
 
         var myHandler = new FakeHttpClientHandler(HttpStatusCode.Forbidden);
 
-        using var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), myHandler, false,
+        using var instance = new DefaultConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), new HttpClientConfigFetcher(myHandler), false,
             TimeSpan.FromSeconds(30));
 
         var lastConfig = ConfigHelper.FromString("{}", timeStamp: ProjectConfig.GenerateTimeStamp(), httpETag: "\"ETAG\"");
@@ -85,7 +85,7 @@ public class HttpConfigFetcherTests
         var exception = new WebException();
         var myHandler = new ExceptionThrowerHttpClientHandler(exception);
 
-        var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), myHandler, false,
+        var instance = new DefaultConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), new HttpClientConfigFetcher(myHandler), false,
             TimeSpan.FromSeconds(30));
 
         var lastConfig = ConfigHelper.FromString("{}", timeStamp: ProjectConfig.GenerateTimeStamp(), httpETag: "\"ETAG\"");
@@ -110,7 +110,7 @@ public class HttpConfigFetcherTests
 
         var myHandler = new FakeHttpClientHandler(HttpStatusCode.OK, "{ }", TimeSpan.FromSeconds(1));
 
-        var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), myHandler, false, TimeSpan.FromSeconds(30));
+        var instance = new DefaultConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), new HttpClientConfigFetcher(myHandler), false, TimeSpan.FromSeconds(30));
 
         var lastConfig = ConfigHelper.FromString("{}", timeStamp: ProjectConfig.GenerateTimeStamp(), httpETag: "\"ETAG\"");
 
@@ -137,7 +137,7 @@ public class HttpConfigFetcherTests
         var exception = new WebException();
         var myHandler = new ExceptionThrowerHttpClientHandler(exception, TimeSpan.FromSeconds(1));
 
-        var instance = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), myHandler, false, TimeSpan.FromSeconds(30));
+        var instance = new DefaultConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), new HttpClientConfigFetcher(myHandler), false, TimeSpan.FromSeconds(30));
 
         var lastConfig = ConfigHelper.FromString("{}", timeStamp: ProjectConfig.GenerateTimeStamp(), httpETag: "\"ETAG\"");
 
@@ -173,7 +173,7 @@ public class HttpConfigFetcherTests
         var configETag = new EntityTagHeaderValue("\"123\"");
 
         var fakeHandler = new FakeHttpClientHandler(HttpStatusCode.OK, configContent, TimeSpan.FromMilliseconds(delayMs), configETag);
-        var configFetcher = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), fakeHandler, false, TimeSpan.FromMilliseconds(delayMs * 2));
+        var configFetcher = new DefaultConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), new HttpClientConfigFetcher(fakeHandler), false, TimeSpan.FromMilliseconds(delayMs * 2));
 
         using var cts = new CancellationTokenSource(delayMs / 4);
 

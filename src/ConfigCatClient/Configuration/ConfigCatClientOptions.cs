@@ -27,6 +27,15 @@ public class ConfigCatClientOptions : IProvidesHooks
     internal static IConfigCatLogger CreateDefaultLogger() => new ConsoleLogger(LogLevel.Warning);
 
     /// <summary>
+    /// The config fetcher implementation to use for perform ConfigCat config fetch operations.
+    /// If not set, <see cref="DefaultConfigFetcher"/> will be used by default, which is based on <see cref="HttpClient"/>.<br/>
+    /// If you want to use custom a config fetcher, you can provide an implementation of <see cref="IConfigCatConfigFetcher"/>.
+    /// </summary>
+    public IConfigCatConfigFetcher? ConfigFetcher { get; set; }
+
+    internal static IConfigCatConfigFetcher CreateDefaultConfigFetcher(HttpClientHandler? httpClientHandler) => new HttpClientConfigFetcher(httpClientHandler);
+
+    /// <summary>
     /// The cache implementation to use for storing and retrieving downloaded config data.
     /// If not set, <see cref="InMemoryConfigCache"/> will be used by default.<br/>
     /// If you want to use custom caching instead, you can provide an implementation of <see cref="IConfigCatCache"/>.

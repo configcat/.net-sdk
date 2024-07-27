@@ -28,11 +28,11 @@ public partial record class ConfigLocation
             };
             ConfigureBaseUrl(options);
 
-            using var configFetcher = new HttpConfigFetcher(
+            using var configFetcher = new DefaultConfigFetcher(
                 options.CreateUri(SdkKey),
                 ConfigCatClient.GetProductVersion(options.PollingMode),
                 options.Logger!.AsWrapper(),
-                options.HttpClientHandler,
+                new HttpClientConfigFetcher(options.HttpClientHandler),
                 options.IsCustomBaseUrl,
                 options.HttpTimeout);
 

@@ -110,10 +110,11 @@ public sealed class ConfigCatClient : IConfigCatClient
 
         this.configService = this.overrideBehaviour != OverrideBehaviour.LocalOnly
             ? DetermineConfigService(pollingMode,
-                new HttpConfigFetcher(options.CreateUri(sdkKey),
+                new DefaultConfigFetcher(options.CreateUri(sdkKey),
                         GetProductVersion(pollingMode),
                         logger,
-                        options.HttpClientHandler,
+                        options.ConfigFetcher
+                            ?? ConfigCatClientOptions.CreateDefaultConfigFetcher(options.HttpClientHandler),
                         options.IsCustomBaseUrl,
                         options.HttpTimeout),
                     cacheParameters,
@@ -753,7 +754,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
     }
 
-    private static IConfigService DetermineConfigService(PollingMode pollingMode, HttpConfigFetcher fetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline, SafeHooksWrapper hooks)
+    private static IConfigService DetermineConfigService(PollingMode pollingMode, IConfigFetcher fetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline, SafeHooksWrapper hooks)
     {
         return pollingMode switch
         {

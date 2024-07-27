@@ -1,37 +1,36 @@
 using System;
+using System.Collections.Generic;
 using System.Net;
-using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace ConfigCat.Client;
 
-internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
+internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
 {
     private readonly object syncObj = new();
-    private readonly string productVersion;
+    private readonly KeyValuePair<string, string> sdkInfoHeader;
     private readonly LoggerWrapper logger;
-
-    private readonly HttpClientHandler? httpClientHandler;
+    private readonly IConfigCatConfigFetcher configFetcher;
     private readonly bool isCustomUri;
     private readonly TimeSpan timeout;
     private readonly CancellationTokenSource cancellationTokenSource = new();
-    private HttpClient httpClient;
     internal Task<FetchResult>? pendingFetch;
 
     private Uri requestUri;
 
-    public HttpConfigFetcher(Uri requestUri, string productVersion, LoggerWrapper logger,
-        HttpClientHandler? httpClientHandler, bool isCustomUri, TimeSpan timeout)
+    public DefaultConfigFetcher(Uri requestUri, string productVersion, LoggerWrapper logger,
+        IConfigCatConfigFetcher configFetcher, bool isCustomUri, TimeSpan timeout)
     {
         this.requestUri = requestUri;
-        this.productVersion = productVersion;
+        this.sdkInfoHeader = new KeyValuePair<string, string>(
+            "X-ConfigCat-UserAgent",
+            new ProductInfoHeaderValue("ConfigCat-Dotnet", productVersion).ToString());
         this.logger = logger;
-        this.httpClientHandler = httpClientHandler;
+        this.configFetcher = configFetcher;
         this.isCustomUri = isCustomUri;
         this.timeout = timeout;
-        this.httpClient = CreateHttpClient();
     }
 
     public FetchResult Fetch(ProjectConfig lastConfig)
@@ -78,25 +77,25 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
         Exception errorException;
         try
         {
-            var responseWithBody = await FetchRequestAsync(lastConfig.HttpETag, this.requestUri).ConfigureAwait(false);
+            var deserializedResponse = await FetchRequestAsync(lastConfig.HttpETag, this.requestUri).ConfigureAwait(false);
 
-            var response = responseWithBody.Response;
+            var response = deserializedResponse.Response;
 
             switch (response.StatusCode)
             {
                 case HttpStatusCode.OK:
-                    var config = responseWithBody.Config;
+                    var config = deserializedResponse.Config;
                     if (config is null)
                     {
-                        var exception = responseWithBody.Exception;
+                        var exception = deserializedResponse.Exception;
                         logMessage = this.logger.FetchReceived200WithInvalidBody(exception);
                         return FetchResult.Failure(lastConfig, RefreshErrorCode.InvalidHttpResponseContent, logMessage.InvariantFormattedMessage, exception);
                     }
 
                     return FetchResult.Success(new ProjectConfig
                     (
-                        httpETag: response.Headers.ETag?.Tag,
-                        configJson: responseWithBody.ResponseBody,
+                        httpETag: response.ETag,
+                        configJson: response.Body,
                         config: config,
                         timeStamp: ProjectConfig.GenerateTimeStamp()
                     ));
@@ -119,27 +118,21 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
 
                 default:
                     logMessage = this.logger.FetchFailedDueToUnexpectedHttpResponse((int)response.StatusCode, response.ReasonPhrase);
-
-                    ReInitializeHttpClient();
                     return FetchResult.Failure(lastConfig, RefreshErrorCode.UnexpectedHttpResponse, logMessage.InvariantFormattedMessage);
             }
         }
-        catch (OperationCanceledException) when (this.cancellationTokenSource.IsCancellationRequested)
+        catch (OperationCanceledException)
         {
-            // NOTE: Unfortunately, we can't check the CancellationToken property of the exception in the when condition above because
-            // it seems that HttpClient.SendAsync combines our token with another one under the hood (at least, in runtimes earlier than .NET 6),
-            // so we'd get a Linked2CancellationTokenSource here instead of our token which we pass to the HttpClient.SendAsync method...
-
             /* do nothing on dispose cancel */
             return FetchResult.NotModified(lastConfig);
         }
-        catch (OperationCanceledException ex)
+        catch (FetchErrorException.Timeout_ ex)
         {
-            logMessage = this.logger.FetchFailedDueToRequestTimeout(this.timeout, ex);
+            logMessage = this.logger.FetchFailedDueToRequestTimeout(ex.Timeout, ex);
             errorCode = RefreshErrorCode.HttpRequestTimeout;
             errorException = ex;
         }
-        catch (HttpRequestException ex) when (ex.InnerException is WebException { Status: WebExceptionStatus.SecureChannelFailure })
+        catch (FetchErrorException.Failure_ ex) when (ex.Status == WebExceptionStatus.SecureChannelFailure)
         {
             logMessage = this.logger.EstablishingSecureConnectionFailed(ex);
             errorCode = RefreshErrorCode.HttpRequestFailure;
@@ -152,34 +145,22 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
             errorException = ex;
         }
 
-        ReInitializeHttpClient();
         return FetchResult.Failure(lastConfig, errorCode, logMessage.InvariantFormattedMessage, errorException);
     }
 
-    private async ValueTask<ResponseWithBody> FetchRequestAsync(string? httpETag, Uri requestUri, sbyte maxExecutionCount = 3)
+    private async ValueTask<DeserializedResponse> FetchRequestAsync(string? httpETag, Uri requestUri, sbyte maxExecutionCount = 3)
     {
         for (; ; maxExecutionCount--)
         {
-            var request = new HttpRequestMessage { Method = HttpMethod.Get, RequestUri = requestUri };
+            var request = new FetchRequest(this.requestUri, httpETag, this.sdkInfoHeader, this.timeout);
 
-            if (httpETag is not null)
-            {
-                request.Headers.IfNoneMatch.Add(new EntityTagHeaderValue(httpETag));
-            }
-
-            var response = await this.httpClient.SendAsync(request, this.cancellationTokenSource.Token).ConfigureAwait(false);
+            var response = await this.configFetcher.FetchAsync(request, this.cancellationTokenSource.Token).ConfigureAwait(false);
 
             if (response.StatusCode == HttpStatusCode.OK)
             {
-#if NET5_0_OR_GREATER
-                var responseBody = await response.Content.ReadAsStringAsync(this.cancellationTokenSource.Token).ConfigureAwait(false);
-#else
-                var responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-#endif
-
                 Config config;
-                try { config = Config.Deserialize(responseBody.AsMemory()); }
-                catch (Exception ex) { return new ResponseWithBody(response, responseBody, ex); }
+                try { config = Config.Deserialize(response.Body.AsMemory()); }
+                catch (Exception ex) { return new DeserializedResponse(response, ex); }
 
                 if (config.Preferences is not null)
                 {
@@ -187,21 +168,21 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
 
                     if (newBaseUrl is null || requestUri.Host == new Uri(newBaseUrl).Host)
                     {
-                        return new ResponseWithBody(response, responseBody, config);
+                        return new DeserializedResponse(response, config);
                     }
 
                     RedirectMode redirect = config.Preferences.RedirectMode;
 
                     if (this.isCustomUri && redirect != RedirectMode.Force)
                     {
-                        return new ResponseWithBody(response, responseBody, config);
+                        return new DeserializedResponse(response, config);
                     }
 
                     UpdateRequestUri(new Uri(newBaseUrl));
 
                     if (redirect == RedirectMode.No)
                     {
-                        return new ResponseWithBody(response, responseBody, config);
+                        return new DeserializedResponse(response, config);
                     }
 
                     if (redirect == RedirectMode.Should)
@@ -212,17 +193,17 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
                     if (maxExecutionCount <= 1)
                     {
                         this.logger.FetchFailedDueToRedirectLoop();
-                        return new ResponseWithBody(response, responseBody, config);
+                        return new DeserializedResponse(response, config);
                     }
 
-                    requestUri = ReplaceUri(request.RequestUri, new Uri(newBaseUrl));
+                    requestUri = ReplaceUri(request.Uri, new Uri(newBaseUrl));
                     continue;
                 }
 
-                return new ResponseWithBody(response, responseBody, config);
+                return new DeserializedResponse(response, config);
             }
 
-            return new ResponseWithBody(response, null, (Exception?)null);
+            return new DeserializedResponse(response, (Exception?)null);
         }
     }
 
@@ -239,65 +220,29 @@ internal sealed class HttpConfigFetcher : IConfigFetcher, IDisposable
         return new Uri(newUri, oldUri.AbsolutePath);
     }
 
-    private void ReInitializeHttpClient()
-    {
-        lock (this.syncObj)
-        {
-            this.httpClient = CreateHttpClient();
-        }
-    }
-
-    private HttpClient CreateHttpClient()
-    {
-        HttpClient client;
-
-        if (this.httpClientHandler is null)
-        {
-            var handler = new HttpClientHandler();
-            if (handler.SupportsAutomaticDecompression)
-            {
-                handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
-            }
-            client = new HttpClient(handler);
-        }
-        else
-        {
-            client = new HttpClient(this.httpClientHandler, false);
-        }
-
-        client.Timeout = this.timeout;
-        client.DefaultRequestHeaders.Add("X-ConfigCat-UserAgent",
-            new ProductInfoHeaderValue("ConfigCat-Dotnet", this.productVersion).ToString());
-
-        return client;
-    }
-
     public void Dispose()
     {
         this.cancellationTokenSource.Cancel();
-        this.httpClient?.Dispose();
+        this.configFetcher.Dispose();
     }
 
-    private readonly struct ResponseWithBody
+    private readonly struct DeserializedResponse
     {
         private readonly object? configOrException;
 
-        public ResponseWithBody(HttpResponseMessage response, string responseBody, Config config)
+        public DeserializedResponse(in FetchResponse response, Config config)
         {
             Response = response;
-            ResponseBody = responseBody;
             this.configOrException = config;
         }
 
-        public ResponseWithBody(HttpResponseMessage response, string? responseBody, Exception? exception)
+        public DeserializedResponse(in FetchResponse response, Exception? exception)
         {
             Response = response;
-            ResponseBody = responseBody;
             this.configOrException = exception;
         }
 
-        public HttpResponseMessage Response { get; }
-        public string? ResponseBody { get; }
+        public FetchResponse Response { get; }
         public Config? Config => this.configOrException as Config;
         public Exception? Exception => this.configOrException as Exception;
     }

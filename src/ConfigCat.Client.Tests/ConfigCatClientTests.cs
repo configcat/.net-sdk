@@ -2114,7 +2114,7 @@ public class ConfigCatClientTests
         var onFetch = (ProjectConfig latestConfig, CancellationToken _) =>
         {
             var logMessage = loggerWrapper.FetchFailedDueToUnexpectedError(errorException);
-            return FetchResult.Failure(latestConfig, RefreshErrorCode.HttpRequestFailure, errorMessage: logMessage.InvariantFormattedMessage, errorException: errorException);
+            return FetchResult.Failure(latestConfig, RefreshErrorCode.HttpRequestFailure, errorMessage: logMessage.ToLazyString(), errorException: errorException);
         };
         this.fetcherMock.Setup(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>())).ReturnsAsync(onFetch);
 

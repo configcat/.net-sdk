@@ -37,7 +37,7 @@ internal sealed class LoggerWrapper : IConfigCatLogger
 
         if (level == LogLevel.Error)
         {
-            this.hooks.RaiseError(message.InvariantFormattedMessage, exception);
+            this.hooks.RaiseError(ref message, exception);
         }
     }
 }

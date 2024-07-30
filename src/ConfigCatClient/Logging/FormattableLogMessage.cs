@@ -72,6 +72,13 @@ public struct FormattableLogMessage : IFormattable
     /// </summary>
     public string InvariantFormattedMessage => this.invariantFormattedMessage ??= ToString(CultureInfo.InvariantCulture);
 
+    internal LazyString ToLazyString()
+    {
+        return this.invariantFormattedMessage is { } invariantFormattedMessage
+            ? invariantFormattedMessage
+            : new LazyString(this.format ?? string.Empty, this.argValues);
+    }
+
     /// <summary>
     /// Returns the log message formatted using <see cref="CultureInfo.CurrentCulture"/>.
     /// </summary>

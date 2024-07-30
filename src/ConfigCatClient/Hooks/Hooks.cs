@@ -45,8 +45,8 @@ internal class Hooks : IProvidesHooks
     public void RaiseConfigChanged(IConfig newConfig)
         => this.events.RaiseConfigChanged(this.client, newConfig);
 
-    public void RaiseError(string message, Exception? exception)
-        => this.events.RaiseError(this.client, message, exception);
+    public void RaiseError(ref FormattableLogMessage message, Exception? exception)
+        => this.events.RaiseError(this.client, ref message, exception);
 
     public event EventHandler<ClientReadyEventArgs>? ClientReady
     {
@@ -84,7 +84,7 @@ internal class Hooks : IProvidesHooks
         public virtual void RaiseFlagEvaluated(IConfigCatClient? client, EvaluationDetails evaluationDetails) { /* intentional no-op */ }
         public virtual void RaiseConfigFetched(IConfigCatClient? client, RefreshResult result, bool isInitiatedByUser) { /* intentional no-op */ }
         public virtual void RaiseConfigChanged(IConfigCatClient? client, IConfig newConfig) { /* intentional no-op */ }
-        public virtual void RaiseError(IConfigCatClient? client, string message, Exception? exception) { /* intentional no-op */ }
+        public virtual void RaiseError(IConfigCatClient? client, ref FormattableLogMessage message, Exception? exception) { /* intentional no-op */ }
 
         public virtual event EventHandler<ClientReadyEventArgs>? ClientReady { add { /* intentional no-op */ } remove { /* intentional no-op */ } }
         public virtual event EventHandler<FlagEvaluatedEventArgs>? FlagEvaluated { add { /* intentional no-op */ } remove { /* intentional no-op */ } }
@@ -115,9 +115,9 @@ internal class Hooks : IProvidesHooks
             ConfigChanged?.Invoke(client, new ConfigChangedEventArgs(newConfig));
         }
 
-        public override void RaiseError(IConfigCatClient? client, string message, Exception? exception)
+        public override void RaiseError(IConfigCatClient? client, ref FormattableLogMessage message, Exception? exception)
         {
-            Error?.Invoke(client, new ConfigCatClientErrorEventArgs(message, exception));
+            Error?.Invoke(client, new ConfigCatClientErrorEventArgs(message.InvariantFormattedMessage, exception));
         }
 
         public override event EventHandler<ClientReadyEventArgs>? ClientReady;

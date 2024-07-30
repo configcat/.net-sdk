@@ -1,5 +1,6 @@
 using System;
 using ConfigCat.Client.ConfigService;
+using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client;
 
@@ -17,7 +18,7 @@ internal static partial class LoggerExtensions
         $"Config JSON is not present when evaluating setting '{key}'. Returning the `{defaultParamName}` parameter that you specified in your application: '{defaultParamValue}'.",
         "KEY", "DEFAULT_PARAM_NAME", "DEFAULT_PARAM_VALUE");
 
-    public static FormattableLogMessage SettingEvaluationFailedDueToMissingKey(this LoggerWrapper logger, string key, string defaultParamName, object? defaultParamValue, string availableKeys) => logger.LogInterpolated(
+    public static FormattableLogMessage SettingEvaluationFailedDueToMissingKey(this LoggerWrapper logger, string key, string defaultParamName, object? defaultParamValue, StringListFormatter availableKeys) => logger.LogInterpolated(
         LogLevel.Error, 1001,
         $"Failed to evaluate setting '{key}' (the key was not found in config JSON). Returning the `{defaultParamName}` parameter that you specified in your application: '{defaultParamValue}'. Available keys: [{availableKeys}].",
         "KEY", "DEFAULT_PARAM_NAME", "DEFAULT_PARAM_VALUE", "AVAILABLE_KEYS");

@@ -1,5 +1,6 @@
 using System;
 using ConfigCat.Client.Evaluation;
+using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client;
 
@@ -28,13 +29,13 @@ public abstract class EvaluationDetails
     }
 
     internal static EvaluationDetails<TValue> FromDefaultValue<TValue>(string key, TValue defaultValue, DateTime? fetchTime, User? user,
-        string errorMessage, Exception? errorException = null, EvaluationErrorCode errorCode = EvaluationErrorCode.UnexpectedError)
+        LazyString errorMessage, Exception? errorException = null, EvaluationErrorCode errorCode = EvaluationErrorCode.UnexpectedError)
     {
         var instance = new EvaluationDetails<TValue>(key, defaultValue)
         {
             User = user,
             IsDefaultValue = true,
-            ErrorMessage = errorMessage,
+            errorMessage = errorMessage,
             ErrorException = errorException,
             ErrorCode = errorCode,
         };
@@ -46,6 +47,8 @@ public abstract class EvaluationDetails
 
         return instance;
     }
+
+    private LazyString errorMessage;
 
     private protected EvaluationDetails(string key)
     {
@@ -93,7 +96,11 @@ public abstract class EvaluationDetails
     /// <summary>
     /// Error message in case evaluation failed.
     /// </summary>
-    public string? ErrorMessage { get; set; }
+    public string? ErrorMessage
+    {
+        get => this.errorMessage.ToString();
+        set => this.errorMessage = value;
+    }
 
     /// <summary>
     /// The <see cref="Exception"/> object related to the error in case evaluation failed (if any).

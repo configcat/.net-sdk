@@ -14,7 +14,7 @@ public struct FormattableLogMessage : IFormattable
         return message.Replace("{", "{{").Replace("}", "}}");
     }
 
-    internal static FormattableLogMessage FromInterpolated(FormattableString message, string[] argNames)
+    internal static FormattableLogMessage FromInterpolated(ValueFormattableString message, string[] argNames)
     {
         return new FormattableLogMessage(message.Format,
             argNames ?? ArrayUtils.EmptyArray<string>(),

@@ -145,15 +145,15 @@ internal sealed class LocalFileDataSource : IOverrideDataSource, IDisposable
         this.fileLastWriteTime = File.GetLastWriteTimeUtc(this.fullPath);
     }
 
-    internal void StopWatch()
-    {
-        this.cancellationTokenSource.Cancel();
-    }
-
     public void Dispose()
     {
         // Background work should stop under all circumstances
-        this.cancellationTokenSource.Cancel();
+        if (!this.cancellationTokenSource.IsCancellationRequested)
+        {
+            try { this.cancellationTokenSource.Cancel(); }
+            catch (ObjectDisposedException) { /* intentional no-op */ }
+        }
+        this.cancellationTokenSource.Dispose();
     }
 
     internal sealed class SimplifiedConfig

@@ -223,7 +223,12 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
 
     public void Dispose()
     {
-        this.cancellationTokenSource.Cancel();
+        if (!this.cancellationTokenSource.IsCancellationRequested)
+        {
+            try { this.cancellationTokenSource.Cancel(); }
+            catch (ObjectDisposedException) { /* intentional no-op */ }
+        }
+        this.cancellationTokenSource.Dispose();
         this.configFetcher.Dispose();
     }
 

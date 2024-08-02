@@ -13,42 +13,6 @@ namespace System
 {
     internal readonly struct FormattableString : IFormattable
     {
-        /// <summary>
-        /// Format the given object in the invariant culture. This static method may be
-        /// imported in C# by
-        /// <code>
-        /// using static System.FormattableString;
-        /// </code>.
-        /// Within the scope
-        /// of that import directive an interpolated string may be formatted in the
-        /// invariant culture by writing, for example,
-        /// <code>
-        /// Invariant($"{{ lat = {latitude}; lon = {longitude} }}")
-        /// </code>
-        /// </summary>
-        public static string Invariant(FormattableString formattable)
-        {
-            return formattable.ToString(Globalization.CultureInfo.InvariantCulture);
-        }
-
-        /// <summary>
-        /// Format the given object in the current culture. This static method may be
-        /// imported in C# by
-        /// <code>
-        /// using static System.FormattableString;
-        /// </code>.
-        /// Within the scope
-        /// of that import directive an interpolated string may be formatted in the
-        /// current culture by writing, for example,
-        /// <code>
-        /// CurrentCulture($"{{ lat = {latitude}; lon = {longitude} }}")
-        /// </code>
-        /// </summary>
-        public static string CurrentCulture(FormattableString formattable)
-        {
-            return formattable.ToString(Globalization.CultureInfo.CurrentCulture);
-        }
-
         private readonly string format;
         private readonly object?[] arguments;
 
@@ -60,11 +24,9 @@ namespace System
 
         public string Format => this.format ?? string.Empty;
         public object?[] GetArguments() { return this.arguments; }
-        public int ArgumentCount => this.arguments?.Length ?? 0;
-        public object? GetArgument(int index) { return this.arguments[index]; }
 
         public string ToString(string? format, IFormatProvider? formatProvider) { return ToString(formatProvider); }
-        public string ToString(IFormatProvider? formatProvider) { return string.Format(formatProvider, this.format, this.arguments); }
+        public string ToString(IFormatProvider? formatProvider) { return string.Format(formatProvider, Format, this.arguments); }
         public override string ToString() { return ToString(Globalization.CultureInfo.CurrentCulture); }
     }
 }

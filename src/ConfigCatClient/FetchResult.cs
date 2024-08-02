@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using ConfigCat.Client.Utils;
 
@@ -20,7 +22,8 @@ internal readonly struct FetchResult
 
     public static FetchResult Failure(ProjectConfig config, RefreshErrorCode errorCode, LazyString errorMessage, Exception? errorException = null)
     {
-        return new FetchResult(config, errorCode, errorMessage.Value ?? (object)errorMessage, errorException);
+        Debug.Assert(!EqualityComparer<LazyString>.Default.Equals(errorMessage, default));
+        return new FetchResult(config, errorCode, errorMessage.IsValueCreated ? errorMessage.Value : (object)errorMessage, errorException);
     }
 
     private readonly object? errorMessageOrToken; // either null or a string or a boxed LazyString or NotModifiedToken

@@ -1,7 +1,15 @@
+using System.Diagnostics;
 using System.Globalization;
 
 namespace ConfigCat.Client.Utils;
 
+/// <summary>
+/// Defers string formatting until the formatted value is actually needed.
+/// </summary>
+/// <remarks>
+/// It roughly achieves what <c>new Lazy&lt;string&gt;(() => string.Format(CultureInfo.InvariantCulture, format, args), isThreadSafe: false)</c> does
+/// but without extra heap memory allocations.
+/// </remarks>
 internal struct LazyString
 {
     private readonly string? format;
@@ -19,24 +27,30 @@ internal struct LazyString
         this.argsOrValue = args ?? ArrayUtils.EmptyArray<string>();
     }
 
-    public string? Value => this.argsOrValue as string;
-
-    public override string? ToString()
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    public string? Value
     {
-        var argsOrValue = this.argsOrValue;
-        if (argsOrValue is null)
+        get
         {
-            return null;
-        }
+            var argsOrValue = this.argsOrValue;
+            if (argsOrValue is null)
+            {
+                return null;
+            }
 
-        if (argsOrValue is not string value)
-        {
-            var args = (object?[])argsOrValue;
-            this.argsOrValue = value = string.Format(CultureInfo.InvariantCulture, this.format!, args);
-        }
+            if (argsOrValue is string value)
+            {
+                return value;
+            }
 
-        return value;
+            this.argsOrValue = value = string.Format(CultureInfo.InvariantCulture, this.format!, (object?[])argsOrValue);
+            return value;
+        }
     }
+
+    public bool IsValueCreated => this.argsOrValue is null or string;
+
+    public override string ToString() => Value ?? string.Empty;
 
     public static implicit operator LazyString(string? value) => new LazyString(value);
 }

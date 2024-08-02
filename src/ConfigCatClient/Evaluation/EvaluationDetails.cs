@@ -98,7 +98,7 @@ public abstract class EvaluationDetails
     /// </summary>
     public string? ErrorMessage
     {
-        get => this.errorMessage.ToString();
+        get => this.errorMessage.Value;
         set => this.errorMessage = value;
     }
 

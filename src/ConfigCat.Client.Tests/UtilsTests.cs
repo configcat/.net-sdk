@@ -157,4 +157,26 @@ public class UtilsTests
             Assert.ThrowsException<ArgumentOutOfRangeException>(() => ModelHelper.SetEnum(ref field, enumValue));
         }
     }
+
+    [DataTestMethod]
+    [DataRow(null, false, true, null)]
+    [DataRow("abc", false, true, "abc")]
+    [DataRow("abc", null, false, "abc")]
+    [DataRow("abc", new object?[0], false, "abc")]
+    [DataRow("abc{0}{1}{2}", new object?[] { 0.1, null, 23 }, false, "abc0.123")]
+    public void LazyString_Value_Works(string? valueOrFormat, object args, bool expectedIsValueCreated, string expectedValue)
+    {
+        var lazyString = args is false ? new LazyString(valueOrFormat) : new LazyString(valueOrFormat!, (object?[]?)args);
+
+        Assert.AreEqual(expectedIsValueCreated, lazyString.IsValueCreated);
+
+        var value = lazyString.Value;
+        Assert.AreEqual(expectedValue, value);
+
+        Assert.IsTrue(lazyString.IsValueCreated);
+
+        Assert.AreSame(value, lazyString.Value);
+
+        Assert.AreSame(expectedValue is not null ? value : string.Empty, lazyString.ToString());
+    }
 }

@@ -8,8 +8,12 @@
 Starting with v9.3.0, the ConfigCat SDK can be used in applications that employ [trimmed self-contained](https://learn.microsoft.com/en-us/dotnet/core/deploying/trimming/trim-self-contained) or various ahead-of-time (AOT) compilation deployment models.
 The SDK has been tested with the following AOT solutions:
 * [Native AOT](https://learn.microsoft.com/en-us/dotnet/core/deploying/native-aot/) - see also [Sample .NET Console app](https://github.com/configcat/.net-sdk/tree/master/samples/ConsoleApp)
-* [Mono WebAssembly AOT/Emscripten (wasm-tools)](https://learn.microsoft.com/en-us/aspnet/core/blazor/webassembly-build-tools-and-aot?view=aspnetcore-8.0) - see also [Sample ASP.NET Core Blazor WebAssembly app](https://github.com/configcat/.net-sdk/tree/master/samples/BlazorWasm)
+* [Mono AOT](https://www.mono-project.com/docs/advanced/aot/) - see also [Sample .NET MAUI app](https://github.com/configcat/.net-sdk/tree/master/samples/MAUI)
+* [Mono AOT for WebAssembly/Emscripten (wasm-tools)](https://learn.microsoft.com/en-us/aspnet/core/blazor/webassembly-build-tools-and-aot) - see also [Sample ASP.NET Core Blazor WebAssembly app](https://github.com/configcat/.net-sdk/tree/master/samples/BlazorWasm)
 * [IL2CPP](https://docs.unity3d.com/2021.3/Documentation/Manual/IL2CPP.html) - see also [Sample Unity WebGL scripts](https://github.com/configcat/.net-sdk/tree/master/samples/UnityWebGL)
+* [.NET Native](https://learn.microsoft.com/en-us/windows/uwp/dotnet-native/) (UWP)
+* [Crossgen2](https://devblogs.microsoft.com/dotnet/conversation-about-crossgen2/) (ReadyToRun)
+* [Ngen](https://learn.microsoft.com/en-us/dotnet/framework/tools/ngen-exe-native-image-generator) (Native Image Generator)
 
 ConfigCat SDK for .NET provides easy integration for your application to ConfigCat.
 

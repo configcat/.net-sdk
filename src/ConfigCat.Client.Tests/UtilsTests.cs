@@ -164,7 +164,7 @@ public class UtilsTests
     [DataRow("abc", null, false, "abc")]
     [DataRow("abc", new object?[0], false, "abc")]
     [DataRow("abc{0}{1}{2}", new object?[] { 0.1, null, 23 }, false, "abc0.123")]
-    public void LazyString_Value_Works(string? valueOrFormat, object args, bool expectedIsValueCreated, string expectedValue)
+    public void LazyString_Value_Works(string? valueOrFormat, object? args, bool expectedIsValueCreated, string? expectedValue)
     {
         var lazyString = args is false ? new LazyString(valueOrFormat) : new LazyString(valueOrFormat!, (object?[]?)args);
 

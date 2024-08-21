@@ -9,7 +9,7 @@ namespace ConfigCat.Client;
 /// <param name="eventId">Event identifier.</param>
 /// <param name="message">Message.</param>
 /// <param name="exception">The <see cref="Exception"/> object related to the message (if any).</param>
-/// <returns><see langword="true"/> when the event should be logged, <see langword="false"/> when it should be suppressed.</returns>
+/// <returns><see langword="true"/> when the event should be logged, <see langword="false"/> when it should be skipped.</returns>
 public delegate bool LogFilterCallback(LogLevel level, LogEventId eventId, ref FormattableLogMessage message, Exception? exception);
 
 /// <summary>

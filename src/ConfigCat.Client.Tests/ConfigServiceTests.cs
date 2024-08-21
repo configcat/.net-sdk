@@ -194,6 +194,8 @@ public class ConfigServiceTests
 
         await service.RefreshConfigAsync();
 
+        GC.KeepAlive(hooks);
+
         // Assert
 
         Assert.IsTrue(configChangedEvents.TryDequeue(out var configChangedEvent));
@@ -456,6 +458,8 @@ public class ConfigServiceTests
 
         var projectConfig = await service.GetConfigAsync();
 
+        GC.KeepAlive(hooks);
+
         // Assert
 
         Assert.AreEqual(cachedPc, projectConfig);
@@ -508,9 +512,12 @@ public class ConfigServiceTests
             new CacheParameters(this.cacheMock.Object, cacheKey: null!),
             this.loggerMock.Object.AsWrapper(),
             hooks: hooks);
+
         // Act
 
         await service.RefreshConfigAsync();
+
+        GC.KeepAlive(hooks);
 
         // Assert
 
@@ -565,6 +572,8 @@ public class ConfigServiceTests
         // Act
 
         await service.RefreshConfigAsync();
+
+        GC.KeepAlive(hooks);
 
         // Assert
 
@@ -699,6 +708,8 @@ public class ConfigServiceTests
             actualPc = isAsync ? await service.GetConfigAsync() : service.GetConfig();
         }
 
+        GC.KeepAlive(hooks);
+
         // Assert
 
         Assert.AreEqual(cachedPc, actualPc);
@@ -762,9 +773,13 @@ public class ConfigServiceTests
             cts.Cancel();
             clientReadyCalled = task == clientReadyTask && task.Status == TaskStatus.RanToCompletion;
 
+            await Task.Yield();
+
             // Wait for the hook event handlers to execute (as that might not happen if the service got disposed immediately).
             SpinWait.SpinUntil(() => configFetchedEvents.TryPeek(out _), TimeSpan.FromSeconds(1));
         }
+
+        GC.KeepAlive(hooks);
 
         // Assert
 
@@ -835,9 +850,13 @@ public class ConfigServiceTests
             cts.Cancel();
             clientReadyCalled = task == clientReadyTask && task.Status == TaskStatus.RanToCompletion;
 
+            await Task.Yield();
+
             // Wait for the hook event handlers to execute (as that might not happen if the service got disposed immediately).
             SpinWait.SpinUntil(() => configFetchedEvents.TryPeek(out _), TimeSpan.FromSeconds(1));
         }
+
+        GC.KeepAlive(hooks);
 
         // Assert
 
@@ -900,6 +919,9 @@ public class ConfigServiceTests
         {
             actualPc = isAsync ? await service.GetConfigAsync() : service.GetConfig();
         }
+
+        GC.KeepAlive(hooks);
+
         // Assert
 
         Assert.AreEqual(cachedPc, actualPc);
@@ -964,6 +986,9 @@ public class ConfigServiceTests
         {
             actualPc = isAsync ? await service.GetConfigAsync() : service.GetConfig();
         }
+
+        GC.KeepAlive(hooks);
+
         // Assert
 
         Assert.AreEqual(fetchedPc, actualPc);

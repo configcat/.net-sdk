@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client;
 
@@ -17,12 +20,13 @@ internal readonly struct FetchResult
         return new FetchResult(config, RefreshErrorCode.None, NotModifiedToken);
     }
 
-    public static FetchResult Failure(ProjectConfig config, RefreshErrorCode errorCode, string errorMessage, Exception? errorException = null)
+    public static FetchResult Failure(ProjectConfig config, RefreshErrorCode errorCode, LazyString errorMessage, Exception? errorException = null)
     {
-        return new FetchResult(config, errorCode, errorMessage, errorException);
+        Debug.Assert(!EqualityComparer<LazyString>.Default.Equals(errorMessage, default));
+        return new FetchResult(config, errorCode, errorMessage.IsValueCreated ? errorMessage.Value : (object)errorMessage, errorException);
     }
 
-    private readonly object? errorMessageOrToken;
+    private readonly object? errorMessageOrToken; // either null or a string or a boxed LazyString or NotModifiedToken
 
     private FetchResult(ProjectConfig config, RefreshErrorCode errorCode, object? errorMessageOrToken, Exception? errorException = null)
     {
@@ -35,10 +39,10 @@ internal readonly struct FetchResult
     public bool IsSuccess => this.errorMessageOrToken is null;
     public bool IsNotModified => ReferenceEquals(this.errorMessageOrToken, NotModifiedToken);
     [MemberNotNullWhen(true, nameof(ErrorMessage))]
-    public bool IsFailure => this.errorMessageOrToken is string;
+    public bool IsFailure => !IsSuccess && !IsNotModified;
 
     public ProjectConfig Config { get; }
     public RefreshErrorCode ErrorCode { get; }
-    public string? ErrorMessage => this.errorMessageOrToken as string;
+    public object? ErrorMessage => !IsNotModified ? this.errorMessageOrToken : null;
     public Exception? ErrorException { get; }
 }

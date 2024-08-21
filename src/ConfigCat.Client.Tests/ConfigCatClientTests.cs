@@ -2107,14 +2107,14 @@ public class ConfigCatClientTests
         hooks.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
         hooks.Error += (s, e) => errorEvents.Add(e);
 
-        var loggerWrapper = this.loggerMock.Object.AsWrapper(hooks);
+        var loggerWrapper = this.loggerMock.Object.AsWrapper(hooks: hooks);
 
         var errorException = new HttpRequestException();
 
         var onFetch = (ProjectConfig latestConfig, CancellationToken _) =>
         {
             var logMessage = loggerWrapper.FetchFailedDueToUnexpectedError(errorException);
-            return FetchResult.Failure(latestConfig, RefreshErrorCode.HttpRequestFailure, errorMessage: logMessage.InvariantFormattedMessage, errorException: errorException);
+            return FetchResult.Failure(latestConfig, RefreshErrorCode.HttpRequestFailure, errorMessage: logMessage.ToLazyString(), errorException: errorException);
         };
         this.fetcherMock.Setup(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>())).ReturnsAsync(onFetch);
 
@@ -2306,6 +2306,30 @@ public class ConfigCatClientTests
         Assert.AreEqual(2, errorEvents.Count);
     }
 
+    [TestMethod]
+    public async Task LogFilter_Works()
+    {
+        var logEvents = new List<LogEvent>();
+        var logger = LoggingHelper.CreateCapturingLogger(logEvents, LogLevel.Info);
+
+        var options = new ConfigCatClientOptions
+        {
+            Logger = logger,
+            LogFilter = (LogLevel level, LogEventId eventId, ref FormattableLogMessage message, Exception? exception) => eventId != 3001,
+            FlagOverrides = FlagOverrides.LocalFile(Path.Combine("data", "sample_variationid_v5.json"), autoReload: false, OverrideBehaviour.LocalOnly)
+        };
+
+        using var client = new ConfigCatClient("localonly", options);
+
+        var actualValue = await client.GetValueAsync("boolean", (bool?)null);
+        Assert.IsFalse(actualValue);
+
+        Assert.AreEqual(1, logEvents.Count);
+        Assert.AreEqual(LogLevel.Info, logEvents[0].Level);
+        Assert.AreEqual(5000, logEvents[0].EventId);
+        Assert.IsNull(logEvents[0].Exception);
+    }
+
     private static IConfigCatClient CreateClientWithMockedFetcher(string cacheKey,
         Mock<IConfigCatLogger> loggerMock,
         Mock<IConfigFetcher> fetcherMock,
@@ -2375,7 +2399,7 @@ public class ConfigCatClientTests
         var overrideDataSource = overrideDataSourceFactory?.Invoke(loggerWrapper);
 
         configService = configServiceFactory(fetcherMock.Object, cacheParams, loggerWrapper, hooks);
-        return new ConfigCatClient(configService, loggerMock.Object, evaluator, overrideDataSource?.Item1, overrideDataSource?.Item2, hooks);
+        return new ConfigCatClient(configService, loggerMock.Object, evaluator, overrideDataSource?.Item1, overrideDataSource?.Item2, hooks: hooks);
     }
 
     private static int ParseETagAsInt32(string? etag)

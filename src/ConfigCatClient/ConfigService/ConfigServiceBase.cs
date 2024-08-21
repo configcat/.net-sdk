@@ -97,7 +97,7 @@ internal abstract class ConfigServiceBase : IDisposable
         else
         {
             var logMessage = this.Logger.ConfigServiceCannotInitiateHttpCalls();
-            return RefreshResult.Failure(RefreshErrorCode.OfflineClient, logMessage.InvariantFormattedMessage);
+            return RefreshResult.Failure(RefreshErrorCode.OfflineClient, logMessage.ToLazyString());
         }
     }
 
@@ -134,7 +134,7 @@ internal abstract class ConfigServiceBase : IDisposable
         else
         {
             var logMessage = this.Logger.ConfigServiceCannotInitiateHttpCalls();
-            return RefreshResult.Failure(RefreshErrorCode.OfflineClient, logMessage.InvariantFormattedMessage);
+            return RefreshResult.Failure(RefreshErrorCode.OfflineClient, logMessage.ToLazyString());
         }
     }
 

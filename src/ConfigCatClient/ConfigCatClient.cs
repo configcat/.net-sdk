@@ -103,7 +103,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         // hold a strong reference to the hooks object (see also SafeHooksWrapper).
         var hooksWrapper = new SafeHooksWrapper(this.hooks);
 
-        var logger = new LoggerWrapper(options.Logger ?? ConfigCatClientOptions.CreateDefaultLogger(), hooksWrapper);
+        var logger = new LoggerWrapper(options.Logger ?? ConfigCatClientOptions.CreateDefaultLogger(), options.LogFilter, hooksWrapper);
         var evaluator = new RolloutEvaluator(logger);
 
         this.evaluationServices = new EvaluationServices(evaluator, hooksWrapper, logger);
@@ -145,7 +145,8 @@ public sealed class ConfigCatClient : IConfigCatClient
 
     // For test purposes only
     internal ConfigCatClient(IConfigService configService, IConfigCatLogger logger, IRolloutEvaluator evaluator,
-        OverrideBehaviour? overrideBehaviour = null, IOverrideDataSource? overrideDataSource = null, Hooks? hooks = null)
+        OverrideBehaviour? overrideBehaviour = null, IOverrideDataSource? overrideDataSource = null,
+        LogFilterCallback? logFilter = null, Hooks? hooks = null)
     {
 #if NETSTANDARD
         PlatformCompatibilityOptions.Freeze();
@@ -155,7 +156,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         this.hooks.SetSender(this);
         var hooksWrapper = new SafeHooksWrapper(this.hooks);
 
-        this.evaluationServices = new EvaluationServices(evaluator, hooksWrapper, new LoggerWrapper(logger, hooks));
+        this.evaluationServices = new EvaluationServices(evaluator, hooksWrapper, new LoggerWrapper(logger, logFilter, hooks));
 
         this.configService = configService;
 

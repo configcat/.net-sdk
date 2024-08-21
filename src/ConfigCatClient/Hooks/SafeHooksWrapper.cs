@@ -37,8 +37,8 @@ internal readonly struct SafeHooksWrapper
         => Hooks.RaiseConfigChanged(newConfig);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public void RaiseError(string message, Exception? exception)
-        => Hooks.RaiseError(message, exception);
+    public void RaiseError(ref FormattableLogMessage message, Exception? exception)
+        => Hooks.RaiseError(ref message, exception);
 
     public static implicit operator SafeHooksWrapper(Hooks? hooks) => hooks is not null ? new SafeHooksWrapper(hooks) : default;
 }

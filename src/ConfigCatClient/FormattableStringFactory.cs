@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// Source: https://github.com/dotnet/runtime/blob/v6.0.13/src/libraries/System.Private.CoreLib/src/System/Runtime/CompilerServices/FormattableStringFactory.cs
-
-#if NET45
+// Based on: https://github.com/dotnet/runtime/blob/v6.0.13/src/libraries/System.Private.CoreLib/src/System/Runtime/CompilerServices/FormattableStringFactory.cs
+// This is a modified version of the built-in type that is only used only internally in the SDK.
+// It creates value type instances instead of reference type instances to avoid unnecessary heap allocations.
 
 #pragma warning disable IDE0161 // Convert to file-scoped namespace
-#pragma warning disable IDE1006 // Naming Styles
-#pragma warning disable IDE0009 // Member access should be qualified.
+#pragma warning disable CS0436 // Type conflicts with imported type
 
 namespace System.Runtime.CompilerServices
 {
@@ -20,7 +19,7 @@ namespace System.Runtime.CompilerServices
         /// Create a <see cref="FormattableString"/> from a composite format string and object
         /// array containing zero or more objects to format.
         /// </summary>
-        public static FormattableString Create(string format, params object?[] arguments)
+        public static ValueFormattableString Create(string format, params object?[] arguments)
         {
             if (format == null)
             {
@@ -32,27 +31,7 @@ namespace System.Runtime.CompilerServices
                 throw new ArgumentNullException(nameof(arguments));
             }
 
-            return new ConcreteFormattableString(format, arguments);
-        }
-
-        private sealed class ConcreteFormattableString : FormattableString
-        {
-            private readonly string _format;
-            private readonly object?[] _arguments;
-
-            internal ConcreteFormattableString(string format, object?[] arguments)
-            {
-                _format = format;
-                _arguments = arguments;
-            }
-
-            public override string Format => _format;
-            public override object?[] GetArguments() { return _arguments; }
-            public override int ArgumentCount => _arguments.Length;
-            public override object? GetArgument(int index) { return _arguments[index]; }
-            public override string ToString(IFormatProvider? formatProvider) { return string.Format(formatProvider, _format, _arguments); }
+            return new ValueFormattableString(format, arguments);
         }
     }
 }
-
-#endif

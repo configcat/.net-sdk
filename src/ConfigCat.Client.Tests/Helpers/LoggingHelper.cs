@@ -19,9 +19,9 @@ internal struct LogEvent
 
 internal static class LoggingHelper
 {
-    public static LoggerWrapper AsWrapper(this IConfigCatLogger logger, Hooks? hooks = null)
+    public static LoggerWrapper AsWrapper(this IConfigCatLogger logger, LogFilterCallback? filter = null, Hooks? hooks = null)
     {
-        return new LoggerWrapper(logger, hooks);
+        return new LoggerWrapper(logger, filter, hooks);
     }
 
     public static IConfigCatLogger CreateCapturingLogger(List<LogEvent> logEvents, LogLevel logLevel = LogLevel.Info)

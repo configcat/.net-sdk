@@ -48,7 +48,7 @@ internal sealed class IndentedTextBuilder
     }
 
 #if !NET6_0_OR_GREATER
-    public IndentedTextBuilder Append(FormattableString value)
+    public IndentedTextBuilder Append(ValueFormattableString value)
     {
         this.stringBuilder.AppendFormat(CultureInfo.InvariantCulture, value.Format, value.GetArguments());
         return this;

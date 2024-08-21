@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
+using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client;
 
@@ -29,17 +30,24 @@ public readonly struct RefreshResult
             errorException);
     }
 
+    internal static RefreshResult Failure(RefreshErrorCode errorCode, LazyString errorMessage, Exception? errorException = null)
+    {
+        return new RefreshResult(errorCode, errorMessage, errorException);
+    }
+
     internal static RefreshResult From(in FetchResult fetchResult)
     {
         return !fetchResult.IsFailure
             ? Success()
-            : Failure(fetchResult.ErrorCode, fetchResult.ErrorMessage, fetchResult.ErrorException);
+            : new RefreshResult(fetchResult.ErrorCode, fetchResult.ErrorMessage, fetchResult.ErrorException);
     }
 
-    private RefreshResult(RefreshErrorCode errorCode, string? errorMessage, Exception? errorException)
+    private readonly object? errorMessage; // either null or a string or a boxed LazyString
+
+    private RefreshResult(RefreshErrorCode errorCode, object? errorMessage, Exception? errorException)
     {
         ErrorCode = errorCode;
-        ErrorMessage = errorMessage;
+        this.errorMessage = errorMessage;
         ErrorException = errorException;
     }
 
@@ -57,7 +65,7 @@ public readonly struct RefreshResult
     /// <summary>
     /// Error message in case the operation failed, otherwise <see langword="null" />.
     /// </summary>
-    public string? ErrorMessage { get; }
+    public string? ErrorMessage => this.errorMessage?.ToString();
 
     /// <summary>
     /// The <see cref="Exception"/> object related to the error in case the operation failed (if any).

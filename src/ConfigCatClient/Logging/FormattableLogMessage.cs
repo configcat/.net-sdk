@@ -14,7 +14,7 @@ public struct FormattableLogMessage : IFormattable
         return message.Replace("{", "{{").Replace("}", "}}");
     }
 
-    internal static FormattableLogMessage FromInterpolated(FormattableString message, string[] argNames)
+    internal static FormattableLogMessage FromInterpolated(ValueFormattableString message, string[] argNames)
     {
         return new FormattableLogMessage(message.Format,
             argNames ?? ArrayUtils.EmptyArray<string>(),
@@ -71,6 +71,13 @@ public struct FormattableLogMessage : IFormattable
     /// The log message formatted using <see cref="CultureInfo.InvariantCulture"/>.
     /// </summary>
     public string InvariantFormattedMessage => this.invariantFormattedMessage ??= ToString(CultureInfo.InvariantCulture);
+
+    internal LazyString ToLazyString()
+    {
+        return this.invariantFormattedMessage is { } invariantFormattedMessage
+            ? invariantFormattedMessage
+            : new LazyString(this.format ?? string.Empty, this.argValues);
+    }
 
     /// <summary>
     /// Returns the log message formatted using <see cref="CultureInfo.CurrentCulture"/>.

@@ -1,4 +1,7 @@
+using System;
+using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 
 namespace ConfigCat.Client.Tests;
 
@@ -111,5 +114,39 @@ public class LoggerTests
         logger.Log(LogLevel.Error, default, "");
 
         Assert.AreEqual(0, l.LogMessageInvokeCount);
+    }
+
+    [TestMethod]
+    public void LogFilter_ExcludesLogEvents()
+    {
+        var logEvents = new List<LogEvent>();
+        var loggerMock = new Mock<IConfigCatLogger>();
+        loggerMock.SetupGet(m => m.LogLevel).Returns(LogLevel.Info);
+
+        LogFilterCallback logFilter = (LogLevel level, LogEventId eventId, ref FormattableLogMessage message, Exception? exception)
+            => eventId.Id is not (1001 or 3001 or 5001);
+
+        var logger = loggerMock.Object.AsWrapper(logFilter);
+
+        logger.Log(LogLevel.Debug, 0, "debug");
+        logger.Log(LogLevel.Info, 5000, "info");
+        logger.Log(LogLevel.Warning, 3000, "warn");
+        var ex1 = new Exception();
+        logger.Log(LogLevel.Error, 1000, ex1, "error");
+        logger.Log(LogLevel.Info, 5001, "info");
+        logger.Log(LogLevel.Warning, 3001, "warn");
+        var ex2 = new Exception();
+        logger.Log(LogLevel.Error, 1001, ex2, "error");
+
+        loggerMock.Verify(m => m.Log(LogLevel.Debug, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Never);
+
+        loggerMock.Verify(m => m.Log(LogLevel.Info, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
+        loggerMock.Verify(m => m.Log(LogLevel.Info, 5000, ref It.Ref<FormattableLogMessage>.IsAny, null), Times.Once);
+
+        loggerMock.Verify(m => m.Log(LogLevel.Warning, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
+        loggerMock.Verify(m => m.Log(LogLevel.Warning, 3000, ref It.Ref<FormattableLogMessage>.IsAny, null), Times.Once);
+
+        loggerMock.Verify(m => m.Log(LogLevel.Error, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
+        loggerMock.Verify(m => m.Log(LogLevel.Error, 1000, ref It.Ref<FormattableLogMessage>.IsAny, ex1), Times.Once);
     }
 }

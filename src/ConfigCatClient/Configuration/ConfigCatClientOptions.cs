@@ -18,6 +18,12 @@ public class ConfigCatClientOptions : IProvidesHooks
     private Hooks hooks = new();
 
     /// <summary>
+    /// An optional callback that can be used to filter log events beyond the minimum log level setting
+    /// (<see cref="IConfigCatLogger.LogLevel"/> and <see cref="ConfigCatClient.LogLevel"/>).
+    /// </summary>
+    public LogFilterCallback? LogFilter { get; set; }
+
+    /// <summary>
     /// The logger implementation to use for performing logging.
     /// If not set, <see cref="ConsoleLogger"/> with <see cref="LogLevel.Warning"/> will be used by default.<br/>
     /// If you want to use custom logging instead, you can provide an implementation of <see cref="IConfigCatLogger"/>.

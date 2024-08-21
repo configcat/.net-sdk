@@ -36,7 +36,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
             if (context.User is not null)
             {
-                logBuilder.Append($" for User '{context.User.GetAllAttributes().Serialize()}'");
+                logBuilder.Append($" for User '{SerializationHelper.SerializeUser(context.User)}'");
             }
 
             logBuilder.IncreaseIndent();
@@ -882,7 +882,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         }
         else if (attributeValue is string[] stringArray)
         {
-            return stringArray.Serialize(unescapeAstral: true);
+            return SerializationHelper.SerializeStringArray(stringArray, unescapeAstral: true);
         }
         else if (attributeValue.TryConvertNumericToDouble(out var number))
         {
@@ -958,7 +958,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
     private string[]? GetUserAttributeValueAsStringArray(string attributeName, object attributeValue, UserCondition condition, string key, out string? error)
     {
         if (attributeValue is string[] stringArray
-            || attributeValue is string json && (stringArray = json.AsMemory().DeserializeOrDefault<string[]>()!) is not null)
+            || attributeValue is string json && (stringArray = SerializationHelper.DeserializeStringArray(json.AsMemory(), throwOnError: false)!) is not null)
         {
             if (!Array.Exists(stringArray, item => item is null))
             {

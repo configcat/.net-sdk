@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
+using ConfigCat.Client.Shims;
 
 #if NET45
 using ConfigWithFetchResult = System.Tuple<ConfigCat.Client.ProjectConfig, ConfigCat.Client.FetchResult>;
@@ -126,8 +127,8 @@ internal abstract class ConfigServiceBase : IDisposable
     {
         if (!IsOffline)
         {
-            var latestConfig = await this.ConfigCache.GetAsync(this.CacheKey, cancellationToken).ConfigureAwait(false);
-            var configWithFetchResult = await RefreshConfigCoreAsync(latestConfig, isInitiatedByUser: true, cancellationToken).ConfigureAwait(false);
+            var latestConfig = await this.ConfigCache.GetAsync(this.CacheKey, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+            var configWithFetchResult = await RefreshConfigCoreAsync(latestConfig, isInitiatedByUser: true, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
             return RefreshResult.From(configWithFetchResult.Item2);
         }
         else
@@ -139,12 +140,12 @@ internal abstract class ConfigServiceBase : IDisposable
 
     protected async Task<ConfigWithFetchResult> RefreshConfigCoreAsync(ProjectConfig latestConfig, bool isInitiatedByUser, CancellationToken cancellationToken)
     {
-        var fetchResult = await this.ConfigFetcher.FetchAsync(latestConfig, cancellationToken).ConfigureAwait(false);
+        var fetchResult = await this.ConfigFetcher.FetchAsync(latestConfig, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 
         if (fetchResult.IsSuccess
             || fetchResult.Config.TimeStamp > latestConfig.TimeStamp && (!fetchResult.Config.IsEmpty || latestConfig.IsEmpty))
         {
-            await this.ConfigCache.SetAsync(this.CacheKey, fetchResult.Config, cancellationToken).ConfigureAwait(false);
+            await this.ConfigCache.SetAsync(this.CacheKey, fetchResult.Config, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 
             latestConfig = fetchResult.Config;
         }
@@ -161,6 +162,8 @@ internal abstract class ConfigServiceBase : IDisposable
 
     protected virtual void OnConfigFetched(in FetchResult fetchResult, bool isInitiatedByUser)
     {
+        this.Logger.Debug("config fetched");
+
         this.Hooks.RaiseConfigFetched(RefreshResult.From(fetchResult), isInitiatedByUser);
     }
 
@@ -244,7 +247,7 @@ internal abstract class ConfigServiceBase : IDisposable
     protected async Task<ClientCacheState> GetReadyTask<TState>(TState state, Func<TState, Task<ClientCacheState>> waitForReadyAsync)
     {
         ClientCacheState cacheState;
-        try { cacheState = await waitForReadyAsync(state).ConfigureAwait(false); }
+        try { cacheState = await waitForReadyAsync(state).ConfigureAwait(TaskShim.ContinueOnCapturedContext); }
         finally
         {
             lock (this.syncObj)

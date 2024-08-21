@@ -1338,7 +1338,7 @@ public class ConfigCatClientTests
 
         var loggerWrapper = this.loggerMock.Object.AsWrapper();
         var fakeHandler = new FakeHttpClientHandler(HttpStatusCode.OK, "{ }", TimeSpan.FromMilliseconds(delayMs));
-        var configFetcher = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", loggerWrapper, fakeHandler, false, TimeSpan.FromMilliseconds(delayMs * 2));
+        var configFetcher = new DefaultConfigFetcher(new Uri("http://example.com"), "1.0", loggerWrapper, new HttpClientConfigFetcher(fakeHandler), false, TimeSpan.FromMilliseconds(delayMs * 2));
         var configCache = new InMemoryConfigCache();
         var cacheParams = new CacheParameters(configCache, cacheKey: null!);
         var configService = new LazyLoadConfigService(configFetcher, cacheParams, loggerWrapper, TimeSpan.FromSeconds(1));
@@ -1529,7 +1529,7 @@ public class ConfigCatClientTests
 
         var loggerWrapper = this.loggerMock.Object.AsWrapper();
         var fakeHandler = new FakeHttpClientHandler(HttpStatusCode.OK, "{ }", TimeSpan.FromMilliseconds(delayMs));
-        var configFetcher = new HttpConfigFetcher(new Uri("http://example.com"), "1.0", loggerWrapper, fakeHandler, false, TimeSpan.FromMilliseconds(delayMs * 2));
+        var configFetcher = new DefaultConfigFetcher(new Uri("http://example.com"), "1.0", loggerWrapper, new HttpClientConfigFetcher(fakeHandler), false, TimeSpan.FromMilliseconds(delayMs * 2));
         var configCache = new InMemoryConfigCache();
         var cacheParams = new CacheParameters(configCache, cacheKey: null!);
         var configService = new ManualPollConfigService(configFetcher, cacheParams, loggerWrapper);

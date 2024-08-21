@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MauiSample.MainPage">
+
+    <ScrollView>
+        <VerticalStackLayout
+            Padding="30,0"
+            Spacing="25">
+            <Image
+                Source="configcat.png"
+                HeightRequest="185"
+                Aspect="AspectFit"
+                SemanticProperties.Description="dot net bot in a race car number eight" />
+
+            <Label
+                Text="Welcome to the ConfigCat Sample app for MAUI!"
+                Style="{StaticResource Headline}"
+                SemanticProperties.HeadingLevel="Level1" />
+
+            <Button
+                x:Name="EvaluateBtn"
+                Text="Check if isPOCFeatureEnabled is turned ON" 
+                SemanticProperties.Hint="Evaluates the feature flag isPOCFeatureEnabled and displays the result"
+                Clicked="OnEvaluateBtnClicked"
+                HorizontalOptions="Center" />
+
+            <Label
+                x:Name="EvaluationResultLabel"
+                Style="{StaticResource SubHeadline}"
+                SemanticProperties.HeadingLevel="Level2"
+                SemanticProperties.Description="Feature flag evaluation result"
+                IsVisible="False"/>
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

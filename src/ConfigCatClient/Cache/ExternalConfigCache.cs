@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using ConfigCat.Client.Shims;
 
 namespace ConfigCat.Client.Cache;
 
@@ -46,7 +47,7 @@ internal sealed class ExternalConfigCache : ConfigCache
     {
         try
         {
-            return GetCore(await this.cache.GetAsync(key, cancellationToken).ConfigureAwait(false));
+            return GetCore(await this.cache.GetAsync(key, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext));
         }
         catch (Exception ex)
         {
@@ -92,7 +93,7 @@ internal sealed class ExternalConfigCache : ConfigCache
         {
             if (SetCore(config) is { } serializedConfig)
             {
-                await this.cache.SetAsync(key, serializedConfig, cancellationToken).ConfigureAwait(false);
+                await this.cache.SetAsync(key, serializedConfig, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
             }
         }
         catch (Exception ex)

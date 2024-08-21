@@ -60,7 +60,7 @@ public class SynchronizationContextDeadlockTests
     [TestMethod]
     public void ManualPollDeadLockCheck()
     {
-        var client = ConfigCatClient.Get(SDKKEY, options =>
+        using var client = ConfigCatClient.Get(SDKKEY, options =>
         {
             options.Logger = new ConsoleLogger(LogLevel.Off);
             options.HttpClientHandler = SharedHandler;
@@ -72,7 +72,7 @@ public class SynchronizationContextDeadlockTests
     [TestMethod]
     public void LazyLoadDeadLockCheck()
     {
-        var client = ConfigCatClient.Get(SDKKEY, options =>
+        using var client = ConfigCatClient.Get(SDKKEY, options =>
         {
             options.Logger = new ConsoleLogger(LogLevel.Off);
             options.HttpClientHandler = SharedHandler;

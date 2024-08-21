@@ -42,21 +42,33 @@ namespace ConfigCat.Client.Versioning;
 public sealed class SemVersion : IEquatable<SemVersion>, IComparable<SemVersion>, IComparable
 #else
 [Serializable]
-public sealed class SemVersion : IEquatable<SemVersion>, IComparable<SemVersion>, IComparable, ISerializable
+public sealed partial class SemVersion : IEquatable<SemVersion>, IComparable<SemVersion>, IComparable, ISerializable
 #endif
 {
-    private static readonly Regex ParseEx =
-        new Regex(@"^(?<major>\d+)" +
-            @"(?>\.(?<minor>\d+))?" +
-            @"(?>\.(?<patch>\d+))?" +
-            @"(?>\-(?<pre>[0-9A-Za-z\-\.]+))?" +
-            @"(?>\+(?<build>[0-9A-Za-z\-\.]+))?$",
-#if NETSTANDARD
-            RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture,
+#if NET7_0_OR_GREATER
+    [GeneratedRegex(@"^(?<major>\d+)" +
+        @"(?>\.(?<minor>\d+))?" +
+        @"(?>\.(?<patch>\d+))?" +
+        @"(?>\-(?<pre>[0-9A-Za-z\-\.]+))?" +
+        @"(?>\+(?<build>[0-9A-Za-z\-\.]+))?$",
+        RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture,
+        500)]
+    private static partial Regex ParseEx();
 #else
-            RegexOptions.CultureInvariant | RegexOptions.Compiled | RegexOptions.ExplicitCapture,
+    private static readonly Regex ParseExCached = new Regex(@"^(?<major>\d+)" +
+        @"(?>\.(?<minor>\d+))?" +
+        @"(?>\.(?<patch>\d+))?" +
+        @"(?>\-(?<pre>[0-9A-Za-z\-\.]+))?" +
+        @"(?>\+(?<build>[0-9A-Za-z\-\.]+))?$",
+#if NETSTANDARD
+        RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture,
+#else
+        RegexOptions.CultureInvariant | RegexOptions.Compiled | RegexOptions.ExplicitCapture,
 #endif
-            TimeSpan.FromSeconds(0.5));
+        TimeSpan.FromSeconds(0.5));
+
+    private static Regex ParseEx() => ParseExCached;
+#endif
 
 #if !NETSTANDARD
 #pragma warning disable CA1801 // Parameter unused
@@ -134,7 +146,7 @@ public sealed class SemVersion : IEquatable<SemVersion>, IComparable<SemVersion>
     /// <exception cref="OverflowException">The Major, Minor, or Patch versions are larger than <code>int.MaxValue</code>.</exception>
     public static SemVersion Parse(string version, bool strict = false)
     {
-        var match = ParseEx.Match(version);
+        var match = ParseEx().Match(version);
         if (!match.Success)
             throw new ArgumentException("Invalid version.", nameof(version));
 
@@ -176,7 +188,7 @@ public sealed class SemVersion : IEquatable<SemVersion>, IComparable<SemVersion>
         semver = null;
         if (version is null) return false;
 
-        var match = ParseEx.Match(version);
+        var match = ParseEx().Match(version);
         if (!match.Success) return false;
 
         if (!int.TryParse(match.Groups["major"].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var major))

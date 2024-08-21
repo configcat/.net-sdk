@@ -9,6 +9,7 @@ using ConfigCat.Client.ConfigService;
 using ConfigCat.Client.Configuration;
 using ConfigCat.Client.Evaluation;
 using ConfigCat.Client.Override;
+using ConfigCat.Client.Shims;
 using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client;
@@ -21,6 +22,19 @@ public sealed class ConfigCatClient : IConfigCatClient
     private static readonly string Version = typeof(ConfigCatClient).GetTypeInfo().Assembly.GetName().Version!.ToString(fieldCount: 3);
 
     internal static readonly ConfigCatClientCache Instances = new();
+
+#if NETSTANDARD
+    /// <summary>
+    /// Returns an object that can be used to configure the SDK to work on platforms that are not fully standards compliant.
+    /// </summary>
+    /// <remarks>
+    /// Configuration is only possible before the first instance of <see cref="ConfigCatClient"/> is created.
+    /// </remarks>
+    public
+#else
+    internal
+#endif
+    static readonly PlatformCompatibilityOptions PlatformCompatibilityOptions = new();
 
     private readonly string? sdkKey; // may be null in case of testing
     private readonly EvaluationServices evaluationServices;
@@ -76,6 +90,10 @@ public sealed class ConfigCatClient : IConfigCatClient
 
     internal ConfigCatClient(string sdkKey, ConfigCatClientOptions options)
     {
+#if NETSTANDARD
+        PlatformCompatibilityOptions.Freeze();
+#endif
+
         this.sdkKey = sdkKey;
 
         this.hooks = options.YieldHooks();
@@ -110,10 +128,12 @@ public sealed class ConfigCatClient : IConfigCatClient
 
         this.configService = this.overrideBehaviour != OverrideBehaviour.LocalOnly
             ? DetermineConfigService(pollingMode,
-                new HttpConfigFetcher(options.CreateUri(sdkKey),
+                new DefaultConfigFetcher(options.CreateUri(sdkKey),
                         GetProductVersion(pollingMode),
                         logger,
-                        options.HttpClientHandler,
+                        options.ConfigFetcher
+                            ?? PlatformCompatibilityOptions.configFetcherFactory?.Invoke(options.HttpClientHandler)
+                            ?? ConfigCatClientOptions.CreateDefaultConfigFetcher(options.HttpClientHandler),
                         options.IsCustomBaseUrl,
                         options.HttpTimeout),
                     cacheParameters,
@@ -128,6 +148,10 @@ public sealed class ConfigCatClient : IConfigCatClient
         OverrideBehaviour? overrideBehaviour = null, IOverrideDataSource? overrideDataSource = null,
         LogFilterCallback? logFilter = null, Hooks? hooks = null)
     {
+#if NETSTANDARD
+        PlatformCompatibilityOptions.Freeze();
+#endif
+
         this.hooks = hooks ?? NullHooks.Instance;
         this.hooks.SetSender(this);
         var hooksWrapper = new SafeHooksWrapper(this.hooks);
@@ -215,10 +239,11 @@ public sealed class ConfigCatClient : IConfigCatClient
             var localFileDataSource = this.overrideDataSource as IDisposable;
             if (configService is not null || localFileDataSource is not null)
             {
-                Task.Run(() =>
+                TaskShim.Current.Run(() =>
                 {
                     configService?.Dispose();
                     localFileDataSource?.Dispose();
+                    return TaskShim.CompletedTask;
                 });
             }
         }
@@ -324,7 +349,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         user ??= this.defaultUser;
         try
         {
-            settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(false);
+            settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
             evaluationDetails = ConfigEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, Logger);
             value = evaluationDetails.Value;
         }
@@ -399,7 +424,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         user ??= this.defaultUser;
         try
         {
-            settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(false);
+            settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
             evaluationDetails = ConfigEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, Logger);
         }
         catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
@@ -444,7 +469,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         const string defaultReturnValue = "empty collection";
         try
         {
-            var settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(false);
+            var settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
             if (!EvaluationHelper.CheckSettingsAvailable(settings.Value, Logger, defaultReturnValue))
             {
                 return ArrayUtils.EmptyArray<string>();
@@ -506,7 +531,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         user ??= this.defaultUser;
         try
         {
-            var settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(false);
+            var settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
             evaluationDetailsArray = ConfigEvaluator.EvaluateAll(settings.Value, user, settings.RemoteConfig, Logger, defaultReturnValue, out evaluationExceptions);
             result = evaluationDetailsArray.ToDictionary(details => details.Key, details => details.Value);
         }
@@ -574,7 +599,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         user ??= this.defaultUser;
         try
         {
-            var settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(false);
+            var settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
             evaluationDetailsArray = ConfigEvaluator.EvaluateAll(settings.Value, user, settings.RemoteConfig, Logger, defaultReturnValue, out evaluationExceptions);
         }
         catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
@@ -647,7 +672,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         const string defaultReturnValue = "null";
         try
         {
-            var settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(false);
+            var settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
             return EvaluationHelper.GetKeyAndValue<T>(settings.Value, variationId, Logger, defaultReturnValue);
         }
         catch (Exception ex)
@@ -677,7 +702,7 @@ public sealed class ConfigCatClient : IConfigCatClient
     {
         try
         {
-            return await this.configService.RefreshConfigAsync(cancellationToken).ConfigureAwait(false);
+            return await this.configService.RefreshConfigAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
         }
         catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
         {
@@ -731,16 +756,16 @@ public sealed class ConfigCatClient : IConfigCatClient
         switch (this.overrideBehaviour)
         {
             case null:
-                return await GetRemoteConfigAsync(cancellationToken).ConfigureAwait(false);
+                return await GetRemoteConfigAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
             case OverrideBehaviour.LocalOnly:
-                return new SettingsWithRemoteConfig(await this.overrideDataSource!.GetOverridesAsync(cancellationToken).ConfigureAwait(false), remoteConfig: null);
+                return new SettingsWithRemoteConfig(await this.overrideDataSource!.GetOverridesAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext), remoteConfig: null);
             case OverrideBehaviour.LocalOverRemote:
-                local = await this.overrideDataSource!.GetOverridesAsync(cancellationToken).ConfigureAwait(false);
-                remote = await GetRemoteConfigAsync(cancellationToken).ConfigureAwait(false);
+                local = await this.overrideDataSource!.GetOverridesAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+                remote = await GetRemoteConfigAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
                 return new SettingsWithRemoteConfig(remote.Value.MergeOverwriteWith(local), remote.RemoteConfig);
             case OverrideBehaviour.RemoteOverLocal:
-                local = await this.overrideDataSource!.GetOverridesAsync(cancellationToken).ConfigureAwait(false);
-                remote = await GetRemoteConfigAsync(cancellationToken).ConfigureAwait(false);
+                local = await this.overrideDataSource!.GetOverridesAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+                remote = await GetRemoteConfigAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
                 return new SettingsWithRemoteConfig(local.MergeOverwriteWith(remote.Value), remote.RemoteConfig);
             default:
                 throw new InvalidOperationException(); // execution should never get here
@@ -748,13 +773,13 @@ public sealed class ConfigCatClient : IConfigCatClient
 
         async Task<SettingsWithRemoteConfig> GetRemoteConfigAsync(CancellationToken cancellationToken)
         {
-            var config = await this.configService.GetConfigAsync(cancellationToken).ConfigureAwait(false);
+            var config = await this.configService.GetConfigAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
             var settings = !config.IsEmpty ? config.Config.Settings : null;
             return new SettingsWithRemoteConfig(settings, config);
         }
     }
 
-    private static IConfigService DetermineConfigService(PollingMode pollingMode, HttpConfigFetcher fetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline, SafeHooksWrapper hooks)
+    private static IConfigService DetermineConfigService(PollingMode pollingMode, IConfigFetcher fetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline, SafeHooksWrapper hooks)
     {
         return pollingMode switch
         {

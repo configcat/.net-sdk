@@ -5,7 +5,7 @@
     <IsPackable>false</IsPackable>
     <AssemblyName>ConfigCatClientTests</AssemblyName>
     <SignAssembly>true</SignAssembly>
-    <LangVersion>10.0</LangVersion>
+    <LangVersion>12.0</LangVersion>
     <Nullable>enable</Nullable>
     <WarningsAsErrors>nullable</WarningsAsErrors>
     <NoWarn>CS0618;CS1685</NoWarn>

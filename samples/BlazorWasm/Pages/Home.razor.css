@@ -1,0 +1,15 @@
+﻿* {
+    text-align: center;
+}
+
+.logos {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+}
+
+.heart {
+    font-size: 2em;
+    margin-left: 0.5em;
+}

@@ -5,6 +5,8 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using ConfigCat.Client.Shims;
+using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client.Override;
 
@@ -54,7 +56,7 @@ internal sealed class LocalFileDataSource : IOverrideDataSource, IDisposable
         // It's better to acquire a CancellationToken here because the getter might throw if CTS got disposed.
         var cancellationToken = this.cancellationTokenSource.Token;
 
-        Task.Run(async () =>
+        TaskShim.Current.Run(async () =>
         {
             this.logger.LocalFileDataSourceStartsWatchingFile(this.fullPath);
 
@@ -64,14 +66,14 @@ internal sealed class LocalFileDataSource : IOverrideDataSource, IDisposable
                 {
                     try
                     {
-                        await WatchCoreAsync(cancellationToken).ConfigureAwait(false);
+                        await WatchCoreAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
                     }
                     catch (Exception ex) when (ex is not OperationCanceledException)
                     {
                         this.logger.LocalFileDataSourceErrorDuringWatching(this.fullPath, ex);
                     }
 
-                    await Task.Delay(FILE_POLL_INTERVAL, cancellationToken).ConfigureAwait(false);
+                    await TaskShim.Current.Delay(TimeSpan.FromMilliseconds(FILE_POLL_INTERVAL), cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
                 }
                 catch (OperationCanceledException)
                 {
@@ -82,6 +84,8 @@ internal sealed class LocalFileDataSource : IOverrideDataSource, IDisposable
                     this.logger.LocalFileDataSourceErrorDuringWatching(this.fullPath, ex);
                 }
             }
+
+            return default(object);
         });
     }
 
@@ -91,7 +95,7 @@ internal sealed class LocalFileDataSource : IOverrideDataSource, IDisposable
         if (lastWriteTime > this.fileLastWriteTime)
         {
             this.logger.LocalFileDataSourceReloadsFile(this.fullPath);
-            await ReloadFileAsync(isAsync: true, cancellationToken).ConfigureAwait(false);
+            await ReloadFileAsync(isAsync: true, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
         }
     }
 
@@ -104,7 +108,7 @@ internal sealed class LocalFileDataSource : IOverrideDataSource, IDisposable
                 try
                 {
                     var content = File.ReadAllText(this.fullPath);
-                    var simplified = content.AsMemory().DeserializeOrDefault<SimplifiedConfig>(tolerant: true);
+                    var simplified = SerializationHelper.DeserializeSimplifiedConfig(content.AsMemory(), tolerant: true, throwOnError: false);
                     if (simplified?.Entries is not null)
                     {
                         this.overrideValues = simplified.Entries.ToDictionary(kv => kv.Key, kv => kv.Value.ToSetting());
@@ -124,7 +128,7 @@ internal sealed class LocalFileDataSource : IOverrideDataSource, IDisposable
 
                     if (isAsync)
                     {
-                        await Task.Delay(WAIT_TIME_FOR_UNLOCK, cancellationToken).ConfigureAwait(false);
+                        await TaskShim.Current.Delay(TimeSpan.FromMilliseconds(WAIT_TIME_FOR_UNLOCK), cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
                     }
                     else
                     {
@@ -141,24 +145,25 @@ internal sealed class LocalFileDataSource : IOverrideDataSource, IDisposable
         this.fileLastWriteTime = File.GetLastWriteTimeUtc(this.fullPath);
     }
 
-    internal void StopWatch()
-    {
-        this.cancellationTokenSource.Cancel();
-    }
-
     public void Dispose()
     {
         // Background work should stop under all circumstances
-        this.cancellationTokenSource.Cancel();
+        if (!this.cancellationTokenSource.IsCancellationRequested)
+        {
+            try { this.cancellationTokenSource.Cancel(); }
+            catch (ObjectDisposedException) { /* intentional no-op */ }
+        }
+        this.cancellationTokenSource.Dispose();
     }
 
-    private sealed class SimplifiedConfig
+    internal sealed class SimplifiedConfig
     {
 #if USE_NEWTONSOFT_JSON
         [Newtonsoft.Json.JsonProperty(PropertyName = "flags")]
+        public Dictionary<string, object>? Entries { get; set; }
 #else
         [System.Text.Json.Serialization.JsonPropertyName("flags")]
+        public Dictionary<string, System.Text.Json.JsonElement>? Entries { get; set; }
 #endif
-        public Dictionary<string, object>? Entries { get; set; }
     }
 }

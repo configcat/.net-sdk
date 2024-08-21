@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
 using ConfigCat.Client.Configuration;
+using ConfigCat.Client.Shims;
 
 namespace ConfigCat.Client.ConfigService;
 
@@ -45,7 +46,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
         {
             // In Auto Polling mode, maxInitWaitTime takes precedence over waiting for initial cache sync-up, that is,
             // ClientReady is always raised after maxInitWaitTime has passed, regardless of whether initial cache sync-up has finished or not.
-            await initializationTask.ConfigureAwait(false);
+            await initializationTask.ConfigureAwait(TaskShim.ContinueOnCapturedContext);
             return GetCacheState(this.ConfigCache.LocalCachedConfig);
         });
 
@@ -107,8 +108,8 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
     {
         try
         {
-            await Task.Delay(this.maxInitWaitTime, this.initSignalCancellationTokenSource.Token)
-                .WaitAsync(cancellationToken).ConfigureAwait(false);
+            await TaskShim.Current.Delay(this.maxInitWaitTime, this.initSignalCancellationTokenSource.Token)
+                .WaitAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 
             return false;
         }
@@ -140,16 +141,16 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
     {
         if (!IsOffline && !IsInitialized)
         {
-            var cachedConfig = await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(false);
+            var cachedConfig = await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
             if (!cachedConfig.IsExpired(expiration: this.pollInterval))
             {
                 return cachedConfig;
             }
 
-            await InitializationTask.WaitAsync(cancellationToken).ConfigureAwait(false);
+            await InitializationTask.WaitAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
         }
 
-        return await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(false);
+        return await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
     }
 
     protected override void OnConfigFetched(in FetchResult fetchResult, bool isInitiatedByUser)
@@ -172,7 +173,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
 
     private void StartScheduler(Task<ProjectConfig>? initialCacheSyncUpTask, CancellationToken stopToken)
     {
-        Task.Run(async () =>
+        TaskShim.Current.Run(async () =>
         {
             var isFirstIteration = true;
 
@@ -183,7 +184,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
                     var scheduledNextTime = DateTime.UtcNow.Add(this.pollInterval);
                     try
                     {
-                        await PollCoreAsync(isFirstIteration, initialCacheSyncUpTask, stopToken).ConfigureAwait(false);
+                        await PollCoreAsync(isFirstIteration, initialCacheSyncUpTask, stopToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
                     }
                     catch (Exception ex) when (ex is not OperationCanceledException)
                     {
@@ -193,7 +194,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
                     var realNextTime = scheduledNextTime.Subtract(DateTime.UtcNow);
                     if (realNextTime > TimeSpan.Zero)
                     {
-                        await Task.Delay(realNextTime, stopToken).ConfigureAwait(false);
+                        await TaskShim.Current.Delay(realNextTime, stopToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
                     }
                 }
                 catch (OperationCanceledException)
@@ -208,6 +209,8 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
                 isFirstIteration = false;
                 initialCacheSyncUpTask = null; // allow GC to collect the task and its result
             }
+
+            return default(object);
         }, stopToken);
     }
 
@@ -216,14 +219,14 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
         if (isFirstIteration)
         {
             var latestConfig = initialCacheSyncUpTask is not null
-                ? await initialCacheSyncUpTask.WaitAsync(cancellationToken).ConfigureAwait(false)
-                : await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(false);
+                ? await initialCacheSyncUpTask.WaitAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext)
+                : await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 
             if (latestConfig.IsExpired(expiration: this.pollInterval))
             {
                 if (!IsOffline)
                 {
-                    await RefreshConfigCoreAsync(latestConfig, isInitiatedByUser: false, cancellationToken).ConfigureAwait(false);
+                    await RefreshConfigCoreAsync(latestConfig, isInitiatedByUser: false, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
                 }
             }
             else
@@ -235,8 +238,8 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
         {
             if (!IsOffline)
             {
-                var latestConfig = await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(false);
-                await RefreshConfigCoreAsync(latestConfig, isInitiatedByUser: false, cancellationToken).ConfigureAwait(false);
+                var latestConfig = await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+                await RefreshConfigCoreAsync(latestConfig, isInitiatedByUser: false, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
             }
         }
     }

@@ -56,11 +56,11 @@ public class DataGovernanceTests
             })
             .Verifiable();
 
-        IConfigFetcher fetcher = new HttpConfigFetcher(
+        IConfigFetcher fetcher = new DefaultConfigFetcher(
             configuration.CreateUri(sdkKey),
             "DEMO",
             Mock.Of<IConfigCatLogger>().AsWrapper(),
-            handlerMock.Object,
+            new HttpClientConfigFetcher(handlerMock.Object),
             configuration.IsCustomBaseUrl,
             TimeSpan.FromSeconds(30));
 
@@ -378,11 +378,11 @@ public class DataGovernanceTests
             }))
             .Verifiable();
 
-        IConfigFetcher fetcher = new HttpConfigFetcher(
+        IConfigFetcher fetcher = new DefaultConfigFetcher(
             fetchConfig.CreateUri(sdkKey),
             "DEMO",
             Mock.Of<IConfigCatLogger>().AsWrapper(),
-            handlerMock.Object,
+            new HttpClientConfigFetcher(handlerMock.Object),
             fetchConfig.IsCustomBaseUrl,
             TimeSpan.FromSeconds(30));
 

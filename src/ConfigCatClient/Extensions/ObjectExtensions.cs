@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using ConfigCat.Client;
+using ConfigCat.Client.Utils;
 
 #if USE_NEWTONSOFT_JSON
 using JsonValue = Newtonsoft.Json.Linq.JValue;
@@ -51,38 +52,38 @@ internal static class ObjectExtensions
         {
             case Newtonsoft.Json.Linq.JTokenType.String:
                 settingType = SettingType.String;
-                return new SettingValue { StringValue = value.ConvertTo<string>() };
+                return new SettingValue { StringValue = Newtonsoft.Json.Linq.Extensions.Value<string>(value) };
 
             case Newtonsoft.Json.Linq.JTokenType.Boolean:
                 settingType = SettingType.Boolean;
-                return new SettingValue { BoolValue = value.ConvertTo<bool>() };
+                return new SettingValue { BoolValue = Newtonsoft.Json.Linq.Extensions.Value<bool>(value) };
 
             case Newtonsoft.Json.Linq.JTokenType.Integer when IsWithinAllowedIntRange(value):
                 settingType = SettingType.Int;
-                return new SettingValue { IntValue = value.ConvertTo<int>() };
+                return new SettingValue { IntValue = Newtonsoft.Json.Linq.Extensions.Value<int>(value) };
 
             case Newtonsoft.Json.Linq.JTokenType.Float when IsWithinAllowedDoubleRange(value):
                 settingType = SettingType.Double;
-                return new SettingValue { DoubleValue = value.ConvertTo<double>() };
+                return new SettingValue { DoubleValue = Newtonsoft.Json.Linq.Extensions.Value<double>(value) };
         }
 #else
         switch (value.ValueKind)
         {
             case Text.Json.JsonValueKind.String:
                 settingType = SettingType.String;
-                return new SettingValue { StringValue = value.ConvertTo<string>() };
+                return new SettingValue { StringValue = value.GetString() };
 
             case Text.Json.JsonValueKind.False or Text.Json.JsonValueKind.True:
                 settingType = SettingType.Boolean;
-                return new SettingValue { BoolValue = value.ConvertTo<bool>() };
+                return new SettingValue { BoolValue = value.GetBoolean() };
 
-            case Text.Json.JsonValueKind.Number when value.TryGetInt32(out var _):
+            case Text.Json.JsonValueKind.Number when value.TryGetInt32(out var intValue):
                 settingType = SettingType.Int;
-                return new SettingValue { IntValue = value.ConvertTo<int>() };
+                return new SettingValue { IntValue = intValue };
 
-            case Text.Json.JsonValueKind.Number when value.TryGetDouble(out var _):
+            case Text.Json.JsonValueKind.Number when value.TryGetDouble(out var doubleValue):
                 settingType = SettingType.Double;
-                return new SettingValue { DoubleValue = value.ConvertTo<double>() };
+                return new SettingValue { DoubleValue = doubleValue };
         }
 #endif
 
@@ -134,19 +135,6 @@ internal static class ObjectExtensions
         }
 
         return setting;
-    }
-
-    private static TValue ConvertTo<TValue>(this JsonValue value)
-    {
-        Debug.Assert(typeof(TValue) != typeof(object), "Conversion to object is not supported.");
-
-#if USE_NEWTONSOFT_JSON
-        Debug.Assert(value.Type != Newtonsoft.Json.Linq.JTokenType.Null, "Tried to convert unexpected null value.");
-        return Newtonsoft.Json.Linq.Extensions.Value<TValue>(value)!;
-#else
-        Debug.Assert(value.ValueKind != Text.Json.JsonValueKind.Null, "Tried to convert unexpected null value.");
-        return Text.Json.JsonSerializer.Deserialize<TValue>(value)!;
-#endif
     }
 
     public static bool TryConvertNumericToDouble(this object value, out double number)

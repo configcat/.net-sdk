@@ -1,8 +1,8 @@
-# Sample .NET Core WebApp app
+# Sample ASP.NET Core MVC app
 
-This is a simple .NET Core web application to demonstrate how to use the ConfigCat SDK.
+This is a simple [ASP.NET Core MVC](https://learn.microsoft.com/en-us/aspnet/core/mvc) web application to demonstrate how to use the ConfigCat SDK.
 
-1. Install [.NET Core](https://dotnet.microsoft.com/download)
+1. Install [.NET](https://dotnet.microsoft.com/download)
 2. Change dir to `/WebApplication`
    ```bash
    cd WebApplication

@@ -179,4 +179,65 @@ public class UtilsTests
 
         Assert.AreSame(expectedValue is not null ? value : string.Empty, lazyString.ToString());
     }
+
+    [TestMethod]
+    public void SerializationHelper_SerializeUser_Works()
+    {
+        var user = new User("id")
+        {
+            Custom =
+            {
+                ["BooleanValue"] = true,
+                ["CharValue"] = 'c',
+                ["SByteValue"] = sbyte.MinValue,
+                ["ByteValue"] = sbyte.MaxValue,
+                ["Int16Value"] = short.MinValue,
+                ["UInt16Value"] = ushort.MaxValue,
+                ["Int32Value"] = int.MinValue,
+                ["UInt32Value"] = int.MaxValue,
+                ["Int64Value"] = long.MinValue,
+                ["UInt64Value"] = long.MaxValue,
+                ["SingleValue"] = 3.14f,
+                ["DoubleValue"] = 3.14,
+                ["DecimalValue"] = 3.14m,
+                ["DateTimeValue"] = DateTime.MaxValue,
+                ["DateTimeOffsetValue"] = DateTime.MaxValue,
+                ["TimeSpanValue"] = TimeSpan.MaxValue,
+                ["StringValue"] = "s",
+                ["GuidValue"] = Guid.Empty,
+                ["StringArrayValue"] = new string[] { "a", "b", "c" },
+                ["DictionaryValue"] = new Dictionary<int, string> { [0] = "a", [1] = "b", [2] = "c" },
+                ["NestedCollectionValue"] = new object[] { false, new Dictionary<string, object> { ["a"] = 0, ["b"] = new object[] { true, "c" } } },
+            }
+        };
+
+        Assert.AreEqual(
+            """
+            {"Identifier":"id","BooleanValue":true,"CharValue":"c","SByteValue":-128,"ByteValue":127,"Int16Value":-32768,"UInt16Value":65535,"Int32Value":-2147483648,"UInt32Value":2147483647,"Int64Value":-9223372036854775808,"UInt64Value":9223372036854775807,"SingleValue":3.14,"DoubleValue":3.14,"DecimalValue":3.14,"DateTimeValue":"9999-12-31T23:59:59.9999999","DateTimeOffsetValue":"9999-12-31T23:59:59.9999999","TimeSpanValue":"10675199.02:48:05.4775807","StringValue":"s","GuidValue":"00000000-0000-0000-0000-000000000000","StringArrayValue":["a","b","c"],"DictionaryValue":{"0":"a","1":"b","2":"c"},"NestedCollectionValue":[false,{"a":0,"b":[true,"c"]}]}
+            """,
+            SerializationHelper.SerializeUser(user));
+    }
+
+    [TestMethod]
+    public void SerializationHelper_SerializeUser_DetectsCircularReference()
+    {
+        var dictionary = new Dictionary<string, object>();
+        dictionary["a"] = new object[] { dictionary };
+
+        var user = new User("id")
+        {
+            Custom =
+            {
+                ["ArrayValue"] = new object[] { dictionary },
+            }
+        };
+
+#if NET45
+        var ex = Assert.ThrowsException<Newtonsoft.Json.JsonSerializationException>(() => SerializationHelper.SerializeUser(user));
+        StringAssert.StartsWith(ex.Message, "Self referencing loop detected");
+#else
+        var ex = Assert.ThrowsException<InvalidOperationException>(() => SerializationHelper.SerializeUser(user));
+        StringAssert.StartsWith(ex.Message, "A circular reference was detected");
+#endif
+    }
 }

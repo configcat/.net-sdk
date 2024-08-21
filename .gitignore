@@ -295,3 +295,4 @@ coverage.xml
 /format-report.json
 src/.idea
 /samples/ASP.NETCore/WebApplication/wwwroot/lib/
+/samples/BlazorWasm/wwwroot/lib/

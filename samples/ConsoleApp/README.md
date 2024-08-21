@@ -2,7 +2,7 @@
 
 This is a simple .NET Console application to demonstrate how to use the ConfigCat SDK.
 
-1. Install the [.NET SDK](https://dotnet.microsoft.com/download)
+1. Install [.NET](https://dotnet.microsoft.com/download)
 
 2. Run sample app:
 ```bash

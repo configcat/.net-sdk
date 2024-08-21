@@ -28,7 +28,7 @@ public sealed class ConfigCatClient : IConfigCatClient
     /// Returns an object that can be used to configure the SDK to work on platforms that are not fully standards compliant.
     /// </summary>
     /// <remarks>
-    /// Configuration is only possible before the first <see cref="ConfigCatClient"/> instance is created.
+    /// Configuration is only possible before the first instance of <see cref="ConfigCatClient"/> is created.
     /// </remarks>
     public
 #else

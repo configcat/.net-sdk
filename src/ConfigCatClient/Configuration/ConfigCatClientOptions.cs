@@ -33,7 +33,7 @@ public class ConfigCatClientOptions : IProvidesHooks
     internal static IConfigCatLogger CreateDefaultLogger() => new ConsoleLogger(LogLevel.Warning);
 
     /// <summary>
-    /// The config fetcher implementation to use for perform ConfigCat config fetch operations.
+    /// The config fetcher implementation to use for performing ConfigCat config fetch operations.
     /// If not set, <see cref="DefaultConfigFetcher"/> will be used by default, which is based on <see cref="HttpClient"/>.<br/>
     /// If you want to use custom a config fetcher, you can provide an implementation of <see cref="IConfigCatConfigFetcher"/>.
     /// </summary>

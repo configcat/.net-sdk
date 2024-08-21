@@ -9,13 +9,13 @@ namespace ConfigCat.Client;
 public abstract class FetchErrorException : Exception
 {
     /// <summary>
-    /// Creates an instance of the <see cref="FetchErrorException"/> struct which indicates that the operation timed out.
+    /// Creates an instance of the <see cref="FetchErrorException"/> class which indicates that the operation timed out.
     /// </summary>
     public static FetchErrorException Timeout(TimeSpan timeout, Exception? innerException = null)
         => new Timeout_($"Request timed out. Timeout value: {timeout}", timeout, innerException);
 
     /// <summary>
-    /// Creates an instance of the <see cref="FetchErrorException"/> struct which indicates that the operation failed due to a network or protocol error.
+    /// Creates an instance of the <see cref="FetchErrorException"/> class which indicates that the operation failed due to a network or protocol error.
     /// </summary>
     public static FetchErrorException Failure(WebExceptionStatus? status, Exception? innerException = null)
         => new Failure_("Request failed due to a network or protocol error.", status, innerException);

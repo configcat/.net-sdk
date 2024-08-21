@@ -2,7 +2,7 @@
 
 This is a simple [ASP.NET Core Blazor WebAssembly](https://learn.microsoft.com/en-us/aspnet/core/blazor) application to demonstrate how to use the ConfigCat SDK.
 
-1. Install the [.NET SDK](https://dotnet.microsoft.com/download)
+1. Install [.NET](https://dotnet.microsoft.com/download)
 2. Run app
     ```bash 
     dotnet run -- urls=http://localhost:5000

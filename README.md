@@ -90,8 +90,8 @@ var isMyAwesomeFeatureEnabled = await client.GetValueAsync(
 
 ## Sample/Demo apps
   * [Sample Console App](https://github.com/configcat/.net-sdk/tree/master/samples/ConsoleApp)
-  * [Sample Multi Page Web App](https://github.com/configcat/.net-sdk/tree/master/samples/ASP.NETCore)
-  * [Sample Single Page Web App](https://github.com/configcat/.net-sdk/tree/master/samples/BlazorWasm)
+  * [Sample Multi-page Web App](https://github.com/configcat/.net-sdk/tree/master/samples/ASP.NETCore)
+  * [Sample Single-page Web App](https://github.com/configcat/.net-sdk/tree/master/samples/BlazorWasm)
   * [Sample Mobile/Windows Store App](https://github.com/configcat/.net-sdk/tree/master/samples/MAUI)
   
 ## Polling Modes

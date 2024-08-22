@@ -89,7 +89,7 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
                     if (config is null)
                     {
                         var exception = deserializedResponse.Exception;
-                        logMessage = this.logger.FetchReceived200WithInvalidBody(exception);
+                        logMessage = this.logger.FetchReceived200WithInvalidBody(response.RayId, exception);
                         return FetchResult.Failure(lastConfig, RefreshErrorCode.InvalidHttpResponseContent, logMessage.ToLazyString(), exception);
                     }
 
@@ -104,7 +104,7 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
                 case HttpStatusCode.NotModified:
                     if (lastConfig.IsEmpty)
                     {
-                        logMessage = this.logger.FetchReceived304WhenLocalCacheIsEmpty((int)response.StatusCode, response.ReasonPhrase);
+                        logMessage = this.logger.FetchReceived304WhenLocalCacheIsEmpty((int)response.StatusCode, response.ReasonPhrase, response.RayId);
                         return FetchResult.Failure(lastConfig, RefreshErrorCode.InvalidHttpResponseWhenLocalCacheIsEmpty, logMessage.ToLazyString());
                     }
 
@@ -112,13 +112,13 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
 
                 case HttpStatusCode.Forbidden:
                 case HttpStatusCode.NotFound:
-                    logMessage = this.logger.FetchFailedDueToInvalidSdkKey();
+                    logMessage = this.logger.FetchFailedDueToInvalidSdkKey(response.RayId);
 
                     // We update the timestamp for extra protection against flooding.
                     return FetchResult.Failure(lastConfig.With(ProjectConfig.GenerateTimeStamp()), RefreshErrorCode.InvalidSdkKey, logMessage.ToLazyString());
 
                 default:
-                    logMessage = this.logger.FetchFailedDueToUnexpectedHttpResponse((int)response.StatusCode, response.ReasonPhrase);
+                    logMessage = this.logger.FetchFailedDueToUnexpectedHttpResponse((int)response.StatusCode, response.ReasonPhrase, response.RayId);
                     return FetchResult.Failure(lastConfig, RefreshErrorCode.UnexpectedHttpResponse, logMessage.ToLazyString());
             }
         }
@@ -193,7 +193,7 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
 
                     if (maxExecutionCount <= 1)
                     {
-                        this.logger.FetchFailedDueToRedirectLoop();
+                        this.logger.FetchFailedDueToRedirectLoop(response.RayId);
                         return new DeserializedResponse(response, config);
                     }
 

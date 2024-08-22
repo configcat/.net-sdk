@@ -1,4 +1,7 @@
+using System.Linq;
 using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
 
 namespace ConfigCat.Client;
 
@@ -7,16 +10,26 @@ namespace ConfigCat.Client;
 /// </summary>
 public readonly struct FetchResponse
 {
+    internal static FetchResponse From(HttpResponseMessage httpResponse, string? httpResponseBody = null)
+    {
+        return new FetchResponse(httpResponse.StatusCode, httpResponse.ReasonPhrase, httpResponse.Headers, httpResponseBody);
+    }
+
+    private readonly object? headersOrETag; // either null or a string or HttpResponseHeaders
+
+    private FetchResponse(HttpStatusCode statusCode, string? reasonPhrase, object? headersOrETag, string? body)
+    {
+        StatusCode = statusCode;
+        ReasonPhrase = reasonPhrase;
+        this.headersOrETag = headersOrETag;
+        Body = body;
+    }
+
     /// <summary>
     /// Initializes a new instance of the <see cref="FetchResponse"/> struct.
     /// </summary>
     public FetchResponse(HttpStatusCode statusCode, string? reasonPhrase, string? eTag, string? body)
-    {
-        StatusCode = statusCode;
-        ReasonPhrase = reasonPhrase;
-        ETag = eTag;
-        Body = body;
-    }
+        : this(statusCode, reasonPhrase, (object?)eTag, body) { }
 
     /// <summary>
     /// The HTTP status code.
@@ -31,7 +44,9 @@ public readonly struct FetchResponse
     /// <summary>
     /// The value of the <c>ETag</c> HTTP response header.
     /// </summary>
-    public string? ETag { get; }
+    public string? ETag => this.headersOrETag is HttpResponseHeaders headers ? headers.ETag?.Tag : (string?)this.headersOrETag;
+
+    internal string? RayId => this.headersOrETag is HttpResponseHeaders headers && headers.TryGetValues("CF-RAY", out var values) ? values.FirstOrDefault() : null;
 
     /// <summary>
     /// The response body.

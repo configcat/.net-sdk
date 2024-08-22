@@ -90,11 +90,11 @@ internal class HttpClientConfigFetcher : IConfigCatConfigFetcher
                 var httpResponseBody = await httpResponse.Content.ReadAsStringAsync().ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 #endif
 
-                return new FetchResponse(httpResponse.StatusCode, httpResponse.ReasonPhrase, httpResponse.Headers.ETag?.Tag, httpResponseBody);
+                return FetchResponse.From(httpResponse, httpResponseBody);
             }
             else
             {
-                var response = new FetchResponse(httpResponse.StatusCode, httpResponse.ReasonPhrase, eTag: null, body: null);
+                var response = FetchResponse.From(httpResponse);
                 if (!response.IsExpected)
                 {
                     this.httpClient = null;

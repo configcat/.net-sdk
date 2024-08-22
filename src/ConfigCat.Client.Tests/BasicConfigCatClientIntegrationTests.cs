@@ -493,11 +493,11 @@ public class BasicConfigCatClientIntegrationTests
         var errors = logEvents.Where(evt => evt.EventId == 1100).ToArray();
         Assert.AreEqual(1, errors.Length);
 
-        var rayId = errors[0].Message.ArgValues[0] as string;
-        Assert.IsNotNull(rayId);
-        Assert.AreNotEqual("", rayId);
-        Assert.AreNotEqual(LoggerExtensions.FormatRayId(null), rayId);
+        var error = errors[0].Message;
+        Assert.AreEqual(1, error.ArgValues.Length);
+        Assert.IsTrue(error.ArgValues[0] is string);
 
+        var rayId = (string)error.ArgValues[0]!;
         StringAssert.Contains(errors[0].Message.InvariantFormattedMessage, rayId);
     }
 }

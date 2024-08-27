@@ -153,7 +153,11 @@ public class SingletonServices : MonoBehaviour
 
             using var webRequest = UnityWebRequest.Get(uri);
 
-            webRequest.SetRequestHeader(request.SdkInfoHeader.Key, request.SdkInfoHeader.Value);
+            for (int i = 0, n = request.Headers.Count; i < n; i++)
+            {
+                var header = request.Headers[i];
+                webRequest.SetRequestHeader(header.Key, header.Value);
+            }
 
             webRequest.timeout = (int)request.Timeout.TotalSeconds;
 
@@ -177,20 +181,11 @@ public class SingletonServices : MonoBehaviour
 
             await tcs.Task;
 
-            if (webRequest.result == UnityWebRequest.Result.Success)
+            if (webRequest.result is UnityWebRequest.Result.Success or UnityWebRequest.Result.ProtocolError)
             {
                 var statusCode = (HttpStatusCode)webRequest.responseCode;
                 Debug.Log($"Fetching config finished with status code {statusCode}.");
-                if (statusCode == HttpStatusCode.OK)
-                {
-                    var eTag = webRequest.GetResponseHeader("etag");
-                    var text = webRequest.downloadHandler.text;
-                    return new FetchResponse(statusCode, reasonPhrase: null, eTag is { Length: > 0 } ? eTag : null, webRequest.downloadHandler.text);
-                }
-                else
-                {
-                    return new FetchResponse(statusCode, reasonPhrase: null, null, null);
-                }
+                return new FetchResponse(statusCode, reasonPhrase: null, webRequest.GetResponseHeaders(), statusCode == HttpStatusCode.OK ? webRequest.downloadHandler.text : null);
             }
             else if (webRequest.result == UnityWebRequest.Result.ConnectionError && webRequest.error == "Request timeout")
             {

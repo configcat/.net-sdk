@@ -11,7 +11,7 @@ namespace ConfigCat.Client;
 internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
 {
     private readonly object syncObj = new();
-    private readonly KeyValuePair<string, string> sdkInfoHeader;
+    private readonly IReadOnlyList<KeyValuePair<string, string>> requestHeaders;
     private readonly LoggerWrapper logger;
     private readonly IConfigCatConfigFetcher configFetcher;
     private readonly bool isCustomUri;
@@ -25,9 +25,10 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
         IConfigCatConfigFetcher configFetcher, bool isCustomUri, TimeSpan timeout)
     {
         this.requestUri = requestUri;
-        this.sdkInfoHeader = new KeyValuePair<string, string>(
-            "X-ConfigCat-UserAgent",
-            new ProductInfoHeaderValue("ConfigCat-Dotnet", productVersion).ToString());
+        this.requestHeaders = new[]
+        {
+            new KeyValuePair<string, string>("X-ConfigCat-UserAgent", new ProductInfoHeaderValue("ConfigCat-Dotnet", productVersion).ToString())
+        };
         this.logger = logger;
         this.configFetcher = configFetcher;
         this.isCustomUri = isCustomUri;
@@ -153,7 +154,7 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
     {
         for (; ; maxExecutionCount--)
         {
-            var request = new FetchRequest(this.requestUri, httpETag, this.sdkInfoHeader, this.timeout);
+            var request = new FetchRequest(this.requestUri, httpETag, this.requestHeaders, this.timeout);
 
             var response = await this.configFetcher.FetchAsync(request, this.cancellationTokenSource.Token).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 

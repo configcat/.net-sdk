@@ -1,7 +1,8 @@
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
 
 namespace ConfigCat.Client;
 
@@ -10,26 +11,51 @@ namespace ConfigCat.Client;
 /// </summary>
 public readonly struct FetchResponse
 {
-    internal static FetchResponse From(HttpResponseMessage httpResponse, string? httpResponseBody = null)
-    {
-        return new FetchResponse(httpResponse.StatusCode, httpResponse.ReasonPhrase, httpResponse.Headers, httpResponseBody);
-    }
-
-    private readonly object? headersOrETag; // either null or a string or HttpResponseHeaders
-
-    private FetchResponse(HttpStatusCode statusCode, string? reasonPhrase, object? headersOrETag, string? body)
+    private FetchResponse(HttpStatusCode statusCode, string? reasonPhrase, string? body)
     {
         StatusCode = statusCode;
         ReasonPhrase = reasonPhrase;
-        this.headersOrETag = headersOrETag;
         Body = body;
+    }
+
+    internal FetchResponse(HttpResponseMessage httpResponse, string? httpResponseBody = null)
+        : this(httpResponse.StatusCode, httpResponse.ReasonPhrase, httpResponseBody)
+    {
+        ETag = httpResponse.Headers.ETag?.Tag;
+        RayId = httpResponse.Headers.TryGetValues("CF-RAY", out var values) ? values.FirstOrDefault() : null;
     }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="FetchResponse"/> struct.
     /// </summary>
-    public FetchResponse(HttpStatusCode statusCode, string? reasonPhrase, string? eTag, string? body)
-        : this(statusCode, reasonPhrase, (object?)eTag, body) { }
+    public FetchResponse(HttpStatusCode statusCode, string? reasonPhrase, IEnumerable<KeyValuePair<string, string>> headers, string? body = null)
+        : this(statusCode, reasonPhrase, body)
+    {
+        string? eTag = null, rayId = null;
+
+        foreach (var header in headers)
+        {
+            if (eTag is null && "ETag".Equals(header.Key, StringComparison.OrdinalIgnoreCase))
+            {
+                eTag = header.Value;
+                if (rayId is not null)
+                {
+                    break;
+                }
+            }
+            else if (rayId is null && "CF-RAY".Equals(header.Key, StringComparison.OrdinalIgnoreCase))
+            {
+                rayId = header.Value;
+                if (eTag is not null)
+                {
+                    break;
+                }
+            }
+        }
+
+        ETag = eTag;
+        RayId = rayId;
+    }
 
     /// <summary>
     /// The HTTP status code.
@@ -44,9 +70,9 @@ public readonly struct FetchResponse
     /// <summary>
     /// The value of the <c>ETag</c> HTTP response header.
     /// </summary>
-    public string? ETag => this.headersOrETag is HttpResponseHeaders headers ? headers.ETag?.Tag : (string?)this.headersOrETag;
+    public string? ETag { get; }
 
-    internal string? RayId => this.headersOrETag is HttpResponseHeaders headers && headers.TryGetValues("CF-RAY", out var values) ? values.FirstOrDefault() : null;
+    internal string? RayId { get; }
 
     /// <summary>
     /// The response body.

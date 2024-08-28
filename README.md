@@ -1,22 +1,9 @@
 # ConfigCat SDK for .NET
-
-### Supported runtimes:
-- .NET 5+
-- .NET Framework 4.5+
-- Other runtimes which implement .NET Standard 2.0+ like .NET Core 2.0+, Xamarin.Android 8.0+, Xamarin.iOS 10.14+, etc. (For more details, please refer to [this table](https://learn.microsoft.com/en-us/dotnet/standard/net-standard?tabs=net-standard-2-0).)
-
-Starting with v9.3.0, the ConfigCat SDK can be used in applications that employ [trimmed self-contained](https://learn.microsoft.com/en-us/dotnet/core/deploying/trimming/trim-self-contained) or various ahead-of-time (AOT) compilation deployment models.
-The SDK has been tested with the following AOT solutions:
-* [Native AOT](https://learn.microsoft.com/en-us/dotnet/core/deploying/native-aot/) - see also [Sample .NET Console app](https://github.com/configcat/.net-sdk/tree/master/samples/ConsoleApp)
-* [Mono AOT](https://www.mono-project.com/docs/advanced/aot/) - see also [Sample .NET MAUI app](https://github.com/configcat/.net-sdk/tree/master/samples/MAUI)
-* [Mono AOT for WebAssembly/Emscripten (wasm-tools)](https://learn.microsoft.com/en-us/aspnet/core/blazor/webassembly-build-tools-and-aot) - see also [Sample ASP.NET Core Blazor WebAssembly app](https://github.com/configcat/.net-sdk/tree/master/samples/BlazorWasm)
-* [IL2CPP](https://docs.unity3d.com/2021.3/Documentation/Manual/IL2CPP.html) - see also [Sample Unity WebGL scripts](https://github.com/configcat/.net-sdk/tree/master/samples/UnityWebGL)
-* [.NET Native](https://learn.microsoft.com/en-us/windows/uwp/dotnet-native/) (UWP)
-* [Crossgen2](https://devblogs.microsoft.com/dotnet/conversation-about-crossgen2/) (ReadyToRun)
-* [Ngen](https://learn.microsoft.com/en-us/dotnet/framework/tools/ngen-exe-native-image-generator) (Native Image Generator)
+https://configcat.com
 
 ConfigCat SDK for .NET provides easy integration for your application to ConfigCat.
 
+## About
 ConfigCat is a feature flag and configuration management service that lets you separate releases from deployments. You can turn your features ON/OFF using [ConfigCat Dashboard](https://app.configcat.com) even after they are deployed. ConfigCat lets you target specific groups of users based on region, email or any other custom user attribute.
 
 ConfigCat is a [hosted feature flag service](https://configcat.com). Manage feature toggles across frontend, backend, mobile, desktop apps. [Alternative to LaunchDarkly](https://configcat.com). Management app + feature flag SDKs.
@@ -26,6 +13,10 @@ ConfigCat is a [hosted feature flag service](https://configcat.com). Manage feat
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=net-sdk&metric=alert_status)](https://sonarcloud.io/dashboard?id=net-sdk)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/configcat/.net-sdk/blob/master/LICENSE)
 
+## Supported runtimes
+- .NET 5+
+- .NET Framework 4.5+
+- Other runtimes which implement .NET Standard 2.0+ like .NET Core 2.0+, Xamarin.Android 8.0+, Xamarin.iOS 10.14+, etc. (For more details, please refer to [this table](https://learn.microsoft.com/en-us/dotnet/standard/net-standard?tabs=net-standard-2-0).)
 
 ## Getting Started
 
@@ -96,6 +87,26 @@ var isMyAwesomeFeatureEnabled = await client.GetValueAsync(
   
 ## Polling Modes
 The ConfigCat SDK supports 3 different polling mechanisms to acquire the setting values from ConfigCat. After latest setting values are downloaded, they are stored in the internal cache then all requests are served from there. Read more about Polling Modes and how to use them at [ConfigCat Docs](https://configcat.com/docs/sdk-reference/dotnet/).
+
+## Platform compatibility
+The ConfigCat SDK supports all the widespread .NET JIT runtimes, everything that implements [.NET Standard 2.0](https://learn.microsoft.com/en-us/dotnet/standard/net-standard?tabs=net-standard-2-0)+ and supports TLS 1.2 should work.
+Starting with v9.3.0, it can also be used in applications that employ [trimmed self-contained](https://learn.microsoft.com/en-us/dotnet/core/deploying/trimming/trim-self-contained) or various [ahead-of-time (AOT) compilation](https://en.wikipedia.org/wiki/Ahead-of-time_compilation) deployment models.
+
+Based on our tests, the SDK is compatible with the following runtimes/deployment models:
+* .NET Framework 4.5+ (including Ngen)
+* .NET Core 3.1, .NET 5+ (including Crossgen2/ReadyToRun and Native AOT)
+* Mono 5.10+
+* .NET for Android (formerly known as Xamarin.Android)
+* .NET for iOS (formerly known as Xamarin.iOS)
+* Unity 2021.3+ (Mono JIT)
+* Unity 2021.3+ (IL2CPP)<sup><small>*</small></sup>
+* Universal Windows Platform 10.0.16299.0+ (.NET Native)<sup><small>**</small></sup>
+* WebAssembly (Mono AOT/Emscripten, also known as wasm-tools)
+
+<sup><small>*</small></sup>Unity WebGL also works but needs a bit of extra effort: you will need to enable WebGL compatibility by calling the `ConfigCatClient.PlatformCompatibilityOptions.EnableUnityWebGLCompatibility` method. For more details, see [Sample Scripts](https://github.com/configcat/.net-sdk/tree/master/samples/UnityWebGL).<br/>
+<sup><small>**</small></sup>To make the SDK work in Release builds on UWP, you will need to add `<Namespace Name="System.Text.Json.Serialization.Converters" Browse="Required All"/>` to your application's [.rd.xml](https://learn.microsoft.com/en-us/windows/uwp/dotnet-native/runtime-directives-rd-xml-configuration-file-reference) file. See also [this discussion](https://github.com/dotnet/runtime/issues/29912#issuecomment-638471351).
+
+We strive to provide an extensive support for the various .NET runtimes and versions. If you still encounter an issue with the SDK on some platform, please open a [GitHub issue](https://github.com/configcat/.net-sdk/issues/new/choose) or contact support.
 
 ## Need help?
 https://configcat.com/support

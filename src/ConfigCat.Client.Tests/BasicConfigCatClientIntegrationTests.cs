@@ -475,4 +475,29 @@ public class BasicConfigCatClientIntegrationTests
         var actual = await client.GetValueAsync(settingKey, "NOT_CAT", new User(userId));
         Assert.AreEqual(expectedValue, actual);
     }
+
+    [TestMethod]
+    public async Task ShouldIncludeRayIdInLogMessagesWhenHttpResponseIsNotSuccessful()
+    {
+        var logEvents = new List<LogEvent>();
+        var logger = LoggingHelper.CreateCapturingLogger(logEvents, LogLevel.Info);
+
+        using IConfigCatClient client = ConfigCatClient.Get("configcat-sdk-1/~~~~~~~~~~~~~~~~~~~~~~/~~~~~~~~~~~~~~~~~~~~~~", options =>
+        {
+            options.PollingMode = PollingModes.ManualPoll;
+            options.Logger = logger;
+        });
+
+        await client.ForceRefreshAsync();
+
+        var errors = logEvents.Where(evt => evt.EventId == 1100).ToArray();
+        Assert.AreEqual(1, errors.Length);
+
+        var error = errors[0].Message;
+        Assert.AreEqual(1, error.ArgValues.Length);
+        Assert.IsTrue(error.ArgValues[0] is string);
+
+        var rayId = (string)error.ArgValues[0]!;
+        StringAssert.Contains(errors[0].Message.InvariantFormattedMessage, rayId);
+    }
 }

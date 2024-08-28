@@ -71,7 +71,11 @@ internal class HttpClientConfigFetcher : IConfigCatConfigFetcher
             RequestUri = request.Uri,
         };
 
-        httpRequest.Headers.Add(request.SdkInfoHeader.Key, request.SdkInfoHeader.Value);
+        for (int i = 0, n = request.Headers.Count; i < n; i++)
+        {
+            var header = request.Headers[i];
+            httpRequest.Headers.Add(header.Key, header.Value);
+        }
 
         if (request.LastETag is not null)
         {
@@ -90,11 +94,11 @@ internal class HttpClientConfigFetcher : IConfigCatConfigFetcher
                 var httpResponseBody = await httpResponse.Content.ReadAsStringAsync().ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 #endif
 
-                return new FetchResponse(httpResponse.StatusCode, httpResponse.ReasonPhrase, httpResponse.Headers.ETag?.Tag, httpResponseBody);
+                return new FetchResponse(httpResponse, httpResponseBody);
             }
             else
             {
-                var response = new FetchResponse(httpResponse.StatusCode, httpResponse.ReasonPhrase, eTag: null, body: null);
+                var response = new FetchResponse(httpResponse);
                 if (!response.IsExpected)
                 {
                     this.httpClient = null;

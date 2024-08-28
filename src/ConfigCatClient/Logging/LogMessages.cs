@@ -38,14 +38,24 @@ internal static partial class LoggerExtensions
         $"Error occurred in the `{methodName}` method.",
         "METHOD_NAME");
 
-    public static FormattableLogMessage FetchFailedDueToInvalidSdkKey(this LoggerWrapper logger) => logger.Log(
-        LogLevel.Error, 1100,
-        "Your SDK Key seems to be wrong. You can find the valid SDK Key at https://app.configcat.com/sdkkey");
+    public static FormattableLogMessage FetchFailedDueToInvalidSdkKey(this LoggerWrapper logger, string? rayId) => rayId is not null
+        ? logger.LogInterpolated(
+            LogLevel.Error, 1100,
+            $"Your SDK Key seems to be wrong. You can find the valid SDK Key at https://app.configcat.com/sdkkey (Ray ID: {rayId})",
+            "RAY_ID")
+        : logger.Log(
+            LogLevel.Error, 1100,
+            "Your SDK Key seems to be wrong. You can find the valid SDK Key at https://app.configcat.com/sdkkey");
 
-    public static FormattableLogMessage FetchFailedDueToUnexpectedHttpResponse(this LoggerWrapper logger, int statusCode, string? reasonPhrase) => logger.LogInterpolated(
-        LogLevel.Error, 1101,
-        $"Unexpected HTTP response was received while trying to fetch config JSON: {statusCode} {reasonPhrase}",
-        "STATUS_CODE", "REASON_PHRASE");
+    public static FormattableLogMessage FetchFailedDueToUnexpectedHttpResponse(this LoggerWrapper logger, int statusCode, string? reasonPhrase, string? rayId) => rayId is not null
+        ? logger.LogInterpolated(
+            LogLevel.Error, 1101,
+            $"Unexpected HTTP response was received while trying to fetch config JSON: {statusCode} {reasonPhrase} (Ray ID: {rayId})",
+            "STATUS_CODE", "REASON_PHRASE", "RAY_ID")
+        : logger.LogInterpolated(
+            LogLevel.Error, 1101,
+            $"Unexpected HTTP response was received while trying to fetch config JSON: {statusCode} {reasonPhrase}",
+            "STATUS_CODE", "REASON_PHRASE");
 
     public static FormattableLogMessage FetchFailedDueToRequestTimeout(this LoggerWrapper logger, TimeSpan timeout, Exception ex) => logger.LogInterpolated(
         LogLevel.Error, 1102, ex,
@@ -56,18 +66,33 @@ internal static partial class LoggerExtensions
         LogLevel.Error, 1103, ex,
         "Unexpected error occurred while trying to fetch config JSON. It is most likely due to a local network issue. Please make sure your application can reach the ConfigCat CDN servers (or your proxy server) over HTTP.");
 
-    public static FormattableLogMessage FetchFailedDueToRedirectLoop(this LoggerWrapper logger) => logger.Log(
-        LogLevel.Error, 1104,
-        "Redirection loop encountered while trying to fetch config JSON. Please contact us at https://configcat.com/support/");
+    public static FormattableLogMessage FetchFailedDueToRedirectLoop(this LoggerWrapper logger, string? rayId) => rayId is not null
+        ? logger.LogInterpolated(
+            LogLevel.Error, 1104,
+            $"Redirection loop encountered while trying to fetch config JSON. Please contact us at https://configcat.com/support/ (Ray ID: {rayId})",
+           "RAY_ID")
+        : logger.Log(
+            LogLevel.Error, 1104,
+            "Redirection loop encountered while trying to fetch config JSON. Please contact us at https://configcat.com/support/");
 
-    public static FormattableLogMessage FetchReceived200WithInvalidBody(this LoggerWrapper logger, Exception? ex) => logger.Log(
-        LogLevel.Error, 1105, ex,
-        "Fetching config JSON was successful but the HTTP response content was invalid.");
+    public static FormattableLogMessage FetchReceived200WithInvalidBody(this LoggerWrapper logger, string? rayId, Exception? ex) => rayId is not null
+        ? logger.LogInterpolated(
+            LogLevel.Error, 1105, ex,
+            $"Fetching config JSON was successful but the HTTP response content was invalid. (Ray ID: {rayId})",
+            "RAY_ID")
+        : logger.Log(
+            LogLevel.Error, 1105, ex,
+            "Fetching config JSON was successful but the HTTP response content was invalid.");
 
-    public static FormattableLogMessage FetchReceived304WhenLocalCacheIsEmpty(this LoggerWrapper logger, int statusCode, string? reasonPhrase) => logger.LogInterpolated(
-        LogLevel.Error, 1106,
-        $"Unexpected HTTP response was received when no config JSON is cached locally: {statusCode} {reasonPhrase}",
-        "STATUS_CODE", "REASON_PHRASE");
+    public static FormattableLogMessage FetchReceived304WhenLocalCacheIsEmpty(this LoggerWrapper logger, int statusCode, string? reasonPhrase, string? rayId) => rayId is not null
+        ? logger.LogInterpolated(
+            LogLevel.Error, 1106,
+            $"Unexpected HTTP response was received when no config JSON is cached locally: {statusCode} {reasonPhrase} (Ray ID: {rayId})",
+            "STATUS_CODE", "REASON_PHRASE", "RAY_ID")
+        : logger.LogInterpolated(
+            LogLevel.Error, 1106,
+            $"Unexpected HTTP response was received when no config JSON is cached locally: {statusCode} {reasonPhrase}",
+            "STATUS_CODE", "REASON_PHRASE");
 
     public static FormattableLogMessage AutoPollConfigServiceErrorDuringPolling(this LoggerWrapper logger, Exception ex) => logger.Log(
         LogLevel.Error, 1200, ex,

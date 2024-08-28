@@ -12,11 +12,11 @@ public readonly struct FetchRequest
     /// <summary>
     /// Initializes a new instance of the <see cref="FetchRequest"/> struct.
     /// </summary>
-    public FetchRequest(Uri uri, string? lastETag, KeyValuePair<string, string> sdkInfoHeader, TimeSpan timeout)
+    public FetchRequest(Uri uri, string? lastETag, IReadOnlyList<KeyValuePair<string, string>> headers, TimeSpan timeout)
     {
         Uri = uri ?? throw new ArgumentNullException(nameof(uri));
         LastETag = lastETag;
-        SdkInfoHeader = sdkInfoHeader;
+        Headers = headers;
         Timeout = timeout;
     }
 
@@ -27,13 +27,17 @@ public readonly struct FetchRequest
 
     /// <summary>
     /// The value of the <c>ETag</c> HTTP response header received during the last successful request (if any).
+    /// If available, should be included in the HTTP request, either in the <c>If-None-Match</c> header or in the <c>ccetag</c> query string parameter.
     /// </summary>
+    /// <remarks>
+    /// In browser runtime environments the <c>If-None-Match</c> header should be avoided because that may cause unnecessary CORS preflight requests.
+    /// </remarks>
     public string? LastETag { get; }
 
     /// <summary>
-    /// The name and value of the HTTP request header containing information about the SDK. Should be included in every request.
+    /// Additional HTTP request headers. Should be included in every HTTP request.
     /// </summary>
-    public KeyValuePair<string, string> SdkInfoHeader { get; }
+    public IReadOnlyList<KeyValuePair<string, string>> Headers { get; }
 
     /// <summary>
     /// The request timeout to apply, configured via <see cref="ConfigCatClientOptions.HttpTimeout"/>.

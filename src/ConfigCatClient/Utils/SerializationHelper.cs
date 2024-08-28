@@ -255,4 +255,4 @@ internal static partial class SerializationHelper
         });
     }
 #endif
-        }
+}

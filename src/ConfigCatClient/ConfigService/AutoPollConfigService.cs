@@ -9,7 +9,10 @@ namespace ConfigCat.Client.ConfigService;
 
 internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
 {
+    internal const int PollExpirationToleranceMs = 500;
+
     private readonly TimeSpan pollInterval;
+    private readonly TimeSpan pollExpiration;
     private readonly TimeSpan maxInitWaitTime;
     private readonly CancellationTokenSource initSignalCancellationTokenSource = new(); // used for signalling initialization ready
     private CancellationTokenSource timerCancellationTokenSource = new(); // used for signalling background work to stop
@@ -34,6 +37,10 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
         SafeHooksWrapper hooks = default) : base(configFetcher, cacheParameters, logger, isOffline, hooks)
     {
         this.pollInterval = options.PollInterval;
+        // Due to the inaccuracy of the timer, some tolerance should be allowed when checking for
+        // cache expiration in the polling loop, otherwise some fetch operations may be missed.
+        this.pollExpiration = options.PollInterval - TimeSpan.FromMilliseconds(PollExpirationToleranceMs);
+
         this.maxInitWaitTime = options.MaxInitWaitTime >= TimeSpan.Zero ? options.MaxInitWaitTime : Timeout.InfiniteTimeSpan;
 
         var initialCacheSyncUpTask = SyncUpWithCacheAsync(WaitForReadyCancellationToken);
@@ -214,33 +221,22 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
         }, stopToken);
     }
 
-    private async ValueTask PollCoreAsync(bool isFirstIteration, Task<ProjectConfig>? initialCacheSyncUpTask, CancellationToken cancellationToken)
+    private async ValueTask PollCoreAsync(bool isFirstIteration, Task<ProjectConfig>? initialCacheSyncUpTask, CancellationToken stopToken)
     {
-        if (isFirstIteration)
-        {
-            var latestConfig = initialCacheSyncUpTask is not null
-                ? await initialCacheSyncUpTask.WaitAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext)
-                : await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+        var latestConfig = initialCacheSyncUpTask is not null
+            ? await initialCacheSyncUpTask.WaitAsync(stopToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext)
+            : await this.ConfigCache.GetAsync(base.CacheKey, stopToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 
-            if (latestConfig.IsExpired(expiration: this.pollInterval))
-            {
-                if (!IsOffline)
-                {
-                    await RefreshConfigCoreAsync(latestConfig, isInitiatedByUser: false, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
-                }
-            }
-            else
-            {
-                SignalInitialization();
-            }
-        }
-        else
+        if (latestConfig.IsExpired(expiration: this.pollExpiration))
         {
             if (!IsOffline)
             {
-                var latestConfig = await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
-                await RefreshConfigCoreAsync(latestConfig, isInitiatedByUser: false, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+                await RefreshConfigCoreAsync(latestConfig, isInitiatedByUser: false, stopToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
             }
+        }
+        else if (isFirstIteration)
+        {
+            SignalInitialization();
         }
     }
 

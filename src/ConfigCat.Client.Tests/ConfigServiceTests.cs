@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
@@ -13,11 +14,19 @@ namespace ConfigCat.Client.Tests;
 [TestClass]
 public class ConfigServiceTests
 {
-    private static ProjectConfig CreateExpiredPc(DateTime timeStamp, TimeSpan expiration, string configJson = "{}", string httpETag = "\"67890\"") =>
-        ConfigHelper.FromString(configJson, httpETag, timeStamp - expiration - TimeSpan.FromSeconds(1));
+    private static ProjectConfig CreateExpiredPc(DateTime timeStamp, TimeSpan expiration, string configJson = "{}", string httpETag = "\"67890\"")
+    {
+        var offset = TimeSpan.FromSeconds(1);
+        Debug.Assert(offset.TotalMilliseconds > AutoPollConfigService.PollExpirationToleranceMs * 1.5);
+        return ConfigHelper.FromString(configJson, httpETag, timeStamp - expiration - offset);
+    }
 
-    private static ProjectConfig CreateUpToDatePc(DateTime timeStamp, TimeSpan expiration, string configJson = "{}", string httpETag = "\"abcdef\"") =>
-        ConfigHelper.FromString(configJson, httpETag, timeStamp - expiration + TimeSpan.FromSeconds(1));
+    private static ProjectConfig CreateUpToDatePc(DateTime timeStamp, TimeSpan expiration, string configJson = "{}", string httpETag = "\"abcdef\"")
+    {
+        var offset = TimeSpan.FromSeconds(1);
+        Debug.Assert(offset.TotalMilliseconds > AutoPollConfigService.PollExpirationToleranceMs * 1.5);
+        return ConfigHelper.FromString(configJson, httpETag, timeStamp - expiration + offset);
+    }
 
     private static ProjectConfig CreateFreshPc(DateTime timeStamp, string configJson = "{}", string httpETag = "\"12345\"") =>
         ConfigHelper.FromString(configJson, httpETag, timeStamp);
@@ -297,6 +306,92 @@ public class ConfigServiceTests
 
         this.cacheMock.Verify(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(3));
         this.cacheMock.Verify(m => m.SetAsync(It.IsAny<string>(), fetchedPc, It.IsAny<CancellationToken>()), Times.Once);
+        this.fetcherMock.Verify(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [DataTestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task AutoPollConfigService_GetConfig_ShouldReturnCachedConfigWhenCachedConfigIsNotExpired(bool isAsync)
+    {
+        // Arrange
+
+        var pollInterval = TimeSpan.FromSeconds(2);
+
+        var timeStamp = ProjectConfig.GenerateTimeStamp();
+        var fetchedPc = CreateFreshPc(timeStamp);
+        var cachedPc = fetchedPc.With(fetchedPc.TimeStamp - pollInterval + TimeSpan.FromMilliseconds(1.5 * AutoPollConfigService.PollExpirationToleranceMs));
+
+        const string cacheKey = "";
+        var cache = new InMemoryConfigCache();
+        cache.Set(cacheKey, cachedPc);
+
+        this.fetcherMock
+            .Setup(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(FetchResult.Success(fetchedPc));
+
+        var config = PollingModes.AutoPoll(pollInterval, maxInitWaitTime: Timeout.InfiniteTimeSpan);
+        using var service = new AutoPollConfigService(config,
+            this.fetcherMock.Object,
+            new CacheParameters(cache, cacheKey),
+            this.loggerMock.Object.AsWrapper(),
+            startTimer: true);
+
+        // Act
+
+        // Give a bit of time to the polling loop to do the first iteration.
+        await Task.Delay(TimeSpan.FromTicks(pollInterval.Ticks / 4));
+
+        var actualPc = isAsync ? await service.GetConfigAsync() : service.GetConfig();
+
+        // Assert
+
+        Assert.AreSame(cachedPc, actualPc);
+
+        this.fetcherMock.Verify(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [DataTestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task AutoPollConfigService_GetConfig_ShouldWaitForFetchWhenCachedConfigIsExpired(bool isAsync)
+    {
+        // Arrange
+
+        var pollInterval = TimeSpan.FromSeconds(2);
+
+        var timeStamp = ProjectConfig.GenerateTimeStamp();
+        var fetchedPc = CreateFreshPc(timeStamp);
+        var cachedPc = fetchedPc.With(fetchedPc.TimeStamp - pollInterval + TimeSpan.FromMilliseconds(0.5 * AutoPollConfigService.PollExpirationToleranceMs));
+
+        const string cacheKey = "";
+        var cache = new InMemoryConfigCache();
+        cache.Set(cacheKey, cachedPc);
+
+        this.fetcherMock
+            .Setup(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(FetchResult.Success(fetchedPc));
+
+        var config = PollingModes.AutoPoll(pollInterval, maxInitWaitTime: Timeout.InfiniteTimeSpan);
+        using var service = new AutoPollConfigService(config,
+            this.fetcherMock.Object,
+            new CacheParameters(cache, cacheKey),
+            this.loggerMock.Object.AsWrapper(),
+            startTimer: true);
+
+        // Act
+
+        // Give a bit of time to the polling loop to do the first iteration.
+        await Task.Delay(TimeSpan.FromTicks(pollInterval.Ticks / 4));
+
+        var actualPc = isAsync ? await service.GetConfigAsync() : service.GetConfig();
+
+        // Assert
+
+        Assert.AreNotSame(cachedPc, actualPc);
+        Assert.AreEqual(cachedPc.HttpETag, actualPc.HttpETag);
+        Assert.AreEqual(cachedPc.ConfigJson, actualPc.ConfigJson);
+
         this.fetcherMock.Verify(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>()), Times.Once);
     }
 

@@ -8,7 +8,8 @@ ConfigCat is a feature flag and configuration management service that lets you s
 
 ConfigCat is a [hosted feature flag service](https://configcat.com). Manage feature toggles across frontend, backend, mobile, desktop apps. [Alternative to LaunchDarkly](https://configcat.com). Management app + feature flag SDKs.
 
-[![Build status](https://ci.appveyor.com/api/projects/status/3kygp783vc2uv9xr?svg=true)](https://ci.appveyor.com/project/ConfigCat/net-sdk) [![NuGet Version](https://buildstats.info/nuget/ConfigCat.Client)](https://www.nuget.org/packages/ConfigCat.Client/)
+[![Build status](https://ci.appveyor.com/api/projects/status/3kygp783vc2uv9xr?svg=true)](https://ci.appveyor.com/project/ConfigCat/net-sdk)
+[![NuGet Version](https://img.shields.io/nuget/v/ConfigCat.Client)](https://www.nuget.org/packages/ConfigCat.Client/)
 [![Sonar Coverage](https://img.shields.io/sonar/coverage/net-sdk?logo=SonarCloud&server=https%3A%2F%2Fsonarcloud.io)](https://sonarcloud.io/project/overview?id=net-sdk) 
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=net-sdk&metric=alert_status)](https://sonarcloud.io/dashboard?id=net-sdk)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/configcat/.net-sdk/blob/master/LICENSE)
@@ -106,7 +107,7 @@ Based on our tests, the SDK is compatible with the following runtimes/deployment
 <sup><small>*</small></sup>Unity WebGL also works but needs a bit of extra effort: you will need to enable WebGL compatibility by calling the `ConfigCatClient.PlatformCompatibilityOptions.EnableUnityWebGLCompatibility` method. For more details, see [Sample Scripts](https://github.com/configcat/.net-sdk/tree/master/samples/UnityWebGL).<br/>
 <sup><small>**</small></sup>To make the SDK work in Release builds on UWP, you will need to add `<Namespace Name="System.Text.Json.Serialization.Converters" Browse="Required All"/>` to your application's [.rd.xml](https://learn.microsoft.com/en-us/windows/uwp/dotnet-native/runtime-directives-rd-xml-configuration-file-reference) file. See also [this discussion](https://github.com/dotnet/runtime/issues/29912#issuecomment-638471351).
 
-We strive to provide an extensive support for the various .NET runtimes and versions. If you still encounter an issue with the SDK on some platform, please open a [GitHub issue](https://github.com/configcat/.net-sdk/issues/new/choose) or contact support.
+> We strive to provide an extensive support for the various .NET runtimes and versions. If you still encounter an issue with the SDK on some platform, please open a [GitHub issue](https://github.com/configcat/.net-sdk/issues/new/choose) or contact support.
 
 ## Need help?
 https://configcat.com/support

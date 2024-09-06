@@ -19,7 +19,7 @@ install:
 - ps: |
     dotnet tool install -g InheritDocTool
     Invoke-WebRequest 'https://dot.net/v1/dotnet-install.ps1' -OutFile dotnet-install.ps1
-    ./dotnet-install.ps1 -Channel 8.0
+    ./dotnet-install.ps1 -Channel 5.0
 build_script:
 - cmd: echo __BUILD__
 - dotnet restore src/ConfigCatClient.sln

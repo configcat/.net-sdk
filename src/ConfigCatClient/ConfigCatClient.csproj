@@ -69,7 +69,7 @@
         <Reference Include="System.Net.Http" />
         <!--Do not remove this reference, it was added due to a SNYK security report-->
         <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
-        <PackageReference Include="System.Text.Json" Version="6.0.0" />
+        <PackageReference Include="System.Text.Json" Version="6.0.10" />
       </ItemGroup>
     </When>
 
@@ -77,7 +77,7 @@
       <ItemGroup>
         <!--Do not remove this reference, it was added due to a SNYK security report-->
         <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
-        <PackageReference Include="System.Text.Json" Version="6.0.0" />
+        <PackageReference Include="System.Text.Json" Version="6.0.10" />
       </ItemGroup>
     </When>
 
@@ -85,13 +85,13 @@
       <ItemGroup>
         <!--Do not remove this reference, it was added due to a SNYK security report-->
         <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
-        <PackageReference Include="System.Text.Json" Version="6.0.0" />
+        <PackageReference Include="System.Text.Json" Version="6.0.10" />
       </ItemGroup>
     </When>
 
     <When Condition="'$(TargetFramework)' == 'net5.0'">
       <ItemGroup>
-        <PackageReference Include="System.Text.Json" Version="6.0.0" />
+        <PackageReference Include="System.Text.Json" Version="6.0.10" />
       </ItemGroup>
     </When>
   </Choose>

@@ -10,7 +10,7 @@ Since NuGet packages cannot be referenced in Unity projects directly, the SDK's 
 * [System.Numerics.Vectors v4.5.0](https://www.nuget.org/packages/System.Numerics.Vectors/4.5.0)
 * [System.Runtime.CompilerServices.Unsafe v6.0.0](https://www.nuget.org/packages/System.Runtime.CompilerServices.Unsafe/6.0.0)
 * [System.Text.Encodings.Web v6.0.0](https://www.nuget.org/packages/System.Text.Encodings.Web/6.0.0)
-* [System.Text.Json v6.0.0](https://www.nuget.org/packages/System.Text.Json/6.0.0)
+* [System.Text.Json v6.0.10](https://www.nuget.org/packages/System.Text.Json/6.0.10)
 * [System.Threading.Tasks.Extensions v4.5.4](https://www.nuget.org/packages/System.Threading.Tasks.Extensions/4.5.4)
 
 Tested on Unity 2021.3 LTS and 6000.0.

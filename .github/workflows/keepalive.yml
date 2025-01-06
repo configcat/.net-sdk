@@ -15,5 +15,5 @@ jobs:
       - uses: actions/checkout@v4
       - uses: gautamkrishnar/keepalive-workflow@v2
         with:
-          workflow_files: "linux-macOS-CI.yml, stale.yml"
+          workflow_files: "dotnet-sdk-ci.yml, stale.yml"
           time_elapsed: "0"

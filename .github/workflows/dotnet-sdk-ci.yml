@@ -44,17 +44,12 @@ jobs:
         dotnet-version: [
           {rt: "3.1.x", sdk: "3.1.100", tfm: netcoreapp3.1},
           {rt: "6.0.x", sdk: "6.0.100", tfm: net6.0},
-          {rt: "8.0.x", sdk: "8.0.100", tfm: net8.0},
-          {rt: "9.0.x", sdk: "9.0.100", tfm: net8.0}
+          {rt: "8.0.x", sdk: "8.0.100", tfm: net8.0}
         ]
         os: [ubuntu-latest, windows-latest, macOS-latest]
         exclude:
-          - dotnet-version: {rt: "4.6.1", sdk: "8.0.100", tfm: net461}
-            os: ubuntu-latest
           - dotnet-version: {rt: "3.1.x", sdk: "3.1.100", tfm: netcoreapp3.1}
             os: ubuntu-latest
-          - dotnet-version: {rt: "4.6.1", sdk: "8.0.100", tfm: net461}
-            os: macOS-latest
           - dotnet-version: {rt: "3.1.x", sdk: "3.1.100", tfm: netcoreapp3.1}
             os: macOS-latest
     name: Build & test on .NET ${{ matrix.dotnet-version.rt }} (${{ matrix.os }})
@@ -66,12 +61,12 @@ jobs:
           dotnet-version: |
             ${{ matrix.dotnet-version.rt }}
             8.0.x
-      - name: Pin dotnet SDK version
-        run: |
-          dotnet new global.json --sdk-version 8.0.100 --roll-forward latestFeature
       - name: Build
         run: |
           dotnet build src/ConfigCat.Client.Tests/ConfigCat.Client.Tests.csproj -c Release -f ${{ matrix.dotnet-version.tfm }}
+      - name: Pin dotnet SDK version
+        run: |
+          dotnet new global.json --sdk-version ${{ matrix.dotnet-version.sdk }} --roll-forward latestFeature
       - name: Test
         run: |
           dotnet test src/ConfigCat.Client.Tests/ConfigCat.Client.Tests.csproj -c Release -f ${{ matrix.dotnet-version.tfm }} --no-build

@@ -1,5 +1,7 @@
-name: Build on Linux and macOS
+name: Build & test on Linux and macOS
 on:
+  schedule:
+    - cron: '0 0 * * *'
   push:
     branches: [ master ]
     paths-ignore:
@@ -7,6 +9,7 @@ on:
       - 'appveyor*'
   pull_request:
     types: [opened, synchronize, reopened]
+  workflow_dispatch:
 
 env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true

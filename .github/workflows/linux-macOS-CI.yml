@@ -17,10 +17,10 @@ jobs:
     name: Build & test (Ubuntu)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-dotnet@v1
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: | 
+          dotnet-version: |
             3.1.x
             5.0.x
             6.0.x
@@ -37,10 +37,10 @@ jobs:
     name: Build & test (macOS)
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-dotnet@v1
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: | 
+          dotnet-version: |
             6.0.x
             8.0.x
       - name: Restore

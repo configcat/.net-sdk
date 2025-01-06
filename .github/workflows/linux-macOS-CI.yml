@@ -1,4 +1,4 @@
-name: Build & test on Linux and macOS
+name: .NET SDK CI
 on:
   schedule:
     - cron: '0 0 * * *'
@@ -16,39 +16,62 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: true
 
 jobs:
-  build-test-ubuntu:
-    name: Build & test (Ubuntu)
-    runs-on: ubuntu-latest
+  build-test-netframework:
+    strategy:
+      matrix:
+        dotnet-version: [
+          {rt: "4.5", tfm: net45},
+          {rt: "4.6.1", tfm: net461},
+        ]
+    name: Build & test on .NET ${{ matrix.dotnet-version.rt }}
+    runs-on: windows-2019
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: |
-            3.1.x
-            5.0.x
-            6.0.x
             8.0.x
-      - name: Restore
-        run: dotnet restore src
+      - name: Build
+        run: |
+          dotnet build src/ConfigCat.Client.Tests/ConfigCat.Client.Tests.csproj -c Release -f ${{ matrix.dotnet-version.tfm }}
       - name: Test
         run: |
-          dotnet test src/ConfigCat.Client.Tests/ConfigCat.Client.Tests.csproj -c Release -f netcoreapp3.1 --no-restore
-          dotnet test src/ConfigCat.Client.Tests/ConfigCat.Client.Tests.csproj -c Release -f net5.0 --no-restore
-          dotnet test src/ConfigCat.Client.Tests/ConfigCat.Client.Tests.csproj -c Release -f net6.0 --no-restore
-          dotnet test src/ConfigCat.Client.Tests/ConfigCat.Client.Tests.csproj -c Release -f net8.0 --no-restore
-  build-test-macos:
-    name: Build & test (macOS)
-    runs-on: macos-latest
+          dotnet test src/ConfigCat.Client.Tests/ConfigCat.Client.Tests.csproj -c Release -f ${{ matrix.dotnet-version.tfm }} --no-build
+
+  build-test-netcore:
+    strategy:
+      matrix:
+        dotnet-version: [
+          {rt: "3.1.x", sdk: "3.1.100", tfm: netcoreapp3.1},
+          {rt: "6.0.x", sdk: "6.0.100", tfm: net6.0},
+          {rt: "8.0.x", sdk: "8.0.100", tfm: net8.0},
+          {rt: "9.0.x", sdk: "9.0.100", tfm: net8.0}
+        ]
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+        exclude:
+          - dotnet-version: {rt: "4.6.1", sdk: "8.0.100", tfm: net461}
+            os: ubuntu-latest
+          - dotnet-version: {rt: "3.1.x", sdk: "3.1.100", tfm: netcoreapp3.1}
+            os: ubuntu-latest
+          - dotnet-version: {rt: "4.6.1", sdk: "8.0.100", tfm: net461}
+            os: macOS-latest
+          - dotnet-version: {rt: "3.1.x", sdk: "3.1.100", tfm: netcoreapp3.1}
+            os: macOS-latest
+    name: Build & test on .NET ${{ matrix.dotnet-version.rt }} (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: |
-            6.0.x
+            ${{ matrix.dotnet-version.rt }}
             8.0.x
-      - name: Restore
-        run: dotnet restore src
+      - name: Pin dotnet SDK version
+        run: |
+          dotnet new global.json --sdk-version 8.0.100 --roll-forward latestFeature
+      - name: Build
+        run: |
+          dotnet build src/ConfigCat.Client.Tests/ConfigCat.Client.Tests.csproj -c Release -f ${{ matrix.dotnet-version.tfm }}
       - name: Test
         run: |
-          dotnet test src/ConfigCat.Client.Tests/ConfigCat.Client.Tests.csproj -c Release -f net6.0 --no-restore
-          dotnet test src/ConfigCat.Client.Tests/ConfigCat.Client.Tests.csproj -c Release -f net8.0 --no-restore
+          dotnet test src/ConfigCat.Client.Tests/ConfigCat.Client.Tests.csproj -c Release -f ${{ matrix.dotnet-version.tfm }} --no-build

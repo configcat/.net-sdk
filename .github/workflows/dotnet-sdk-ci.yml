@@ -44,7 +44,8 @@ jobs:
         dotnet-version: [
           {rt: "3.1.x", sdk: "3.1.100", tfm: netcoreapp3.1},
           {rt: "6.0.x", sdk: "6.0.100", tfm: net6.0},
-          {rt: "8.0.x", sdk: "8.0.100", tfm: net8.0}
+          {rt: "8.0.x", sdk: "8.0.100", tfm: net8.0},
+          {rt: "9.0.x", sdk: "9.0.100", tfm: net9.0}
         ]
         os: [ubuntu-latest, windows-latest, macOS-latest]
         exclude:
@@ -60,7 +61,7 @@ jobs:
         with:
           dotnet-version: |
             ${{ matrix.dotnet-version.rt }}
-            8.0.x
+            9.0.x
       - name: Build
         run: |
           dotnet build src/ConfigCat.Client.Tests/ConfigCat.Client.Tests.csproj -c Release -f ${{ matrix.dotnet-version.tfm }}

@@ -1,5 +1,4 @@
-using System;
-using ConfigCat.Client;
+using ConfigCat.Extensions.Hosting;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,18 +13,21 @@ var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
-var configCatSdkKey = builder.Configuration["ConfigCatSdkKey"];
-
-builder.UseConfigCat()
+builder.UseConfigCat(initStrategy: ConfigCatInitStrategy.WaitForClientReadyAndLogOnFailure)
     // Register ConfigCatClient so you can inject it in your controllers, actions, etc.
-    .AddDefaultClient("PKDVCLf-Hq-h-kCzMp-L7Q/HhOWfwVtZ0mb30i9wi17GQ", options =>
+    .AddDefaultClient(options =>
     {
-        options.PollingMode = PollingModes.AutoPoll(pollInterval: TimeSpan.FromSeconds(5));
+        // Settings made in this callback take precendence over the settings coming from configuration
+        // (environment variables, appsettings.json, etc.)
+
+        //options.SdkKey = "PKDVCLf-Hq-h-kCzMp-L7Q/HhOWfwVtZ0mb30i9wi17GQ";
+        //options.PollingMode = PollingModes.AutoPoll(pollInterval: TimeSpan.FromSeconds(5));
     })
-    .AddKeyedClient("secondary", "PKDVCLf-Hq-h-kCzMp-L7Q/HhOWfwVtZ0mb30i9wi17GQ", options =>
-     {
-         options.PollingMode = PollingModes.AutoPoll(pollInterval: TimeSpan.FromSeconds(5));
-     });
+    .AddKeyedClient("secondary", options =>
+    {
+        //options.SdkKey = "PKDVCLf-Hq-h-kCzMp-L7Q/HhOWfwVtZ0mb30i9wi17Gq";
+        //options.PollingMode = PollingModes.AutoPoll(pollInterval: TimeSpan.FromSeconds(5));
+    });
 
 var app = builder.Build();
 

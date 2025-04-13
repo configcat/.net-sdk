@@ -1,10 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using ConfigCat.Client;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace WebApplication.Controllers;
 
@@ -14,7 +11,7 @@ public class BackdoorController : Controller
 {
     private readonly IConfigCatClient configCatClient;
 
-    public BackdoorController(IConfigCatClient configCatClient)
+    public BackdoorController([FromKeyedServices("secondary")] IConfigCatClient configCatClient)
     {
         this.configCatClient = configCatClient;
     }

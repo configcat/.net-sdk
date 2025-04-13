@@ -4,35 +4,31 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using ConfigCat.Client;
 using Microsoft.Extensions.Logging;
 
-namespace ConfigCat.Client.Extensions.Adapters;
+namespace ConfigCat.Extensions.Hosting.Adapters;
 
-public class ConfigCatToMSLoggerAdapter : ConfigCat.Client.IConfigCatLogger
+public class ConfigCatToMSLoggerAdapter(ILogger<ConfigCatClient> logger) : IConfigCatLogger
 {
-    private readonly ILogger logger;
+    private readonly ILogger logger = logger;
     private readonly ConcurrentDictionary<OriginalFormatCacheKey, string> originalFormatCache = new();
 
-    public ConfigCatToMSLoggerAdapter(ILogger<ConfigCat.Client.ConfigCatClient> logger)
+    // Allow all log levels here and let MS logger do log level filtering.
+    public Client.LogLevel LogLevel
     {
-        this.logger = logger;
-    }
-
-    // Allow all log levels here and let MS logger do log level filtering (see appsettings.json)
-    public ConfigCat.Client.LogLevel LogLevel
-    {
-        get => ConfigCat.Client.LogLevel.Debug;
+        get => Client.LogLevel.Debug;
         set { throw new NotSupportedException(); }
     }
 
-    public void Log(ConfigCat.Client.LogLevel level, ConfigCat.Client.LogEventId eventId, ref ConfigCat.Client.FormattableLogMessage message, Exception? exception = null)
+    public void Log(Client.LogLevel level, LogEventId eventId, ref FormattableLogMessage message, Exception? exception = null)
     {
         var logLevel = level switch
         {
-            ConfigCat.Client.LogLevel.Error => Microsoft.Extensions.Logging.LogLevel.Error,
-            ConfigCat.Client.LogLevel.Warning => Microsoft.Extensions.Logging.LogLevel.Warning,
-            ConfigCat.Client.LogLevel.Info => Microsoft.Extensions.Logging.LogLevel.Information,
-            ConfigCat.Client.LogLevel.Debug => Microsoft.Extensions.Logging.LogLevel.Debug,
+            Client.LogLevel.Error => Microsoft.Extensions.Logging.LogLevel.Error,
+            Client.LogLevel.Warning => Microsoft.Extensions.Logging.LogLevel.Warning,
+            Client.LogLevel.Info => Microsoft.Extensions.Logging.LogLevel.Information,
+            Client.LogLevel.Debug => Microsoft.Extensions.Logging.LogLevel.Debug,
             _ => Microsoft.Extensions.Logging.LogLevel.None
         };
 
@@ -42,18 +38,13 @@ public class ConfigCatToMSLoggerAdapter : ConfigCat.Client.IConfigCatLogger
     }
 
     // Support for structured logging.
-    private struct LogValues : IReadOnlyList<KeyValuePair<string, object?>>
+    private struct LogValues(in FormattableLogMessage message, ConcurrentDictionary<OriginalFormatCacheKey, string> originalFormatCache)
+        : IReadOnlyList<KeyValuePair<string, object?>>
     {
         public static readonly Func<LogValues, Exception?, string> Formatter = (state, _) => state.ToString();
 
-        private ConfigCat.Client.FormattableLogMessage message;
-        private readonly ConcurrentDictionary<OriginalFormatCacheKey, string> originalFormatCache;
-
-        public LogValues(in ConfigCat.Client.FormattableLogMessage message, ConcurrentDictionary<OriginalFormatCacheKey, string> originalFormatCache)
-        {
-            this.message = message;
-            this.originalFormatCache = originalFormatCache;
-        }
+        private FormattableLogMessage message = message;
+        private readonly ConcurrentDictionary<OriginalFormatCacheKey, string> originalFormatCache = originalFormatCache;
 
         public readonly int Count => (this.message.ArgNames?.Length ?? 0) + 1;
 
@@ -102,16 +93,10 @@ public class ConfigCatToMSLoggerAdapter : ConfigCat.Client.IConfigCatLogger
         public override string ToString() => this.message.InvariantFormattedMessage;
     }
 
-    private readonly struct OriginalFormatCacheKey : IEquatable<OriginalFormatCacheKey>
+    private readonly struct OriginalFormatCacheKey(in FormattableLogMessage message) : IEquatable<OriginalFormatCacheKey>
     {
-        public readonly string Format;
-        public readonly string[] ArgNames;
-
-        public OriginalFormatCacheKey(in FormattableLogMessage message)
-        {
-            this.Format = message.Format;
-            this.ArgNames = message.ArgNames;
-        }
+        public readonly string Format = message.Format;
+        public readonly string[] ArgNames = message.ArgNames;
 
         public bool Equals(OriginalFormatCacheKey other) => ReferenceEquals(this.Format, other.Format);
 

@@ -39,17 +39,31 @@ public sealed class ConfigCatClient : IConfigCatClient
 
     private readonly string? sdkKey; // may be null in case of testing
     private readonly EvaluationServices evaluationServices;
-    private IConfigService configService;
+    private IConfigService configService; // won't change after the object is constructed
     private readonly IOverrideDataSource? overrideDataSource;
     private readonly OverrideBehaviour? overrideBehaviour;
     private readonly Hooks hooks;
-    // NOTE: The following mutable field(s) may be accessed from multiple threads and we need to make sure that changes to them are observable in these threads.
-    // Volatile guarantees (see https://learn.microsoft.com/en-us/dotnet/api/system.threading.volatile) that such changes become visible to them *eventually*,
-    // which is good enough in these cases.
+
+    // NOTE: The following mutable field(s) may be accessed from multiple threads and we need to make sure that changes
+    // to them are observable by these threads. Volatile guarantees (see https://learn.microsoft.com/en-us/dotnet/api/system.threading.volatile)
+    // that such changes become visible to them *eventually*, which is good enough in these cases.
     private volatile User? defaultUser;
 
     private LoggerWrapper Logger => this.evaluationServices.Logger;
     private IRolloutEvaluator ConfigEvaluator => this.evaluationServices.Evaluator;
+
+    internal static void EnsureNonEmptySdkKey(string? sdkKey)
+    {
+        if (sdkKey is null)
+        {
+            throw new ArgumentNullException(nameof(sdkKey));
+        }
+
+        if (sdkKey.Length == 0)
+        {
+            throw new ArgumentException("SDK Key cannot be empty.", nameof(sdkKey));
+        }
+    }
 
     private static bool IsValidSdkKey(string sdkKey, bool customBaseUrl)
     {
@@ -194,19 +208,16 @@ public sealed class ConfigCatClient : IConfigCatClient
     /// <exception cref="ArgumentException"><paramref name="sdkKey"/> is an empty string or in an invalid format.</exception>
     public static IConfigCatClient Get(string sdkKey, Action<ConfigCatClientOptions>? configurationAction = null)
     {
-        if (sdkKey is null)
-        {
-            throw new ArgumentNullException(nameof(sdkKey));
-        }
-
-        if (sdkKey.Length == 0)
-        {
-            throw new ArgumentException("SDK Key cannot be empty.", nameof(sdkKey));
-        }
+        EnsureNonEmptySdkKey(sdkKey);
 
         var options = new ConfigCatClientOptions();
         configurationAction?.Invoke(options);
 
+        return Get(sdkKey, options, reportInstanceAlreadyCreated: configurationAction is not null);
+    }
+
+    internal static ConfigCatClient Get(string sdkKey, ConfigCatClientOptions options, bool reportInstanceAlreadyCreated)
+    {
         if (options.FlagOverrides is not { OverrideBehaviour: OverrideBehaviour.LocalOnly } && !IsValidSdkKey(sdkKey, options.IsCustomBaseUrl))
         {
             throw new ArgumentException($"SDK Key '{sdkKey}' is invalid.", nameof(sdkKey));
@@ -214,7 +225,7 @@ public sealed class ConfigCatClient : IConfigCatClient
 
         var instance = Instances.GetOrCreate(sdkKey, options, out var instanceAlreadyCreated);
 
-        if (instanceAlreadyCreated && configurationAction is not null)
+        if (instanceAlreadyCreated && reportInstanceAlreadyCreated)
         {
             instance.Logger.ClientIsAlreadyCreated(sdkKey);
         }
@@ -643,6 +654,11 @@ public sealed class ConfigCatClient : IConfigCatClient
     public void SetOffline()
     {
         this.configService.SetOffline();
+    }
+
+    internal bool Uses<TConfigService>() where TConfigService : ConfigServiceBase
+    {
+        return this.configService is TConfigService;
     }
 
     /// <inheritdoc/>

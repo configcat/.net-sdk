@@ -4,6 +4,7 @@ using System.Diagnostics;
 using ConfigCat.Client;
 using ConfigCat.Client.Configuration;
 using ConfigCat.Extensions.Hosting.Adapters;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -16,16 +17,16 @@ public sealed class ConfigCatBuilder
 {
     private static void ConfigureDefaultOptions(IServiceCollection services)
     {
-        services.TryAddSingleton<IConfigureOptions<ConfigCatClientOptions>>(sp =>
+        services.TryAddSingleton<IConfigureOptions<ExtendedConfigCatClientOptions>>(sp =>
         {
             var logger = sp.GetService<ILogger<ConfigCatClient>>();
 
             return logger is not null
-                ? new ConfigureNamedOptions<ConfigCatClientOptions, ILogger<ConfigCatClient>>(
+                ? new ConfigureNamedOptions<ExtendedConfigCatClientOptions, ILogger<ConfigCatClient>>(
                     name: null, // null means that it applies to all named and unnamed options
                     logger,
                     (options, logger) => options.Logger = new ConfigCatToMSLoggerAdapter(logger))
-                : new ConfigureOptions<ConfigCatClientOptions>(action: null);
+                : new ConfigureOptions<ExtendedConfigCatClientOptions>(action: null);
         });
     }
 
@@ -38,7 +39,7 @@ public sealed class ConfigCatBuilder
     {
         this.initStrategy = initStrategy;
 
-        hostBuilder.ConfigureServices((_, services) =>
+        hostBuilder.ConfigureServices((context, services) =>
         {
             ConfigureDefaultOptions(services);
 
@@ -48,11 +49,11 @@ public sealed class ConfigCatBuilder
                 {
                     if (kvp.Key == Options.DefaultName)
                     {
-                        kvp.Value.RegisterDefault(services);
+                        kvp.Value.RegisterDefault(services, context.Configuration);
                     }
                     else
                     {
-                        kvp.Value.RegisterKeyed(kvp.Key, services);
+                        kvp.Value.RegisterKeyed(kvp.Key, services, context.Configuration);
                     }
                 }
 
@@ -68,6 +69,7 @@ public sealed class ConfigCatBuilder
     {
         this.initStrategy = initStrategy;
 
+        var configuration = hostApplicationBuilder.Configuration;
         var services = hostApplicationBuilder.Services;
 
         ConfigureDefaultOptions(services);
@@ -80,7 +82,7 @@ public sealed class ConfigCatBuilder
                 {
                     ClientRegistration.UnregisterDefault(services);
                 }
-                clientRegistration.RegisterDefault(services);
+                clientRegistration.RegisterDefault(services, configuration);
             }
             else
             {
@@ -89,7 +91,7 @@ public sealed class ConfigCatBuilder
                     ClientRegistration.UnregisterKeyed(clientKey, services);
                 }
 
-                clientRegistration.RegisterKeyed(clientKey, services);
+                clientRegistration.RegisterKeyed(clientKey, services, configuration);
             }
 
             if (this.clientRegistrations is null && this.initStrategy != ConfigCatInitStrategy.DoNotWaitForClientReady)
@@ -100,12 +102,12 @@ public sealed class ConfigCatBuilder
         };
     }
 
-    public ConfigCatBuilder AddDefaultClient(string sdkKey, Action<ConfigCatClientOptions>? configureOptions = null)
+    public ConfigCatBuilder AddDefaultClient(Action<ExtendedConfigCatClientOptions>? configureOptions = null)
     {
-        return AddClient(clientKey: Options.DefaultName, sdkKey, configureOptions);
+        return AddClient(clientKey: Options.DefaultName, configureOptions);
     }
 
-    public ConfigCatBuilder AddKeyedClient(string clientKey, string sdkKey, Action<ConfigCatClientOptions>? configureOptions = null)
+    public ConfigCatBuilder AddKeyedClient(string clientKey, Action<ExtendedConfigCatClientOptions>? configureOptions = null)
     {
         if (clientKey is null)
         {
@@ -117,30 +119,41 @@ public sealed class ConfigCatBuilder
             throw new ArgumentException($"Client key cannot be equal to \"{Options.DefaultName}\".", nameof(clientKey));
         }
 
-        return AddClient(clientKey, sdkKey, configureOptions);
+        return AddClient(clientKey, configureOptions);
     }
 
-    private ConfigCatBuilder AddClient(string clientKey, string sdkKey, Action<ConfigCatClientOptions>? configureOptions = null)
+    private ConfigCatBuilder AddClient(string clientKey, Action<ExtendedConfigCatClientOptions>? configureOptions = null)
     {
-        ConfigCatClient.EnsureNonEmptySdkKey(sdkKey);
-
-        var clientRegistration = new ClientRegistration(sdkKey, configureOptions);
+        var clientRegistration = new ClientRegistration(configureOptions);
         this.registerClientImmediately?.Invoke(clientKey, clientRegistration);
         (this.clientRegistrations ??= new())[clientKey] = clientRegistration;
 
         return this;
     }
 
-    private readonly struct ClientRegistration(string sdkKey, Action<ConfigCatClientOptions>? configureOptions)
+    private readonly struct ClientRegistration(Action<ExtendedConfigCatClientOptions>? configureOptions)
     {
-        public void RegisterDefault(IServiceCollection services)
+        public void RegisterDefault(IServiceCollection services, IConfiguration configuration)
         {
-            services.AddSingleton<IConfigCatClient>(new ClientFactory(clientKey: Options.DefaultName, sdkKey).CreateDefault);
+            services.AddSingleton<IConfigCatClient>(new ClientFactory(clientKey: Options.DefaultName).CreateDefault);
 
-            if (configureOptions is not null)
-            {
-                services.AddSingleton<IConfigureOptions<ConfigCatClientOptions>>(new ConfigureClientOptions(Options.DefaultName, configureOptions));
-            }
+            var section = configuration.GetSection("ConfigCat").GetSection("DefaultClient");
+            var configureClientOptions = new ConfigureClientOptions(
+                name: Options.DefaultName,
+                configuration: section.Exists() ? section : null,
+                userAction: configureOptions,
+                combinedAction: (options, configuration, userAction) =>
+                {
+                    if (configuration is not null)
+                    {
+                        // In .NET 8+ builds configuration binding is source generated (see also csproj).
+                        configuration.Bind(new ExtendedConfigCatClientOptions.BindingWrapper(options));
+                    }
+
+                    userAction?.Invoke(options);
+                });
+
+            services.AddSingleton<IConfigureOptions<ExtendedConfigCatClientOptions>>(configureClientOptions);
         }
 
         public static void UnregisterDefault(IServiceCollection services)
@@ -149,14 +162,27 @@ public sealed class ConfigCatBuilder
             RemoveLast(services, descriptor => descriptor.ImplementationFactory?.Target is ClientFactory);
         }
 
-        public void RegisterKeyed(string clientKey, IServiceCollection services)
+        public void RegisterKeyed(string clientKey, IServiceCollection services, IConfiguration configuration)
         {
-            services.AddKeyedSingleton<IConfigCatClient>(clientKey, new ClientFactory(clientKey, sdkKey).CreateKeyed);
+            services.AddKeyedSingleton<IConfigCatClient>(clientKey, new ClientFactory(clientKey).CreateKeyed);
 
-            if (configureOptions is not null)
-            {
-                services.AddSingleton<IConfigureOptions<ConfigCatClientOptions>>(new ConfigureClientOptions(name: clientKey, configureOptions));
-            }
+            var section = configuration.GetSection("ConfigCat").GetSection("NamedClients").GetSection(clientKey);
+            var configureClientOptions = new ConfigureClientOptions(
+                name: clientKey,
+                configuration: section.Exists() ? section : null,
+                userAction: configureOptions,
+                combinedAction: (options, configuration, userAction) =>
+                {
+                    if (configuration is not null)
+                    {
+                        // In .NET 8+ builds configuration binding is source generated (see also csproj).
+                        configuration.Bind(new ExtendedConfigCatClientOptions.BindingWrapper(options));
+                    }
+
+                    userAction?.Invoke(options);
+                });
+
+            services.AddSingleton<IConfigureOptions<ExtendedConfigCatClientOptions>>(configureClientOptions);
         }
 
         public static void UnregisterKeyed(string clientKey, IServiceCollection services)
@@ -178,26 +204,33 @@ public sealed class ConfigCatBuilder
         }
     }
 
-    private sealed class ClientFactory(string clientKey, string sdkKey)
+    private sealed class ClientFactory(string clientKey)
     {
         public readonly string ClientKey = clientKey;
 
+#pragma warning disable CA1822 // Member 'CreateDefault' does not access instance data and can be marked as static
         public IConfigCatClient CreateDefault(IServiceProvider serviceProvider)
         {
-            var options = serviceProvider.GetRequiredService<IOptions<ConfigCatClientOptions>>().Value;
-            return ConfigCatClient.Get(sdkKey, options, reportInstanceAlreadyCreated: false);
+            var options = serviceProvider.GetRequiredService<IOptions<ExtendedConfigCatClientOptions>>().Value;
+            return ConfigCatClient.Get(options.SdkKey!, options);
         }
 
         public IConfigCatClient CreateKeyed(IServiceProvider serviceProvider, object? key)
         {
             Debug.Assert(Equals(key, this.ClientKey));
-            var options = serviceProvider.GetRequiredService<IOptionsMonitor<ConfigCatClientOptions>>().Get(name: this.ClientKey);
-            return ConfigCatClient.Get(sdkKey, options, reportInstanceAlreadyCreated: false);
+            var options = serviceProvider.GetRequiredService<IOptionsMonitor<ExtendedConfigCatClientOptions>>().Get(name: this.ClientKey);
+            return ConfigCatClient.Get(options.SdkKey!, options);
         }
+#pragma warning restore CA1822
     }
 
-    private sealed class ConfigureClientOptions : ConfigureNamedOptions<ConfigCatClientOptions>
+    private sealed class ConfigureClientOptions(
+        string? name,
+        IConfiguration? configuration,
+        Action<ExtendedConfigCatClientOptions>? userAction,
+        Action<ExtendedConfigCatClientOptions, IConfiguration, Action<ExtendedConfigCatClientOptions>>? combinedAction)
+        : ConfigureNamedOptions<ExtendedConfigCatClientOptions, IConfiguration, Action<ExtendedConfigCatClientOptions>>(
+            name, configuration!, userAction!, combinedAction)
     {
-        public ConfigureClientOptions(string? name, Action<ConfigCatClientOptions>? action) : base(name, action) { }
     }
 }

@@ -49,7 +49,6 @@ internal sealed class ConfigCatInitService(IServiceProvider serviceProvider, IRe
 
         if (logger is not null || initStrategy == ConfigCatInitStrategy.WaitForClientReadyAndThrowOnFailure)
         {
-            // NOTE: Dictionary<,>.Keys and Values are enumerated in the same order
             var uninitalizedClients = clients.Keys
                 .Zip(cacheStates, (client, cacheState) => (client, cacheState))
                 .Where(item =>
@@ -60,11 +59,12 @@ internal sealed class ConfigCatInitService(IServiceProvider serviceProvider, IRe
 
             if (uninitalizedClients.Length == 0)
             {
-                logger?.LogInformation("All ConfigCat clients are initialized and ready to evaluate feature flags.");
+                logger?.LogInformation("All ConfigCat client instances are initialized and ready to evaluate feature flags.");
             }
             else
             {
-                const string messageFormat = "One or more ConfigCat clients failed to initialize within `maxInitWaitTime`: {0}.";
+                const string messageFormat = "One or more ConfigCat client instances failed to initialize within maxInitWaitTime: {0}.";
+                // TODO: redact SDK Keys
                 var clientKeys = string.Join(", ", uninitalizedClients
                     .SelectMany(client => clients[client])
                     .Select(clientKey => clientKey == Options.DefaultName ? "(default)" : "'" + clientKey + "'"));

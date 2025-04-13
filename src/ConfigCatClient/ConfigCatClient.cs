@@ -52,7 +52,7 @@ public sealed class ConfigCatClient : IConfigCatClient
     private LoggerWrapper Logger => this.evaluationServices.Logger;
     private IRolloutEvaluator ConfigEvaluator => this.evaluationServices.Evaluator;
 
-    internal static void EnsureNonEmptySdkKey(string? sdkKey)
+    private static string EnsureNonEmptySdkKey(string? sdkKey)
     {
         if (sdkKey is null)
         {
@@ -63,6 +63,8 @@ public sealed class ConfigCatClient : IConfigCatClient
         {
             throw new ArgumentException("SDK Key cannot be empty.", nameof(sdkKey));
         }
+
+        return sdkKey;
     }
 
     private static bool IsValidSdkKey(string sdkKey, bool customBaseUrl)
@@ -216,7 +218,14 @@ public sealed class ConfigCatClient : IConfigCatClient
         return Get(sdkKey, options, reportInstanceAlreadyCreated: configurationAction is not null);
     }
 
-    internal static ConfigCatClient Get(string sdkKey, ConfigCatClientOptions options, bool reportInstanceAlreadyCreated)
+    internal static ConfigCatClient Get(string sdkKey, ConfigCatClientOptions options)
+    {
+        EnsureNonEmptySdkKey(sdkKey);
+
+        return Get(sdkKey, options, reportInstanceAlreadyCreated: true);
+    }
+
+    private static ConfigCatClient Get(string sdkKey, ConfigCatClientOptions options, bool reportInstanceAlreadyCreated)
     {
         if (options.FlagOverrides is not { OverrideBehaviour: OverrideBehaviour.LocalOnly } && !IsValidSdkKey(sdkKey, options.IsCustomBaseUrl))
         {

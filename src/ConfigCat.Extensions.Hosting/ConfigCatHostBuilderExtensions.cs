@@ -6,7 +6,7 @@ namespace Microsoft.Extensions.Hosting;
 public static class ConfigCatHostBuilderExtensions
 {
     public static ConfigCatBuilder UseConfigCat(this IHostBuilder builder,
-        ConfigCatInitStrategy initStrategy = ConfigCatInitStrategy.WaitForClientReadyAndLogOnFailure)
+        ConfigCatInitStrategy initStrategy = ConfigCatInitStrategy.DoNotWaitForClientReady)
     {
         if (builder is null)
         {
@@ -17,7 +17,7 @@ public static class ConfigCatHostBuilderExtensions
     }
 
     public static ConfigCatBuilder UseConfigCat(this IHostApplicationBuilder builder,
-        ConfigCatInitStrategy initStrategy = ConfigCatInitStrategy.WaitForClientReadyAndLogOnFailure)
+        ConfigCatInitStrategy initStrategy = ConfigCatInitStrategy.DoNotWaitForClientReady)
     {
         if (builder is null)
         {

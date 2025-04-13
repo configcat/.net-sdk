@@ -1,6 +1,5 @@
 using System;
 using ConfigCat.Client;
-using ConfigCat.Client.Extensions.Adapters;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,17 +16,16 @@ builder.Services.AddControllersWithViews();
 
 var configCatSdkKey = builder.Configuration["ConfigCatSdkKey"];
 
-// Register ConfigCatClient as a singleton service so you can inject it in your controllers, actions, etc.
-builder.Services.AddSingleton<IConfigCatClient>(sp =>
-{
-    var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<ConfigCatClient>>();
-
-    return ConfigCatClient.Get(configCatSdkKey!, options =>
+builder.UseConfigCat()
+    // Register ConfigCatClient so you can inject it in your controllers, actions, etc.
+    .AddDefaultClient("PKDVCLf-Hq-h-kCzMp-L7Q/HhOWfwVtZ0mb30i9wi17GQ", options =>
     {
-        options.PollingMode = PollingModes.LazyLoad(cacheTimeToLive: TimeSpan.FromSeconds(120));
-        options.Logger = new ConfigCatToMSLoggerAdapter(logger);
-    });
-});
+        options.PollingMode = PollingModes.AutoPoll(pollInterval: TimeSpan.FromSeconds(5));
+    })
+    .AddKeyedClient("secondary", "PKDVCLf-Hq-h-kCzMp-L7Q/HhOWfwVtZ0mb30i9wi17GQ", options =>
+     {
+         options.PollingMode = PollingModes.AutoPoll(pollInterval: TimeSpan.FromSeconds(5));
+     });
 
 var app = builder.Build();
 

@@ -6,9 +6,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\ConfigCatClient\ConfigCatClient.csproj" />
+    <ProjectReference Include="..\..\..\src\ConfigCat.Extensions.Hosting\ConfigCat.Extensions.Hosting.csproj" />
     <!-- Use PackageReference instead of the ProjectReference above in your application. -->
-    <!--<PackageReference Include="ConfigCat.Client" Version="9.*" />-->
+    <!--<PackageReference Include="ConfigCat.Extensions.Hosting" Version="*" />-->
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.*" />
     <PackageReference Include="Microsoft.Web.LibraryManager.Build" Version="2.1.175" />
   </ItemGroup>

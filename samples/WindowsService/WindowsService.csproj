@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <PublishAot>true</PublishAot>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <SelfContained>true</SelfContained>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ConfigCat.Extensions.Hosting\ConfigCat.Extensions.Hosting.csproj" />
+    <!-- Use PackageReference instead of the ProjectReference above in your application. -->
+    <!--<PackageReference Include="ConfigCat.Extensions.Hosting" Version="*" />-->
+    <PackageReference Include="Karambolo.Extensions.Logging.File" Version="3.6.3" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.*" />
+  </ItemGroup>
+
+</Project>

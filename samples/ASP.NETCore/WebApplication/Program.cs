@@ -13,7 +13,7 @@ var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
-builder.UseConfigCat(initStrategy: ConfigCatInitStrategy.WaitForClientReadyAndLogOnFailure)
+builder.UseConfigCat()
     // Register ConfigCatClient so you can inject it in your controllers, actions, etc.
     .AddDefaultClient(options =>
     {
@@ -27,7 +27,8 @@ builder.UseConfigCat(initStrategy: ConfigCatInitStrategy.WaitForClientReadyAndLo
     {
         //options.SdkKey = "PKDVCLf-Hq-h-kCzMp-L7Q/HhOWfwVtZ0mb30i9wi17Gq";
         //options.PollingMode = PollingModes.AutoPoll(pollInterval: TimeSpan.FromSeconds(5));
-    });
+    })
+    .UseInitStrategy(ConfigCatInitStrategy.WaitForClientReadyAndLogOnFailure);
 
 var app = builder.Build();
 

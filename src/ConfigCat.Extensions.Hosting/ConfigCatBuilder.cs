@@ -15,6 +15,9 @@ namespace ConfigCat.Extensions.Hosting;
 
 public sealed class ConfigCatBuilder
 {
+    private const ConfigCatInitStrategy UnsetInitStrategy = (ConfigCatInitStrategy)(-1);
+    private const ConfigCatInitStrategy DefaultInitStrategy = ConfigCatInitStrategy.DoNotWaitForClientReady;
+
     private static void ConfigureDefaultOptions(IServiceCollection services)
     {
         services.TryAddSingleton<IConfigureOptions<ExtendedConfigCatClientOptions>>(sp =>
@@ -23,83 +26,95 @@ public sealed class ConfigCatBuilder
 
             return logger is not null
                 ? new ConfigureNamedOptions<ExtendedConfigCatClientOptions, ILogger<ConfigCatClient>>(
-                    name: null, // null means that it applies to all named and unnamed options
+                    name: null, // null means configuring all options (named or unnamed)
                     logger,
                     (options, logger) => options.Logger = new ConfigCatToMSLoggerAdapter(logger))
                 : new ConfigureOptions<ExtendedConfigCatClientOptions>(action: null);
         });
     }
 
-    private readonly ConfigCatInitStrategy initStrategy;
-    private readonly Action<string, ClientRegistration>? registerClientImmediately;
+    private readonly IConfiguration? configuration;
+    private readonly IServiceCollection? services;
+    private ConfigCatInitStrategy initStrategy = UnsetInitStrategy;
+    private readonly Dictionary<string, ClientRegistration> clientRegistrations = new();
 
-    private Dictionary<string, ClientRegistration>? clientRegistrations;
+    internal ConfigCatBuilder() { }
 
-    public ConfigCatBuilder(IHostBuilder hostBuilder, ConfigCatInitStrategy initStrategy)
+    internal ConfigCatBuilder(IHostApplicationBuilder hostApplicationBuilder)
     {
-        this.initStrategy = initStrategy;
+        this.configuration = hostApplicationBuilder.Configuration;
+        this.services = hostApplicationBuilder.Services;
 
-        hostBuilder.ConfigureServices((context, services) =>
-        {
-            ConfigureDefaultOptions(services);
-
-            if (this.clientRegistrations is { Count: > 0 })
-            {
-                foreach (var kvp in this.clientRegistrations)
-                {
-                    if (kvp.Key == Options.DefaultName)
-                    {
-                        kvp.Value.RegisterDefault(services, context.Configuration);
-                    }
-                    else
-                    {
-                        kvp.Value.RegisterKeyed(kvp.Key, services, context.Configuration);
-                    }
-                }
-
-                if (this.initStrategy != ConfigCatInitStrategy.DoNotWaitForClientReady)
-                {
-                    services.AddHostedService(sp => new ConfigCatInitService(sp, this.clientRegistrations.Keys, this.initStrategy));
-                }
-            }
-        });
+        ConfigureDefaultOptions(this.services);
     }
 
-    public ConfigCatBuilder(IHostApplicationBuilder hostApplicationBuilder, ConfigCatInitStrategy initStrategy)
+    private void RegisterInitServiceIfNecessary(IServiceCollection services)
     {
-        this.initStrategy = initStrategy;
+        Debug.Assert(this.initStrategy != UnsetInitStrategy);
 
-        var configuration = hostApplicationBuilder.Configuration;
-        var services = hostApplicationBuilder.Services;
-
-        ConfigureDefaultOptions(services);
-
-        this.registerClientImmediately = (clientKey, clientRegistration) =>
+        if (this.initStrategy != ConfigCatInitStrategy.DoNotWaitForClientReady)
         {
-            if (clientKey == Options.DefaultName)
-            {
-                if (this.clientRegistrations is not null && this.clientRegistrations.ContainsKey(clientKey))
-                {
-                    ClientRegistration.UnregisterDefault(services);
-                }
-                clientRegistration.RegisterDefault(services, configuration);
-            }
-            else
-            {
-                if (this.clientRegistrations is not null && this.clientRegistrations.ContainsKey(clientKey))
-                {
-                    ClientRegistration.UnregisterKeyed(clientKey, services);
-                }
+            services.AddHostedService(sp => new ConfigCatInitService(sp, this.clientRegistrations.Keys, this.initStrategy));
+        }
+    }
 
-                clientRegistration.RegisterKeyed(clientKey, services, configuration);
+    public ConfigCatBuilder UseInitStrategy(ConfigCatInitStrategy initStrategy)
+    {
+        if (initStrategy is < ConfigCatInitStrategy.DoNotWaitForClientReady or > ConfigCatInitStrategy.WaitForClientReadyAndThrowOnFailure)
+        {
+            throw new ArgumentOutOfRangeException(nameof(initStrategy), initStrategy, null!);
+        }
+
+        if (this.initStrategy != initStrategy)
+        {
+            if (this.services is not null && this.initStrategy is not (UnsetInitStrategy or ConfigCatInitStrategy.DoNotWaitForClientReady))
+            {
+                RemoveLast(this.services, descriptor => descriptor.ImplementationFactory?.Method.ReturnType == typeof(ConfigCatInitService));
             }
 
-            if (this.clientRegistrations is null && this.initStrategy != ConfigCatInitStrategy.DoNotWaitForClientReady)
+            this.initStrategy = initStrategy;
+
+            if (this.services is not null)
             {
-                this.clientRegistrations = new();
-                services.AddHostedService(sp => new ConfigCatInitService(sp, this.clientRegistrations.Keys, this.initStrategy));
+                RegisterInitServiceIfNecessary(this.services);
             }
-        };
+        }
+
+        return this;
+    }
+
+    private void RegisterClientImmediately(string clientKey, ClientRegistration clientRegistration)
+    {
+        Debug.Assert(this.configuration is not null && this.services is not null);
+
+        var configuration = this.configuration!;
+        var services = this.services!;
+
+        if (clientKey == Options.DefaultName)
+        {
+            if (this.clientRegistrations.ContainsKey(clientKey))
+            {
+                ClientRegistration.UnregisterDefault(services);
+            }
+
+            clientRegistration.RegisterDefault(services, configuration);
+        }
+        else
+        {
+            if (this.clientRegistrations.ContainsKey(clientKey))
+            {
+                ClientRegistration.UnregisterKeyed(clientKey, services);
+            }
+
+            clientRegistration.RegisterKeyed(clientKey, services, configuration);
+        }
+
+        if (this.initStrategy == UnsetInitStrategy)
+        {
+            this.initStrategy = DefaultInitStrategy;
+
+            RegisterInitServiceIfNecessary(services);
+        }
     }
 
     public ConfigCatBuilder AddDefaultClient(Action<ExtendedConfigCatClientOptions>? configureOptions = null)
@@ -125,10 +140,54 @@ public sealed class ConfigCatBuilder
     private ConfigCatBuilder AddClient(string clientKey, Action<ExtendedConfigCatClientOptions>? configureOptions = null)
     {
         var clientRegistration = new ClientRegistration(configureOptions);
-        this.registerClientImmediately?.Invoke(clientKey, clientRegistration);
-        (this.clientRegistrations ??= new())[clientKey] = clientRegistration;
+        if (this.services is not null)
+        {
+            RegisterClientImmediately(clientKey, clientRegistration);
+        }
+        this.clientRegistrations[clientKey] = clientRegistration;
 
         return this;
+    }
+
+    internal IServiceCollection Build(IServiceCollection services, HostBuilderContext context)
+    {
+        ConfigureDefaultOptions(services);
+
+        if (this.clientRegistrations.Count > 0)
+        {
+            foreach (var kvp in this.clientRegistrations)
+            {
+                if (kvp.Key == Options.DefaultName)
+                {
+                    kvp.Value.RegisterDefault(services, context.Configuration);
+                }
+                else
+                {
+                    kvp.Value.RegisterKeyed(kvp.Key, services, context.Configuration);
+                }
+            }
+
+            if (this.initStrategy == UnsetInitStrategy)
+            {
+                this.initStrategy = DefaultInitStrategy;
+            }
+
+            RegisterInitServiceIfNecessary(services);
+        }
+
+        return services;
+    }
+
+    private static void RemoveLast(IServiceCollection services, Func<ServiceDescriptor, bool> predicate)
+    {
+        for (var i = services.Count - 1; i >= 0; i--)
+        {
+            if (predicate(services[i]))
+            {
+                services.RemoveAt(i);
+                break;
+            }
+        }
     }
 
     private readonly struct ClientRegistration(Action<ExtendedConfigCatClientOptions>? configureOptions)
@@ -189,18 +248,6 @@ public sealed class ConfigCatBuilder
         {
             RemoveLast(services, descriptor => descriptor.ImplementationInstance is ConfigureClientOptions configureOptions && configureOptions.Name == clientKey);
             RemoveLast(services, descriptor => descriptor.KeyedImplementationFactory?.Target is ClientFactory factory && factory.ClientKey == clientKey);
-        }
-
-        private static void RemoveLast(IServiceCollection services, Func<ServiceDescriptor, bool> predicate)
-        {
-            for (var i = services.Count - 1; i >= 0; i--)
-            {
-                if (predicate(services[i]))
-                {
-                    services.RemoveAt(i);
-                    break;
-                }
-            }
         }
     }
 

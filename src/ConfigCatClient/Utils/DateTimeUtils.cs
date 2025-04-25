@@ -81,4 +81,9 @@ internal static class DateTimeUtils
 
         return TryConvertFromUnixTimeMilliseconds(milliseconds, out dateTime);
     }
+
+    public static TimeSpan GetMonotonicTime()
+    {
+        return TimeSpan.FromSeconds(Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency);
+    }
 }

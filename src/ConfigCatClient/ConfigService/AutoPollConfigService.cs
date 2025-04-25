@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
 using ConfigCat.Client.Configuration;
 using ConfigCat.Client.Shims;
+using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client.ConfigService;
 
@@ -190,7 +191,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
             {
                 try
                 {
-                    var scheduledNextTime = DateTime.UtcNow.Add(this.pollInterval);
+                    var scheduledNextTime = DateTimeUtils.GetMonotonicTime() + this.pollInterval;
                     try
                     {
                         await PollCoreAsync(isFirstIteration, initialCacheSyncUpTask, stopToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
@@ -200,7 +201,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
                         this.Logger.AutoPollConfigServiceErrorDuringPolling(ex);
                     }
 
-                    var realNextTime = scheduledNextTime.Subtract(DateTime.UtcNow);
+                    var realNextTime = scheduledNextTime - DateTimeUtils.GetMonotonicTime();
                     if (realNextTime > TimeSpan.Zero)
                     {
                         await TaskShim.Current.Delay(realNextTime, stopToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);

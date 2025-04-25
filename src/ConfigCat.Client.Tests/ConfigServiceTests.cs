@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
 using ConfigCat.Client.ConfigService;
+using ConfigCat.Client.Tests.Fakes;
 using ConfigCat.Client.Tests.Helpers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
@@ -966,6 +967,57 @@ public class ConfigServiceTests
         Assert.IsFalse(configFetchedEvent.IsInitiatedByUser);
         Assert.AreEqual(failure, !configFetchedEvent.Result.IsSuccess);
         Assert.AreEqual(failure ? RefreshErrorCode.HttpRequestFailure : RefreshErrorCode.None, configFetchedEvent.Result.ErrorCode);
+    }
+
+    [DataRow(ClientCacheState.NoFlagData)]
+    [DataRow(ClientCacheState.HasCachedFlagDataOnly)]
+    [DataRow(ClientCacheState.HasUpToDateFlagData)]
+    [DataTestMethod]
+    public async Task AutoPollConfigService_ShouldEmitClientReadyInOfflineMode_WhenSyncWithExternalCacheIsCompleted(ClientCacheState expectedCacheState)
+    {
+        // Arrange 
+
+        var pollInterval = TimeSpan.FromSeconds(1);
+
+        ProjectConfig? projectConfig = expectedCacheState switch
+        {
+            ClientCacheState.HasUpToDateFlagData => CreateFreshPc(ProjectConfig.GenerateTimeStamp()),
+            ClientCacheState.HasCachedFlagDataOnly => CreateExpiredPc(ProjectConfig.GenerateTimeStamp(), pollInterval),
+            _ => null
+        };
+
+        var logger = this.loggerMock.Object.AsWrapper();
+        var cache = new ExternalConfigCache(new FakeExternalCache(), logger);
+
+        if (projectConfig is not null)
+        {
+            cache.Set(key: null!, projectConfig);
+        }
+
+        var config = PollingModes.AutoPoll(pollInterval);
+        var service = new AutoPollConfigService(config,
+            this.fetcherMock.Object,
+            new CacheParameters(cache, cacheKey: null!),
+            logger,
+            startTimer: true,
+            isOffline: true);
+
+        // Act
+
+        var readyTask = service.ReadyTask;
+        Task winnerTask;
+
+        using (service)
+        using (var delayCts = new CancellationTokenSource())
+        {
+            winnerTask = await Task.WhenAny(readyTask, Task.Delay(pollInterval - TimeSpan.FromMilliseconds(250), delayCts.Token));
+            delayCts.Cancel();
+        }
+
+        // Assert
+
+        Assert.AreSame(readyTask, winnerTask);
+        Assert.AreEqual(expectedCacheState, readyTask.Result);
     }
 
     [DataRow(false)]

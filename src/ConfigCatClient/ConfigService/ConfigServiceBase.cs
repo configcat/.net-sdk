@@ -88,11 +88,15 @@ internal abstract class ConfigServiceBase : IDisposable
 
     public virtual RefreshResult RefreshConfig()
     {
+        var latestConfig = this.ConfigCache.Get(this.CacheKey);
         if (!IsOffline)
         {
-            var latestConfig = this.ConfigCache.Get(this.CacheKey);
             var configWithFetchResult = RefreshConfigCore(latestConfig, isInitiatedByUser: true);
             return RefreshResult.From(configWithFetchResult.Item2);
+        }
+        else if (this.ConfigCache is ExternalConfigCache)
+        {
+            return RefreshResult.Success();
         }
         else
         {
@@ -125,11 +129,15 @@ internal abstract class ConfigServiceBase : IDisposable
 
     public virtual async ValueTask<RefreshResult> RefreshConfigAsync(CancellationToken cancellationToken = default)
     {
+        var latestConfig = await this.ConfigCache.GetAsync(this.CacheKey, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
         if (!IsOffline)
         {
-            var latestConfig = await this.ConfigCache.GetAsync(this.CacheKey, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
             var configWithFetchResult = await RefreshConfigCoreAsync(latestConfig, isInitiatedByUser: true, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
             return RefreshResult.From(configWithFetchResult.Item2);
+        }
+        else if (this.ConfigCache is ExternalConfigCache)
+        {
+            return RefreshResult.Success();
         }
         else
         {
@@ -188,7 +196,7 @@ internal abstract class ConfigServiceBase : IDisposable
     /// <remarks>
     /// Note for inheritors. Beware, this method is called within a lock statement.
     /// </remarks>
-    protected virtual void SetOnlineCoreSynchronized() { }
+    protected virtual void GoOnlineSynchronized() { }
 
     public void SetOnline()
     {
@@ -198,7 +206,7 @@ internal abstract class ConfigServiceBase : IDisposable
         {
             if (this.status == Status.Offline)
             {
-                SetOnlineCoreSynchronized();
+                GoOnlineSynchronized();
                 this.status = Status.Online;
                 logAction = static logger => logger.ConfigServiceStatusChanged(Status.Online);
             }
@@ -211,11 +219,6 @@ internal abstract class ConfigServiceBase : IDisposable
         logAction?.Invoke(this.Logger);
     }
 
-    /// <remarks>
-    /// Note for inheritors. Beware, this method is called within a lock statement.
-    /// </remarks>
-    protected virtual void SetOfflineCoreSynchronized() { }
-
     public void SetOffline()
     {
         Action<LoggerWrapper>? logAction = null;
@@ -224,7 +227,6 @@ internal abstract class ConfigServiceBase : IDisposable
         {
             if (this.status == Status.Online)
             {
-                SetOfflineCoreSynchronized();
                 this.status = Status.Offline;
                 logAction = static logger => logger.ConfigServiceStatusChanged(Status.Offline);
             }

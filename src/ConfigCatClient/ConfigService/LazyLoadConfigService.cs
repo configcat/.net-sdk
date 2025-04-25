@@ -15,7 +15,7 @@ internal sealed class LazyLoadConfigService : ConfigServiceBase, IConfigService
     {
         this.cacheTimeToLive = cacheTimeToLive;
 
-        var initialCacheSyncUpTask = SyncUpWithCacheAsync(WaitForReadyCancellationToken);
+        var initialCacheSyncUpTask = SyncUpWithCacheAsync(WaitForReadyCancellationToken).AsTask();
         ReadyTask = GetReadyTask(initialCacheSyncUpTask);
     }
 
@@ -23,7 +23,7 @@ internal sealed class LazyLoadConfigService : ConfigServiceBase, IConfigService
 
     public ProjectConfig GetConfig()
     {
-        var cachedConfig = this.ConfigCache.Get(base.CacheKey);
+        var cachedConfig = SyncUpWithCache();
 
         if (cachedConfig.IsExpired(expiration: this.cacheTimeToLive))
         {
@@ -44,7 +44,7 @@ internal sealed class LazyLoadConfigService : ConfigServiceBase, IConfigService
 
     public async ValueTask<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default)
     {
-        var cachedConfig = await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+        var cachedConfig = await SyncUpWithCacheAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 
         if (cachedConfig.IsExpired(expiration: this.cacheTimeToLive))
         {

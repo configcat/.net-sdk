@@ -1,6 +1,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
+using ConfigCat.Client.Shims;
 
 namespace ConfigCat.Client.ConfigService;
 
@@ -9,7 +10,7 @@ internal sealed class ManualPollConfigService : ConfigServiceBase, IConfigServic
     internal ManualPollConfigService(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline = false, SafeHooksWrapper hooks = default)
         : base(configFetcher, cacheParameters, logger, isOffline, hooks)
     {
-        var initialCacheSyncUpTask = SyncUpWithCacheAsync(WaitForReadyCancellationToken);
+        var initialCacheSyncUpTask = SyncUpWithCacheAsync(WaitForReadyCancellationToken).AsTask();
         ReadyTask = GetReadyTask(initialCacheSyncUpTask);
     }
 
@@ -17,12 +18,12 @@ internal sealed class ManualPollConfigService : ConfigServiceBase, IConfigServic
 
     public ProjectConfig GetConfig()
     {
-        return this.ConfigCache.Get(base.CacheKey);
+        return SyncUpWithCache();
     }
 
-    public ValueTask<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default)
+    public async ValueTask<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default)
     {
-        return this.ConfigCache.GetAsync(base.CacheKey, cancellationToken);
+        return await SyncUpWithCacheAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
     }
 
     public override ClientCacheState GetCacheState(ProjectConfig cachedConfig)

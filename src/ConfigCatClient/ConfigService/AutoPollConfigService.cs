@@ -44,7 +44,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
 
         this.maxInitWaitTime = options.MaxInitWaitTime >= TimeSpan.Zero ? options.MaxInitWaitTime : Timeout.InfiniteTimeSpan;
 
-        var initialCacheSyncUpTask = SyncUpWithCacheAsync(WaitForReadyCancellationToken);
+        var initialCacheSyncUpTask = SyncUpWithCacheAsync(WaitForReadyCancellationToken).AsTask();
 
         // This task will complete as soon as
         // 1. a cache sync operation completes, and the obtained config is up-to-date (see GetConfig/GetConfigAsync and PollCoreAsync),
@@ -134,7 +134,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
 
     public ProjectConfig GetConfig()
     {
-        var cachedConfig = this.ConfigCache.Get(base.CacheKey);
+        var cachedConfig = SyncUpWithCache();
 
         if (!cachedConfig.IsExpired(expiration: this.pollInterval))
         {
@@ -153,7 +153,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
 
     public async ValueTask<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default)
     {
-        var cachedConfig = await this.ConfigCache.GetAsync(base.CacheKey, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+        var cachedConfig = await SyncUpWithCacheAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 
         if (!cachedConfig.IsExpired(expiration: this.pollInterval))
         {
@@ -230,7 +230,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
     {
         var latestConfig = initialCacheSyncUpTask is not null
             ? await initialCacheSyncUpTask.WaitAsync(stopToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext)
-            : await this.ConfigCache.GetAsync(base.CacheKey, stopToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+            : await SyncUpWithCacheAsync(stopToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 
         if (!IsOffline && latestConfig.IsExpired(expiration: this.pollExpiration))
         {

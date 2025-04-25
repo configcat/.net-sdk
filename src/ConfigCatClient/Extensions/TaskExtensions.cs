@@ -5,16 +5,6 @@ namespace System.Threading.Tasks;
 internal static class TaskExtensions
 {
     // Shim for Task.FromCanceled(CancellationToken) missing from .NET 4.5
-
-    public static Task ToTask(this CancellationToken cancellationToken)
-    {
-#if !NET45
-        return Task.FromCanceled(cancellationToken);
-#else
-        return cancellationToken.ToTask<object>();
-#endif
-    }
-
     public static Task<T> ToTask<T>(this CancellationToken cancellationToken)
     {
 #if !NET45
@@ -25,6 +15,14 @@ internal static class TaskExtensions
             : throw new ArgumentOutOfRangeException(nameof(cancellationToken));
 #endif
     }
+
+#if NET45
+    // Shim for TaskCompletionSource<T>.TrySetCanceled(CancellationToken) missing from .NET 4.5
+    public static bool TrySetCanceled<T>(this TaskCompletionSource<T> tcs, CancellationToken _)
+    {
+        return tcs.TrySetCanceled();
+    }
+#endif
 
 #if !NET6_0_OR_GREATER
     // Polyfill for Task.WaitAsync(CancellationToken) introduced in .NET 6
@@ -50,15 +48,8 @@ internal static class TaskExtensions
 
         static async Task<T> Awaited(Task task, CancellationToken cancellationToken)
         {
-#if !NET45
-            var cancellationTcs = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
-            var cancellationTask = cancellationTcs.Task;
+            var cancellationTcs = TaskShim.CreateSafeCompletionSource<T>(out var cancellationTask, cancellationToken);
             var tokenRegistration = cancellationToken.Register(() => cancellationTcs.TrySetCanceled(cancellationToken), useSynchronizationContext: TaskShim.ContinueOnCapturedContext);
-#else
-            var cancellationTcs = new TaskCompletionSource<T>();
-            var cancellationTask = cancellationTcs.Task.ContinueWith<T>(static _ => default!, cancellationToken, TaskContinuationOptions.None, TaskScheduler.Default);
-            var tokenRegistration = cancellationToken.Register(() => cancellationTcs.TrySetResult(default!), useSynchronizationContext: TaskShim.ContinueOnCapturedContext);
-#endif
 
             using (tokenRegistration)
             {

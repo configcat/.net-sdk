@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
@@ -32,6 +33,8 @@ internal abstract class ConfigServiceBase : IDisposable
 
     private CancellationTokenSource? waitForReadyCancellationTokenSource;
     protected CancellationToken WaitForReadyCancellationToken => this.waitForReadyCancellationTokenSource?.Token ?? new CancellationToken(canceled: true);
+
+    private Task<ProjectConfig>? pendingCacheSyncUp;
 
     protected ConfigServiceBase(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline, SafeHooksWrapper hooks)
     {
@@ -88,7 +91,7 @@ internal abstract class ConfigServiceBase : IDisposable
 
     public virtual RefreshResult RefreshConfig()
     {
-        var latestConfig = this.ConfigCache.Get(this.CacheKey);
+        var latestConfig = SyncUpWithCache();
         if (!IsOffline)
         {
             var configWithFetchResult = RefreshConfigCore(latestConfig, isInitiatedByUser: true);
@@ -129,7 +132,7 @@ internal abstract class ConfigServiceBase : IDisposable
 
     public virtual async ValueTask<RefreshResult> RefreshConfigAsync(CancellationToken cancellationToken = default)
     {
-        var latestConfig = await this.ConfigCache.GetAsync(this.CacheKey, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+        var latestConfig = await SyncUpWithCacheAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
         if (!IsOffline)
         {
             var configWithFetchResult = await RefreshConfigCoreAsync(latestConfig, isInitiatedByUser: true, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
@@ -241,9 +244,109 @@ internal abstract class ConfigServiceBase : IDisposable
 
     public abstract ClientCacheState GetCacheState(ProjectConfig cachedConfig);
 
-    protected Task<ProjectConfig> SyncUpWithCacheAsync(CancellationToken cancellationToken)
+    protected ProjectConfig SyncUpWithCache()
     {
-        return this.ConfigCache.GetAsync(this.CacheKey, cancellationToken).AsTask();
+        // NOTE: We don't try to join concurrent asynchronous cache synchronization because it would be hard, if not
+        // impossible to do that in a deadlock-free way. Plus, the synchronous code paths will be deleted soon anyway.
+        return this.ConfigCache.Get(this.CacheKey);
+    }
+
+    protected ValueTask<ProjectConfig> SyncUpWithCacheAsync(CancellationToken cancellationToken)
+    {
+        // InMemoryConfigCache always executes synchronously, so we special-case it for better performance.
+        if (this.ConfigCache is InMemoryConfigCache inMemoryConfigCache)
+        {
+            var syncResultTask = inMemoryConfigCache.GetAsync(this.CacheKey, cancellationToken);
+            Debug.Assert(syncResultTask.IsCompleted);
+            return syncResultTask;
+        }
+
+        // Otherwise we join the pending cache sync up operation, or start a new one if there's none currently.
+        Task<ProjectConfig>? cacheSyncUpTask = null;
+        TaskCompletionSource<ProjectConfig>? cacheSyncUpTcs = null;
+        Exception? exception = null;
+
+        try
+        {
+            // NOTE: We want to start the cache sync operation directly on the current thread for performance and
+            // backward compatibility reasons. However, this involves calling user-provided code
+            // (IConfigCatCache.GetAsync), which, if implemented incorrectly, may have a long-running initial
+            // synchronous part, or may not be actual async code at all but a long-running synchronous operation
+            // returning a completed task. Thus, we shouldn't directly start the cache sync operation within a lock.
+            // Instead, we create a TaskCompletionSource to proxy the operation.
+
+            lock (this.ConfigCache)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                cacheSyncUpTask = this.pendingCacheSyncUp;
+                if (cacheSyncUpTask is null or { IsCompleted: true })
+                {
+                    cacheSyncUpTcs = TaskShim.CreateSafeCompletionSource(out cacheSyncUpTask);
+                    this.pendingCacheSyncUp = cacheSyncUpTask;
+                }
+            }
+
+            if (cacheSyncUpTcs is not null) // is this thread the initiator of the operation?
+            {
+                ExecuteOperationAndCleanUp(cacheSyncUpTcs, cacheSyncUpTask!);
+            }
+        }
+        catch (Exception ex)
+        {
+            exception = ex;
+            throw;
+        }
+        finally
+        {
+            if (cacheSyncUpTcs is not null)
+            {
+                // If anything goes wrong, we need to make sure that this.pendingCacheSyncUp is completed to not get stuck with it indefinitely.
+#if !NETCOREAPP
+                if (exception is not null
+                    // NOTE: Thread.Abort is also possible on older runtimes, but it can't avoid or interrupt finally blocks,
+                    // this is why we do these checks here (see also https://learn.microsoft.com/en-us/dotnet/standard/threading/destroying-threads).
+                    || (Thread.CurrentThread.ThreadState & System.Threading.ThreadState.AbortRequested) != 0)
+                {
+                    try { _ = exception is not null ? cacheSyncUpTcs.TrySetException(exception) : cacheSyncUpTcs.TrySetCanceled(); }
+#else
+                if (exception is not null)
+                {
+                    try { cacheSyncUpTcs.TrySetException(exception); }
+#endif
+                    finally { _ = Interlocked.CompareExchange(ref this.pendingCacheSyncUp, value: null, comparand: cacheSyncUpTask); }
+                }
+            }
+        }
+
+        return new ValueTask<ProjectConfig>(cacheSyncUpTask.WaitAsync(cancellationToken));
+
+        async void ExecuteOperationAndCleanUp(TaskCompletionSource<ProjectConfig> cacheSyncUpTcs, Task<ProjectConfig> cacheSyncUpTask)
+        {
+            try
+            {
+                try
+                {
+                    var cachedConfig = await this.ConfigCache.GetAsync(this.CacheKey).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+                    cacheSyncUpTcs.TrySetResult(cachedConfig);
+                }
+                catch (OperationCanceledException ex)
+                {
+                    cacheSyncUpTcs.TrySetCanceled(ex.CancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    cacheSyncUpTcs.TrySetException(ex);
+                }
+            }
+            catch { /* Exceptions must not be allowed to bubble up. See also: https://stackoverflow.com/a/53266815/8656352 */ }
+            finally
+            {
+                // NOTE: At this point the actual cache sync operation is completed, so there's no need to keep a
+                // reference to the task any longer, but it should be set to null so GC can clean it up.
+                _ = Interlocked.CompareExchange(ref this.pendingCacheSyncUp, value: null, comparand: cacheSyncUpTask);
+            }
+        }
     }
 
     protected virtual async ValueTask<ClientCacheState> WaitForReadyAsync(Task<ProjectConfig> initialCacheSyncUpTask)

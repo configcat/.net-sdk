@@ -49,13 +49,9 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
         // If the service gets disposed before any of these events happen, the task will also complete, but with a canceled status.
         InitializationTask = WaitForInitializationAsync(WaitForReadyCancellationToken);
 
-        ReadyTask = GetReadyTask(InitializationTask, async initializationTask =>
-        {
-            // In Auto Polling mode, maxInitWaitTime takes precedence over waiting for initial cache sync-up, that is,
-            // ClientReady is always raised after maxInitWaitTime has passed, regardless of whether initial cache sync-up has finished or not.
-            await initializationTask.ConfigureAwait(TaskShim.ContinueOnCapturedContext);
-            return GetCacheState(this.ConfigCache.LocalCachedConfig);
-        });
+        // In Auto Polling mode, maxInitWaitTime takes precedence over waiting for initial cache sync-up, that is,
+        // ClientReady is always raised after maxInitWaitTime has passed, regardless of whether initial cache sync-up has finished or not.
+        ReadyTask = GetReadyTask(initialCacheSyncUpTask);
 
         if (!isOffline && startTimer)
         {
@@ -109,6 +105,12 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
             // In such cases we get an ObjectDisposedException here, which means that the config service has been disposed in the meantime.
             // Thus, we can safely swallow this exception.
         }
+    }
+
+    protected override async ValueTask<ClientCacheState> WaitForReadyAsync(Task<ProjectConfig> initialCacheSyncUpTask)
+    {
+        await InitializationTask.ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+        return GetCacheState(this.ConfigCache.LocalCachedConfig);
     }
 
     private async Task<bool> WaitForInitializationAsync(CancellationToken cancellationToken = default)

@@ -16,7 +16,7 @@ internal sealed class LazyLoadConfigService : ConfigServiceBase, IConfigService
         this.cacheTimeToLive = cacheTimeToLive;
 
         var initialCacheSyncUpTask = SyncUpWithCacheAsync(WaitForReadyCancellationToken);
-        ReadyTask = GetReadyTask(initialCacheSyncUpTask, async initialCacheSyncUpTask => GetCacheState(await initialCacheSyncUpTask.ConfigureAwait(TaskShim.ContinueOnCapturedContext)));
+        ReadyTask = GetReadyTask(initialCacheSyncUpTask);
     }
 
     public Task<ClientCacheState> ReadyTask { get; }

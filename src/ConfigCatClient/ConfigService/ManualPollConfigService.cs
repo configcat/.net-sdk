@@ -1,7 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
-using ConfigCat.Client.Shims;
 
 namespace ConfigCat.Client.ConfigService;
 
@@ -11,7 +10,7 @@ internal sealed class ManualPollConfigService : ConfigServiceBase, IConfigServic
         : base(configFetcher, cacheParameters, logger, isOffline, hooks)
     {
         var initialCacheSyncUpTask = SyncUpWithCacheAsync(WaitForReadyCancellationToken);
-        ReadyTask = GetReadyTask(initialCacheSyncUpTask, async initialCacheSyncUpTask => GetCacheState(await initialCacheSyncUpTask.ConfigureAwait(TaskShim.ContinueOnCapturedContext)));
+        ReadyTask = GetReadyTask(initialCacheSyncUpTask);
     }
 
     public Task<ClientCacheState> ReadyTask { get; }

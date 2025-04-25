@@ -244,10 +244,15 @@ internal abstract class ConfigServiceBase : IDisposable
         return this.ConfigCache.GetAsync(this.CacheKey, cancellationToken).AsTask();
     }
 
-    protected async Task<ClientCacheState> GetReadyTask<TState>(TState state, Func<TState, Task<ClientCacheState>> waitForReadyAsync)
+    protected virtual async ValueTask<ClientCacheState> WaitForReadyAsync(Task<ProjectConfig> initialCacheSyncUpTask)
+    {
+        return GetCacheState(await initialCacheSyncUpTask.ConfigureAwait(TaskShim.ContinueOnCapturedContext));
+    }
+
+    protected async Task<ClientCacheState> GetReadyTask(Task<ProjectConfig> initialCacheSyncUpTask)
     {
         ClientCacheState cacheState;
-        try { cacheState = await waitForReadyAsync(state).ConfigureAwait(TaskShim.ContinueOnCapturedContext); }
+        try { cacheState = await WaitForReadyAsync(initialCacheSyncUpTask).ConfigureAwait(TaskShim.ContinueOnCapturedContext); }
         finally
         {
             lock (this.syncObj)

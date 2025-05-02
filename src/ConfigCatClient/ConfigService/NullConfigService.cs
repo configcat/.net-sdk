@@ -25,7 +25,7 @@ internal sealed class NullConfigService : IConfigService
     public RefreshResult RefreshConfig()
     {
         return RefreshResult.Failure(RefreshErrorCode.LocalOnlyClient,
-            $"Client is configured to use the {nameof(OverrideBehaviour.LocalOnly)} override behavior, which prevents making HTTP requests.");
+            $"Client is configured to use the {nameof(OverrideBehaviour.LocalOnly)} override behavior, which prevents synchronization with external cache and making HTTP requests.");
     }
 
     public ValueTask<RefreshResult> RefreshConfigAsync(CancellationToken cancellationToken = default) => new ValueTask<RefreshResult>(RefreshConfig());

@@ -228,7 +228,8 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     Task<KeyValuePair<string, T>?> GetKeyAndValueAsync<T>(string variationId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Refreshes the locally cached config by fetching the latest version from the remote server synchronously.
+    /// Updates the internally cached config by synchronizing with the external cache (if any),
+    /// then by fetching the latest version from the ConfigCat CDN synchronously (provided that the client is online).
     /// </summary>
     /// <remarks>
     /// <para>
@@ -242,17 +243,30 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     RefreshResult ForceRefresh();
 
     /// <summary>
-    /// Refreshes the locally cached config by fetching the latest version from the remote server asynchronously.
+    /// Updates the internally cached config by synchronizing with the external cache (if any),
+    /// then by fetching the latest version from the ConfigCat CDN asynchronously (provided that the client is online).
     /// </summary>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the refresh result.</returns>
     Task<RefreshResult> ForceRefreshAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Waits for the client to initialize (i.e. to raise the <see cref="IProvidesHooks.ClientReady"/> event).
+    /// Waits for the client to reach the ready state, i.e. to complete initialization.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Ready state is reached as soon as the initial sync with the external cache (if any) completes.
+    /// If this does not produce up-to-date config data, and the client is online (i.e. HTTP requests are allowed),
+    /// the first config fetch operation is also awaited in Auto Polling mode before ready state is reported.
+    /// </para>
+    /// <para>
+    /// That is, reaching the ready state usually means the client is ready to evaluate feature flags and settings.
+    /// However, please note that this is not guaranteed. In case of initialization failure or timeout, the internal cache
+    /// may be empty or expired even after the ready state is reported. You can verify this by checking the return value.
+    /// </para>
+    /// </remarks>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains the state of the local cache at the time the initialization was completed.</returns>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the state of the internal cache at the time initialization was completed.</returns>
     Task<ClientCacheState> WaitForReadyAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -261,10 +275,10 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// without any underlying I/O-bound operations, which could block the executing thread for a longer period of time.
     /// </summary>
     /// <remarks>
-    /// The operation captures the in-memory stored config data. It does not attempt to update it by contacting the remote server.
-    /// It does not synchronize with the user-provided custom cache (see <see cref="ConfigCatClientOptions.ConfigCache"/>) either.<br/>
-    /// Therefore, it is recommended to use snapshots in conjunction with the Auto Polling mode, where the SDK automatically updates the local cache in the background.<br/>
-    /// For other polling modes, you'll need to manually initiate a cache refresh by invoking <see cref="ForceRefresh"/> or <see cref="ForceRefreshAsync"/>.
+    /// The operation captures the internally cached config data. It does not attempt to update it by synchronizing with
+    /// the external cache or by fetching the latest version from the ConfigCat CDN.<br/>
+    /// Therefore, it is recommended to use snapshots in conjunction with the Auto Polling mode, where the SDK automatically updates the internal cache in the background.<br/>
+    /// For other polling modes, you will need to manually initiate a cache update by invoking <see cref="ForceRefresh"/> or <see cref="ForceRefreshAsync"/>.
     /// </remarks>
     /// <returns>The snapshot object.</returns>
     ConfigCatClientSnapshot Snapshot();
@@ -291,7 +305,7 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     void SetOnline();
 
     /// <summary>
-    /// Configures the client to not initiate HTTP requests and work using the locally cached config only.
+    /// Configures the client to not initiate HTTP requests but work using the cache only.
     /// </summary>
     void SetOffline();
 }

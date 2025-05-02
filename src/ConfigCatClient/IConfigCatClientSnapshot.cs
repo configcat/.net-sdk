@@ -9,12 +9,12 @@ namespace ConfigCat.Client;
 public interface IConfigCatClientSnapshot
 {
     /// <summary>
-    /// The state of the local cache at the time the snapshot was created.
+    /// The state of the internal cache at the time the snapshot was created.
     /// </summary>
     ClientCacheState CacheState { get; }
 
     /// <summary>
-    /// The latest config which has been fetched from the remote server.
+    /// The internally cached config at the time the snapshot was created.
     /// </summary>
     IConfig? FetchedConfig { get; }
 

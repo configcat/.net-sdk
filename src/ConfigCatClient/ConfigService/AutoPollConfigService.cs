@@ -48,7 +48,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
 
         // This task will complete as soon as
         // 1. a cache sync operation completes, and the obtained config is up-to-date (see GetConfig/GetConfigAsync and PollCoreAsync),
-        // 2. or, in case the client is online and the local cache is still empty or expired after the initial cache sync-up,
+        // 2. or, in case the client is online and the internal cache is still empty or expired after the initial cache sync-up,
         //    the first config fetch operation completes, regardless of success or failure (see OnConfigFetched).
         // If the service gets disposed before any of these events happen, the task will also complete, but with a canceled status.
         InitializationTask = WaitForInitializationAsync(WaitForReadyCancellationToken);

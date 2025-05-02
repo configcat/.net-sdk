@@ -13,7 +13,7 @@ public class ClientReadyEventArgs : EventArgs
     }
 
     /// <summary>
-    /// The state of the local cache at the time the initialization was completed.
+    /// The state of the internal cache at the time the initialization was completed.
     /// </summary>
     public ClientCacheState CacheState { get; }
 }

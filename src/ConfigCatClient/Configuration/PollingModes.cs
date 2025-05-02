@@ -12,12 +12,12 @@ public static class PollingModes
     /// Creates an instance of the <see cref="Configuration.AutoPoll"/> class with the specified settings.
     /// </summary>
     /// <param name="pollInterval">
-    /// Config refresh interval.
-    /// Specifies how frequently the locally cached config will be refreshed by fetching the latest version from the remote server.<br/>
+    /// Specifies how frequently the internally cached config will be updated by synchronizing with
+    /// the external cache and/or by fetching the latest version from the ConfigCat CDN.<br/>
     /// (Default value is 60 seconds. Minimum value is 1 second. Maximum value is <see cref="int.MaxValue"/> milliseconds.)
     /// </param>
     /// <param name="maxInitWaitTime">
-    /// Maximum waiting time between initialization and the first config acquisition.<br/>
+    /// Maximum waiting time before reporting the ready state, i.e. emitting the <see cref="IProvidesHooks.ClientReady"/> event.<br/>
     /// (Default value is 5 seconds. Maximum value is <see cref="int.MaxValue"/> milliseconds. Negative values mean infinite waiting.)
     /// </param>
     /// <returns>The new <see cref="Configuration.AutoPoll"/> instance.</returns>
@@ -31,7 +31,7 @@ public static class PollingModes
     /// </summary>
     /// <param name="cacheTimeToLive">
     /// Cache time to live value.
-    /// Specifies how long the locally cached config can be used before refreshing it again by fetching the latest version from the remote server.<br/>
+    /// Specifies how long the cached config can be used before updating it again by fetching the latest version from the ConfigCat CDN.<br/>
     /// (Default value is 60 seconds. Minimum value is 1 second. Maximum value is <see cref="int.MaxValue"/> seconds.)
     /// </param>
     /// <returns>The new <see cref="Configuration.LazyLoad"/> instance.</returns>

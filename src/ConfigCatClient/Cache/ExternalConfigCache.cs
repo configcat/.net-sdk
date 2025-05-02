@@ -49,6 +49,10 @@ internal sealed class ExternalConfigCache : ConfigCache
         {
             return GetCore(await this.cache.GetAsync(key, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext));
         }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             this.logger.ConfigServiceCacheReadError(ex);
@@ -95,6 +99,10 @@ internal sealed class ExternalConfigCache : ConfigCache
             {
                 await this.cache.SetAsync(key, serializedConfig, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
             }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {

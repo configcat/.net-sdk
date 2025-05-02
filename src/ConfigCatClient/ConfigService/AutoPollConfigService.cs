@@ -126,7 +126,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
 
             return false;
         }
-        catch (OperationCanceledException ex) when (ex.CancellationToken != cancellationToken)
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             return true;
         }

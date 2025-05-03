@@ -1641,7 +1641,7 @@ public class ConfigCatClientTests
         {
             options.PollingMode = PollingModes.ManualPoll;
             options.Logger = this.loggerMock.Object;
-        };
+        }
 
         // Act
 
@@ -2043,7 +2043,7 @@ public class ConfigCatClientTests
             if (pollingMode == nameof(LazyLoad))
             {
                 // We make sure manually that the cached config is expired for the next GetConfig() call
-                var cachedConfig = configCache.Get(cacheKey);
+                var cachedConfig = configCache.Get(cacheKey).Config;
                 cachedConfig = cachedConfig.With(cachedConfig.TimeStamp - TimeSpan.FromMilliseconds(int.MaxValue * 2.0));
                 configCache.Set(cacheKey, cachedConfig);
             }

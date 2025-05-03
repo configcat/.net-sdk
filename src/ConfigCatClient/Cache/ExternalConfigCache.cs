@@ -30,7 +30,7 @@ internal sealed class ExternalConfigCache : ConfigCache
         }
     }
 
-    public override ProjectConfig Get(string key)
+    public override CacheSyncResult Get(string key)
     {
         try
         {
@@ -39,11 +39,11 @@ internal sealed class ExternalConfigCache : ConfigCache
         catch (Exception ex)
         {
             this.logger.ConfigServiceCacheReadError(ex);
-            return LocalCachedConfig;
+            return new CacheSyncResult(LocalCachedConfig);
         }
     }
 
-    public override async ValueTask<ProjectConfig> GetAsync(string key, CancellationToken cancellationToken = default)
+    public override async ValueTask<CacheSyncResult> GetAsync(string key, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -56,24 +56,28 @@ internal sealed class ExternalConfigCache : ConfigCache
         catch (Exception ex)
         {
             this.logger.ConfigServiceCacheReadError(ex);
-            return LocalCachedConfig;
+            return new CacheSyncResult(LocalCachedConfig);
         }
     }
 
-    private ProjectConfig GetCore(string? externalSerializedConfig)
+    private CacheSyncResult GetCore(string? externalSerializedConfig)
     {
+        ProjectConfig oldCachedConfig, newCachedConfig;
+
         lock (this.syncObj)
         {
             if (externalSerializedConfig is null || externalSerializedConfig == this.cachedSerializedConfig)
             {
-                return this.cachedConfig;
+                return new CacheSyncResult(this.cachedConfig);
             }
 
-            this.cachedConfig = ProjectConfig.Deserialize(externalSerializedConfig);
+            oldCachedConfig = this.cachedConfig;
+            this.cachedConfig = newCachedConfig = ProjectConfig.Deserialize(externalSerializedConfig);
             this.cachedSerializedConfig = externalSerializedConfig;
-
-            return this.cachedConfig;
         }
+
+        var hasChanged = !ProjectConfig.ContentEquals(newCachedConfig, oldCachedConfig);
+        return new CacheSyncResult(newCachedConfig, hasChanged);
     }
 
     public override void Set(string key, ProjectConfig config)
@@ -120,7 +124,7 @@ internal sealed class ExternalConfigCache : ConfigCache
             }
             else
             {
-                // We may have empty entries with TimeStamp > DateTime.MinValue (see the flooding prevention logic in HttpConfigFetcher).
+                // We may have empty entries with TimeStamp > DateTime.MinValue (see the flooding prevention logic in DefaultConfigFetcher).
                 // In such cases we want to preserve the TimeStamp locally but don't want to store those entries into the external cache.
                 this.cachedSerializedConfig = null;
             }

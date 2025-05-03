@@ -130,15 +130,15 @@ public class ConfigCacheTests
             : new InMemoryConfigCache();
 
         // 1. Cache should return the empty config initially
-        var cachedConfig = isAsync ? await configCache.GetAsync(cacheKey) : configCache.Get(cacheKey);
-        Assert.AreSame(ProjectConfig.Empty, cachedConfig);
+        var cacheSyncResult = isAsync ? await configCache.GetAsync(cacheKey) : configCache.Get(cacheKey);
+        Assert.AreSame(ProjectConfig.Empty, cacheSyncResult.Config);
 
         // 2. When cache is empty, setting an empty config with newer timestamp should overwrite the cache (but only locally!)
         var config2 = ProjectConfig.Empty.With(ProjectConfig.GenerateTimeStamp());
         await WriteCacheAsync(config2);
-        cachedConfig = await ReadCacheAsync();
+        cacheSyncResult = await ReadCacheAsync();
 
-        Assert.AreSame(config2, cachedConfig);
+        Assert.AreSame(config2, cacheSyncResult.Config);
         Assert.AreEqual(config2, configCache.LocalCachedConfig);
         if (externalCache is not null)
         {
@@ -148,16 +148,16 @@ public class ConfigCacheTests
         // 3. When cache is empty, setting a non-empty config with any (even older) timestamp should overwrite the cache.
         var config3 = ConfigHelper.FromString("{\"p\": {\"u\": \"http://example.com\", \"r\": 0}}", "\"ETAG\"", config2.TimeStamp - TimeSpan.FromSeconds(1));
         await WriteCacheAsync(config3);
-        cachedConfig = await ReadCacheAsync();
+        cacheSyncResult = await ReadCacheAsync();
 
-        Assert.AreSame(config3, cachedConfig);
+        Assert.AreSame(config3, cacheSyncResult.Config);
         Assert.AreEqual(config3, configCache.LocalCachedConfig);
         if (externalCache is not null)
         {
             Assert.IsNotNull(externalCache.CachedValue);
         }
 
-        Task<ProjectConfig> ReadCacheAsync()
+        Task<CacheSyncResult> ReadCacheAsync()
         {
             return isAsync ? configCache.GetAsync(cacheKey).AsTask() : Task.FromResult(configCache.Get(cacheKey));
         }
@@ -195,9 +195,9 @@ public class ConfigCacheTests
         var configCache = new ExternalConfigCache(externalCache, loggerMock.Object.AsWrapper());
 
         // 1. Initial read should return the empty config.
-        var cachedConfig = isAsync ? await configCache.GetAsync(cacheKey) : configCache.Get(cacheKey);
+        var cacheSyncResult = isAsync ? await configCache.GetAsync(cacheKey) : configCache.Get(cacheKey);
 
-        Assert.AreEqual(ProjectConfig.Empty, cachedConfig);
+        Assert.AreEqual(ProjectConfig.Empty, cacheSyncResult.Config);
 
         loggerMock.Verify(l => l.Log(LogLevel.Error, 2200, ref It.Ref<FormattableLogMessage>.IsAny, It.Is<Exception>(ex => ex is ApplicationException)), Times.Once);
 
@@ -222,9 +222,9 @@ public class ConfigCacheTests
         // 3. Get should log the error and return the local cache which was set previously.
 
         loggerMock.Invocations.Clear();
-        cachedConfig = isAsync ? await configCache.GetAsync(cacheKey) : configCache.Get(cacheKey);
+        cacheSyncResult = isAsync ? await configCache.GetAsync(cacheKey) : configCache.Get(cacheKey);
 
-        Assert.AreEqual(config, cachedConfig);
+        Assert.AreEqual(config, cacheSyncResult.Config);
 
         loggerMock.Verify(l => l.Log(LogLevel.Error, 2200, ref It.Ref<FormattableLogMessage>.IsAny, It.Is<Exception>(ex => ex is ApplicationException)), Times.Once);
     }

@@ -56,7 +56,7 @@ public class ConfigServiceTests
 
         this.cacheMock
             .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(cachedPc);
+            .ReturnsAsync(new CacheSyncResult(cachedPc));
 
         this.cacheMock
             .Setup(m => m.SetAsync(It.IsAny<string>(), fetchedPc, It.IsAny<CancellationToken>()))
@@ -97,7 +97,7 @@ public class ConfigServiceTests
 
         this.cacheMock
             .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(cachedPc);
+            .ReturnsAsync(new CacheSyncResult(cachedPc));
 
         using var service = new LazyLoadConfigService(
             this.fetcherMock.Object,
@@ -131,7 +131,7 @@ public class ConfigServiceTests
 
         this.cacheMock
             .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(cachedPc)
+            .ReturnsAsync(new CacheSyncResult(cachedPc))
             .Callback(() => Assert.IsTrue(callOrder++ is 1 or 2))
             .Verifiable();
 
@@ -183,7 +183,7 @@ public class ConfigServiceTests
 
         this.cacheMock
             .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(cachedPc);
+            .ReturnsAsync(new CacheSyncResult(cachedPc));
 
         this.fetcherMock
             .Setup(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>()))
@@ -231,7 +231,7 @@ public class ConfigServiceTests
 
         this.cacheMock
             .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(cachedPc);
+            .ReturnsAsync(new CacheSyncResult(cachedPc));
 
         this.fetcherMock
             .Setup(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>()))
@@ -278,7 +278,7 @@ public class ConfigServiceTests
 
         this.cacheMock
             .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(cachedPc);
+            .ReturnsAsync(new CacheSyncResult(cachedPc));
 
         this.fetcherMock
             .Setup(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>()))
@@ -410,7 +410,7 @@ public class ConfigServiceTests
 
         this.cacheMock
             .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(cachedPc);
+            .ReturnsAsync(new CacheSyncResult(cachedPc));
 
         this.fetcherMock
             .Setup(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>()))
@@ -456,7 +456,7 @@ public class ConfigServiceTests
 
         this.cacheMock
             .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(cachedPc);
+            .ReturnsAsync(new CacheSyncResult(cachedPc));
 
         this.fetcherMock
             .Setup(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>()))
@@ -499,7 +499,7 @@ public class ConfigServiceTests
 
         this.cacheMock
             .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(cachedPc);
+            .ReturnsAsync(new CacheSyncResult(cachedPc));
 
         this.fetcherMock
             .Setup(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>()))
@@ -540,7 +540,7 @@ public class ConfigServiceTests
 
         this.cacheMock
             .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(cachedPc);
+            .ReturnsAsync(new CacheSyncResult(cachedPc));
 
         using var service = new ManualPollConfigService(
             this.fetcherMock.Object,
@@ -590,7 +590,7 @@ public class ConfigServiceTests
 
         this.cacheMock
             .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(cachedPc)
+            .ReturnsAsync(new CacheSyncResult(cachedPc))
             .Callback(() => Assert.IsTrue(callOrder++ is 1 or 2));
 
         this.fetcherMock
@@ -649,7 +649,7 @@ public class ConfigServiceTests
 
         this.cacheMock
             .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(cachedPc);
+            .ReturnsAsync(new CacheSyncResult(cachedPc));
 
         this.fetcherMock
             .Setup(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>()))
@@ -1018,6 +1018,113 @@ public class ConfigServiceTests
 
         Assert.AreSame(readyTask, winnerTask);
         Assert.AreEqual(expectedCacheState, readyTask.Result);
+    }
+
+    [DataRow(false)]
+    [DataRow(true)]
+    [DataTestMethod]
+    public async Task AutoPollConfigService_ShouldRefreshLocalCacheInOfflineModeAndRaiseConfigChanged_WhenNewConfigIsSyncedFromExternalCache(bool useSyncCache)
+    {
+        // Arrange 
+
+        var pollInterval = TimeSpan.FromSeconds(1);
+
+        var logger = this.loggerMock.Object.AsWrapper();
+        IConfigCatCache fakeExternalCache = useSyncCache
+            ? new FakeExternalCache()
+            : new FakeExternalAsyncCache(TimeSpan.FromMilliseconds(50));
+        var cache = new ExternalConfigCache(fakeExternalCache, logger);
+
+        var clientReadyEvents = new ConcurrentQueue<ClientReadyEventArgs>();
+        var configChangedEvents = new ConcurrentQueue<ConfigChangedEventArgs>();
+
+        var hooks = new Hooks();
+        hooks.ClientReady += (s, e) => clientReadyEvents.Enqueue(e);
+        hooks.ConfigChanged += (s, e) => configChangedEvents.Enqueue(e);
+
+        var fetchedPc = CreateFreshPc(ProjectConfig.GenerateTimeStamp(), configJson: "{ \"p\": { \"s\": \"111\" } }");
+
+        this.fetcherMock
+            .Setup(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(FetchResult.Success(fetchedPc))
+            .Verifiable();
+
+        var config = PollingModes.AutoPoll(pollInterval);
+        var service = new AutoPollConfigService(config,
+            this.fetcherMock.Object,
+            new CacheParameters(cache, cacheKey: null!),
+            logger,
+            startTimer: true,
+            isOffline: false,
+            hooks);
+
+        // Act
+
+        RefreshResult refreshResult;
+        ClientReadyEventArgs[] clientReadyEventArray;
+        ConfigChangedEventArgs[] configChangedEventArray;
+
+        Assert.IsNull(useSyncCache
+            ? ((FakeExternalCache)fakeExternalCache).CachedValue
+            : ((FakeExternalAsyncCache)fakeExternalCache).CachedValue);
+
+        Assert.AreEqual(0, clientReadyEvents.Count);
+        Assert.AreEqual(0, configChangedEvents.Count);
+
+        using (service)
+        {
+            await service.ReadyTask;
+
+            var getConfigTask = service.GetConfigAsync().AsTask();
+            await service.GetConfigAsync(); // simulate concurrent cache sync up
+            await getConfigTask;
+
+            await Task.Delay(100); // allow a little time for the client to raise ConfigChanged
+
+            Assert.IsNotNull(useSyncCache
+                ? ((FakeExternalCache)fakeExternalCache).CachedValue
+                : ((FakeExternalAsyncCache)fakeExternalCache).CachedValue);
+
+            clientReadyEventArray = clientReadyEvents.ToArray();
+            Assert.AreEqual(1, clientReadyEventArray.Length);
+            Assert.AreEqual(ClientCacheState.HasUpToDateFlagData, clientReadyEventArray[0].CacheState);
+
+            configChangedEventArray = configChangedEvents.ToArray();
+            Assert.AreEqual(1, configChangedEventArray.Length);
+            Assert.AreEqual("111", configChangedEventArray[0].NewConfig.Salt);
+
+            this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Once());
+
+            service.SetOffline(); // no HTTP fetching from this point on
+
+            await Task.Delay(pollInterval + TimeSpan.FromMilliseconds(50));
+
+            clientReadyEventArray = clientReadyEvents.ToArray();
+            Assert.AreEqual(1, clientReadyEventArray.Length);
+
+            configChangedEventArray = configChangedEvents.ToArray();
+            Assert.AreEqual(1, configChangedEventArray.Length);
+
+            var cachedPc = CreateFreshPc(ProjectConfig.GenerateTimeStamp(), configJson: "{ \"p\": { \"s\": \"222\" } }", httpETag: "\"12346\"");
+            _ = useSyncCache
+                ? ((FakeExternalCache)fakeExternalCache).CachedValue = ProjectConfig.Serialize(cachedPc)
+                : ((FakeExternalAsyncCache)fakeExternalCache).CachedValue = ProjectConfig.Serialize(cachedPc);
+
+            refreshResult = await service.RefreshConfigAsync();
+        }
+
+        GC.KeepAlive(hooks);
+
+        // Assert
+
+        Assert.IsTrue(refreshResult.IsSuccess);
+
+        clientReadyEventArray = clientReadyEvents.ToArray();
+        Assert.AreEqual(1, clientReadyEventArray.Length);
+
+        configChangedEventArray = configChangedEvents.ToArray();
+        Assert.AreEqual(2, configChangedEventArray.Length);
+        Assert.AreEqual("222", configChangedEventArray[1].NewConfig.Salt);
     }
 
     [DataRow(false)]

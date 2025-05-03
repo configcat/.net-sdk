@@ -124,7 +124,7 @@ internal abstract class ConfigServiceBase : IDisposable
 
         if (fetchResult.IsSuccess)
         {
-            OnConfigChanged(fetchResult);
+            OnConfigChanged(fetchResult.Config);
         }
 
         return new ConfigWithFetchResult(latestConfig, fetchResult);
@@ -165,7 +165,7 @@ internal abstract class ConfigServiceBase : IDisposable
 
         if (fetchResult.IsSuccess)
         {
-            OnConfigChanged(fetchResult);
+            OnConfigChanged(fetchResult.Config);
         }
 
         return new ConfigWithFetchResult(latestConfig, fetchResult);
@@ -178,11 +178,11 @@ internal abstract class ConfigServiceBase : IDisposable
         this.Hooks.RaiseConfigFetched(RefreshResult.From(fetchResult), isInitiatedByUser);
     }
 
-    protected virtual void OnConfigChanged(in FetchResult fetchResult)
+    protected virtual void OnConfigChanged(ProjectConfig newConfig)
     {
         this.Logger.Debug("config changed");
 
-        this.Hooks.RaiseConfigChanged(fetchResult.Config.Config ?? new Config());
+        this.Hooks.RaiseConfigChanged(newConfig.Config ?? new Config());
     }
 
     public bool IsOffline
@@ -248,7 +248,9 @@ internal abstract class ConfigServiceBase : IDisposable
     {
         // NOTE: We don't try to join concurrent asynchronous cache synchronization because it would be hard, if not
         // impossible to do that in a deadlock-free way. Plus, the synchronous code paths will be deleted soon anyway.
-        return this.ConfigCache.Get(this.CacheKey);
+        var syncResult = this.ConfigCache.Get(this.CacheKey);
+        OnCacheSynced(syncResult);
+        return syncResult.Config;
     }
 
     protected ValueTask<ProjectConfig> SyncUpWithCacheAsync(CancellationToken cancellationToken)
@@ -258,7 +260,9 @@ internal abstract class ConfigServiceBase : IDisposable
         {
             var syncResultTask = inMemoryConfigCache.GetAsync(this.CacheKey, cancellationToken);
             Debug.Assert(syncResultTask.IsCompleted);
-            return syncResultTask;
+            var syncResult = syncResultTask.GetAwaiter().GetResult();
+            Debug.Assert(!syncResult.HasChanged);
+            return new ValueTask<ProjectConfig>(syncResult.Config);
         }
 
         // Otherwise we join the pending cache sync up operation, or start a new one if there's none currently.
@@ -327,8 +331,9 @@ internal abstract class ConfigServiceBase : IDisposable
             {
                 try
                 {
-                    var cachedConfig = await this.ConfigCache.GetAsync(this.CacheKey).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
-                    cacheSyncUpTcs.TrySetResult(cachedConfig);
+                    var syncResult = await this.ConfigCache.GetAsync(this.CacheKey).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+                    OnCacheSynced(syncResult);
+                    cacheSyncUpTcs.TrySetResult(syncResult.Config);
                 }
                 catch (OperationCanceledException ex)
                 {
@@ -346,6 +351,14 @@ internal abstract class ConfigServiceBase : IDisposable
                 // reference to the task any longer, but it should be set to null so GC can clean it up.
                 _ = Interlocked.CompareExchange(ref this.pendingCacheSyncUp, value: null, comparand: cacheSyncUpTask);
             }
+        }
+    }
+
+    private void OnCacheSynced(CacheSyncResult syncResult)
+    {
+        if (syncResult.HasChanged && !syncResult.Config.IsEmpty)
+        {
+            OnConfigChanged(syncResult.Config);
         }
     }
 

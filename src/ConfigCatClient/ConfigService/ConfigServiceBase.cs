@@ -35,6 +35,7 @@ internal abstract class ConfigServiceBase : IDisposable
     protected CancellationToken WaitForReadyCancellationToken => this.waitForReadyCancellationTokenSource?.Token ?? new CancellationToken(canceled: true);
 
     private Task<ProjectConfig>? pendingCacheSyncUp;
+    private Task<ConfigWithFetchResult>? pendingConfigRefresh;
 
     protected ConfigServiceBase(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline, SafeHooksWrapper hooks)
     {
@@ -110,24 +111,13 @@ internal abstract class ConfigServiceBase : IDisposable
 
     protected ConfigWithFetchResult RefreshConfigCore(ProjectConfig latestConfig, bool isInitiatedByUser)
     {
-        var fetchResult = this.ConfigFetcher.Fetch(latestConfig);
+        // NOTE: We go sync over async here, however it's safe to do that in this case as
+        // BeginConfigRefreshOrJoinPending will run the fetch operation on the thread pool,
+        // where there's no synchronization context which awaits want to return to,
+        // thus, they won't try to run continuations on this thread where we're block waiting.
+        // Plus, the synchronous code paths will be deleted soon anyway.
 
-        if (fetchResult.IsSuccess
-            || fetchResult.Config.TimeStamp > latestConfig.TimeStamp && (!fetchResult.Config.IsEmpty || latestConfig.IsEmpty))
-        {
-            this.ConfigCache.Set(this.CacheKey, fetchResult.Config);
-
-            latestConfig = fetchResult.Config;
-        }
-
-        OnConfigFetched(fetchResult, isInitiatedByUser);
-
-        if (fetchResult.IsSuccess)
-        {
-            OnConfigChanged(fetchResult.Config);
-        }
-
-        return new ConfigWithFetchResult(latestConfig, fetchResult);
+        return BeginConfigRefreshOrJoinPending(latestConfig, isInitiatedByUser, useAsyncCache: false).GetAwaiter().GetResult();
     }
 
     public virtual async ValueTask<RefreshResult> RefreshConfigAsync(CancellationToken cancellationToken = default)
@@ -149,26 +139,89 @@ internal abstract class ConfigServiceBase : IDisposable
         }
     }
 
-    protected async Task<ConfigWithFetchResult> RefreshConfigCoreAsync(ProjectConfig latestConfig, bool isInitiatedByUser, CancellationToken cancellationToken)
+    protected Task<ConfigWithFetchResult> RefreshConfigCoreAsync(ProjectConfig latestConfig, bool isInitiatedByUser, CancellationToken cancellationToken)
     {
-        var fetchResult = await this.ConfigFetcher.FetchAsync(latestConfig, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+        return BeginConfigRefreshOrJoinPending(latestConfig, isInitiatedByUser, useAsyncCache: true, cancellationToken);
+    }
 
-        if (fetchResult.IsSuccess
-            || fetchResult.Config.TimeStamp > latestConfig.TimeStamp && (!fetchResult.Config.IsEmpty || latestConfig.IsEmpty))
+    private Task<ConfigWithFetchResult> BeginConfigRefreshOrJoinPending(ProjectConfig latestConfig, bool isInitiatedByUser, bool useAsyncCache,
+        CancellationToken cancellationToken = default)
+    {
+        Task<ConfigWithFetchResult>? configRefreshTask;
+        bool isInitiator;
+
+        lock (this.ConfigFetcher)
         {
-            await this.ConfigCache.SetAsync(this.CacheKey, fetchResult.Config, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+            cancellationToken.ThrowIfCancellationRequested();
 
-            latestConfig = fetchResult.Config;
+            // NOTE: Joiners may obtain more up-to-date config data from the external cache than the `latestConfig`
+            // that was used to initiate the fetch operation. However, we ignore this possibility because we consider
+            // the fetch operation result a more authentic source of truth. Although this may lead to overwriting
+            // the cache with stale data, we expect this to be a temporary effect, which corrects itself eventually.
+
+            configRefreshTask = this.pendingConfigRefresh;
+            isInitiator = configRefreshTask is null or { IsCompleted: true };
+            if (isInitiator)
+            {
+                this.pendingConfigRefresh = configRefreshTask = TaskShim.Current.Run(async () =>
+                {
+                    var fetchResult = await this.ConfigFetcher.FetchAsync(latestConfig).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+
+                    var shouldUpdateCache =
+                        fetchResult.IsSuccess
+                        || fetchResult.IsNotModified
+                        || fetchResult.Config.TimeStamp > latestConfig.TimeStamp // is not transient error?
+                            && (!fetchResult.Config.IsEmpty || this.ConfigCache.LocalCachedConfig.IsEmpty);
+
+                    if (shouldUpdateCache)
+                    {
+                        // NOTE: ExternalConfigCache.Set/SetAsync makes sure that the external cache is not overwritten with empty
+                        // config data under any circumstances.
+                        if (useAsyncCache)
+                        {
+                            await this.ConfigCache.SetAsync(this.CacheKey, fetchResult.Config).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+                        }
+                        else
+                        {
+                            this.ConfigCache.Set(this.CacheKey, fetchResult.Config);
+                        }
+
+                        latestConfig = fetchResult.Config;
+                    }
+
+                    OnConfigFetched(fetchResult, isInitiatedByUser);
+
+                    if (fetchResult.IsSuccess)
+                    {
+                        OnConfigChanged(fetchResult.Config);
+                    }
+
+                    return new ConfigWithFetchResult(latestConfig, fetchResult);
+                });
+            }
         }
 
-        OnConfigFetched(fetchResult, isInitiatedByUser);
-
-        if (fetchResult.IsSuccess)
+        if (isInitiator)
         {
-            OnConfigChanged(fetchResult.Config);
+            ScheduleCleanUp(configRefreshTask!);
         }
 
-        return new ConfigWithFetchResult(latestConfig, fetchResult);
+        return configRefreshTask!.WaitAsync(cancellationToken);
+
+        async void ScheduleCleanUp(Task<ConfigWithFetchResult> refreshTask)
+        {
+            try { await refreshTask.ConfigureAwait(TaskShim.ContinueOnCapturedContext); }
+            catch { /* Exceptions must not be allowed to bubble up. See also: https://stackoverflow.com/a/53266815/8656352 */ }
+            finally
+            {
+                // NOTE: At this point the actual config refresh operation is completed, so there's no need to keep a
+                // reference to the task any longer, but it should be set to null so GC can clean it up.
+                // (Instead of locking, a call to Interlocked.CompareExchange is enough as .NET memory model guarantees
+                // that both memory accesses to managed references and Interlocked methods are atomic operations.
+                // See also: https://github.com/dotnet/runtime/blob/main/docs/design/specs/Memory-model.md#atomic-memory-accesses)
+                _ = Interlocked.CompareExchange(ref this.pendingConfigRefresh, value: null, comparand: refreshTask);
+            }
+        }
     }
 
     protected virtual void OnConfigFetched(in FetchResult fetchResult, bool isInitiatedByUser)

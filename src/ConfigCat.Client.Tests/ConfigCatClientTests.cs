@@ -1862,7 +1862,6 @@ public class ConfigCatClientTests
             onFetch: cfg => FetchResult.Success(ConfigHelper.FromString("{}", httpETag: (++httpETag).ToString(CultureInfo.InvariantCulture), timeStamp: ProjectConfig.GenerateTimeStamp())),
             configServiceFactory, out var configService, out _);
 
-        var expectedFetchCount = 0;
         var expectedFetchAsyncCount = 0;
 
         using (client)
@@ -1876,7 +1875,6 @@ public class ConfigCatClientTests
             client.SetOffline();
 
             Assert.IsTrue(client.IsOffline);
-            this.fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
             this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Exactly(expectedFetchAsyncCount));
 
             // 3. Checks that SetOnline() does enable HTTP calls
@@ -1889,15 +1887,13 @@ public class ConfigCatClientTests
             }
 
             Assert.IsFalse(client.IsOffline);
-            this.fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
             this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Exactly(expectedFetchAsyncCount));
 
             var etag1 = ParseETagAsInt32(configService.GetConfig().HttpETag);
             if (pollingMode == nameof(LazyLoad))
             {
-                expectedFetchCount++;
+                expectedFetchAsyncCount++;
             }
-            this.fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
             this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Exactly(expectedFetchAsyncCount));
 
             if (pollingMode == nameof(ManualPoll))
@@ -1912,10 +1908,9 @@ public class ConfigCatClientTests
 
             // 4. Checks that ForceRefresh() initiates a HTTP call in online mode
             var refreshResult = client.ForceRefresh();
-            expectedFetchCount++;
+            expectedFetchAsyncCount++;
 
             Assert.IsFalse(client.IsOffline);
-            this.fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
             this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Exactly(expectedFetchAsyncCount));
 
             var etag2 = ParseETagAsInt32(configService.GetConfig().HttpETag);
@@ -1939,7 +1934,6 @@ public class ConfigCatClientTests
             expectedFetchAsyncCount++;
 
             Assert.IsFalse(client.IsOffline);
-            this.fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
             this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Exactly(expectedFetchAsyncCount));
 
             var etag3 = ParseETagAsInt32(configService.GetConfig().HttpETag);
@@ -1991,7 +1985,6 @@ public class ConfigCatClientTests
             onFetch: cfg => FetchResult.Success(ConfigHelper.FromString("{}", httpETag: (++httpETag).ToString(CultureInfo.InvariantCulture), timeStamp: ProjectConfig.GenerateTimeStamp())),
             configServiceFactory, out var configService, out var configCache);
 
-        var expectedFetchCount = 0;
         var expectedFetchAsyncCount = 0;
 
         using (client)
@@ -2005,15 +1998,13 @@ public class ConfigCatClientTests
                 expectedFetchAsyncCount++;
             }
 
-            this.fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
             this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Exactly(expectedFetchAsyncCount));
 
             var etag1 = ParseETagAsInt32(configService.GetConfig().HttpETag);
             if (pollingMode == nameof(LazyLoad))
             {
-                expectedFetchCount++;
+                expectedFetchAsyncCount++;
             }
-            this.fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
             this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Exactly(expectedFetchAsyncCount));
 
             if (pollingMode == nameof(ManualPoll))
@@ -2030,14 +2021,12 @@ public class ConfigCatClientTests
             client.SetOnline();
 
             Assert.IsFalse(client.IsOffline);
-            this.fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
             this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Exactly(expectedFetchAsyncCount));
 
             // 3. Checks that SetOffline() does disable HTTP calls
             client.SetOffline();
 
             Assert.IsTrue(client.IsOffline);
-            this.fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
             this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Exactly(expectedFetchAsyncCount));
 
             if (pollingMode == nameof(LazyLoad))
@@ -2055,7 +2044,6 @@ public class ConfigCatClientTests
             var refreshResult = client.ForceRefresh();
 
             Assert.IsTrue(client.IsOffline);
-            this.fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
             this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Exactly(expectedFetchAsyncCount));
 
             Assert.AreEqual(etag1, ParseETagAsInt32(configService.GetConfig().HttpETag));
@@ -2070,7 +2058,6 @@ public class ConfigCatClientTests
             refreshResult = await client.ForceRefreshAsync();
 
             Assert.IsTrue(client.IsOffline);
-            this.fetcherMock.Verify(m => m.Fetch(It.IsAny<ProjectConfig>()), Times.Exactly(expectedFetchCount));
             this.fetcherMock.Verify(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()), Times.Exactly(expectedFetchAsyncCount));
 
             Assert.AreEqual(etag1, ParseETagAsInt32(configService.GetConfig().HttpETag));

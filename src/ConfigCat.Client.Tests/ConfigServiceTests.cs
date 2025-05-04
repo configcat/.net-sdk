@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
 using ConfigCat.Client.ConfigService;
+using ConfigCat.Client.Shims;
 using ConfigCat.Client.Tests.Fakes;
 using ConfigCat.Client.Tests.Helpers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -1217,14 +1219,7 @@ public class ConfigServiceTests
         var cache = new InMemoryConfigCache();
         cache.Set(null!, cachedPc);
 
-        if (isAsync)
-        {
-            this.fetcherMock.Setup(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>())).ReturnsAsync(FetchResult.Success(fetchedPc));
-        }
-        else
-        {
-            this.fetcherMock.Setup(m => m.Fetch(cachedPc)).Returns(FetchResult.Success(fetchedPc));
-        }
+        this.fetcherMock.Setup(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>())).ReturnsAsync(FetchResult.Success(fetchedPc));
 
         var config = PollingModes.LazyLoad(cacheTimeToLive);
         var service = new LazyLoadConfigService(this.fetcherMock.Object,
@@ -1247,14 +1242,7 @@ public class ConfigServiceTests
 
         Assert.AreEqual(fetchedPc, actualPc);
 
-        if (isAsync)
-        {
-            this.fetcherMock.Verify(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>()), Times.Once);
-        }
-        else
-        {
-            this.fetcherMock.Verify(m => m.Fetch(cachedPc), Times.Once);
-        }
+        this.fetcherMock.Verify(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>()), Times.Once);
 
         Assert.AreEqual(1, Volatile.Read(ref clientReadyEventCount));
 
@@ -1372,5 +1360,242 @@ public class ConfigServiceTests
 
             _ => throw new InvalidOperationException(),
         };
+    }
+
+    [DataTestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task ConfigService_OnlyOneConfigRefreshShouldBeInProgressAtATime_Success(bool isAsync)
+    {
+        // Arrange
+
+        var loggerWrapper = this.loggerMock.Object.AsWrapper();
+
+        var myHandler = new FakeHttpClientHandler(HttpStatusCode.OK, "{ \"p\": { \"s\": \"0\" } }", TimeSpan.FromSeconds(1));
+
+        var fakeFetcher = new DefaultConfigFetcher(new Uri("http://example.com"), "1.0",
+            loggerWrapper, new HttpClientConfigFetcher(myHandler), false, TimeSpan.FromSeconds(30));
+
+        var lastConfig = ConfigHelper.FromString("{}", timeStamp: ProjectConfig.GenerateTimeStamp(), httpETag: "\"ETAG\"");
+
+        if (isAsync)
+        {
+            this.cacheMock
+                .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new CacheSyncResult(lastConfig));
+
+            this.cacheMock
+                .Setup(m => m.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()))
+                .Returns(default(ValueTask));
+        }
+        else
+        {
+            this.cacheMock
+                .Setup(m => m.Get(It.IsAny<string>()))
+                .Returns(new CacheSyncResult(lastConfig));
+
+            this.cacheMock
+                .Setup(m => m.Set(It.IsAny<string>(), It.IsAny<ProjectConfig>()));
+        }
+
+        var hooks = new Hooks();
+
+        var configFetchedEvents = new ConcurrentQueue<ConfigFetchedEventArgs>();
+        hooks.ConfigFetched += (s, e) => configFetchedEvents.Enqueue(e);
+
+        var configChangedEvents = new ConcurrentQueue<ConfigChangedEventArgs>();
+        hooks.ConfigChanged += (s, e) => configChangedEvents.Enqueue(e);
+
+        using var service = new ManualPollConfigService(
+            fakeFetcher,
+            new CacheParameters(this.cacheMock.Object, cacheKey: null!),
+            loggerWrapper,
+            hooks: hooks);
+
+        // Act
+
+        var task1 = isAsync
+            ? Task.Run(() => service.RefreshConfigAsync().AsTask())
+            : Task.Factory.StartNew(() => service.RefreshConfig(), default, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+        var task2 = isAsync
+            ? service.RefreshConfigAsync().AsTask()
+            : Task.Factory.StartNew(() => service.RefreshConfig(), default, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+        var refreshResults = await Task.WhenAll(task1, task2);
+
+        GC.KeepAlive(hooks);
+
+        // Assert
+
+        Assert.AreEqual(1, myHandler.SendInvokeCount);
+        Assert.IsTrue(refreshResults[0].IsSuccess);
+        Assert.IsTrue(refreshResults[1].IsSuccess);
+
+        Assert.AreEqual(1, configFetchedEvents.Count);
+        var configFetchedEvent = configFetchedEvents.ToArray()[0];
+        Assert.IsTrue(configFetchedEvent.IsInitiatedByUser);
+        Assert.IsTrue(configFetchedEvent.Result.IsSuccess);
+
+        Assert.AreEqual(1, configChangedEvents.Count);
+        var configChangedEvent = configChangedEvents.ToArray()[0];
+        Assert.AreEqual("0", configChangedEvent.NewConfig.Salt);
+    }
+
+    [DataTestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task ConfigService_OnlyOneConfigRefreshShouldBeInProgressAtATime_Failure(bool isAsync)
+    {
+        // Arrange
+
+        var loggerWrapper = this.loggerMock.Object.AsWrapper();
+
+        var exception = new WebException();
+        var myHandler = new ExceptionThrowerHttpClientHandler(exception, TimeSpan.FromSeconds(1));
+
+        var fakeFetcher = new DefaultConfigFetcher(new Uri("http://example.com"), "1.0",
+            loggerWrapper, new HttpClientConfigFetcher(myHandler), false, TimeSpan.FromSeconds(30));
+
+        var lastConfig = ConfigHelper.FromString("{}", timeStamp: ProjectConfig.GenerateTimeStamp(), httpETag: "\"ETAG\"");
+
+        if (isAsync)
+        {
+            this.cacheMock
+                .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new CacheSyncResult(lastConfig));
+
+            this.cacheMock
+                .Setup(m => m.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()))
+                .Returns(default(ValueTask));
+        }
+        else
+        {
+            this.cacheMock
+                .Setup(m => m.Get(It.IsAny<string>()))
+                .Returns(new CacheSyncResult(lastConfig));
+
+            this.cacheMock
+                .Setup(m => m.Set(It.IsAny<string>(), It.IsAny<ProjectConfig>()));
+        }
+
+        var hooks = new Hooks();
+
+        var configFetchedEvents = new ConcurrentQueue<ConfigFetchedEventArgs>();
+        hooks.ConfigFetched += (s, e) => configFetchedEvents.Enqueue(e);
+
+        var configChangedEvents = new ConcurrentQueue<ConfigChangedEventArgs>();
+        hooks.ConfigChanged += (s, e) => configChangedEvents.Enqueue(e);
+
+        using var service = new ManualPollConfigService(
+            fakeFetcher,
+            new CacheParameters(this.cacheMock.Object, cacheKey: null!),
+            loggerWrapper,
+            hooks: hooks);
+
+        // Act
+
+        var task1 = isAsync
+            ? Task.Run(() => service.RefreshConfigAsync().AsTask())
+            : Task.Factory.StartNew(() => service.RefreshConfig(), default, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+        var task2 = isAsync
+            ? service.RefreshConfigAsync().AsTask()
+            : Task.Factory.StartNew(() => service.RefreshConfig(), default, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+        var refreshResults = await Task.WhenAll(task1, task2);
+
+        GC.KeepAlive(hooks);
+
+        // Assert
+
+        Assert.AreEqual(1, myHandler.SendInvokeCount);
+        Assert.IsFalse(refreshResults[0].IsSuccess);
+        Assert.AreSame(exception, refreshResults[0].ErrorException);
+        Assert.IsFalse(refreshResults[1].IsSuccess);
+        Assert.AreSame(exception, refreshResults[1].ErrorException);
+
+        Assert.AreEqual(1, configFetchedEvents.Count);
+        var configFetchedEvent = configFetchedEvents.ToArray()[0];
+        Assert.IsTrue(configFetchedEvent.IsInitiatedByUser);
+        Assert.IsFalse(configFetchedEvent.Result.IsSuccess);
+        Assert.AreSame(exception, configFetchedEvent.Result.ErrorException);
+
+        Assert.AreEqual(0, configChangedEvents.Count);
+    }
+
+    [TestMethod]
+    public async Task ConfigService_OnlyOneConfigRefreshShouldBeInProgressAtATime_Canceled()
+    {
+        // Arrange
+
+        var loggerWrapper = this.loggerMock.Object.AsWrapper();
+
+        var delayMs = 1000;
+        var myHandler = new FakeHttpClientHandler(HttpStatusCode.OK, "{ \"p\": { \"s\": \"0\" } }", TimeSpan.FromMilliseconds(delayMs));
+
+        var fakeFetcher = new DefaultConfigFetcher(new Uri("http://example.com"), "1.0",
+            loggerWrapper, new HttpClientConfigFetcher(myHandler), false, TimeSpan.FromSeconds(30));
+
+        var lastConfig = ConfigHelper.FromString("{}", timeStamp: ProjectConfig.GenerateTimeStamp(), httpETag: "\"ETAG\"");
+
+        this.cacheMock
+            .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CacheSyncResult(lastConfig));
+
+        this.cacheMock
+            .Setup(m => m.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()))
+            .Returns(default(ValueTask));
+
+        this.cacheMock
+            .Setup(m => m.Get(It.IsAny<string>()))
+            .Returns(new CacheSyncResult(lastConfig));
+
+        this.cacheMock
+            .Setup(m => m.Set(It.IsAny<string>(), It.IsAny<ProjectConfig>()));
+
+        var hooks = new Hooks();
+
+        var configFetchedEvents = new ConcurrentQueue<ConfigFetchedEventArgs>();
+        hooks.ConfigFetched += (s, e) => configFetchedEvents.Enqueue(e);
+
+        var configChangedEvents = new ConcurrentQueue<ConfigChangedEventArgs>();
+        hooks.ConfigChanged += (s, e) => configChangedEvents.Enqueue(e);
+
+        using var service = new ManualPollConfigService(
+            fakeFetcher,
+            new CacheParameters(this.cacheMock.Object, cacheKey: null!),
+            loggerWrapper,
+            hooks: hooks);
+
+        // Act
+
+        using var cts = new CancellationTokenSource(delayMs / 3);
+        var task1 = service.RefreshConfigAsync(cts.Token).AsTask();
+        var task2 = Task.Factory.StartNew(() =>
+        {
+            cts.Token.WaitHandle.WaitOne();
+            Thread.Sleep(delayMs / 6);
+            return service.RefreshConfig();
+        }, default, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+        await Assert.ThrowsExceptionAsync<TaskCanceledException>(async () => await Task.WhenAll(task1, task2));
+
+        GC.KeepAlive(hooks);
+
+        // Assert
+
+        Assert.IsTrue(task1.IsCanceled);
+
+        Assert.AreEqual(1, myHandler.SendInvokeCount);
+        var refreshResult2 = task2.GetAwaiter().GetResult();
+        Assert.IsTrue(refreshResult2.IsSuccess);
+
+        Assert.AreEqual(1, configFetchedEvents.Count);
+        var configFetchedEvent = configFetchedEvents.ToArray()[0];
+        Assert.IsTrue(configFetchedEvent.IsInitiatedByUser);
+        Assert.IsTrue(configFetchedEvent.Result.IsSuccess);
+
+        Assert.AreEqual(1, configChangedEvents.Count);
+        var configChangedEvent = configChangedEvents.ToArray()[0];
+        Assert.AreEqual("0", configChangedEvent.NewConfig.Salt);
     }
 }

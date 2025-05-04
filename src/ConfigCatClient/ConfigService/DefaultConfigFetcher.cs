@@ -37,49 +37,33 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
 
     public FetchResult Fetch(ProjectConfig lastConfig)
     {
-        // NOTE: We go sync over async here, however it's safe to do that in this case as
-        // BeginFetchOrJoinPending will run the fetch operation on the thread pool,
-        // where there's no synchronization context which awaits want to return to,
-        // thus, they won't try to run continuations on this thread where we're block waiting.
-        return BeginFetchOrJoinPending(lastConfig).GetAwaiter().GetResult();
+        // NOTE: This method is unused now, we keep it because of tests for now,
+        // until the synchronous code paths are deleted soon.
+        return TaskShim.Current.Run(() => FetchAsync(lastConfig)).GetAwaiter().GetResult();
     }
 
-    public Task<FetchResult> FetchAsync(ProjectConfig lastConfig, CancellationToken cancellationToken = default)
+    public async Task<FetchResult> FetchAsync(ProjectConfig lastConfig, CancellationToken cancellationToken = default)
     {
-        return BeginFetchOrJoinPending(lastConfig).WaitAsync(cancellationToken);
-    }
-
-    private Task<FetchResult> BeginFetchOrJoinPending(ProjectConfig lastConfig)
-    {
-        lock (this.syncObj)
+        if (!cancellationToken.CanBeCanceled)
         {
-            this.pendingFetch ??= TaskShim.Current.Run(async () =>
-            {
-                try
-                {
-                    return await FetchInternalAsync(lastConfig).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
-                }
-                finally
-                {
-                    lock (this.syncObj)
-                    {
-                        this.pendingFetch = null;
-                    }
-                }
-            });
-
-            return this.pendingFetch;
+            return await FetchInternalAsync(lastConfig, this.cancellationTokenSource.Token).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+        }
+        else
+        {
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, this.cancellationTokenSource.Token);
+            return await FetchInternalAsync(lastConfig, linkedCts.Token).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
         }
     }
 
-    private async ValueTask<FetchResult> FetchInternalAsync(ProjectConfig lastConfig)
+    private async ValueTask<FetchResult> FetchInternalAsync(ProjectConfig lastConfig, CancellationToken cancellationToken)
     {
         FormattableLogMessage logMessage;
         RefreshErrorCode errorCode;
         Exception errorException;
         try
         {
-            var deserializedResponse = await FetchRequestAsync(lastConfig.HttpETag, this.requestUri).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+            var deserializedResponse = await FetchRequestAsync(lastConfig.HttpETag, this.requestUri, cancellationToken)
+                .ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 
             var response = deserializedResponse.Response;
 
@@ -125,8 +109,12 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
         }
         catch (OperationCanceledException)
         {
-            /* do nothing on dispose cancel */
-            return FetchResult.NotModified(lastConfig);
+            if (this.cancellationTokenSource.IsCancellationRequested)
+            {
+                /* do nothing on dispose cancel */
+                return FetchResult.NotModified(lastConfig);
+            }
+            throw;
         }
         catch (FetchErrorException.Timeout_ ex)
         {
@@ -150,13 +138,13 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
         return FetchResult.Failure(lastConfig, errorCode, logMessage.ToLazyString(), errorException);
     }
 
-    private async ValueTask<DeserializedResponse> FetchRequestAsync(string? httpETag, Uri requestUri, sbyte maxExecutionCount = 3)
+    private async ValueTask<DeserializedResponse> FetchRequestAsync(string? httpETag, Uri requestUri, CancellationToken cancellationToken, sbyte maxExecutionCount = 3)
     {
         for (; ; maxExecutionCount--)
         {
             var request = new FetchRequest(this.requestUri, httpETag, this.requestHeaders, this.timeout);
 
-            var response = await this.configFetcher.FetchAsync(request, this.cancellationTokenSource.Token).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+            var response = await this.configFetcher.FetchAsync(request, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 
             if (response.StatusCode == HttpStatusCode.OK)
             {

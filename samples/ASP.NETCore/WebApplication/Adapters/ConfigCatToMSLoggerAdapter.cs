@@ -11,7 +11,7 @@ namespace ConfigCat.Client.Extensions.Adapters;
 public class ConfigCatToMSLoggerAdapter : ConfigCat.Client.IConfigCatLogger
 {
     private readonly ILogger logger;
-    private readonly ConcurrentDictionary<MessageFormatKey, string> originalFormatCache = new();
+    private readonly ConcurrentDictionary<OriginalFormatCacheKey, string> originalFormatCache = new();
 
     public ConfigCatToMSLoggerAdapter(ILogger<ConfigCat.Client.ConfigCatClient> logger)
     {
@@ -47,12 +47,12 @@ public class ConfigCatToMSLoggerAdapter : ConfigCat.Client.IConfigCatLogger
         public static readonly Func<LogValues, Exception?, string> Formatter = (state, _) => state.ToString();
 
         private ConfigCat.Client.FormattableLogMessage message;
-        private readonly ConcurrentDictionary<MessageFormatKey, string> originalFormatCache;
+        private readonly ConcurrentDictionary<OriginalFormatCacheKey, string> originalFormatCache;
 
-        public LogValues(in ConfigCat.Client.FormattableLogMessage message, ConcurrentDictionary<MessageFormatKey, string> messageFormatCache)
+        public LogValues(in ConfigCat.Client.FormattableLogMessage message, ConcurrentDictionary<OriginalFormatCacheKey, string> originalFormatCache)
         {
             this.message = message;
-            this.originalFormatCache = messageFormatCache;
+            this.originalFormatCache = originalFormatCache;
         }
 
         public readonly int Count => (this.message.ArgNames?.Length ?? 0) + 1;
@@ -82,7 +82,7 @@ public class ConfigCatToMSLoggerAdapter : ConfigCat.Client.IConfigCatLogger
                 return this.message.Format;
             }
 
-            return this.originalFormatCache.GetOrAdd(new MessageFormatKey(this.message), key =>
+            return this.originalFormatCache.GetOrAdd(new OriginalFormatCacheKey(this.message), key =>
             {
                 var argNamePlaceholders = Array.ConvertAll(key.ArgNames, name => "{" + name + "}");
                 return string.Format(CultureInfo.InvariantCulture, key.Format, argNamePlaceholders);
@@ -102,20 +102,20 @@ public class ConfigCatToMSLoggerAdapter : ConfigCat.Client.IConfigCatLogger
         public override string ToString() => this.message.InvariantFormattedMessage;
     }
 
-    private readonly struct MessageFormatKey : IEquatable<MessageFormatKey>
+    private readonly struct OriginalFormatCacheKey : IEquatable<OriginalFormatCacheKey>
     {
         public readonly string Format;
         public readonly string[] ArgNames;
 
-        public MessageFormatKey(in FormattableLogMessage message)
+        public OriginalFormatCacheKey(in FormattableLogMessage message)
         {
             this.Format = message.Format;
             this.ArgNames = message.ArgNames;
         }
 
-        public bool Equals(MessageFormatKey other) => ReferenceEquals(this.Format, other.Format);
+        public bool Equals(OriginalFormatCacheKey other) => ReferenceEquals(this.Format, other.Format);
 
-        public override bool Equals(object? obj) => obj is MessageFormatKey && Equals((MessageFormatKey)obj);
+        public override bool Equals(object? obj) => obj is OriginalFormatCacheKey && Equals((OriginalFormatCacheKey)obj);
 
         public override int GetHashCode() => RuntimeHelpers.GetHashCode(this.Format);
     }

@@ -364,7 +364,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
         if (userAttributeValue is null || userAttributeValue is string { Length: 0 })
         {
-            this.logger.UserObjectAttributeIsMissing(condition.ToString(), context.Key, userAttributeName);
+            this.logger.UserObjectAttributeIsMissing(condition, context.Key, userAttributeName);
             error = string.Format(CultureInfo.InvariantCulture, MissingUserAttributeError, userAttributeName);
             return false;
         }
@@ -908,7 +908,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         }
 
         text = UserAttributeValueToString(attributeValue);
-        this.logger.UserObjectAttributeIsAutoConverted(condition.ToString(), key, attributeName, text);
+        this.logger.UserObjectAttributeIsAutoConverted(condition, key, attributeName, text);
         return text;
     }
 
@@ -973,7 +973,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
     private string HandleInvalidUserAttribute(UserCondition condition, string key, string attributeName, string reason)
     {
-        this.logger.UserObjectAttributeIsInvalid(condition.ToString(), key, reason, attributeName);
+        this.logger.UserObjectAttributeIsInvalid(condition, key, reason, attributeName);
         return string.Format(CultureInfo.InvariantCulture, InvalidUserAttributeError, attributeName, reason);
     }
 }

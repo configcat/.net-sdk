@@ -1,6 +1,9 @@
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 
 namespace ConfigCat.Client.Extensions.Adapters;
@@ -8,6 +11,7 @@ namespace ConfigCat.Client.Extensions.Adapters;
 public class ConfigCatToMSLoggerAdapter : ConfigCat.Client.IConfigCatLogger
 {
     private readonly ILogger logger;
+    private readonly ConcurrentDictionary<MessageFormatKey, string> originalFormatCache = new();
 
     public ConfigCatToMSLoggerAdapter(ILogger<ConfigCat.Client.ConfigCatClient> logger)
     {
@@ -32,7 +36,7 @@ public class ConfigCatToMSLoggerAdapter : ConfigCat.Client.IConfigCatLogger
             _ => Microsoft.Extensions.Logging.LogLevel.None
         };
 
-        var logValues = new LogValues(ref message);
+        var logValues = new LogValues(ref message, this.originalFormatCache);
 
         this.logger.Log(logLevel, eventId.Id, state: logValues, exception, static (state, _) => state.Message.ToString());
 
@@ -42,12 +46,18 @@ public class ConfigCatToMSLoggerAdapter : ConfigCat.Client.IConfigCatLogger
     // Support for structured logging.
     private sealed class LogValues : IReadOnlyList<KeyValuePair<string, object?>>
     {
-        public LogValues(ref ConfigCat.Client.FormattableLogMessage message)
+        private ConfigCat.Client.FormattableLogMessage message;
+        private readonly ConcurrentDictionary<MessageFormatKey, string> originalFormatCache;
+
+        public LogValues(ref ConfigCat.Client.FormattableLogMessage message, ConcurrentDictionary<MessageFormatKey, string> messageFormatCache)
         {
-            Message = message;
+            this.message = message;
+            this.originalFormatCache = messageFormatCache;
         }
 
-        public ConfigCat.Client.FormattableLogMessage Message { get; private set; }
+        public ConfigCat.Client.FormattableLogMessage Message => this.message;
+
+        public int Count => (Message.ArgNames?.Length ?? 0) + 1;
 
         public KeyValuePair<string, object?> this[int index]
         {
@@ -59,12 +69,21 @@ public class ConfigCatToMSLoggerAdapter : ConfigCat.Client.IConfigCatLogger
                 }
 
                 return index == Count - 1
-                    ? new KeyValuePair<string, object?>("{OriginalFormat}", Message.Format)
+                    ? new KeyValuePair<string, object?>("{OriginalFormat}", GetOriginalFormat())
                     : new KeyValuePair<string, object?>(Message.ArgNames![index], Message.ArgValues![index]);
             }
         }
 
-        public int Count => (Message.ArgNames?.Length ?? 0) + 1;
+        private string GetOriginalFormat()
+        {
+            return Message.ArgNames is not { Length: > 0 }
+                ? Message.Format
+                : this.originalFormatCache.GetOrAdd(new MessageFormatKey(this.message), key =>
+                {
+                    var argNamePlaceholders = Array.ConvertAll(key.ArgNames, name => "{" + name + "}");
+                    return string.Format(CultureInfo.InvariantCulture, key.Format, argNamePlaceholders);
+                });
+        }
 
         public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
         {
@@ -77,5 +96,23 @@ public class ConfigCatToMSLoggerAdapter : ConfigCat.Client.IConfigCatLogger
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         public override string ToString() => Message.InvariantFormattedMessage;
+    }
+
+    private readonly struct MessageFormatKey : IEquatable<MessageFormatKey>
+    {
+        public readonly string Format;
+        public readonly string[] ArgNames;
+
+        public MessageFormatKey(in FormattableLogMessage message)
+        {
+            this.Format = message.Format;
+            this.ArgNames = message.ArgNames;
+        }
+
+        public bool Equals(MessageFormatKey other) => ReferenceEquals(this.Format, other.Format);
+
+        public override bool Equals(object? obj) => obj is MessageFormatKey && Equals((MessageFormatKey)obj);
+
+        public override int GetHashCode() => RuntimeHelpers.GetHashCode(this.Format);
     }
 }

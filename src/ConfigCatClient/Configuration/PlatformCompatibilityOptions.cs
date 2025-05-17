@@ -29,7 +29,7 @@ internal sealed class PlatformCompatibilityOptions
     {
         if (this.frozen)
         {
-            throw new InvalidOperationException($"Platform compatibility options cannot be changed after the first instance of ${nameof(ConfigCatClient)} has been created.");
+            throw new InvalidOperationException($"Platform compatibility options cannot be changed after the first instance of {nameof(ConfigCatClient)} has been created.");
         }
     }
 

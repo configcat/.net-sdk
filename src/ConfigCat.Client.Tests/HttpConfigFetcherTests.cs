@@ -126,14 +126,18 @@ public class HttpConfigFetcherTests
             .Setup(m => m.FetchAsync(It.IsAny<FetchRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new FetchResponse(HttpStatusCode.OK, reasonPhrase: null, responseHeader, configJson));
 
-        using var client = new ConfigCatClient("test-67890123456789012/1234567890123456789012", new ConfigCatClientOptions
+        var client = new ConfigCatClient("test-67890123456789012/1234567890123456789012", new ConfigCatClientOptions
         {
             ConfigFetcher = configFetcherMock.Object
         });
 
         // Act
 
-        var value = await client.GetValueAsync("stringDefaultCat", "");
+        string value;
+        using (client)
+        {
+            value = await client.GetValueAsync("stringDefaultCat", "");
+        }
 
         // Assert
 
@@ -159,7 +163,7 @@ public class HttpConfigFetcherTests
             .Setup(m => m.FetchAsync(It.IsAny<FetchRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new FetchResponse(HttpStatusCode.Forbidden, "Forbidden", responseHeader));
 
-        using var client = new ConfigCatClient("test-67890123456789012/1234567890123456789012", new ConfigCatClientOptions
+        var client = new ConfigCatClient("test-67890123456789012/1234567890123456789012", new ConfigCatClientOptions
         {
             ConfigFetcher = configFetcherMock.Object,
             Logger = logger.AsWrapper()
@@ -167,7 +171,10 @@ public class HttpConfigFetcherTests
 
         // Act
 
-        await client.ForceRefreshAsync();
+        using (client)
+        {
+            await client.ForceRefreshAsync();
+        }
 
         // Assert
 

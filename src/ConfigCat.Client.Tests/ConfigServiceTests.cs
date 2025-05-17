@@ -274,7 +274,7 @@ public class ConfigServiceTests
         var cachedPc = CreateUpToDatePc(timeStamp, pollInterval);
         var fetchedPc = CreateFreshPc(timeStamp);
 
-        var wd = new ManualResetEventSlim(false);
+        var cacheSetSignalTcs = TaskShim.CreateSafeCompletionSource<object?>(out var cacheSetSignalTask);
 
         this.cacheMock.SetupGet(m => m.LocalCachedConfig).Returns(cachedPc);
 
@@ -282,14 +282,14 @@ public class ConfigServiceTests
             .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new CacheSyncResult(cachedPc));
 
+        this.cacheMock
+            .Setup(m => m.SetAsync(It.IsAny<string>(), fetchedPc, It.IsAny<CancellationToken>()))
+            .Callback(() => cacheSetSignalTcs.SetResult(null))
+            .Returns(default(ValueTask));
+
         this.fetcherMock
             .Setup(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>()))
             .ReturnsAsync(FetchResult.Success(fetchedPc));
-
-        this.cacheMock
-            .Setup(m => m.SetAsync(It.IsAny<string>(), fetchedPc, It.IsAny<CancellationToken>()))
-            .Callback(() => wd.Set())
-            .Returns(default(ValueTask));
 
         var config = PollingModes.AutoPoll(pollInterval, maxInitWaitTime: TimeSpan.FromSeconds(0));
         using var service = new AutoPollConfigService(config,
@@ -300,13 +300,17 @@ public class ConfigServiceTests
 
         // Act
 
-        wd.Wait(pollInterval + pollInterval);
+        await cacheSetSignalTask;
 
         await service.GetConfigAsync();
         service.Dispose();
 
         // Assert
 
+        // Expected IConfigCache.GetAsync calls:
+        // 1. initial cache sync
+        // 2. cache sync initiated by the second iteration of the polling loop
+        // 3. cache sync initiated by the test (IConfigService.GetConfigAsync)
         this.cacheMock.Verify(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(3));
         this.cacheMock.Verify(m => m.SetAsync(It.IsAny<string>(), fetchedPc, It.IsAny<CancellationToken>()), Times.Once);
         this.fetcherMock.Verify(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>()), Times.Once);

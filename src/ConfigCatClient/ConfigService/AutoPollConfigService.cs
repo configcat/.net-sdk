@@ -44,14 +44,14 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
 
         this.maxInitWaitTime = options.MaxInitWaitTime >= TimeSpan.Zero ? options.MaxInitWaitTime : Timeout.InfiniteTimeSpan;
 
-        var initialCacheSyncUpTask = SyncUpWithCacheAsync(WaitForReadyCancellationToken).AsTask();
+        var initialCacheSyncUpTask = SyncUpWithCacheAsync().AsTask();
 
         // This task will complete as soon as
         // 1. a cache sync operation completes, and the obtained config is up-to-date (see GetConfig/GetConfigAsync and PollCoreAsync),
         // 2. or, in case the client is online and the internal cache is still empty or expired after the initial cache sync-up,
         //    the first config fetch operation completes, regardless of success or failure (see OnConfigFetched).
         // If the service gets disposed before any of these events happen, the task will also complete, but with a canceled status.
-        InitializationTask = WaitForInitializationAsync(WaitForReadyCancellationToken);
+        InitializationTask = WaitForInitializationAsync(DisposeToken);
 
         // In Auto Polling mode, maxInitWaitTime takes precedence over waiting for initial cache sync-up, that is,
         // ClientReady is always raised after maxInitWaitTime has passed, regardless of whether initial cache sync-up has finished or not.
@@ -111,12 +111,6 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
         }
     }
 
-    protected override async ValueTask<ClientCacheState> WaitForReadyAsync(Task<ProjectConfig> initialCacheSyncUpTask)
-    {
-        await InitializationTask.ConfigureAwait(TaskShim.ContinueOnCapturedContext);
-        return GetCacheState(this.ConfigCache.LocalCachedConfig);
-    }
-
     private async Task<bool> WaitForInitializationAsync(CancellationToken cancellationToken = default)
     {
         try
@@ -130,6 +124,12 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
         {
             return true;
         }
+    }
+
+    protected override async ValueTask<ClientCacheState> WaitForReadyAsync(Task<ProjectConfig> initialCacheSyncUpTask)
+    {
+        await InitializationTask.ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+        return GetCacheState(this.ConfigCache.LocalCachedConfig);
     }
 
     public ProjectConfig GetConfig()

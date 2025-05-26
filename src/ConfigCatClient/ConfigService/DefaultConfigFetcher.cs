@@ -16,7 +16,6 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
     private readonly IConfigCatConfigFetcher configFetcher;
     private readonly bool isCustomUri;
     private readonly TimeSpan timeout;
-    private readonly CancellationTokenSource cancellationTokenSource = new();
     internal Task<FetchResult>? pendingFetch;
 
     private Uri requestUri;
@@ -43,19 +42,6 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
     }
 
     public async Task<FetchResult> FetchAsync(ProjectConfig lastConfig, CancellationToken cancellationToken = default)
-    {
-        if (!cancellationToken.CanBeCanceled)
-        {
-            return await FetchInternalAsync(lastConfig, this.cancellationTokenSource.Token).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
-        }
-        else
-        {
-            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, this.cancellationTokenSource.Token);
-            return await FetchInternalAsync(lastConfig, linkedCts.Token).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
-        }
-    }
-
-    private async ValueTask<FetchResult> FetchInternalAsync(ProjectConfig lastConfig, CancellationToken cancellationToken)
     {
         FormattableLogMessage logMessage;
         RefreshErrorCode errorCode;
@@ -109,11 +95,6 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
         }
         catch (OperationCanceledException)
         {
-            if (this.cancellationTokenSource.IsCancellationRequested)
-            {
-                /* do nothing on dispose cancel */
-                return FetchResult.NotModified(lastConfig);
-            }
             throw;
         }
         catch (FetchErrorException.Timeout_ ex)
@@ -212,12 +193,6 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
 
     public void Dispose()
     {
-        if (!this.cancellationTokenSource.IsCancellationRequested)
-        {
-            try { this.cancellationTokenSource.Cancel(); }
-            catch (ObjectDisposedException) { /* intentional no-op */ }
-        }
-        this.cancellationTokenSource.Dispose();
         this.configFetcher.Dispose();
     }
 

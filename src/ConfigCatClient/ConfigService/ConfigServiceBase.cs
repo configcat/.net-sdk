@@ -31,8 +31,8 @@ internal abstract class ConfigServiceBase : IDisposable
     protected readonly string CacheKey;
     protected readonly SafeHooksWrapper Hooks;
 
-    private CancellationTokenSource? waitForReadyCancellationTokenSource;
-    protected CancellationToken WaitForReadyCancellationToken => this.waitForReadyCancellationTokenSource?.Token ?? new CancellationToken(canceled: true);
+    private readonly CancellationTokenSource disposeTokenSource;
+    protected CancellationToken DisposeToken => this.disposeTokenSource.Token;
 
     private Task<ProjectConfig>? pendingCacheSyncUp;
     private Task<ConfigWithFetchResult>? pendingConfigRefresh;
@@ -45,7 +45,7 @@ internal abstract class ConfigServiceBase : IDisposable
         this.Logger = logger;
         this.Hooks = hooks;
         this.status = isOffline ? Status.Offline : Status.Online;
-        this.waitForReadyCancellationTokenSource = new CancellationTokenSource();
+        this.disposeTokenSource = new CancellationTokenSource();
     }
 
     /// <remarks>
@@ -53,13 +53,12 @@ internal abstract class ConfigServiceBase : IDisposable
     /// </remarks>
     protected virtual void DisposeSynchronized(bool disposing)
     {
-        // If waiting for ready state is still in progress, it should stop.
-        this.waitForReadyCancellationTokenSource?.Cancel();
+        // Pending asynchronous operations (waiting for ready state, cache sync up, config refresh, etc.) should stop.
+        this.disposeTokenSource.Cancel();
 
         if (disposing)
         {
-            this.waitForReadyCancellationTokenSource?.Dispose();
-            this.waitForReadyCancellationTokenSource = null;
+            this.disposeTokenSource.Dispose();
         }
     }
 
@@ -165,7 +164,7 @@ internal abstract class ConfigServiceBase : IDisposable
             {
                 this.pendingConfigRefresh = configRefreshTask = TaskShim.Current.Run(async () =>
                 {
-                    var fetchResult = await this.ConfigFetcher.FetchAsync(latestConfig).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+                    var fetchResult = await this.ConfigFetcher.FetchAsync(latestConfig, DisposeToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 
                     var shouldUpdateCache =
                         fetchResult.IsSuccess
@@ -179,7 +178,7 @@ internal abstract class ConfigServiceBase : IDisposable
                         // config data under any circumstances.
                         if (useAsyncCache)
                         {
-                            await this.ConfigCache.SetAsync(this.CacheKey, fetchResult.Config).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+                            await this.ConfigCache.SetAsync(this.CacheKey, fetchResult.Config, DisposeToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
                         }
                         else
                         {
@@ -306,7 +305,7 @@ internal abstract class ConfigServiceBase : IDisposable
         return syncResult.Config;
     }
 
-    protected ValueTask<ProjectConfig> SyncUpWithCacheAsync(CancellationToken cancellationToken)
+    protected ValueTask<ProjectConfig> SyncUpWithCacheAsync(CancellationToken cancellationToken = default)
     {
         // InMemoryConfigCache always executes synchronously, so we special-case it for better performance.
         if (this.ConfigCache is InMemoryConfigCache inMemoryConfigCache)
@@ -384,7 +383,7 @@ internal abstract class ConfigServiceBase : IDisposable
             {
                 try
                 {
-                    var syncResult = await this.ConfigCache.GetAsync(this.CacheKey).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+                    var syncResult = await this.ConfigCache.GetAsync(this.CacheKey, DisposeToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
                     OnCacheSynced(syncResult);
                     cacheSyncUpTcs.TrySetResult(syncResult.Config);
                 }
@@ -422,19 +421,8 @@ internal abstract class ConfigServiceBase : IDisposable
 
     protected async Task<ClientCacheState> GetReadyTask(Task<ProjectConfig> initialCacheSyncUpTask)
     {
-        ClientCacheState cacheState;
-        try { cacheState = await WaitForReadyAsync(initialCacheSyncUpTask).ConfigureAwait(TaskShim.ContinueOnCapturedContext); }
-        finally
-        {
-            lock (this.syncObj)
-            {
-                this.waitForReadyCancellationTokenSource?.Dispose();
-                this.waitForReadyCancellationTokenSource = null;
-            }
-        }
-
+        var cacheState = await WaitForReadyAsync(initialCacheSyncUpTask).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
         this.Hooks.RaiseClientReady(cacheState);
-
         return cacheState;
     }
 }

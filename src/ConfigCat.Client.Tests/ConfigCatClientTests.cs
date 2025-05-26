@@ -504,6 +504,69 @@ public class ConfigCatClientTests
         Assert.IsTrue(evaluationDetails.Value);
     }
 
+    [DataTestMethod]
+    [DataRow(nameof(AutoPoll))]
+    [DataRow(nameof(ManualPoll))]
+    [DataRow(nameof(LazyLoad))]
+    public async Task WaitForReadyAsync_ShouldBeCanceledIfClientGetsDisposedDuringInitialCacheSync(string pollingMode)
+    {
+        const string cacheKey = "1";
+        const int delayMs = 1000;
+        var externalCache = new FakeExternalAsyncCache(TimeSpan.FromMilliseconds(delayMs));
+
+        Func<IConfigFetcher, CacheParameters, LoggerWrapper, Hooks?, IConfigService> configServiceFactory = pollingMode switch
+        {
+            nameof(AutoPoll) => (fetcher, cacheParams, loggerWrapper, hooks) => new AutoPollConfigService(PollingModes.AutoPoll(), this.fetcherMock.Object, cacheParams, loggerWrapper, hooks: hooks),
+            nameof(ManualPoll) => (fetcher, cacheParams, loggerWrapper, hooks) => new ManualPollConfigService(this.fetcherMock.Object, cacheParams, loggerWrapper, hooks: hooks),
+            nameof(LazyLoad) => (fetcher, cacheParams, loggerWrapper, hooks) => new LazyLoadConfigService(this.fetcherMock.Object, cacheParams, loggerWrapper, PollingModes.LazyLoad().CacheTimeToLive, hooks: hooks),
+            _ => throw new ArgumentOutOfRangeException(nameof(pollingMode), pollingMode, null)
+        };
+
+        var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
+            onFetch: _ => throw new NotImplementedException(),
+            onFetchAsync: (_, _) => Task.FromResult<FetchResult>(default!),
+            configServiceFactory,
+            evaluatorFactory: null,
+            configCacheFactory: logger => new ExternalConfigCache(externalCache, logger),
+            overrideDataSourceFactory: null, null, out _
+        );
+
+        Task<ClientCacheState> waitForReadyTask;
+
+        using (client)
+        {
+            waitForReadyTask = client.WaitForReadyAsync();
+            await Task.Delay(delayMs / 3);
+        }
+
+        await Assert.ThrowsExceptionAsync<TaskCanceledException>(() => waitForReadyTask);
+    }
+
+    [TestMethod]
+    public async Task WaitForReadyAsync_ShouldBeCanceledIfClientGetsDisposedDuringInitialAutoPollFetch()
+    {
+        const string cacheKey = "1";
+        const int delayMs = 1000;
+
+        var loggerWrapper = this.loggerMock.Object.AsWrapper();
+        var cacheParams = new CacheParameters(new InMemoryConfigCache(), cacheKey);
+
+        var fakeHandler = new FakeHttpClientHandler(HttpStatusCode.OK, "{}", TimeSpan.FromMilliseconds(delayMs));
+        var configFetcher = new DefaultConfigFetcher(new Uri("http://example.com"), "1.0", loggerWrapper, new HttpClientConfigFetcher(fakeHandler), false, TimeSpan.FromMilliseconds(delayMs * 2));
+        var configService = new AutoPollConfigService(PollingModes.AutoPoll(), configFetcher, cacheParams, loggerWrapper);
+        var client = new ConfigCatClient(configService, this.loggerMock.Object, new RolloutEvaluator(loggerWrapper));
+
+        Task<ClientCacheState> waitForReadyTask;
+
+        using (client)
+        {
+            waitForReadyTask = client.WaitForReadyAsync();
+            await Task.Delay(delayMs / 3);
+        }
+
+        await Assert.ThrowsExceptionAsync<TaskCanceledException>(() => waitForReadyTask);
+    }
+
     [TestMethod]
     public void GetValue_ConfigServiceThrowException_ShouldReturnDefaultValue()
     {

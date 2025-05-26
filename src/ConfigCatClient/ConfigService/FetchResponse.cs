@@ -21,7 +21,7 @@ public readonly struct FetchResponse
     internal FetchResponse(HttpResponseMessage httpResponse, string? httpResponseBody = null)
         : this(httpResponse.StatusCode, httpResponse.ReasonPhrase, httpResponseBody)
     {
-        ETag = httpResponse.Headers.ETag?.Tag;
+        ETag = httpResponse.Headers.ETag?.ToString(); // NOTE: ToString() is necessary because the "W/" prefix must be included!
         RayId = httpResponse.Headers.TryGetValues("CF-RAY", out var values) ? values.FirstOrDefault() : null;
     }
 

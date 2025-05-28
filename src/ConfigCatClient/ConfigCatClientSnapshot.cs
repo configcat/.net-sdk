@@ -95,7 +95,8 @@ public readonly struct ConfigCatClientSnapshot : IConfigCatClientSnapshot
         catch (Exception ex)
         {
             evaluationServices.Logger.SettingEvaluationError($"{nameof(ConfigCatClientSnapshot)}.{nameof(GetValue)}", key, nameof(defaultValue), defaultValue, ex);
-            evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user, ex.Message, ex);
+            evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user,
+                ex.Message, ex, EvaluationHelper.GetErrorCode(ex));
             value = defaultValue;
         }
 
@@ -136,7 +137,8 @@ public readonly struct ConfigCatClientSnapshot : IConfigCatClientSnapshot
         catch (Exception ex)
         {
             evaluationServices.Logger.SettingEvaluationError($"{nameof(ConfigCatClientSnapshot)}.{nameof(GetValueDetails)}", key, nameof(defaultValue), defaultValue, ex);
-            evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user, ex.Message, ex);
+            evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user,
+                ex.Message, ex, EvaluationHelper.GetErrorCode(ex));
         }
 
         evaluationServices.Hooks.RaiseFlagEvaluated(evaluationDetails);

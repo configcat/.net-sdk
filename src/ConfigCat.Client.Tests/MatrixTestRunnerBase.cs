@@ -19,8 +19,8 @@ namespace ConfigCat.Client.Tests;
 
 public interface IMatrixTestDescriptor
 {
-    public ConfigLocation ConfigLocation { get; }
-    public string MatrixResultFileName { get; }
+    ConfigLocation ConfigLocation { get; }
+    string MatrixResultFileName { get; }
 }
 
 public interface IVariationIdMatrixTest { }

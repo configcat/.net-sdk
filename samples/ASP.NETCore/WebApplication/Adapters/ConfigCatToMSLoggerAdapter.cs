@@ -1,6 +1,9 @@
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 
 namespace ConfigCat.Client.Extensions.Adapters;
@@ -8,6 +11,7 @@ namespace ConfigCat.Client.Extensions.Adapters;
 public class ConfigCatToMSLoggerAdapter : ConfigCat.Client.IConfigCatLogger
 {
     private readonly ILogger logger;
+    private readonly ConcurrentDictionary<OriginalFormatCacheKey, string> originalFormatCache = new();
 
     public ConfigCatToMSLoggerAdapter(ILogger<ConfigCat.Client.ConfigCatClient> logger)
     {
@@ -18,7 +22,7 @@ public class ConfigCatToMSLoggerAdapter : ConfigCat.Client.IConfigCatLogger
     public ConfigCat.Client.LogLevel LogLevel
     {
         get => ConfigCat.Client.LogLevel.Debug;
-        set { }
+        set { throw new NotSupportedException(); }
     }
 
     public void Log(ConfigCat.Client.LogLevel level, ConfigCat.Client.LogEventId eventId, ref ConfigCat.Client.FormattableLogMessage message, Exception? exception = null)
@@ -32,41 +36,60 @@ public class ConfigCatToMSLoggerAdapter : ConfigCat.Client.IConfigCatLogger
             _ => Microsoft.Extensions.Logging.LogLevel.None
         };
 
-        var logValues = new LogValues(ref message);
+        var logValues = new LogValues(message, this.originalFormatCache);
 
-        this.logger.Log(logLevel, eventId.Id, state: logValues, exception, static (state, _) => state.Message.ToString());
-
-        message = logValues.Message;
+        this.logger.Log(logLevel, eventId.Id, state: logValues, exception, LogValues.Formatter);
     }
 
     // Support for structured logging.
-    private sealed class LogValues : IReadOnlyList<KeyValuePair<string, object?>>
+    private struct LogValues : IReadOnlyList<KeyValuePair<string, object?>>
     {
-        public LogValues(ref ConfigCat.Client.FormattableLogMessage message)
+        public static readonly Func<LogValues, Exception?, string> Formatter = (state, _) => state.ToString();
+
+        private ConfigCat.Client.FormattableLogMessage message;
+        private readonly ConcurrentDictionary<OriginalFormatCacheKey, string> originalFormatCache;
+
+        public LogValues(in ConfigCat.Client.FormattableLogMessage message, ConcurrentDictionary<OriginalFormatCacheKey, string> originalFormatCache)
         {
-            Message = message;
+            this.message = message;
+            this.originalFormatCache = originalFormatCache;
         }
 
-        public ConfigCat.Client.FormattableLogMessage Message { get; private set; }
+        public readonly int Count => (this.message.ArgNames?.Length ?? 0) + 1;
 
-        public KeyValuePair<string, object?> this[int index]
+        public readonly KeyValuePair<string, object?> this[int index]
         {
             get
             {
-                if (index < 0 || index >= Count)
+                if (this.message.ArgNames is { } argNames && (uint)index < (uint)argNames.Length)
                 {
-                    throw new IndexOutOfRangeException(nameof(index));
+                    return new KeyValuePair<string, object?>(argNames[index], this.message.ArgValues![index]);
                 }
 
-                return index == Count - 1
-                    ? new KeyValuePair<string, object?>("{OriginalFormat}", Message.Format)
-                    : new KeyValuePair<string, object?>(Message.ArgNames![index], Message.ArgValues![index]);
+                if (index == Count - 1)
+                {
+                    return new KeyValuePair<string, object?>("{OriginalFormat}", GetOriginalFormat());
+                }
+
+                throw new IndexOutOfRangeException(nameof(index));
             }
         }
 
-        public int Count => (Message.ArgNames?.Length ?? 0) + 1;
+        private readonly string GetOriginalFormat()
+        {
+            if (this.message.ArgNames is not { Length: > 0 })
+            {
+                return this.message.Format;
+            }
 
-        public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
+            return this.originalFormatCache.GetOrAdd(new OriginalFormatCacheKey(this.message), key =>
+            {
+                var argNamePlaceholders = Array.ConvertAll(key.ArgNames, name => "{" + name + "}");
+                return string.Format(CultureInfo.InvariantCulture, key.Format, argNamePlaceholders);
+            });
+        }
+
+        public readonly IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
         {
             for (int i = 0, n = Count; i < n; i++)
             {
@@ -74,8 +97,26 @@ public class ConfigCatToMSLoggerAdapter : ConfigCat.Client.IConfigCatLogger
             }
         }
 
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        readonly IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        public override string ToString() => Message.InvariantFormattedMessage;
+        public override string ToString() => this.message.InvariantFormattedMessage;
+    }
+
+    private readonly struct OriginalFormatCacheKey : IEquatable<OriginalFormatCacheKey>
+    {
+        public readonly string Format;
+        public readonly string[] ArgNames;
+
+        public OriginalFormatCacheKey(in FormattableLogMessage message)
+        {
+            this.Format = message.Format;
+            this.ArgNames = message.ArgNames;
+        }
+
+        public bool Equals(OriginalFormatCacheKey other) => ReferenceEquals(this.Format, other.Format);
+
+        public override bool Equals(object? obj) => obj is OriginalFormatCacheKey && Equals((OriginalFormatCacheKey)obj);
+
+        public override int GetHashCode() => RuntimeHelpers.GetHashCode(this.Format);
     }
 }

@@ -157,17 +157,17 @@ internal static partial class LoggerExtensions
         $"Cannot evaluate % options for setting '{key}' (the User.{attributeName} attribute is missing). You should set the User.{attributeName} attribute in order to make targeting work properly. Read more: https://configcat.com/docs/advanced/user-object/",
         "KEY", "ATTRIBUTE_NAME", "ATTRIBUTE_NAME");
 
-    public static FormattableLogMessage UserObjectAttributeIsMissing(this LoggerWrapper logger, string condition, string key, string attributeName) => logger.LogInterpolated(
+    public static FormattableLogMessage UserObjectAttributeIsMissing(this LoggerWrapper logger, UserCondition condition, string key, string attributeName) => logger.LogInterpolated(
         LogLevel.Warning, 3003,
         $"Cannot evaluate condition ({condition}) for setting '{key}' (the User.{attributeName} attribute is missing). You should set the User.{attributeName} attribute in order to make targeting work properly. Read more: https://configcat.com/docs/advanced/user-object/",
         "CONDITION", "KEY", "ATTRIBUTE_NAME", "ATTRIBUTE_NAME");
 
-    public static FormattableLogMessage UserObjectAttributeIsInvalid(this LoggerWrapper logger, string condition, string key, string reason, string attributeName) => logger.LogInterpolated(
+    public static FormattableLogMessage UserObjectAttributeIsInvalid(this LoggerWrapper logger, UserCondition condition, string key, string reason, string attributeName) => logger.LogInterpolated(
         LogLevel.Warning, 3004,
         $"Cannot evaluate condition ({condition}) for setting '{key}' ({reason}). Please check the User.{attributeName} attribute and make sure that its value corresponds to the comparison operator.",
         "CONDITION", "KEY", "REASON", "ATTRIBUTE_NAME");
 
-    public static FormattableLogMessage UserObjectAttributeIsAutoConverted(this LoggerWrapper logger, string condition, string key, string attributeName, string attributeValue) => logger.LogInterpolated(
+    public static FormattableLogMessage UserObjectAttributeIsAutoConverted(this LoggerWrapper logger, UserCondition condition, string key, string attributeName, string attributeValue) => logger.LogInterpolated(
         LogLevel.Warning, 3005,
         $"Evaluation of condition ({condition}) for setting '{key}' may not produce the expected result (the User.{attributeName} attribute is not a string value, thus it was automatically converted to the string value '{attributeValue}'). Please make sure that using a non-string value was intended.",
         "CONDITION", "KEY", "ATTRIBUTE_NAME", "ATTRIBUTE_VALUE");

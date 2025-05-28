@@ -74,9 +74,8 @@ public struct FormattableLogMessage : IFormattable
 
     internal LazyString ToLazyString()
     {
-        return this.invariantFormattedMessage is { } invariantFormattedMessage
-            ? invariantFormattedMessage
-            : new LazyString(this.format ?? string.Empty, this.argValues);
+        return this.invariantFormattedMessage
+            ?? new LazyString(this.format ?? string.Empty, this.argValues);
     }
 
     /// <summary>

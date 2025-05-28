@@ -1723,7 +1723,9 @@ public class ConfigCatClientTests
 
         if (passConfigureToSecondGet)
         {
-            Assert.IsTrue(warnings2.Any(msg => msg.Contains("configuration action is ignored")));
+            var messages = warnings2.Where(msg => msg.Contains("configuration action is ignored")).ToArray();
+            Assert.IsTrue(messages.Any());
+            StringAssert.EndsWith(messages[0], "SDK Key: '**********************/****************789012'.");
         }
         else
         {

@@ -149,4 +149,16 @@ public class LoggerTests
         loggerMock.Verify(m => m.Log(LogLevel.Error, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
         loggerMock.Verify(m => m.Log(LogLevel.Error, 1000, ref It.Ref<FormattableLogMessage>.IsAny, ex1), Times.Once);
     }
+
+    [DataRow("", "")]
+    [DataRow("abc123", "abc123")]
+    [DataRow("/abc123", "/abc123")]
+    [DataRow("abc/123", "*bc/123")]
+    [DataRow("abc123/", "*bc123/")]
+    [DataRow("configcat-sdk-1/TEST_KEY-0123456789012/1234567890123456789012", "***************/**********************/****************789012")]
+    [DataTestMethod]
+    public void MaskSdkKey_Works(string sdkKey, string expectedMaskedSdkKey)
+    {
+        Assert.AreEqual(expectedMaskedSdkKey, LoggerExtensions.MaskSdkKey(sdkKey));
+    }
 }

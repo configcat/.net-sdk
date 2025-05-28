@@ -181,10 +181,15 @@ public class HttpConfigFetcherTests
         Assert.AreEqual(1, errors.Length);
 
         var error = errors[0].Message;
-        Assert.AreEqual(1, error.ArgValues.Length);
+        Assert.AreEqual(2, error.ArgNames.Length);
+        Assert.AreEqual(2, error.ArgValues.Length);
         Assert.IsTrue(error.ArgValues[0] is string);
+        Assert.IsTrue(error.ArgValues[1] is string);
+
+        var message = errors[0].Message.InvariantFormattedMessage;
+        StringAssert.StartsWith(message, "Your SDK Key seems to be wrong: '**********************/****************789012'.");
 
         var rayId = (string)error.ArgValues[0]!;
-        StringAssert.Contains(errors[0].Message.InvariantFormattedMessage, rayId);
+        StringAssert.Contains(message, rayId);
     }
 }

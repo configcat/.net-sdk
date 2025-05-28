@@ -83,7 +83,7 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
 
                 case HttpStatusCode.Forbidden:
                 case HttpStatusCode.NotFound:
-                    logMessage = this.logger.FetchFailedDueToInvalidSdkKey(response.RayId);
+                    logMessage = this.logger.FetchFailedDueToInvalidSdkKey(this.sdkKey, response.RayId);
 
                     // We update the timestamp for extra protection against flooding.
                     return FetchResult.Failure(lastConfig.With(ProjectConfig.GenerateTimeStamp()), RefreshErrorCode.InvalidSdkKey, logMessage.ToLazyString());

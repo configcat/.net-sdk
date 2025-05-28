@@ -38,14 +38,15 @@ internal static partial class LoggerExtensions
         $"Error occurred in the `{methodName}` method.",
         "METHOD_NAME");
 
-    public static FormattableLogMessage FetchFailedDueToInvalidSdkKey(this LoggerWrapper logger, string? rayId) => rayId is not null
+    public static FormattableLogMessage FetchFailedDueToInvalidSdkKey(this LoggerWrapper logger, string sdkKey, string? rayId) => rayId is not null
         ? logger.LogInterpolated(
             LogLevel.Error, 1100,
-            $"Your SDK Key seems to be wrong. You can find the valid SDK Key at https://app.configcat.com/sdkkey (Ray ID: {rayId})",
-            "RAY_ID")
-        : logger.Log(
+            $"Your SDK Key seems to be wrong: '{MaskSdkKey(sdkKey)}'. You can find the valid SDK Key at https://app.configcat.com/sdkkey (Ray ID: {rayId})",
+            "SDK_KEY", "RAY_ID")
+        : logger.LogInterpolated(
             LogLevel.Error, 1100,
-            "Your SDK Key seems to be wrong. You can find the valid SDK Key at https://app.configcat.com/sdkkey");
+            $"Your SDK Key seems to be wrong: '{MaskSdkKey(sdkKey)}'. You can find the valid SDK Key at https://app.configcat.com/sdkkey",
+            "SDK_KEY");
 
     public static FormattableLogMessage FetchFailedDueToUnexpectedHttpResponse(this LoggerWrapper logger, int statusCode, string? reasonPhrase, string? rayId) => rayId is not null
         ? logger.LogInterpolated(
@@ -140,7 +141,7 @@ internal static partial class LoggerExtensions
 
     public static FormattableLogMessage ClientIsAlreadyCreated(this LoggerWrapper logger, string sdkKey) => logger.LogInterpolated(
         LogLevel.Warning, 3000,
-        $"There is an existing client instance for the specified SDK Key. No new client instance will be created and the specified configuration action is ignored. Returning the existing client instance. SDK Key: '{sdkKey}'.",
+        $"There is an existing client instance for the specified SDK Key. No new client instance will be created and the specified configuration action is ignored. Returning the existing client instance. SDK Key: '{MaskSdkKey(sdkKey)}'.",
         "SDK_KEY");
 
     public static FormattableLogMessage UserObjectIsMissing(this LoggerWrapper logger, string key) => logger.LogInterpolated(

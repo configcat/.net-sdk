@@ -16,7 +16,6 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
     private readonly IConfigCatConfigFetcher configFetcher;
     private readonly bool isCustomUri;
     private readonly TimeSpan timeout;
-    internal Task<FetchResult>? pendingFetch;
 
     private Uri requestUri;
 
@@ -123,7 +122,7 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
     {
         for (; ; maxExecutionCount--)
         {
-            var request = new FetchRequest(this.requestUri, httpETag, this.requestHeaders, this.timeout);
+            var request = new FetchRequest(requestUri, httpETag, this.requestHeaders, this.timeout);
 
             var response = await this.configFetcher.FetchAsync(request, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 

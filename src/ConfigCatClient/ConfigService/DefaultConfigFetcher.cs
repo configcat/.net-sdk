@@ -126,54 +126,53 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
 
             var response = await this.configFetcher.FetchAsync(request, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 
-            if (response.StatusCode == HttpStatusCode.OK)
+            if (response.StatusCode != HttpStatusCode.OK)
             {
-                Config config;
-                try { config = Config.Deserialize(response.Body.AsMemory()); }
-                catch (Exception ex) { return new DeserializedResponse(response, ex); }
+                return new DeserializedResponse(response, (Exception?)null);
+            }
 
-                if (config.Preferences is not null)
-                {
-                    var newBaseUrl = config.Preferences.BaseUrl;
+            Config config;
+            try { config = Config.Deserialize(response.Body.AsMemory()); }
+            catch (Exception ex) { return new DeserializedResponse(response, ex); }
 
-                    if (newBaseUrl is null || requestUri.Host == new Uri(newBaseUrl).Host)
-                    {
-                        return new DeserializedResponse(response, config);
-                    }
-
-                    RedirectMode redirect = config.Preferences.RedirectMode;
-
-                    if (this.isCustomUri && redirect != RedirectMode.Force)
-                    {
-                        return new DeserializedResponse(response, config);
-                    }
-
-                    UpdateRequestUri(new Uri(newBaseUrl));
-
-                    if (redirect == RedirectMode.No)
-                    {
-                        return new DeserializedResponse(response, config);
-                    }
-
-                    if (redirect == RedirectMode.Should)
-                    {
-                        this.logger.DataGovernanceIsOutOfSync();
-                    }
-
-                    if (maxExecutionCount <= 1)
-                    {
-                        this.logger.FetchFailedDueToRedirectLoop(response.RayId);
-                        return new DeserializedResponse(response, config);
-                    }
-
-                    requestUri = ReplaceUri(request.Uri, new Uri(newBaseUrl));
-                    continue;
-                }
-
+            if (config.Preferences is null)
+            {
                 return new DeserializedResponse(response, config);
             }
 
-            return new DeserializedResponse(response, (Exception?)null);
+            var newBaseUrl = config.Preferences.BaseUrl;
+
+            if (newBaseUrl is null || requestUri.Host == new Uri(newBaseUrl).Host)
+            {
+                return new DeserializedResponse(response, config);
+            }
+
+            RedirectMode redirect = config.Preferences.RedirectMode;
+
+            if (this.isCustomUri && redirect != RedirectMode.Force)
+            {
+                return new DeserializedResponse(response, config);
+            }
+
+            UpdateRequestUri(new Uri(newBaseUrl));
+
+            if (redirect == RedirectMode.No)
+            {
+                return new DeserializedResponse(response, config);
+            }
+
+            if (redirect == RedirectMode.Should)
+            {
+                this.logger.DataGovernanceIsOutOfSync();
+            }
+
+            if (maxExecutionCount <= 1)
+            {
+                this.logger.FetchFailedDueToRedirectLoop(response.RayId);
+                return new DeserializedResponse(response, config);
+            }
+
+            requestUri = ReplaceUri(request.Uri, new Uri(newBaseUrl));
         }
     }
 

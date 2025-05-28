@@ -11,6 +11,14 @@ internal sealed class ProjectConfig
 
     public static readonly ProjectConfig Empty = new(null, null, DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc), null);
 
+    public static bool ContentEquals(ProjectConfig projectConfig1, ProjectConfig projectConfig2)
+    {
+        // When both ETags are available, we don't need to check the JSON content.
+        return projectConfig1.HttpETag is not null && projectConfig2.HttpETag is not null
+            ? projectConfig1.HttpETag == projectConfig2.HttpETag
+            : projectConfig1.ConfigJson == projectConfig2.ConfigJson;
+    }
+
     public ProjectConfig(string? configJson, Config? config, DateTime timeStamp, string? httpETag)
     {
         Debug.Assert(!(configJson is null ^ config is null), $"{nameof(configJson)} and {nameof(config)} must be both null or both not null.");

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Configuration;
@@ -109,136 +108,6 @@ public class HttpConfigFetcherTests
     }
 
     [TestMethod]
-    public async Task HttpConfigFetcher_OnlyOneFetchAsyncShouldBeInProgressAtATime_Success()
-    {
-        // Arrange
-
-        var myHandler = new FakeHttpClientHandler(HttpStatusCode.OK, "{ }", TimeSpan.FromSeconds(1));
-
-        var instance = new DefaultConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), new HttpClientConfigFetcher(myHandler), false, TimeSpan.FromSeconds(30));
-
-        var lastConfig = ConfigHelper.FromString("{}", timeStamp: ProjectConfig.GenerateTimeStamp(), httpETag: "\"ETAG\"");
-
-        // Act
-
-        var task1 = instance.FetchAsync(lastConfig);
-        var task2 = Task.Run(() => instance.FetchAsync(lastConfig));
-
-        var fetchResults = await Task.WhenAll(task1, task2);
-
-        // Assert
-
-        Assert.AreEqual(1, myHandler.SendInvokeCount);
-        Assert.IsTrue(fetchResults[0].IsSuccess);
-        Assert.IsTrue(fetchResults[1].IsSuccess);
-        Assert.AreSame(fetchResults[0].Config, fetchResults[1].Config);
-    }
-
-    [TestMethod]
-    public async Task HttpConfigFetcher_OnlyOneFetchAsyncShouldBeInProgressAtATime_Failure()
-    {
-        // Arrange
-
-        var exception = new WebException();
-        var myHandler = new ExceptionThrowerHttpClientHandler(exception, TimeSpan.FromSeconds(1));
-
-        var instance = new DefaultConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), new HttpClientConfigFetcher(myHandler), false, TimeSpan.FromSeconds(30));
-
-        var lastConfig = ConfigHelper.FromString("{}", timeStamp: ProjectConfig.GenerateTimeStamp(), httpETag: "\"ETAG\"");
-
-        // Act
-
-        var task1 = instance.FetchAsync(lastConfig);
-        var task2 = Task.Run(() => instance.FetchAsync(lastConfig));
-
-        var fetchResults = await Task.WhenAll(task1, task2);
-
-        // Assert
-
-        Assert.AreEqual(1, myHandler.SendInvokeCount);
-        Assert.IsTrue(fetchResults[0].IsFailure);
-        Assert.IsTrue(fetchResults[1].IsFailure);
-        Assert.AreSame(exception, fetchResults[0].ErrorException);
-        Assert.AreSame(fetchResults[0].ErrorException, fetchResults[1].ErrorException);
-    }
-
-    [DataRow(false, false, true)]
-    [DataRow(false, false, false)]
-    [DataRow(false, false, null)]
-    [DataRow(false, true, true)]
-    [DataRow(true, false, true)]
-    [DataRow(true, true, true)]
-    [DataTestMethod]
-    public async Task HttpConfigFetcher_FetchAsync_PendingOperationShouldBeJoined(bool cancel1, bool cancel2, bool? bothAsync)
-    {
-        // Arrange
-
-        const int delayMs = 2000;
-        const string configContent = "{ }";
-        var configETag = new EntityTagHeaderValue("\"123\"");
-
-        var fakeHandler = new FakeHttpClientHandler(HttpStatusCode.OK, configContent, TimeSpan.FromMilliseconds(delayMs), configETag);
-        var configFetcher = new DefaultConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), new HttpClientConfigFetcher(fakeHandler), false, TimeSpan.FromMilliseconds(delayMs * 2));
-
-        using var cts = new CancellationTokenSource(delayMs / 4);
-
-        // Act
-
-        var pendingFetchBefore = configFetcher.pendingFetch;
-
-        var fetchTask1 = bothAsync is true or null
-            ? configFetcher.FetchAsync(ProjectConfig.Empty, cancel1 ? cts.Token : CancellationToken.None)
-            : Task.Run(() => configFetcher.Fetch(ProjectConfig.Empty));
-
-        var pendingFetchBetween = configFetcher.pendingFetch;
-
-        var fetchTask2 = bothAsync is true or not null
-            ? configFetcher.FetchAsync(ProjectConfig.Empty, cancel2 ? cts.Token : CancellationToken.None)
-            : Task.Run(() => configFetcher.Fetch(ProjectConfig.Empty));
-
-        var pendingFetchAfter = configFetcher.pendingFetch;
-
-        // Assert
-
-        Assert.IsNull(pendingFetchBefore);
-
-        if (bothAsync is not false)
-        {
-            Assert.IsNotNull(pendingFetchBetween);
-            Assert.AreEqual(pendingFetchBetween, pendingFetchAfter);
-        }
-
-        if (bothAsync is not false && cancel1)
-        {
-            var ex = await Assert.ThrowsExceptionAsync<TaskCanceledException>(() => fetchTask1);
-            Assert.AreEqual(ex.CancellationToken, cts.Token);
-        }
-        else
-        {
-            var fetchResult = await fetchTask1;
-            Assert.AreEqual(configETag, new EntityTagHeaderValue(fetchResult.Config.HttpETag!));
-        }
-
-        if (bothAsync is not false && cancel2)
-        {
-            var ex = await Assert.ThrowsExceptionAsync<TaskCanceledException>(() => fetchTask2);
-            Assert.AreEqual(ex.CancellationToken, cts.Token);
-        }
-        else
-        {
-            var fetchResult = await fetchTask2;
-            Assert.AreEqual(configETag, new EntityTagHeaderValue(fetchResult.Config.HttpETag!));
-        }
-
-        if (bothAsync is not false)
-        {
-            await pendingFetchBetween!;
-
-            Assert.IsNull(configFetcher.pendingFetch);
-        }
-    }
-
-    [TestMethod]
     public async Task CustomConfigFetcher_Success()
     {
         // Arrange
@@ -256,14 +125,18 @@ public class HttpConfigFetcherTests
             .Setup(m => m.FetchAsync(It.IsAny<FetchRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new FetchResponse(HttpStatusCode.OK, reasonPhrase: null, responseHeader, configJson));
 
-        using var client = new ConfigCatClient("test-67890123456789012/1234567890123456789012", new ConfigCatClientOptions
+        var client = new ConfigCatClient("test-67890123456789012/1234567890123456789012", new ConfigCatClientOptions
         {
             ConfigFetcher = configFetcherMock.Object
         });
 
         // Act
 
-        var value = await client.GetValueAsync("stringDefaultCat", "");
+        string value;
+        using (client)
+        {
+            value = await client.GetValueAsync("stringDefaultCat", "");
+        }
 
         // Assert
 
@@ -289,7 +162,7 @@ public class HttpConfigFetcherTests
             .Setup(m => m.FetchAsync(It.IsAny<FetchRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new FetchResponse(HttpStatusCode.Forbidden, "Forbidden", responseHeader));
 
-        using var client = new ConfigCatClient("test-67890123456789012/1234567890123456789012", new ConfigCatClientOptions
+        var client = new ConfigCatClient("test-67890123456789012/1234567890123456789012", new ConfigCatClientOptions
         {
             ConfigFetcher = configFetcherMock.Object,
             Logger = logger.AsWrapper()
@@ -297,7 +170,10 @@ public class HttpConfigFetcherTests
 
         // Act
 
-        await client.ForceRefreshAsync();
+        using (client)
+        {
+            await client.ForceRefreshAsync();
+        }
 
         // Assert
 

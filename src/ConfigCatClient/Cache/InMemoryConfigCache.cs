@@ -9,19 +9,19 @@ internal sealed class InMemoryConfigCache : ConfigCache
 
     public override ProjectConfig LocalCachedConfig => this.cachedConfig;
 
-    public override ProjectConfig Get(string key)
+    public override CacheSyncResult Get(string key)
     {
-        return LocalCachedConfig;
+        return new CacheSyncResult(LocalCachedConfig);
     }
 
-    public override ValueTask<ProjectConfig> GetAsync(string key, CancellationToken cancellationToken = default)
+    public override ValueTask<CacheSyncResult> GetAsync(string key, CancellationToken cancellationToken = default)
     {
         if (cancellationToken.IsCancellationRequested)
         {
-            return new ValueTask<ProjectConfig>(cancellationToken.ToTask<ProjectConfig>());
+            return new ValueTask<CacheSyncResult>(cancellationToken.ToTask<CacheSyncResult>());
         }
 
-        return new ValueTask<ProjectConfig>(Get(key));
+        return new ValueTask<CacheSyncResult>(Get(key));
     }
 
     public override void Set(string key, ProjectConfig config)

@@ -15,7 +15,8 @@ internal class FakeHttpClientHandler : HttpClientHandler
     private readonly TimeSpan? delay;
     private readonly EntityTagHeaderValue? httpETag;
 
-    public byte SendInvokeCount { get; private set; } = 0;
+    private int sendInvokeCount = 0;
+    public byte SendInvokeCount => (byte)this.sendInvokeCount;
 
     public bool Disposed { get; private set; } = false;
 
@@ -35,9 +36,9 @@ internal class FakeHttpClientHandler : HttpClientHandler
         if (this.delay is not null)
             await Task.Delay(this.delay.Value, cancellationToken);
 
-        SendInvokeCount++;
+        var sendInvokeCount = Interlocked.Increment(ref this.sendInvokeCount);
 
-        this.Requests.Add(SendInvokeCount, request);
+        this.Requests.Add((byte)sendInvokeCount, request);
 
         var response = new HttpResponseMessage
         {
@@ -59,9 +60,9 @@ internal class FakeHttpClientHandler : HttpClientHandler
         if (this.delay is not null)
             Task.Delay(this.delay.Value, cancellationToken).Wait(cancellationToken);
 
-        SendInvokeCount++;
+        var sendInvokeCount = Interlocked.Increment(ref this.sendInvokeCount);
 
-        this.Requests.Add(SendInvokeCount, request);
+        this.Requests.Add((byte)sendInvokeCount, request);
 
         var response = new HttpResponseMessage
         {

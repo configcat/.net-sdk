@@ -15,6 +15,9 @@ public abstract class PollingMode
 /// <summary>
 /// Represents the Auto Polling mode along with its settings.
 /// </summary>
+/// <remarks>
+/// In this mode, the ConfigCat SDK downloads the latest config data automatically and stores it in the cache.
+/// </remarks>
 public class AutoPoll : PollingMode
 {
     internal override string Identifier => "a";
@@ -47,6 +50,10 @@ public class AutoPoll : PollingMode
 /// <summary>
 /// Represents the Lazy Loading mode along with its settings.
 /// </summary>
+/// <remarks>
+/// In this mode, the ConfigCat SDK downloads the latest config data only if it is not present in the cache,
+/// or if it is but has expired.
+/// </remarks>
 public class LazyLoad : PollingMode
 {
     internal override string Identifier => "l";
@@ -70,6 +77,10 @@ public class LazyLoad : PollingMode
 /// <summary>
 /// Represents the Manual Polling mode.
 /// </summary>
+/// <remarks>
+/// In this mode, the ConfigCat SDK will not download the config data automatically. You need to update the cache
+/// manually, by calling <see cref="ConfigCatClient.ForceRefresh"/> or <see cref="ConfigCatClient.ForceRefreshAsync"/>.
+/// </remarks>
 public class ManualPoll : PollingMode
 {
     internal override string Identifier => "m";

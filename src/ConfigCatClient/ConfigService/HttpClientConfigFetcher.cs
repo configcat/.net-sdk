@@ -79,7 +79,7 @@ internal class HttpClientConfigFetcher : IConfigCatConfigFetcher
 
         if (request.LastETag is not null)
         {
-            httpRequest.Headers.IfNoneMatch.Add(new EntityTagHeaderValue(request.LastETag));
+            httpRequest.Headers.IfNoneMatch.Add(EntityTagHeaderValue.Parse(request.LastETag));
         }
 
         try

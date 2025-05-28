@@ -353,7 +353,7 @@ public sealed class ConfigCatClient : IConfigCatClient
             evaluationDetails = ConfigEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, Logger);
             value = evaluationDetails.Value;
         }
-        catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             throw;
         }
@@ -427,7 +427,7 @@ public sealed class ConfigCatClient : IConfigCatClient
             settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
             evaluationDetails = ConfigEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, Logger);
         }
-        catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             throw;
         }
@@ -476,7 +476,7 @@ public sealed class ConfigCatClient : IConfigCatClient
             }
             return settings.Value.ReadOnlyKeys();
         }
-        catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             throw;
         }
@@ -535,7 +535,7 @@ public sealed class ConfigCatClient : IConfigCatClient
             evaluationDetailsArray = ConfigEvaluator.EvaluateAll(settings.Value, user, settings.RemoteConfig, Logger, defaultReturnValue, out evaluationExceptions);
             result = evaluationDetailsArray.ToDictionary(details => details.Key, details => details.Value);
         }
-        catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             throw;
         }
@@ -602,7 +602,7 @@ public sealed class ConfigCatClient : IConfigCatClient
             var settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
             evaluationDetailsArray = ConfigEvaluator.EvaluateAll(settings.Value, user, settings.RemoteConfig, Logger, defaultReturnValue, out evaluationExceptions);
         }
-        catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             throw;
         }
@@ -675,6 +675,10 @@ public sealed class ConfigCatClient : IConfigCatClient
             var settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
             return EvaluationHelper.GetKeyAndValue<T>(settings.Value, variationId, Logger, defaultReturnValue);
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             Logger.SettingEvaluationError(nameof(GetKeyAndValueAsync), defaultReturnValue, ex);
@@ -704,7 +708,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         {
             return await this.configService.RefreshConfigAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
         }
-        catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             throw;
         }

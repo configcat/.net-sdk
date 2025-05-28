@@ -16,8 +16,6 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
     private readonly IConfigCatConfigFetcher configFetcher;
     private readonly bool isCustomUri;
     private readonly TimeSpan timeout;
-    private readonly CancellationTokenSource cancellationTokenSource = new();
-    internal Task<FetchResult>? pendingFetch;
 
     private Uri requestUri;
 
@@ -37,49 +35,20 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
 
     public FetchResult Fetch(ProjectConfig lastConfig)
     {
-        // NOTE: We go sync over async here, however it's safe to do that in this case as
-        // BeginFetchOrJoinPending will run the fetch operation on the thread pool,
-        // where there's no synchronization context which awaits want to return to,
-        // thus, they won't try to run continuations on this thread where we're block waiting.
-        return BeginFetchOrJoinPending(lastConfig).GetAwaiter().GetResult();
+        // NOTE: This method is unused now, we keep it because of tests for now,
+        // until the synchronous code paths are deleted soon.
+        return TaskShim.Current.Run(() => FetchAsync(lastConfig)).GetAwaiter().GetResult();
     }
 
-    public Task<FetchResult> FetchAsync(ProjectConfig lastConfig, CancellationToken cancellationToken = default)
-    {
-        return BeginFetchOrJoinPending(lastConfig).WaitAsync(cancellationToken);
-    }
-
-    private Task<FetchResult> BeginFetchOrJoinPending(ProjectConfig lastConfig)
-    {
-        lock (this.syncObj)
-        {
-            this.pendingFetch ??= TaskShim.Current.Run(async () =>
-            {
-                try
-                {
-                    return await FetchInternalAsync(lastConfig).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
-                }
-                finally
-                {
-                    lock (this.syncObj)
-                    {
-                        this.pendingFetch = null;
-                    }
-                }
-            });
-
-            return this.pendingFetch;
-        }
-    }
-
-    private async ValueTask<FetchResult> FetchInternalAsync(ProjectConfig lastConfig)
+    public async Task<FetchResult> FetchAsync(ProjectConfig lastConfig, CancellationToken cancellationToken = default)
     {
         FormattableLogMessage logMessage;
         RefreshErrorCode errorCode;
         Exception errorException;
         try
         {
-            var deserializedResponse = await FetchRequestAsync(lastConfig.HttpETag, this.requestUri).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+            var deserializedResponse = await FetchRequestAsync(lastConfig.HttpETag, this.requestUri, cancellationToken)
+                .ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 
             var response = deserializedResponse.Response;
 
@@ -125,8 +94,7 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
         }
         catch (OperationCanceledException)
         {
-            /* do nothing on dispose cancel */
-            return FetchResult.NotModified(lastConfig);
+            throw;
         }
         catch (FetchErrorException.Timeout_ ex)
         {
@@ -150,62 +118,61 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
         return FetchResult.Failure(lastConfig, errorCode, logMessage.ToLazyString(), errorException);
     }
 
-    private async ValueTask<DeserializedResponse> FetchRequestAsync(string? httpETag, Uri requestUri, sbyte maxExecutionCount = 3)
+    private async ValueTask<DeserializedResponse> FetchRequestAsync(string? httpETag, Uri requestUri, CancellationToken cancellationToken, sbyte maxExecutionCount = 3)
     {
         for (; ; maxExecutionCount--)
         {
-            var request = new FetchRequest(this.requestUri, httpETag, this.requestHeaders, this.timeout);
+            var request = new FetchRequest(requestUri, httpETag, this.requestHeaders, this.timeout);
 
-            var response = await this.configFetcher.FetchAsync(request, this.cancellationTokenSource.Token).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+            var response = await this.configFetcher.FetchAsync(request, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 
-            if (response.StatusCode == HttpStatusCode.OK)
+            if (response.StatusCode != HttpStatusCode.OK)
             {
-                Config config;
-                try { config = Config.Deserialize(response.Body.AsMemory()); }
-                catch (Exception ex) { return new DeserializedResponse(response, ex); }
+                return new DeserializedResponse(response, (Exception?)null);
+            }
 
-                if (config.Preferences is not null)
-                {
-                    var newBaseUrl = config.Preferences.BaseUrl;
+            Config config;
+            try { config = Config.Deserialize(response.Body.AsMemory()); }
+            catch (Exception ex) { return new DeserializedResponse(response, ex); }
 
-                    if (newBaseUrl is null || requestUri.Host == new Uri(newBaseUrl).Host)
-                    {
-                        return new DeserializedResponse(response, config);
-                    }
-
-                    RedirectMode redirect = config.Preferences.RedirectMode;
-
-                    if (this.isCustomUri && redirect != RedirectMode.Force)
-                    {
-                        return new DeserializedResponse(response, config);
-                    }
-
-                    UpdateRequestUri(new Uri(newBaseUrl));
-
-                    if (redirect == RedirectMode.No)
-                    {
-                        return new DeserializedResponse(response, config);
-                    }
-
-                    if (redirect == RedirectMode.Should)
-                    {
-                        this.logger.DataGovernanceIsOutOfSync();
-                    }
-
-                    if (maxExecutionCount <= 1)
-                    {
-                        this.logger.FetchFailedDueToRedirectLoop(response.RayId);
-                        return new DeserializedResponse(response, config);
-                    }
-
-                    requestUri = ReplaceUri(request.Uri, new Uri(newBaseUrl));
-                    continue;
-                }
-
+            if (config.Preferences is null)
+            {
                 return new DeserializedResponse(response, config);
             }
 
-            return new DeserializedResponse(response, (Exception?)null);
+            var newBaseUrl = config.Preferences.BaseUrl;
+
+            if (newBaseUrl is null || requestUri.Host == new Uri(newBaseUrl).Host)
+            {
+                return new DeserializedResponse(response, config);
+            }
+
+            RedirectMode redirect = config.Preferences.RedirectMode;
+
+            if (this.isCustomUri && redirect != RedirectMode.Force)
+            {
+                return new DeserializedResponse(response, config);
+            }
+
+            UpdateRequestUri(new Uri(newBaseUrl));
+
+            if (redirect == RedirectMode.No)
+            {
+                return new DeserializedResponse(response, config);
+            }
+
+            if (redirect == RedirectMode.Should)
+            {
+                this.logger.DataGovernanceIsOutOfSync();
+            }
+
+            if (maxExecutionCount <= 1)
+            {
+                this.logger.FetchFailedDueToRedirectLoop(response.RayId);
+                return new DeserializedResponse(response, config);
+            }
+
+            requestUri = ReplaceUri(request.Uri, new Uri(newBaseUrl));
         }
     }
 
@@ -224,12 +191,6 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
 
     public void Dispose()
     {
-        if (!this.cancellationTokenSource.IsCancellationRequested)
-        {
-            try { this.cancellationTokenSource.Cancel(); }
-            catch (ObjectDisposedException) { /* intentional no-op */ }
-        }
-        this.cancellationTokenSource.Dispose();
         this.configFetcher.Dispose();
     }
 

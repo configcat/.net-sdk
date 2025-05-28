@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
@@ -30,8 +31,11 @@ internal abstract class ConfigServiceBase : IDisposable
     protected readonly string CacheKey;
     protected readonly SafeHooksWrapper Hooks;
 
-    private CancellationTokenSource? waitForReadyCancellationTokenSource;
-    protected CancellationToken WaitForReadyCancellationToken => this.waitForReadyCancellationTokenSource?.Token ?? new CancellationToken(canceled: true);
+    private readonly CancellationTokenSource disposeTokenSource;
+    protected CancellationToken DisposeToken => this.disposeTokenSource.Token;
+
+    private Task<ProjectConfig>? pendingCacheSyncUp;
+    private Task<ConfigWithFetchResult>? pendingConfigRefresh;
 
     protected ConfigServiceBase(IConfigFetcher configFetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline, SafeHooksWrapper hooks)
     {
@@ -41,7 +45,7 @@ internal abstract class ConfigServiceBase : IDisposable
         this.Logger = logger;
         this.Hooks = hooks;
         this.status = isOffline ? Status.Offline : Status.Online;
-        this.waitForReadyCancellationTokenSource = new CancellationTokenSource();
+        this.disposeTokenSource = new CancellationTokenSource();
     }
 
     /// <remarks>
@@ -49,13 +53,12 @@ internal abstract class ConfigServiceBase : IDisposable
     /// </remarks>
     protected virtual void DisposeSynchronized(bool disposing)
     {
-        // If waiting for ready state is still in progress, it should stop.
-        this.waitForReadyCancellationTokenSource?.Cancel();
+        // Pending asynchronous operations (waiting for ready state, cache sync up, config refresh, etc.) should stop.
+        this.disposeTokenSource.Cancel();
 
         if (disposing)
         {
-            this.waitForReadyCancellationTokenSource?.Dispose();
-            this.waitForReadyCancellationTokenSource = null;
+            this.disposeTokenSource.Dispose();
         }
     }
 
@@ -88,11 +91,15 @@ internal abstract class ConfigServiceBase : IDisposable
 
     public virtual RefreshResult RefreshConfig()
     {
+        var latestConfig = SyncUpWithCache();
         if (!IsOffline)
         {
-            var latestConfig = this.ConfigCache.Get(this.CacheKey);
             var configWithFetchResult = RefreshConfigCore(latestConfig, isInitiatedByUser: true);
             return RefreshResult.From(configWithFetchResult.Item2);
+        }
+        else if (this.ConfigCache is ExternalConfigCache)
+        {
+            return RefreshResult.Success();
         }
         else
         {
@@ -103,33 +110,26 @@ internal abstract class ConfigServiceBase : IDisposable
 
     protected ConfigWithFetchResult RefreshConfigCore(ProjectConfig latestConfig, bool isInitiatedByUser)
     {
-        var fetchResult = this.ConfigFetcher.Fetch(latestConfig);
+        // NOTE: We go sync over async here, however it's safe to do that in this case as
+        // BeginConfigRefreshOrJoinPending will run the fetch operation on the thread pool,
+        // where there's no synchronization context which awaits want to return to,
+        // thus, they won't try to run continuations on this thread where we're block waiting.
+        // Plus, the synchronous code paths will be deleted soon anyway.
 
-        if (fetchResult.IsSuccess
-            || fetchResult.Config.TimeStamp > latestConfig.TimeStamp && (!fetchResult.Config.IsEmpty || latestConfig.IsEmpty))
-        {
-            this.ConfigCache.Set(this.CacheKey, fetchResult.Config);
-
-            latestConfig = fetchResult.Config;
-        }
-
-        OnConfigFetched(fetchResult, isInitiatedByUser);
-
-        if (fetchResult.IsSuccess)
-        {
-            OnConfigChanged(fetchResult);
-        }
-
-        return new ConfigWithFetchResult(latestConfig, fetchResult);
+        return BeginConfigRefreshOrJoinPending(latestConfig, isInitiatedByUser, useAsyncCache: false).GetAwaiter().GetResult();
     }
 
     public virtual async ValueTask<RefreshResult> RefreshConfigAsync(CancellationToken cancellationToken = default)
     {
+        var latestConfig = await SyncUpWithCacheAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
         if (!IsOffline)
         {
-            var latestConfig = await this.ConfigCache.GetAsync(this.CacheKey, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
             var configWithFetchResult = await RefreshConfigCoreAsync(latestConfig, isInitiatedByUser: true, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
             return RefreshResult.From(configWithFetchResult.Item2);
+        }
+        else if (this.ConfigCache is ExternalConfigCache)
+        {
+            return RefreshResult.Success();
         }
         else
         {
@@ -138,26 +138,89 @@ internal abstract class ConfigServiceBase : IDisposable
         }
     }
 
-    protected async Task<ConfigWithFetchResult> RefreshConfigCoreAsync(ProjectConfig latestConfig, bool isInitiatedByUser, CancellationToken cancellationToken)
+    protected Task<ConfigWithFetchResult> RefreshConfigCoreAsync(ProjectConfig latestConfig, bool isInitiatedByUser, CancellationToken cancellationToken)
     {
-        var fetchResult = await this.ConfigFetcher.FetchAsync(latestConfig, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+        return BeginConfigRefreshOrJoinPending(latestConfig, isInitiatedByUser, useAsyncCache: true, cancellationToken);
+    }
 
-        if (fetchResult.IsSuccess
-            || fetchResult.Config.TimeStamp > latestConfig.TimeStamp && (!fetchResult.Config.IsEmpty || latestConfig.IsEmpty))
+    private Task<ConfigWithFetchResult> BeginConfigRefreshOrJoinPending(ProjectConfig latestConfig, bool isInitiatedByUser, bool useAsyncCache,
+        CancellationToken cancellationToken = default)
+    {
+        Task<ConfigWithFetchResult>? configRefreshTask;
+        bool isInitiator;
+
+        lock (this.ConfigFetcher)
         {
-            await this.ConfigCache.SetAsync(this.CacheKey, fetchResult.Config, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+            cancellationToken.ThrowIfCancellationRequested();
 
-            latestConfig = fetchResult.Config;
+            // NOTE: Joiners may obtain more up-to-date config data from the external cache than the `latestConfig`
+            // that was used to initiate the fetch operation. However, we ignore this possibility because we consider
+            // the fetch operation result a more authentic source of truth. Although this may lead to overwriting
+            // the cache with stale data, we expect this to be a temporary effect, which corrects itself eventually.
+
+            configRefreshTask = this.pendingConfigRefresh;
+            isInitiator = configRefreshTask is null or { IsCompleted: true };
+            if (isInitiator)
+            {
+                this.pendingConfigRefresh = configRefreshTask = TaskShim.Current.Run(async () =>
+                {
+                    var fetchResult = await this.ConfigFetcher.FetchAsync(latestConfig, DisposeToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+
+                    var shouldUpdateCache =
+                        fetchResult.IsSuccess
+                        || fetchResult.IsNotModified
+                        || fetchResult.Config.TimeStamp > latestConfig.TimeStamp // is not transient error?
+                            && (!fetchResult.Config.IsEmpty || this.ConfigCache.LocalCachedConfig.IsEmpty);
+
+                    if (shouldUpdateCache)
+                    {
+                        // NOTE: ExternalConfigCache.Set/SetAsync makes sure that the external cache is not overwritten with empty
+                        // config data under any circumstances.
+                        if (useAsyncCache)
+                        {
+                            await this.ConfigCache.SetAsync(this.CacheKey, fetchResult.Config, DisposeToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+                        }
+                        else
+                        {
+                            this.ConfigCache.Set(this.CacheKey, fetchResult.Config);
+                        }
+
+                        latestConfig = fetchResult.Config;
+                    }
+
+                    OnConfigFetched(fetchResult, isInitiatedByUser);
+
+                    if (fetchResult.IsSuccess)
+                    {
+                        OnConfigChanged(fetchResult.Config);
+                    }
+
+                    return new ConfigWithFetchResult(latestConfig, fetchResult);
+                });
+            }
         }
 
-        OnConfigFetched(fetchResult, isInitiatedByUser);
-
-        if (fetchResult.IsSuccess)
+        if (isInitiator)
         {
-            OnConfigChanged(fetchResult);
+            ScheduleCleanUp(configRefreshTask!);
         }
 
-        return new ConfigWithFetchResult(latestConfig, fetchResult);
+        return configRefreshTask!.WaitAsync(cancellationToken);
+
+        async void ScheduleCleanUp(Task<ConfigWithFetchResult> refreshTask)
+        {
+            try { await refreshTask.ConfigureAwait(TaskShim.ContinueOnCapturedContext); }
+            catch { /* Exceptions must not be allowed to bubble up. See also: https://stackoverflow.com/a/53266815/8656352 */ }
+            finally
+            {
+                // NOTE: At this point the actual config refresh operation is completed, so there's no need to keep a
+                // reference to the task any longer, but it should be set to null so GC can clean it up.
+                // (Instead of locking, a call to Interlocked.CompareExchange is enough as .NET memory model guarantees
+                // that both memory accesses to managed references and Interlocked methods are atomic operations.
+                // See also: https://github.com/dotnet/runtime/blob/main/docs/design/specs/Memory-model.md#atomic-memory-accesses)
+                _ = Interlocked.CompareExchange(ref this.pendingConfigRefresh, value: null, comparand: refreshTask);
+            }
+        }
     }
 
     protected virtual void OnConfigFetched(in FetchResult fetchResult, bool isInitiatedByUser)
@@ -167,11 +230,11 @@ internal abstract class ConfigServiceBase : IDisposable
         this.Hooks.RaiseConfigFetched(RefreshResult.From(fetchResult), isInitiatedByUser);
     }
 
-    protected virtual void OnConfigChanged(in FetchResult fetchResult)
+    protected virtual void OnConfigChanged(ProjectConfig newConfig)
     {
         this.Logger.Debug("config changed");
 
-        this.Hooks.RaiseConfigChanged(fetchResult.Config.Config ?? new Config());
+        this.Hooks.RaiseConfigChanged(newConfig.Config ?? new Config());
     }
 
     public bool IsOffline
@@ -188,7 +251,7 @@ internal abstract class ConfigServiceBase : IDisposable
     /// <remarks>
     /// Note for inheritors. Beware, this method is called within a lock statement.
     /// </remarks>
-    protected virtual void SetOnlineCoreSynchronized() { }
+    protected virtual void GoOnlineSynchronized() { }
 
     public void SetOnline()
     {
@@ -198,7 +261,7 @@ internal abstract class ConfigServiceBase : IDisposable
         {
             if (this.status == Status.Offline)
             {
-                SetOnlineCoreSynchronized();
+                GoOnlineSynchronized();
                 this.status = Status.Online;
                 logAction = static logger => logger.ConfigServiceStatusChanged(Status.Online);
             }
@@ -211,11 +274,6 @@ internal abstract class ConfigServiceBase : IDisposable
         logAction?.Invoke(this.Logger);
     }
 
-    /// <remarks>
-    /// Note for inheritors. Beware, this method is called within a lock statement.
-    /// </remarks>
-    protected virtual void SetOfflineCoreSynchronized() { }
-
     public void SetOffline()
     {
         Action<LoggerWrapper>? logAction = null;
@@ -224,7 +282,6 @@ internal abstract class ConfigServiceBase : IDisposable
         {
             if (this.status == Status.Online)
             {
-                SetOfflineCoreSynchronized();
                 this.status = Status.Offline;
                 logAction = static logger => logger.ConfigServiceStatusChanged(Status.Offline);
             }
@@ -239,26 +296,133 @@ internal abstract class ConfigServiceBase : IDisposable
 
     public abstract ClientCacheState GetCacheState(ProjectConfig cachedConfig);
 
-    protected Task<ProjectConfig> SyncUpWithCacheAsync(CancellationToken cancellationToken)
+    protected ProjectConfig SyncUpWithCache()
     {
-        return this.ConfigCache.GetAsync(this.CacheKey, cancellationToken).AsTask();
+        // NOTE: We don't try to join concurrent asynchronous cache synchronization because it would be hard, if not
+        // impossible to do that in a deadlock-free way. Plus, the synchronous code paths will be deleted soon anyway.
+        var syncResult = this.ConfigCache.Get(this.CacheKey);
+        OnCacheSynced(syncResult);
+        return syncResult.Config;
     }
 
-    protected async Task<ClientCacheState> GetReadyTask<TState>(TState state, Func<TState, Task<ClientCacheState>> waitForReadyAsync)
+    protected ValueTask<ProjectConfig> SyncUpWithCacheAsync(CancellationToken cancellationToken = default)
     {
-        ClientCacheState cacheState;
-        try { cacheState = await waitForReadyAsync(state).ConfigureAwait(TaskShim.ContinueOnCapturedContext); }
+        // InMemoryConfigCache always executes synchronously, so we special-case it for better performance.
+        if (this.ConfigCache is InMemoryConfigCache inMemoryConfigCache)
+        {
+            var syncResultTask = inMemoryConfigCache.GetAsync(this.CacheKey, cancellationToken);
+            Debug.Assert(syncResultTask.IsCompleted);
+            var syncResult = syncResultTask.GetAwaiter().GetResult();
+            Debug.Assert(!syncResult.HasChanged);
+            return new ValueTask<ProjectConfig>(syncResult.Config);
+        }
+
+        // Otherwise we join the pending cache sync up operation, or start a new one if there's none currently.
+        Task<ProjectConfig>? cacheSyncUpTask = null;
+        TaskCompletionSource<ProjectConfig>? cacheSyncUpTcs = null;
+        Exception? exception = null;
+
+        try
+        {
+            // NOTE: We want to start the cache sync operation directly on the current thread for performance and
+            // backward compatibility reasons. However, this involves calling user-provided code
+            // (IConfigCatCache.GetAsync), which, if implemented incorrectly, may have a long-running initial
+            // synchronous part, or may not be actual async code at all but a long-running synchronous operation
+            // returning a completed task. Thus, we shouldn't directly start the cache sync operation within a lock.
+            // Instead, we create a TaskCompletionSource to proxy the operation.
+
+            lock (this.ConfigCache)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                cacheSyncUpTask = this.pendingCacheSyncUp;
+                if (cacheSyncUpTask is null or { IsCompleted: true })
+                {
+                    cacheSyncUpTcs = TaskShim.CreateSafeCompletionSource(out cacheSyncUpTask);
+                    this.pendingCacheSyncUp = cacheSyncUpTask;
+                }
+            }
+
+            if (cacheSyncUpTcs is not null) // is this thread the initiator of the operation?
+            {
+                ExecuteOperationAndCleanUp(cacheSyncUpTcs, cacheSyncUpTask!);
+            }
+        }
+        catch (Exception ex)
+        {
+            exception = ex;
+            throw;
+        }
         finally
         {
-            lock (this.syncObj)
+            if (cacheSyncUpTcs is not null)
             {
-                this.waitForReadyCancellationTokenSource?.Dispose();
-                this.waitForReadyCancellationTokenSource = null;
+                // If anything goes wrong, we need to make sure that this.pendingCacheSyncUp is completed to not get stuck with it indefinitely.
+#if !NETCOREAPP
+                if (exception is not null
+                    // NOTE: Thread.Abort is also possible on older runtimes, but it can't avoid or interrupt finally blocks,
+                    // this is why we do these checks here (see also https://learn.microsoft.com/en-us/dotnet/standard/threading/destroying-threads).
+                    || (Thread.CurrentThread.ThreadState & System.Threading.ThreadState.AbortRequested) != 0)
+                {
+                    try { _ = exception is not null ? cacheSyncUpTcs.TrySetException(exception) : cacheSyncUpTcs.TrySetCanceled(); }
+#else
+                if (exception is not null)
+                {
+                    try { cacheSyncUpTcs.TrySetException(exception); }
+#endif
+                    finally { _ = Interlocked.CompareExchange(ref this.pendingCacheSyncUp, value: null, comparand: cacheSyncUpTask); }
+                }
             }
         }
 
-        this.Hooks.RaiseClientReady(cacheState);
+        return new ValueTask<ProjectConfig>(cacheSyncUpTask.WaitAsync(cancellationToken));
 
+        async void ExecuteOperationAndCleanUp(TaskCompletionSource<ProjectConfig> cacheSyncUpTcs, Task<ProjectConfig> cacheSyncUpTask)
+        {
+            try
+            {
+                try
+                {
+                    var syncResult = await this.ConfigCache.GetAsync(this.CacheKey, DisposeToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+                    OnCacheSynced(syncResult);
+                    cacheSyncUpTcs.TrySetResult(syncResult.Config);
+                }
+                catch (OperationCanceledException ex)
+                {
+                    cacheSyncUpTcs.TrySetCanceled(ex.CancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    cacheSyncUpTcs.TrySetException(ex);
+                }
+            }
+            catch { /* Exceptions must not be allowed to bubble up. See also: https://stackoverflow.com/a/53266815/8656352 */ }
+            finally
+            {
+                // NOTE: At this point the actual cache sync operation is completed, so there's no need to keep a
+                // reference to the task any longer, but it should be set to null so GC can clean it up.
+                _ = Interlocked.CompareExchange(ref this.pendingCacheSyncUp, value: null, comparand: cacheSyncUpTask);
+            }
+        }
+    }
+
+    private void OnCacheSynced(CacheSyncResult syncResult)
+    {
+        if (syncResult.HasChanged && !syncResult.Config.IsEmpty)
+        {
+            OnConfigChanged(syncResult.Config);
+        }
+    }
+
+    protected virtual async ValueTask<ClientCacheState> WaitForReadyAsync(Task<ProjectConfig> initialCacheSyncUpTask)
+    {
+        return GetCacheState(await initialCacheSyncUpTask.ConfigureAwait(TaskShim.ContinueOnCapturedContext));
+    }
+
+    protected async Task<ClientCacheState> GetReadyTask(Task<ProjectConfig> initialCacheSyncUpTask)
+    {
+        var cacheState = await WaitForReadyAsync(initialCacheSyncUpTask).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+        this.Hooks.RaiseClientReady(cacheState);
         return cacheState;
     }
 }

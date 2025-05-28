@@ -22,7 +22,7 @@ public class HttpConfigFetcherTests
 
         var myHandler = new FakeHttpClientHandler();
 
-        var instance = new DefaultConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), new HttpClientConfigFetcher(myHandler), false,
+        var instance = new DefaultConfigFetcher("x", new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), new HttpClientConfigFetcher(myHandler), false,
             TimeSpan.FromSeconds(30));
 
         // Act
@@ -41,7 +41,7 @@ public class HttpConfigFetcherTests
 
         var myHandler = new FakeHttpClientHandler();
 
-        var instance = new DefaultConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), new HttpClientConfigFetcher(myHandler), false,
+        var instance = new DefaultConfigFetcher("x", new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), new HttpClientConfigFetcher(myHandler), false,
             TimeSpan.FromSeconds(30));
 
         // Act
@@ -60,7 +60,7 @@ public class HttpConfigFetcherTests
 
         var myHandler = new FakeHttpClientHandler(HttpStatusCode.Forbidden);
 
-        using var instance = new DefaultConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), new HttpClientConfigFetcher(myHandler), false,
+        using var instance = new DefaultConfigFetcher("x", new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), new HttpClientConfigFetcher(myHandler), false,
             TimeSpan.FromSeconds(30));
 
         var lastConfig = ConfigHelper.FromString("{}", timeStamp: ProjectConfig.GenerateTimeStamp(), httpETag: "\"ETAG\"");
@@ -89,7 +89,7 @@ public class HttpConfigFetcherTests
         var exception = new WebException();
         var myHandler = new ExceptionThrowerHttpClientHandler(exception);
 
-        var instance = new DefaultConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), new HttpClientConfigFetcher(myHandler), false,
+        var instance = new DefaultConfigFetcher("x", new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), new HttpClientConfigFetcher(myHandler), false,
             TimeSpan.FromSeconds(30));
 
         var lastConfig = ConfigHelper.FromString("{}", timeStamp: ProjectConfig.GenerateTimeStamp(), httpETag: "\"ETAG\"");

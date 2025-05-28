@@ -16,7 +16,7 @@ public partial record class ConfigLocation
         {
             var options = new ConfigCatClientOptions();
             ConfigureBaseUrl(options);
-            return options.CreateUri(SdkKey).ToString();
+            return ConfigCatClientOptions.GetConfigUri(options.GetBaseUri(), SdkKey).ToString();
         }
 
         internal override Config FetchConfig()
@@ -29,7 +29,8 @@ public partial record class ConfigLocation
             ConfigureBaseUrl(options);
 
             using var configFetcher = new DefaultConfigFetcher(
-                options.CreateUri(SdkKey),
+                SdkKey,
+                options.GetBaseUri(),
                 ConfigCatClient.GetProductVersion(options.PollingMode),
                 options.Logger!.AsWrapper(),
                 new HttpClientConfigFetcher(options.HttpClientHandler),

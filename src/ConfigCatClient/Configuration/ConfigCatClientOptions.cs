@@ -112,7 +112,7 @@ public class ConfigCatClientOptions : IProvidesHooks
         return hooks;
     }
 
-    internal Uri CreateUri(string sdkKey)
+    internal Uri GetBaseUri()
     {
         var baseUri = BaseUrl;
 
@@ -125,6 +125,11 @@ public class ConfigCatClientOptions : IProvidesHooks
             };
         }
 
+        return baseUri;
+    }
+
+    internal static Uri GetConfigUri(Uri baseUri, string sdkKey)
+    {
         return new Uri(baseUri, "configuration-files/" + sdkKey + "/" + ConfigFileName);
     }
 

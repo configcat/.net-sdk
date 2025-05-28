@@ -172,7 +172,7 @@ public class HttpConfigFetcherTests
 
         using (client)
         {
-            await client.ForceRefreshAsync();
+            await client.WaitForReadyAsync();
         }
 
         // Assert

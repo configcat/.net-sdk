@@ -20,7 +20,7 @@ public class BasicConfigCatClientIntegrationTests
     private static readonly HttpClientHandler SharedHandler = new();
 
     [TestMethod]
-    public void ManualPollGetValue()
+    public async Task ManualPollGetValue()
     {
         static void Configure(ConfigCatClientOptions options)
         {
@@ -31,13 +31,13 @@ public class BasicConfigCatClientIntegrationTests
 
         using IConfigCatClient client = ConfigCatClient.Get(SDKKEY, Configure);
 
-        client.ForceRefresh();
+        await client.ForceRefreshAsync();
 
         GetValueAndAssert(client, "stringDefaultCat", "N/A", "Cat");
     }
 
     [TestMethod]
-    public void AutoPollGetValue()
+    public async Task AutoPollGetValue()
     {
         static void Configure(ConfigCatClientOptions options)
         {
@@ -48,11 +48,13 @@ public class BasicConfigCatClientIntegrationTests
 
         using IConfigCatClient client = ConfigCatClient.Get(SDKKEY, Configure);
 
+        await client.WaitForReadyAsync();
+
         GetValueAndAssert(client, "stringDefaultCat", "N/A", "Cat");
     }
 
     [TestMethod]
-    public void LazyLoadGetValue()
+    public async Task LazyLoadGetValue()
     {
         static void Configure(ConfigCatClientOptions options)
         {
@@ -62,6 +64,8 @@ public class BasicConfigCatClientIntegrationTests
         }
 
         using IConfigCatClient client = ConfigCatClient.Get(SDKKEY, Configure);
+
+        await client.ForceRefreshAsync();
 
         GetValueAndAssert(client, "stringDefaultCat", "N/A", "Cat");
     }
@@ -114,7 +118,7 @@ public class BasicConfigCatClientIntegrationTests
     }
 
     [TestMethod]
-    public void GetAllKeys()
+    public async Task GetAllKeys()
     {
         static void Configure(ConfigCatClientOptions options)
         {
@@ -125,15 +129,15 @@ public class BasicConfigCatClientIntegrationTests
 
         using IConfigCatClient client = ConfigCatClient.Get(SDKKEY, Configure);
 
-        client.ForceRefresh();
-        var keys = client.GetAllKeys().ToArray();
+        await client.ForceRefreshAsync();
+        var keys = client.Snapshot().GetAllKeys().ToArray();
 
         Assert.AreEqual(16, keys.Length);
         Assert.IsTrue(keys.Contains("stringDefaultCat"));
     }
 
     [TestMethod]
-    public void GetAllValues()
+    public async Task GetAllKeysAsync()
     {
         static void Configure(ConfigCatClientOptions options)
         {
@@ -144,24 +148,11 @@ public class BasicConfigCatClientIntegrationTests
 
         using IConfigCatClient client = ConfigCatClient.Get(SDKKEY, Configure);
 
-        client.ForceRefresh();
+        await client.ForceRefreshAsync();
+        var keys = (await client.GetAllKeysAsync()).ToArray();
 
-        var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
-        client.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
-
-        var dict = client.GetAllValues();
-
-        Assert.AreEqual(16, dict.Count);
-        Assert.AreEqual("Cat", dict["stringDefaultCat"]);
-
-        Assert.AreEqual(16, flagEvaluatedEvents.Count);
-        var evaluationDetails = flagEvaluatedEvents.ToDictionary(e => e.EvaluationDetails.Key, e => e.EvaluationDetails);
-        foreach (var entry in dict)
-        {
-            Assert.IsTrue(evaluationDetails.TryGetValue(entry.Key, out var evaluationDetail));
-            Assert.AreEqual(entry.Value, evaluationDetail.Value);
-            Assert.IsFalse(evaluationDetail.IsDefaultValue);
-        }
+        Assert.AreEqual(16, keys.Length);
+        Assert.IsTrue(keys.Contains("stringDefaultCat"));
     }
 
     [TestMethod]
@@ -193,35 +184,6 @@ public class BasicConfigCatClientIntegrationTests
             Assert.AreEqual(entry.Value, evaluationDetail.Value);
             Assert.IsFalse(evaluationDetail.IsDefaultValue);
         }
-    }
-
-    [TestMethod]
-    public void GetAllValueDetails()
-    {
-        static void Configure(ConfigCatClientOptions options)
-        {
-            options.PollingMode = PollingModes.ManualPoll;
-            options.Logger = ConsoleLogger;
-            options.HttpClientHandler = SharedHandler;
-        }
-
-        using IConfigCatClient client = ConfigCatClient.Get(SDKKEY, Configure);
-
-        client.ForceRefresh();
-
-        var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
-        client.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
-
-        var detailsList = client.GetAllValueDetails();
-
-        Assert.AreEqual(16, detailsList.Count);
-        var details = detailsList.FirstOrDefault(details => details.Key == "stringDefaultCat");
-        Assert.IsNotNull(details);
-        Assert.IsFalse(details.IsDefaultValue);
-        Assert.AreEqual("Cat", details.Value);
-        Assert.AreEqual("7a0be518", details.VariationId);
-
-        CollectionAssert.AreEqual(detailsList.ToArray(), flagEvaluatedEvents.Select(e => e.EvaluationDetails).ToArray());
     }
 
     [TestMethod]
@@ -257,7 +219,7 @@ public class BasicConfigCatClientIntegrationTests
         var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
         client.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
 
-        var actual = client.GetValue(key, defaultValue);
+        var actual = client.Snapshot().GetValue(key, defaultValue);
 
         Assert.AreEqual(expectedValue, actual);
         Assert.AreNotEqual(defaultValue, actual);
@@ -280,33 +242,6 @@ public class BasicConfigCatClientIntegrationTests
         Assert.AreEqual(1, flagEvaluatedEvents.Count);
         Assert.AreEqual(expectedValue, flagEvaluatedEvents[0].EvaluationDetails.Value);
         Assert.IsFalse(flagEvaluatedEvents[0].EvaluationDetails.IsDefaultValue);
-    }
-
-    [TestMethod]
-    public void GetValueDetailsId()
-    {
-        static void Configure(ConfigCatClientOptions options)
-        {
-            options.PollingMode = PollingModes.ManualPoll;
-            options.Logger = ConsoleLogger;
-            options.HttpClientHandler = SharedHandler;
-        }
-
-        using IConfigCatClient client = ConfigCatClient.Get(SDKKEY, Configure);
-
-        client.ForceRefresh();
-
-        var flagEvaluatedEvents = new List<FlagEvaluatedEventArgs>();
-        client.FlagEvaluated += (s, e) => flagEvaluatedEvents.Add(e);
-
-        var actual = client.GetValueDetails("stringDefaultCat", "N/A");
-
-        Assert.IsFalse(actual.IsDefaultValue);
-        Assert.AreEqual("Cat", actual.Value);
-        Assert.AreEqual("7a0be518", actual.VariationId);
-
-        Assert.AreEqual(1, flagEvaluatedEvents.Count);
-        Assert.AreSame(actual, flagEvaluatedEvents[0].EvaluationDetails);
     }
 
     [TestMethod]
@@ -354,22 +289,6 @@ public class BasicConfigCatClientIntegrationTests
     }
 
     [TestMethod]
-    public void Http_Timeout_Test_Sync()
-    {
-        var response = $"{{ \"f\": {{ \"fakeKey\": {{ \"v\": \"fakeValue\", \"p\": [] ,\"r\": [] }} }} }}";
-        using IConfigCatClient manualPollClient = ConfigCatClient.Get("fake-67890123456789012/1234567890123456789012", options =>
-        {
-            options.PollingMode = PollingModes.ManualPoll;
-            options.Logger = ConsoleLogger;
-            options.HttpTimeout = TimeSpan.FromSeconds(0.5);
-            options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, response, TimeSpan.FromSeconds(5));
-        });
-
-        manualPollClient.ForceRefresh();
-        Assert.AreEqual(string.Empty, manualPollClient.GetValue("fakeKey", string.Empty));
-    }
-
-    [TestMethod]
     public async Task Ensure_MaxInitWait_Overrides_Timeout()
     {
         var now = DateTimeOffset.UtcNow;
@@ -382,22 +301,6 @@ public class BasicConfigCatClientIntegrationTests
         });
 
         Assert.AreEqual(string.Empty, await manualPollClient.GetValueAsync("fakeKey", string.Empty));
-        Assert.IsTrue(DateTimeOffset.UtcNow.Subtract(now) < TimeSpan.FromSeconds(1.5));
-    }
-
-    [TestMethod]
-    public void Ensure_MaxInitWait_Overrides_Timeout_Sync()
-    {
-        var now = DateTimeOffset.UtcNow;
-        var response = $"{{ \"f\": {{ \"fakeKey\": {{ \"v\": \"fakeValue\", \"p\": [] ,\"r\": [] }} }} }}";
-        using IConfigCatClient manualPollClient = ConfigCatClient.Get("fake-67890123456789012/1234567890123456789012", options =>
-        {
-            options.PollingMode = PollingModes.AutoPoll(maxInitWaitTime: TimeSpan.FromSeconds(1));
-            options.Logger = ConsoleLogger;
-            options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, response, TimeSpan.FromSeconds(5));
-        });
-
-        Assert.AreEqual(string.Empty, manualPollClient.GetValue("fakeKey", string.Empty));
         Assert.IsTrue(DateTimeOffset.UtcNow.Subtract(now) < TimeSpan.FromSeconds(1.5));
     }
 
@@ -421,30 +324,7 @@ public class BasicConfigCatClientIntegrationTests
     }
 
     [TestMethod]
-    public void Ensure_Client_Dispose_Kill_Hanging_Http_Call_Sync()
-    {
-        var defer = new ManualResetEvent(false);
-        var now = DateTimeOffset.UtcNow;
-        var response = $"{{ \"f\": {{ \"fakeKey\": {{ \"v\": \"fakeValue\", \"p\": [] ,\"r\": [] }} }} }}";
-        using IConfigCatClient manualPollClient = ConfigCatClient.Get("fake-67890123456789012/1234567890123456789012", options =>
-        {
-            options.Logger = ConsoleLogger;
-            options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, response, TimeSpan.FromSeconds(5));
-        });
-
-        Task.Run(() =>
-        {
-            manualPollClient.ForceRefresh();
-            defer.Set();
-        });
-        manualPollClient.Dispose();
-        defer.WaitOne();
-
-        Assert.IsTrue(DateTimeOffset.UtcNow.Subtract(now) < TimeSpan.FromSeconds(2));
-    }
-
-    [TestMethod]
-    public void Ensure_Multiple_Requests_Doesnt_Interfere_In_ValueTasks()
+    public async Task Ensure_Multiple_Requests_Doesnt_Interfere_In_ValueTasks()
     {
         var response = $"{{ \"f\": {{ \"fakeKey\": {{ \"v\": \"fakeValue\", \"p\": [] ,\"r\": [] }} }} }}";
         using IConfigCatClient manualPollClient = ConfigCatClient.Get("fake-67890123456789012/1234567890123456789012", options =>
@@ -454,11 +334,13 @@ public class BasicConfigCatClientIntegrationTests
             options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, response);
         });
 
-        // an exception should be thrown when the value task's result is fetched without completion.
-        Parallel.For(0, 10, _ =>
+        var tasks = Enumerable.Range(0, 10).Select(_ =>
         {
-            manualPollClient.ForceRefresh();
+            return manualPollClient.ForceRefreshAsync();
         });
+
+        // an exception should be thrown when the value task's result is fetched without completion.
+        await Task.WhenAll(tasks);
     }
 
     [DataTestMethod]

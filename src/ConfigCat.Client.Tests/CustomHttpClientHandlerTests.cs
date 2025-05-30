@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ConfigCat.Client.Tests;
@@ -17,7 +18,7 @@ public class CustomHttpClientHandlerTests
     }
 
     [TestMethod]
-    public void AutoPoll_WithHttpClientHandlerOverride_ShouldReturnCatUseCustomImplementation()
+    public async Task AutoPoll_WithHttpClientHandlerOverride_ShouldReturnCatUseCustomImplementation()
     {
         // Arrange
 
@@ -30,7 +31,7 @@ public class CustomHttpClientHandlerTests
 
         // Act
 
-        var actual = client.GetValue("stringDefaultCat", "N/A");
+        var actual = await client.GetValueAsync("stringDefaultCat", "N/A");
 
         // Assert
 
@@ -39,7 +40,7 @@ public class CustomHttpClientHandlerTests
     }
 
     [TestMethod]
-    public void ManualPoll_WithHttpClientHandlerOverride_ShouldReturnCatUseCustomImplementation()
+    public async Task ManualPoll_WithHttpClientHandlerOverride_ShouldReturnCatUseCustomImplementation()
     {
         // Arrange
 
@@ -52,8 +53,8 @@ public class CustomHttpClientHandlerTests
 
         // Act
 
-        client.ForceRefresh();
-        var actual = client.GetValue("stringDefaultCat", "N/A");
+        await client.ForceRefreshAsync();
+        var actual = await client.GetValueAsync("stringDefaultCat", "N/A");
 
         // Assert
 
@@ -62,7 +63,7 @@ public class CustomHttpClientHandlerTests
     }
 
     [TestMethod]
-    public void LazyLoad_WithHttpClientHandlerOverride_ShouldReturnCatUseCustomImplementation()
+    public async Task LazyLoad_WithHttpClientHandlerOverride_ShouldReturnCatUseCustomImplementation()
     {
         // Arrange
 
@@ -75,7 +76,7 @@ public class CustomHttpClientHandlerTests
 
         // Act
 
-        var actual = client.GetValue("stringDefaultCat", "N/A");
+        var actual = await client.GetValueAsync("stringDefaultCat", "N/A");
 
         // Assert
 

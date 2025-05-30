@@ -47,7 +47,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
         var initialCacheSyncUpTask = SyncUpWithCacheAsync().AsTask();
 
         // This task will complete as soon as
-        // 1. a cache sync operation completes, and the obtained config is up-to-date (see GetConfig/GetConfigAsync and PollCoreAsync),
+        // 1. a cache sync operation completes, and the obtained config is up-to-date (see GetConfigAsync and PollCoreAsync),
         // 2. or, in case the client is online and the internal cache is still empty or expired after the initial cache sync-up,
         //    the first config fetch operation completes, regardless of success or failure (see OnConfigFetched).
         // If the service gets disposed before any of these events happen, the task will also complete, but with a canceled status.
@@ -130,25 +130,6 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
     {
         await InitializationTask.ConfigureAwait(TaskShim.ContinueOnCapturedContext);
         return GetCacheState(this.ConfigCache.LocalCachedConfig);
-    }
-
-    public ProjectConfig GetConfig()
-    {
-        var cachedConfig = SyncUpWithCache();
-
-        if (!cachedConfig.IsExpired(expiration: this.pollInterval))
-        {
-            SignalInitialization();
-        }
-        else if (!IsOffline && !IsInitialized)
-        {
-            // NOTE: We go sync over async here, however it's safe to do that in this case as
-            // the task will be completed on a thread pool thread (either by the polling loop or a timer callback).
-            InitializationTask.GetAwaiter().GetResult();
-            cachedConfig = this.ConfigCache.LocalCachedConfig;
-        }
-
-        return cachedConfig;
     }
 
     public async ValueTask<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default)

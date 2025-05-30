@@ -18,50 +18,44 @@ public class VariationIdTests
     private const string TestJsonIncorrect = "{ \"p\":{ \"u\": \"https://cdn-global.configcat.com\", \"r\": 0, \"s\": \"test-salt\" }, \"f\" :{ \"incorrect\" : { \"t\": 0, \"r\": [ {\"c\": [ {\"u\": {\"a\": \"Email\", \"c\": 2, \"l\": [\"@configcat.com\"] } } ] } ],\"v\": {\"b\": false}, \"i\": \"incorrectId\" } } }";
 
     [DataTestMethod]
-    [DataRow(null)]
     [DataRow(false)]
     [DataRow(true)]
-    public async Task GetVariationId_Works(bool? isAsync)
+    public async Task GetVariationId_Works(bool useSnapshot)
     {
-        using var client = CreateClient(isAsync, TestJson);
+        using var client = CreateClient(useSnapshot, TestJson);
 
         const string key = "key1";
-        var valueDetails =
-            isAsync is null ? client.Snapshot().GetValueDetails<bool?>(key, null) :
-            !isAsync.Value ? client.GetValueDetails<bool?>(key, null) :
-            await client.GetValueDetailsAsync<bool?>(key, null);
+        var valueDetails = useSnapshot
+            ? client.Snapshot().GetValueDetails<bool?>(key, null)
+            : await client.GetValueDetailsAsync<bool?>(key, null);
         Assert.AreEqual("fakeId1", valueDetails.VariationId);
     }
 
     [DataTestMethod]
-    [DataRow(null)]
     [DataRow(false)]
     [DataRow(true)]
-    public async Task GetVariationId_NotFound(bool? isAsync)
+    public async Task GetVariationId_NotFound(bool useSnapshot)
     {
-        using var client = CreateClient(isAsync, TestJson);
+        using var client = CreateClient(useSnapshot, TestJson);
 
         const string key = "nonexisting";
-        var valueDetails =
-            isAsync is null ? client.Snapshot().GetValueDetails<bool?>(key, null) :
-            !isAsync.Value ? client.GetValueDetails<bool?>(key, null) :
-            await client.GetValueDetailsAsync<bool?>(key, null);
+        var valueDetails = useSnapshot
+            ? client.Snapshot().GetValueDetails<bool?>(key, null)
+            : await client.GetValueDetailsAsync<bool?>(key, null);
         Assert.IsNull(valueDetails.VariationId);
     }
 
     [DataTestMethod]
-    [DataRow(null)]
     [DataRow(false)]
     [DataRow(true)]
-    public async Task GetAllVariationIds_Works(bool? isAsync)
+    public async Task GetAllVariationIds_Works(bool useSnapshot)
     {
-        using var client = CreateClient(isAsync, TestJson);
+        using var client = CreateClient(useSnapshot, TestJson);
 
         ConfigCatClientSnapshot snapshot;
-        EvaluationDetails[] allValueDetails =
-            isAsync is null ? (snapshot = client.Snapshot()).GetAllKeys().Select(keys => snapshot.GetValueDetails<object?>(keys, null)).ToArray() :
-            !isAsync.Value ? client.GetAllValueDetails().ToArray() :
-            (await client.GetAllValueDetailsAsync()).ToArray();
+        EvaluationDetails[] allValueDetails = useSnapshot
+            ? (snapshot = client.Snapshot()).GetAllKeys().Select(keys => snapshot.GetValueDetails<object?>(keys, null)).ToArray()
+            : (await client.GetAllValueDetailsAsync()).ToArray();
 
         Assert.AreEqual(3, allValueDetails.Length);
 
@@ -72,36 +66,32 @@ public class VariationIdTests
     }
 
     [DataTestMethod]
-    [DataRow(null)]
     [DataRow(false)]
     [DataRow(true)]
-    public async Task GetAllVariationIds_Works_Empty(bool? isAsync)
+    public async Task GetAllVariationIds_Works_Empty(bool useSnapshot)
     {
-        using var client = CreateClient(isAsync, "{}");
+        using var client = CreateClient(useSnapshot, "{}");
 
         ConfigCatClientSnapshot snapshot;
-        EvaluationDetails[] allValueDetails =
-            isAsync is null ? (snapshot = client.Snapshot()).GetAllKeys().Select(keys => snapshot.GetValueDetails<object?>(keys, null)).ToArray() :
-            !isAsync.Value ? client.GetAllValueDetails().ToArray() :
-            (await client.GetAllValueDetailsAsync()).ToArray();
+        EvaluationDetails[] allValueDetails = useSnapshot
+            ? (snapshot = client.Snapshot()).GetAllKeys().Select(keys => snapshot.GetValueDetails<object?>(keys, null)).ToArray()
+            : (await client.GetAllValueDetailsAsync()).ToArray();
 
         Assert.AreEqual(0, allValueDetails.Length);
     }
 
     [DataTestMethod]
-    [DataRow(null)]
     [DataRow(false)]
     [DataRow(true)]
-    public async Task GetKeyAndValue_Works(bool? isAsync)
+    public async Task GetKeyAndValue_Works(bool useSnapshot)
     {
-        using var client = CreateClient(isAsync, TestJson);
+        using var client = CreateClient(useSnapshot, TestJson);
 
         async Task<KeyValuePair<string, bool>?> GetKeyAndValue(string variationId)
         {
-            return
-                isAsync is null ? client.Snapshot().GetKeyAndValue<bool>(variationId) :
-                !isAsync.Value ? client.GetKeyAndValue<bool>(variationId) :
-                await client.GetKeyAndValueAsync<bool>(variationId);
+            return useSnapshot
+                ? client.Snapshot().GetKeyAndValue<bool>(variationId)
+                : await client.GetKeyAndValueAsync<bool>(variationId);
         }
 
         var result = await GetKeyAndValue("fakeId2");
@@ -126,19 +116,17 @@ public class VariationIdTests
     }
 
     [DataTestMethod]
-    [DataRow(null)]
     [DataRow(false)]
     [DataRow(true)]
-    public async Task GetKeyAndValue_Works_Nullable(bool? isAsync)
+    public async Task GetKeyAndValue_Works_Nullable(bool useSnapshot)
     {
-        using var client = CreateClient(isAsync, TestJson);
+        using var client = CreateClient(useSnapshot, TestJson);
 
         async Task<KeyValuePair<string, bool?>?> GetKeyAndValue(string variationId)
         {
-            return
-                isAsync is null ? client.Snapshot().GetKeyAndValue<bool?>(variationId) :
-                !isAsync.Value ? client.GetKeyAndValue<bool?>(variationId) :
-                await client.GetKeyAndValueAsync<bool?>(variationId);
+            return useSnapshot
+                ? client.Snapshot().GetKeyAndValue<bool?>(variationId)
+                : await client.GetKeyAndValueAsync<bool?>(variationId);
         }
 
         var result = await GetKeyAndValue("fakeId2");
@@ -163,19 +151,17 @@ public class VariationIdTests
     }
 
     [DataTestMethod]
-    [DataRow(null)]
     [DataRow(false)]
     [DataRow(true)]
-    public async Task GetKeyAndValue_Works_Object(bool? isAsync)
+    public async Task GetKeyAndValue_Works_Object(bool useSnapshot)
     {
-        using var client = CreateClient(isAsync, TestJson);
+        using var client = CreateClient(useSnapshot, TestJson);
 
         async Task<KeyValuePair<string, object>?> GetKeyAndValue(string variationId)
         {
-            return
-                isAsync is null ? client.Snapshot().GetKeyAndValue<object>(variationId) :
-                !isAsync.Value ? client.GetKeyAndValue<object>(variationId) :
-                await client.GetKeyAndValueAsync<object>(variationId);
+            return useSnapshot
+                ? client.Snapshot().GetKeyAndValue<object>(variationId)
+                : await client.GetKeyAndValueAsync<object>(variationId);
         }
 
         var result = await GetKeyAndValue("fakeId2");
@@ -200,21 +186,19 @@ public class VariationIdTests
     }
 
     [DataTestMethod]
-    [DataRow(null)]
     [DataRow(false)]
     [DataRow(true)]
-    public async Task GetKeyAndValue_NotFound(bool? isAsync)
+    public async Task GetKeyAndValue_NotFound(bool useSnapshot)
     {
         var logEvents = new List<LogEvent>();
         var logger = LoggingHelper.CreateCapturingLogger(logEvents);
 
-        using var client = CreateClient(isAsync, TestJson, logger);
+        using var client = CreateClient(useSnapshot, TestJson, logger);
 
         const string variationId = "nonexisting";
-        var result =
-            isAsync is null ? client.Snapshot().GetKeyAndValue<bool>(variationId) :
-            !isAsync.Value ? client.GetKeyAndValue<bool>(variationId) :
-            await client.GetKeyAndValueAsync<bool>(variationId);
+        var result = useSnapshot
+            ? client.Snapshot().GetKeyAndValue<bool>(variationId)
+            : await client.GetKeyAndValueAsync<bool>(variationId);
 
         Assert.IsNull(result);
 
@@ -224,21 +208,19 @@ public class VariationIdTests
     }
 
     [DataTestMethod]
-    [DataRow(null)]
     [DataRow(false)]
     [DataRow(true)]
-    public async Task GetKeyAndValue_TypeMismatch(bool? isAsync)
+    public async Task GetKeyAndValue_TypeMismatch(bool useSnapshot)
     {
         var logEvents = new List<LogEvent>();
         var logger = LoggingHelper.CreateCapturingLogger(logEvents);
 
-        using var client = CreateClient(isAsync, TestJson, logger);
+        using var client = CreateClient(useSnapshot, TestJson, logger);
 
         const string variationId = "fakeId2";
-        var result =
-            isAsync is null ? client.Snapshot().GetKeyAndValue<string>(variationId) :
-            !isAsync.Value ? client.GetKeyAndValue<string>(variationId) :
-            await client.GetKeyAndValueAsync<string>(variationId);
+        var result = useSnapshot
+            ? client.Snapshot().GetKeyAndValue<string>(variationId)
+            : await client.GetKeyAndValueAsync<string>(variationId);
 
         Assert.IsNull(result);
 
@@ -249,21 +231,19 @@ public class VariationIdTests
     }
 
     [DataTestMethod]
-    [DataRow(null)]
     [DataRow(false)]
     [DataRow(true)]
-    public async Task GetKeyAndValue_IncorrectTargetingRule(bool? isAsync)
+    public async Task GetKeyAndValue_IncorrectTargetingRule(bool useSnapshot)
     {
         var logEvents = new List<LogEvent>();
         var logger = LoggingHelper.CreateCapturingLogger(logEvents);
 
-        using var client = CreateClient(isAsync, TestJsonIncorrect, logger);
+        using var client = CreateClient(useSnapshot, TestJsonIncorrect, logger);
 
         const string variationId = "targetPercentageId2";
-        var result =
-            isAsync is null ? client.Snapshot().GetKeyAndValue<bool>(variationId) :
-            !isAsync.Value ? client.GetKeyAndValue<bool>(variationId) :
-            await client.GetKeyAndValueAsync<bool>(variationId);
+        var result = useSnapshot
+            ? client.Snapshot().GetKeyAndValue<bool>(variationId)
+            : await client.GetKeyAndValueAsync<bool>(variationId);
 
         Assert.IsNull(result);
 
@@ -273,7 +253,7 @@ public class VariationIdTests
         StringAssert.Contains(logEvents[0].Exception!.Message, "THEN part is missing or invalid");
     }
 
-    private static ConfigCatClient CreateClient(bool? isAsync, string configJson, IConfigCatLogger? logger = null)
+    private static ConfigCatClient CreateClient(bool useSnapshot, string configJson, IConfigCatLogger? logger = null)
     {
         logger ??= new Mock<IConfigCatLogger>().Object;
 
@@ -281,13 +261,9 @@ public class VariationIdTests
         var configServiceMock = new Mock<IConfigService>();
 
         var config = ConfigHelper.FromString(configJson, "\"123\"", DateTime.UtcNow);
-        if (isAsync is null)
+        if (useSnapshot)
         {
             configServiceMock.Setup(m => m.GetInMemoryConfig()).Returns(config);
-        }
-        else if (!isAsync.Value)
-        {
-            configServiceMock.Setup(m => m.GetConfig()).Returns(config);
         }
         else
         {

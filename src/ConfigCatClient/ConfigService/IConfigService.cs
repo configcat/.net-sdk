@@ -9,11 +9,7 @@ internal interface IConfigService
 
     ProjectConfig GetInMemoryConfig();
 
-    ProjectConfig GetConfig();
-
     ValueTask<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default);
-
-    RefreshResult RefreshConfig();
 
     ValueTask<RefreshResult> RefreshConfigAsync(CancellationToken cancellationToken = default);
 

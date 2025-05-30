@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Evaluation;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -28,11 +29,13 @@ public class OverrideTests
             options.FlagOverrides = FlagOverrides.LocalFile(ComplexJsonPath, false, OverrideBehaviour.LocalOnly);
         });
 
-        Assert.IsTrue(client.GetValue("enabledFeature", false));
-        Assert.IsFalse(client.GetValue("disabledFeature", false));
-        Assert.AreEqual(5, client.GetValue("intSetting", 0));
-        Assert.AreEqual(3.14, client.GetValue("doubleSetting", 0.0));
-        Assert.AreEqual("test", client.GetValue("stringSetting", string.Empty));
+        var snapshot = client.Snapshot();
+
+        Assert.IsTrue(snapshot.GetValue("enabledFeature", false));
+        Assert.IsFalse(snapshot.GetValue("disabledFeature", false));
+        Assert.AreEqual(5, snapshot.GetValue("intSetting", 0));
+        Assert.AreEqual(3.14, snapshot.GetValue("doubleSetting", 0.0));
+        Assert.AreEqual("test", snapshot.GetValue("stringSetting", string.Empty));
     }
 
     [TestMethod]
@@ -50,22 +53,8 @@ public class OverrideTests
         Assert.AreEqual("test", await client.GetValueAsync("stringSetting", string.Empty));
     }
 
-    public static void LocalFile_Parallel()
-    {
-        using var client = ConfigCatClient.Get("localhost", options =>
-        {
-            options.FlagOverrides = FlagOverrides.LocalFile(ComplexJsonPath, false, OverrideBehaviour.LocalOnly);
-        });
-
-        Assert.IsTrue(client.GetValue("enabledFeature", false));
-        Assert.IsFalse(client.GetValue("disabledFeature", false));
-        Assert.AreEqual(5, client.GetValue("intSetting", 0));
-        Assert.AreEqual(3.14, client.GetValue("doubleSetting", 0.0));
-        Assert.AreEqual("test", client.GetValue("stringSetting", string.Empty));
-    }
-
     [TestMethod]
-    public void LocalFileAsync_Parallel()
+    public void LocalFile_Parallel()
     {
         var keys = new[]
         {
@@ -81,45 +70,49 @@ public class OverrideTests
             options.FlagOverrides = FlagOverrides.LocalFile(ComplexJsonPath, false, OverrideBehaviour.LocalOnly);
         });
 
-        Parallel.ForEach(keys, async item =>
-        {
-            Assert.IsNotNull(await client.GetValueAsync<object?>(item, null));
-        });
-    }
-
-    [TestMethod]
-    public void LocalFileAsync_Parallel_Sync()
-    {
-        var keys = new[]
-        {
-            "enabledFeature",
-            "disabledFeature",
-            "intSetting",
-            "doubleSetting",
-            "stringSetting",
-        };
-
-        using var client = ConfigCatClient.Get("localhost", options =>
-        {
-            options.FlagOverrides = FlagOverrides.LocalFile(ComplexJsonPath, false, OverrideBehaviour.LocalOnly);
-        });
+        var snapshot = client.Snapshot();
 
         Parallel.ForEach(keys, item =>
         {
-            Assert.IsNotNull(client.GetValue<object?>(item, null));
+            Assert.IsNotNull(snapshot.GetValue<object?>(item, null));
         });
     }
 
     [TestMethod]
-    public void LocalFile_Default_WhenErrorOccures()
+    public async Task LocalFileAsync_Parallel()
+    {
+        var keys = new[]
+        {
+            "enabledFeature",
+            "disabledFeature",
+            "intSetting",
+            "doubleSetting",
+            "stringSetting",
+        };
+
+        using var client = ConfigCatClient.Get("localhost", options =>
+        {
+            options.FlagOverrides = FlagOverrides.LocalFile(ComplexJsonPath, false, OverrideBehaviour.LocalOnly);
+        });
+
+        var tasks = keys.Select(async item =>
+        {
+            Assert.IsNotNull(await client.GetValueAsync<object?>(item, null));
+        });
+
+        await Task.WhenAll(tasks);
+    }
+
+    [TestMethod]
+    public async Task LocalFile_Default_WhenErrorOccures()
     {
         using var client = ConfigCatClient.Get("localhost", options =>
         {
             options.FlagOverrides = FlagOverrides.LocalFile("something-not-existing", false, OverrideBehaviour.LocalOnly);
         });
 
-        Assert.IsFalse(client.GetValue("enabledFeature", false));
-        Assert.AreEqual("default", client.GetValue("stringSetting", "default"));
+        Assert.IsFalse(await client.GetValueAsync("enabledFeature", false));
+        Assert.AreEqual("default", await client.GetValueAsync("stringSetting", "default"));
     }
 
     [TestMethod]
@@ -130,11 +123,13 @@ public class OverrideTests
             options.FlagOverrides = FlagOverrides.LocalFile(ComplexJsonPath, true, OverrideBehaviour.LocalOnly);
         });
 
-        Assert.IsTrue(client.GetValue("enabledFeature", false));
-        Assert.IsFalse(client.GetValue("disabledFeature", false));
-        Assert.AreEqual(5, client.GetValue("intSetting", 0));
-        Assert.AreEqual(3.14, client.GetValue("doubleSetting", 0.0));
-        Assert.AreEqual("test", client.GetValue("stringSetting", string.Empty));
+        var snapshot = client.Snapshot();
+
+        Assert.IsTrue(snapshot.GetValue("enabledFeature", false));
+        Assert.IsFalse(snapshot.GetValue("disabledFeature", false));
+        Assert.AreEqual(5, snapshot.GetValue("intSetting", 0));
+        Assert.AreEqual(3.14, snapshot.GetValue("doubleSetting", 0.0));
+        Assert.AreEqual("test", snapshot.GetValue("stringSetting", string.Empty));
     }
 
     [TestMethod]
@@ -153,15 +148,15 @@ public class OverrideTests
     }
 
     [TestMethod]
-    public void LocalFile_Default_WhenErrorOccures_Reload()
+    public async Task LocalFile_Default_WhenErrorOccures_Reload()
     {
         using var client = ConfigCatClient.Get("localhost", options =>
         {
             options.FlagOverrides = FlagOverrides.LocalFile("something-not-existing", true, OverrideBehaviour.LocalOnly);
         });
 
-        Assert.IsFalse(client.GetValue("enabledFeature", false));
-        Assert.AreEqual("default", client.GetValue("stringSetting", "default"));
+        Assert.IsFalse(await client.GetValueAsync("enabledFeature", false));
+        Assert.AreEqual("default", await client.GetValueAsync("stringSetting", "default"));
     }
 
     [TestMethod]
@@ -172,11 +167,13 @@ public class OverrideTests
             options.FlagOverrides = FlagOverrides.LocalFile(SimpleJsonPath, false, OverrideBehaviour.LocalOnly);
         });
 
-        Assert.IsTrue(client.GetValue("enabledFeature", false));
-        Assert.IsFalse(client.GetValue("disabledFeature", false));
-        Assert.AreEqual(5, client.GetValue("intSetting", 0));
-        Assert.AreEqual(3.14, client.GetValue("doubleSetting", 0.0));
-        Assert.AreEqual("test", client.GetValue("stringSetting", string.Empty));
+        var snapshot = client.Snapshot();
+
+        Assert.IsTrue(snapshot.GetValue("enabledFeature", false));
+        Assert.IsFalse(snapshot.GetValue("disabledFeature", false));
+        Assert.AreEqual(5, snapshot.GetValue("intSetting", 0));
+        Assert.AreEqual(3.14, snapshot.GetValue("doubleSetting", 0.0));
+        Assert.AreEqual("test", snapshot.GetValue("stringSetting", string.Empty));
     }
 
     [TestMethod]
@@ -211,11 +208,13 @@ public class OverrideTests
             options.FlagOverrides = FlagOverrides.LocalDictionary(dict, OverrideBehaviour.LocalOnly);
         });
 
-        Assert.IsTrue(client.GetValue("enabledFeature", false));
-        Assert.IsFalse(client.GetValue("disabledFeature", false));
-        Assert.AreEqual(5, client.GetValue("intSetting", 0));
-        Assert.AreEqual(3.14, client.GetValue("doubleSetting", 0.0));
-        Assert.AreEqual("test", client.GetValue("stringSetting", string.Empty));
+        var snapshot = client.Snapshot();
+
+        Assert.IsTrue(snapshot.GetValue("enabledFeature", false));
+        Assert.IsFalse(snapshot.GetValue("disabledFeature", false));
+        Assert.AreEqual(5, snapshot.GetValue("intSetting", 0));
+        Assert.AreEqual(3.14, snapshot.GetValue("doubleSetting", 0.0));
+        Assert.AreEqual("test", snapshot.GetValue("stringSetting", string.Empty));
     }
 
     [TestMethod]
@@ -240,53 +239,6 @@ public class OverrideTests
         Assert.AreEqual(5, await client.GetValueAsync("intSetting", 0));
         Assert.AreEqual(3.14, await client.GetValueAsync("doubleSetting", 0.0));
         Assert.AreEqual("test", await client.GetValueAsync("stringSetting", string.Empty));
-    }
-
-    [TestMethod]
-    public void LocalOnly()
-    {
-        var dict = new Dictionary<string, object>
-        {
-            {"fakeKey", true},
-            {"nonexisting", true},
-        };
-
-        using var client = ConfigCatClient.Get("localhost", options =>
-        {
-            options.FlagOverrides = FlagOverrides.LocalDictionary(dict, OverrideBehaviour.LocalOnly);
-            options.PollingMode = PollingModes.ManualPoll;
-        });
-
-        var refreshResult = client.ForceRefresh();
-
-        Assert.IsTrue(client.GetValue("fakeKey", false));
-        Assert.IsTrue(client.GetValue("nonexisting", false));
-
-        Assert.IsFalse(refreshResult.IsSuccess);
-        Assert.AreEqual(RefreshErrorCode.LocalOnlyClient, refreshResult.ErrorCode);
-        StringAssert.Contains(refreshResult.ErrorMessage, nameof(OverrideBehaviour.LocalOnly));
-        Assert.IsNull(refreshResult.ErrorException);
-    }
-
-    [TestMethod]
-    public void LocalOnly_Watch()
-    {
-        var dict = new Dictionary<string, object>
-        {
-            {"fakeKey", "test1"},
-        };
-
-        using var client = ConfigCatClient.Get("localhost", options =>
-        {
-            options.FlagOverrides = FlagOverrides.LocalDictionary(dict, true, OverrideBehaviour.LocalOnly);
-            options.PollingMode = PollingModes.ManualPoll;
-        });
-
-        Assert.AreEqual("test1", client.GetValue("fakeKey", string.Empty));
-
-        dict["fakeKey"] = "test2";
-
-        Assert.AreEqual("test2", client.GetValue("fakeKey", string.Empty));
     }
 
     [TestMethod]
@@ -327,8 +279,8 @@ public class OverrideTests
 
         var refreshResult = await client.ForceRefreshAsync();
 
-        Assert.IsTrue(client.GetValue("fakeKey", false));
-        Assert.IsTrue(client.GetValue("nonexisting", false));
+        Assert.IsTrue(await client.GetValueAsync("fakeKey", false));
+        Assert.IsTrue(await client.GetValueAsync("nonexisting", false));
 
         Assert.IsFalse(refreshResult.IsSuccess);
         Assert.AreEqual(RefreshErrorCode.LocalOnlyClient, refreshResult.ErrorCode);
@@ -337,7 +289,7 @@ public class OverrideTests
     }
 
     [TestMethod]
-    public void LocalOverRemote()
+    public async Task LocalOverRemote()
     {
         var dict = new Dictionary<string, object>
         {
@@ -354,10 +306,12 @@ public class OverrideTests
             options.PollingMode = PollingModes.ManualPoll;
         });
 
-        client.ForceRefresh();
+        await client.ForceRefreshAsync();
 
-        Assert.IsTrue(client.GetValue("fakeKey", false));
-        Assert.IsTrue(client.GetValue("nonexisting", false));
+        var snapshot = client.Snapshot();
+
+        Assert.IsTrue(snapshot.GetValue("fakeKey", false));
+        Assert.IsTrue(snapshot.GetValue("nonexisting", false));
     }
 
     [TestMethod]
@@ -385,7 +339,7 @@ public class OverrideTests
     }
 
     [TestMethod]
-    public void RemoteOverLocal()
+    public async Task RemoteOverLocal()
     {
         var dict = new Dictionary<string, object>
         {
@@ -402,10 +356,12 @@ public class OverrideTests
             options.PollingMode = PollingModes.ManualPoll;
         });
 
-        client.ForceRefresh();
+        await client.ForceRefreshAsync();
 
-        Assert.IsFalse(client.GetValue("fakeKey", false));
-        Assert.IsTrue(client.GetValue("nonexisting", false));
+        var snapshot = client.Snapshot();
+
+        Assert.IsFalse(snapshot.GetValue("fakeKey", false));
+        Assert.IsTrue(snapshot.GetValue("nonexisting", false));
     }
 
     [TestMethod]
@@ -449,27 +405,6 @@ public class OverrideTests
         await Task.Delay(1500);
 
         Assert.AreEqual("modified", await client.GetValueAsync("fakeKey", string.Empty));
-
-        File.Delete(SampleFileToCreate);
-    }
-
-    [TestMethod]
-    public async Task LocalFile_Watcher_Reload_Sync()
-    {
-        await CreateFileAndWriteContent(SampleFileToCreate, "initial");
-
-        using var client = ConfigCatClient.Get("localhost", options =>
-        {
-            options.FlagOverrides = FlagOverrides.LocalFile(SampleFileToCreate, true, OverrideBehaviour.LocalOnly);
-        });
-        client.LogLevel = LogLevel.Info;
-
-        Assert.AreEqual("initial", client.GetValue("fakeKey", string.Empty));
-        await Task.Delay(100);
-        await WriteContent(SampleFileToCreate, "modified");
-        await Task.Delay(1500);
-
-        Assert.AreEqual("modified", client.GetValue("fakeKey", string.Empty));
 
         File.Delete(SampleFileToCreate);
     }
@@ -560,7 +495,7 @@ public class OverrideTests
     [DataRow(typeof(object), false, false)]
     [DataRow(typeof(DateTime), false, false)]
     [DataTestMethod]
-    public void OverrideValueTypeMismatchShouldBeHandledCorrectly_Dictionary(object overrideValue, object defaultValue, object expectedEvaluatedValue)
+    public async Task OverrideValueTypeMismatchShouldBeHandledCorrectly_Dictionary(object overrideValue, object defaultValue, object expectedEvaluatedValue)
     {
         const string key = "flag";
 
@@ -575,13 +510,18 @@ public class OverrideTests
             options.FlagOverrides = FlagOverrides.LocalDictionary(dictionary, OverrideBehaviour.LocalOnly);
         });
 
-        var method = typeof(IConfigCatClient).GetMethod(nameof(IConfigCatClient.GetValueDetails))!
+        var method = typeof(IConfigCatClient).GetMethod(nameof(IConfigCatClient.GetValueDetailsAsync))!
             .GetGenericMethodDefinition()
             .MakeGenericMethod(defaultValue.GetType());
 
-        var actualEvaluatedValueDetails = (EvaluationDetails)method.Invoke(client, new[] { key, defaultValue, null })!;
+        var getValueDetailsTask = (Task)method.Invoke(client, new[] { key, defaultValue, null, CancellationToken.None })!;
+        await getValueDetailsTask;
+        var actualEvaluatedValueDetails = (EvaluationDetails)typeof(Task<>)
+            .MakeGenericType(typeof(EvaluationDetails<>).MakeGenericType(defaultValue.GetType()))
+            .GetProperty(nameof(Task<object>.Result))!
+            .GetValue(getValueDetailsTask, null)!;
         var actualEvaluatedValue = actualEvaluatedValueDetails.Value;
-        var actualEvaluatedValues = client.GetAllValues(user: null);
+        var actualEvaluatedValues = await client.GetAllValuesAsync(user: null);
 
         Assert.AreEqual(expectedEvaluatedValue, actualEvaluatedValue);
         if (!defaultValue.Equals(expectedEvaluatedValue))
@@ -639,7 +579,7 @@ public class OverrideTests
     [DataRow("[]", false, false)]
     [DataRow("{}", false, false)]
     [DataTestMethod]
-    public void OverrideValueTypeMismatchShouldBeHandledCorrectly_SimplifiedConfig(string overrideValueJson, object defaultValue, object expectedEvaluatedValue)
+    public async Task OverrideValueTypeMismatchShouldBeHandledCorrectly_SimplifiedConfig(string overrideValueJson, object defaultValue, object expectedEvaluatedValue)
     {
         const string key = "flag";
         var overrideValue = overrideValueJson.AsSpan().Deserialize<JsonValue>();
@@ -655,13 +595,18 @@ public class OverrideTests
                 options.FlagOverrides = FlagOverrides.LocalFile(filePath, autoReload: false, OverrideBehaviour.LocalOnly);
             });
 
-            var method = typeof(IConfigCatClient).GetMethod(nameof(IConfigCatClient.GetValueDetails))!
+            var method = typeof(IConfigCatClient).GetMethod(nameof(IConfigCatClient.GetValueDetailsAsync))!
                 .GetGenericMethodDefinition()
                 .MakeGenericMethod(defaultValue.GetType());
 
-            var actualEvaluatedValueDetails = (EvaluationDetails)method.Invoke(client, new[] { key, defaultValue, null })!;
+            var getValueDetailsTask = (Task)method.Invoke(client, new[] { key, defaultValue, null, CancellationToken.None })!;
+            await getValueDetailsTask;
+            var actualEvaluatedValueDetails = (EvaluationDetails)typeof(Task<>)
+                .MakeGenericType(typeof(EvaluationDetails<>).MakeGenericType(defaultValue.GetType()))
+                .GetProperty(nameof(Task<object>.Result))!
+                .GetValue(getValueDetailsTask, null)!;
             var actualEvaluatedValue = actualEvaluatedValueDetails.Value;
-            var actualEvaluatedValues = client.GetAllValues(user: null);
+            var actualEvaluatedValues = await client.GetAllValuesAsync(user: null);
 
             Assert.AreEqual(expectedEvaluatedValue, actualEvaluatedValue);
             if (!defaultValue.Equals(expectedEvaluatedValue))

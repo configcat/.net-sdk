@@ -62,7 +62,7 @@ client.Dispose();
 > Alternatively, you can also close all open clients at once using the `ConfigCatClient.DisposeAll()` method.
 
 ## Getting user specific setting values with Targeting
-Using this feature, you will be able to get different setting values for different users in your application by passing a `User Object` to the `GetValue()` function.
+Using this feature, you will be able to get different setting values for different users in your application by passing a `User Object` to the `GetValueAsync()` function.
 
 Read more about [Targeting here](https://configcat.com/docs/advanced/targeting).
 ```c#

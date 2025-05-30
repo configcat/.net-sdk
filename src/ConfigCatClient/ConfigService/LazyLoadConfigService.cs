@@ -21,26 +21,6 @@ internal sealed class LazyLoadConfigService : ConfigServiceBase, IConfigService
 
     public Task<ClientCacheState> ReadyTask { get; }
 
-    public ProjectConfig GetConfig()
-    {
-        var cachedConfig = SyncUpWithCache();
-
-        if (cachedConfig.IsExpired(expiration: this.cacheTimeToLive))
-        {
-            if (!cachedConfig.IsEmpty)
-            {
-                OnConfigExpired();
-            }
-
-            if (!IsOffline)
-            {
-                (cachedConfig, _) = RefreshConfigCore(cachedConfig, isInitiatedByUser: false);
-            }
-        }
-
-        return cachedConfig;
-    }
-
     public async ValueTask<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default)
     {
         var cachedConfig = await SyncUpWithCacheAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);

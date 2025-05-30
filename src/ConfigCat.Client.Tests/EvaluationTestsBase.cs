@@ -20,7 +20,7 @@ public abstract class EvaluationTestsBase
     private protected abstract Dictionary<string, Setting> BasicConfig { get; }
 
     [TestMethod]
-    public void GetValue_WithSimpleKey_ShouldReturnCat()
+    public void Evaluate_WithSimpleKey_ShouldReturnCat()
     {
         var actual = this.configEvaluator.Evaluate(BasicConfig, "stringDefaultCat", string.Empty, user: null, null, this.logger).Value;
 
@@ -29,7 +29,7 @@ public abstract class EvaluationTestsBase
     }
 
     [TestMethod]
-    public void GetValue_WithNonExistingKey_ShouldReturnDefaultValue()
+    public void Evaluate_WithNonExistingKey_ShouldReturnDefaultValue()
     {
         var actual = this.configEvaluator.Evaluate(BasicConfig, "NotExistsKey", "NotExistsValue", user: null, null, this.logger).Value;
 
@@ -37,7 +37,7 @@ public abstract class EvaluationTestsBase
     }
 
     [TestMethod]
-    public void GetValue_WithEmptyProjectConfig_ShouldReturnDefaultValue()
+    public void Evaluate_WithEmptyProjectConfig_ShouldReturnDefaultValue()
     {
         var actual = this.configEvaluator.Evaluate(new Dictionary<string, Setting>(), "stringDefaultCat", "Default", user: null, null, this.logger).Value;
 
@@ -45,7 +45,7 @@ public abstract class EvaluationTestsBase
     }
 
     [TestMethod]
-    public void GetValue_WithUser_ShouldReturnEvaluatedValue()
+    public void Evaluate_WithUser_ShouldReturnEvaluatedValue()
     {
         var actual = this.configEvaluator.Evaluate(BasicConfig, "doubleDefaultPi", double.NaN, new User("c@configcat.com")
         {
@@ -76,7 +76,7 @@ public abstract class EvaluationTestsBase
     [DataRow("doubleDefaultPi", 0.0, 3.1415, typeof(double?))]
     [DataRow("doubleDefaultPi", 0.0, 3.1415, typeof(object))]
     [DataTestMethod]
-    public void GetValue_WithCompatibleDefaultValue_ShouldSucceed(string key, object defaultValue, object expectedValue, Type settingClrType)
+    public void Evaluate_WithCompatibleDefaultValue_ShouldSucceed(string key, object defaultValue, object expectedValue, Type settingClrType)
     {
         var args = new object?[]
         {
@@ -99,7 +99,7 @@ public abstract class EvaluationTestsBase
     [DataRow("integerDefaultOne", "0", typeof(string))]
     [DataRow("doubleDefaultPi", 0, typeof(int))]
     [DataTestMethod]
-    public void GetValue_WithIncompatibleDefaultValueType_ShouldThrowWithImprovedErrorMessage(string key, object defaultValue, Type settingClrType)
+    public void Evaluate_WithIncompatibleDefaultValueType_ShouldThrowWithImprovedErrorMessage(string key, object defaultValue, Type settingClrType)
     {
         var args = new object?[]
         {

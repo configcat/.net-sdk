@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using ConfigCat.Client.Utils;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 

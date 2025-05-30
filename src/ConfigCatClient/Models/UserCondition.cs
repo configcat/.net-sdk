@@ -1,4 +1,3 @@
-using System;
 using System.Collections.ObjectModel;
 using ConfigCat.Client.Utils;
 using ConfigCat.Client.Evaluation;

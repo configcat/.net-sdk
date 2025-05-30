@@ -57,7 +57,8 @@ public class DataGovernanceTests
             .Verifiable();
 
         IConfigFetcher fetcher = new DefaultConfigFetcher(
-            configuration.CreateUri(sdkKey),
+            sdkKey,
+            configuration.GetBaseUri(),
             "DEMO",
             Mock.Of<IConfigCatLogger>().AsWrapper(),
             new HttpClientConfigFetcher(handlerMock.Object),
@@ -379,7 +380,8 @@ public class DataGovernanceTests
             .Verifiable();
 
         IConfigFetcher fetcher = new DefaultConfigFetcher(
-            fetchConfig.CreateUri(sdkKey),
+            sdkKey,
+            fetchConfig.GetBaseUri(),
             "DEMO",
             Mock.Of<IConfigCatLogger>().AsWrapper(),
             new HttpClientConfigFetcher(handlerMock.Object),

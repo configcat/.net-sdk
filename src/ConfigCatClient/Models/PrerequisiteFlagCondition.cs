@@ -1,4 +1,3 @@
-using System;
 using ConfigCat.Client.Utils;
 using ConfigCat.Client.Evaluation;
 

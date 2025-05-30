@@ -22,7 +22,7 @@ public class HttpConfigFetcherTests
 
         var myHandler = new FakeHttpClientHandler();
 
-        var instance = new DefaultConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), new HttpClientConfigFetcher(myHandler), false,
+        var instance = new DefaultConfigFetcher("x", new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), new HttpClientConfigFetcher(myHandler), false,
             TimeSpan.FromSeconds(30));
 
         // Act
@@ -41,7 +41,7 @@ public class HttpConfigFetcherTests
 
         var myHandler = new FakeHttpClientHandler();
 
-        var instance = new DefaultConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), new HttpClientConfigFetcher(myHandler), false,
+        var instance = new DefaultConfigFetcher("x", new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), new HttpClientConfigFetcher(myHandler), false,
             TimeSpan.FromSeconds(30));
 
         // Act
@@ -60,7 +60,7 @@ public class HttpConfigFetcherTests
 
         var myHandler = new FakeHttpClientHandler(HttpStatusCode.Forbidden);
 
-        using var instance = new DefaultConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), new HttpClientConfigFetcher(myHandler), false,
+        using var instance = new DefaultConfigFetcher("x", new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), new HttpClientConfigFetcher(myHandler), false,
             TimeSpan.FromSeconds(30));
 
         var lastConfig = ConfigHelper.FromString("{}", timeStamp: ProjectConfig.GenerateTimeStamp(), httpETag: "\"ETAG\"");
@@ -89,7 +89,7 @@ public class HttpConfigFetcherTests
         var exception = new WebException();
         var myHandler = new ExceptionThrowerHttpClientHandler(exception);
 
-        var instance = new DefaultConfigFetcher(new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), new HttpClientConfigFetcher(myHandler), false,
+        var instance = new DefaultConfigFetcher("x", new Uri("http://example.com"), "1.0", new CounterLogger().AsWrapper(), new HttpClientConfigFetcher(myHandler), false,
             TimeSpan.FromSeconds(30));
 
         var lastConfig = ConfigHelper.FromString("{}", timeStamp: ProjectConfig.GenerateTimeStamp(), httpETag: "\"ETAG\"");
@@ -172,7 +172,7 @@ public class HttpConfigFetcherTests
 
         using (client)
         {
-            await client.ForceRefreshAsync();
+            await client.WaitForReadyAsync();
         }
 
         // Assert
@@ -181,10 +181,15 @@ public class HttpConfigFetcherTests
         Assert.AreEqual(1, errors.Length);
 
         var error = errors[0].Message;
-        Assert.AreEqual(1, error.ArgValues.Length);
+        Assert.AreEqual(2, error.ArgNames.Length);
+        Assert.AreEqual(2, error.ArgValues.Length);
         Assert.IsTrue(error.ArgValues[0] is string);
+        Assert.IsTrue(error.ArgValues[1] is string);
+
+        var message = errors[0].Message.InvariantFormattedMessage;
+        StringAssert.StartsWith(message, "Your SDK Key seems to be wrong: '**********************/****************789012'.");
 
         var rayId = (string)error.ArgValues[0]!;
-        StringAssert.Contains(errors[0].Message.InvariantFormattedMessage, rayId);
+        StringAssert.Contains(message, rayId);
     }
 }

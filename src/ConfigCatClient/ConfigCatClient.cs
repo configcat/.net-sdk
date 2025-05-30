@@ -128,18 +128,19 @@ public sealed class ConfigCatClient : IConfigCatClient
 
         this.configService = this.overrideBehaviour != OverrideBehaviour.LocalOnly
             ? DetermineConfigService(pollingMode,
-                new DefaultConfigFetcher(options.CreateUri(sdkKey),
-                        GetProductVersion(pollingMode),
-                        logger,
-                        options.ConfigFetcher
-                            ?? PlatformCompatibilityOptions.configFetcherFactory?.Invoke(options.HttpClientHandler)
-                            ?? ConfigCatClientOptions.CreateDefaultConfigFetcher(options.HttpClientHandler),
-                        options.IsCustomBaseUrl,
-                        options.HttpTimeout),
-                    cacheParameters,
+                new DefaultConfigFetcher(sdkKey,
+                    options.GetBaseUri(),
+                    GetProductVersion(pollingMode),
                     logger,
-                    options.Offline,
-                    hooksWrapper)
+                    options.ConfigFetcher
+                        ?? PlatformCompatibilityOptions.configFetcherFactory?.Invoke(options.HttpClientHandler)
+                        ?? ConfigCatClientOptions.CreateDefaultConfigFetcher(options.HttpClientHandler),
+                    options.IsCustomBaseUrl,
+                    options.HttpTimeout),
+                cacheParameters,
+                logger,
+                options.Offline,
+                hooksWrapper)
             : new NullConfigService(logger, hooksWrapper);
     }
 

@@ -68,4 +68,32 @@ internal static partial class LoggerExtensions
     /// <code>logger.Log(LogLevel.Debug, default, message);</code>
     /// </summary>
     public static FormattableLogMessage Debug(this LoggerWrapper logger, string message) => logger.Log(LogLevel.Debug, default, message);
+
+    internal static string MaskSdkKey(string sdkKey)
+    {
+        const int numCharsToKeep = 6;
+
+#if !(NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER)
+        var chars = new char[sdkKey.Length];
+#else
+        return string.Create(sdkKey.Length, sdkKey, static (chars, sdkKey) =>
+        {
+#endif
+#pragma warning disable IDE0055 // Fix formatting
+            int i, n;
+            for (i = 0, n = sdkKey.Length - numCharsToKeep; i < n; i++)
+            {
+                chars[i] = sdkKey[i] != '/' ? '*' : '/';
+            }
+            for (; i < sdkKey.Length; i++)
+            {
+                chars[i] = sdkKey[i];
+            }
+#pragma warning restore IDE0055 // Fix formatting
+#if (NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER)
+        });
+#else
+        return new string(chars);
+#endif
+    }
 }

@@ -4,25 +4,26 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
+using ConfigCat.Client.Configuration;
 using ConfigCat.Client.Shims;
 
 namespace ConfigCat.Client;
 
 internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
 {
-    private readonly object syncObj = new();
+    private readonly string sdkKey;
+    private volatile Uri baseUri;
     private readonly IReadOnlyList<KeyValuePair<string, string>> requestHeaders;
     private readonly LoggerWrapper logger;
     private readonly IConfigCatConfigFetcher configFetcher;
     private readonly bool isCustomUri;
     private readonly TimeSpan timeout;
 
-    private Uri requestUri;
-
-    public DefaultConfigFetcher(Uri requestUri, string productVersion, LoggerWrapper logger,
+    public DefaultConfigFetcher(string sdkKey, Uri baseUri, string productVersion, LoggerWrapper logger,
         IConfigCatConfigFetcher configFetcher, bool isCustomUri, TimeSpan timeout)
     {
-        this.requestUri = requestUri;
+        this.sdkKey = sdkKey;
+        this.baseUri = baseUri;
         this.requestHeaders = new[]
         {
             new KeyValuePair<string, string>("X-ConfigCat-UserAgent", new ProductInfoHeaderValue("ConfigCat-Dotnet", productVersion).ToString())
@@ -47,7 +48,7 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
         Exception errorException;
         try
         {
-            var deserializedResponse = await FetchRequestAsync(lastConfig.HttpETag, this.requestUri, cancellationToken)
+            var deserializedResponse = await FetchRequestAsync(lastConfig.HttpETag, cancellationToken)
                 .ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 
             var response = deserializedResponse.Response;
@@ -82,7 +83,7 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
 
                 case HttpStatusCode.Forbidden:
                 case HttpStatusCode.NotFound:
-                    logMessage = this.logger.FetchFailedDueToInvalidSdkKey(response.RayId);
+                    logMessage = this.logger.FetchFailedDueToInvalidSdkKey(this.sdkKey, response.RayId);
 
                     // We update the timestamp for extra protection against flooding.
                     return FetchResult.Failure(lastConfig.With(ProjectConfig.GenerateTimeStamp()), RefreshErrorCode.InvalidSdkKey, logMessage.ToLazyString());
@@ -118,10 +119,12 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
         return FetchResult.Failure(lastConfig, errorCode, logMessage.ToLazyString(), errorException);
     }
 
-    private async ValueTask<DeserializedResponse> FetchRequestAsync(string? httpETag, Uri requestUri, CancellationToken cancellationToken, sbyte maxExecutionCount = 3)
+    private async ValueTask<DeserializedResponse> FetchRequestAsync(string? httpETag, CancellationToken cancellationToken, sbyte maxExecutionCount = 3)
     {
         for (; ; maxExecutionCount--)
         {
+            var requestUri = ConfigCatClientOptions.GetConfigUri(this.baseUri, this.sdkKey);
+
             var request = new FetchRequest(requestUri, httpETag, this.requestHeaders, this.timeout);
 
             var response = await this.configFetcher.FetchAsync(request, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
@@ -140,9 +143,9 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
                 return new DeserializedResponse(response, config);
             }
 
-            var newBaseUrl = config.Preferences.BaseUrl;
+            Uri newBaseUri;
 
-            if (newBaseUrl is null || requestUri.Host == new Uri(newBaseUrl).Host)
+            if (config.Preferences.BaseUrl is not { } newBaseUrl || this.baseUri.Equals(newBaseUri = GetBaseUri(newBaseUrl)))
             {
                 return new DeserializedResponse(response, config);
             }
@@ -154,7 +157,7 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
                 return new DeserializedResponse(response, config);
             }
 
-            UpdateRequestUri(new Uri(newBaseUrl));
+            this.baseUri = newBaseUri;
 
             if (redirect == RedirectMode.No)
             {
@@ -171,22 +174,18 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
                 this.logger.FetchFailedDueToRedirectLoop(response.RayId);
                 return new DeserializedResponse(response, config);
             }
-
-            requestUri = ReplaceUri(request.Uri, new Uri(newBaseUrl));
         }
-    }
 
-    private void UpdateRequestUri(Uri newUri)
-    {
-        lock (this.syncObj)
+        static Uri GetBaseUri(string url)
         {
-            this.requestUri = ReplaceUri(this.requestUri, newUri);
+            // NOTE: Other SDKs use string concatenation to combine the base url and config path. Here we use the
+            // Uri(Uri, string) constructor for that purpose, which produces similar results only if the base ends with '/'!
+            if (url.Length == 0 || url[url.Length - 1] != '/')
+            {
+                url += "/";
+            }
+            return new Uri(url);
         }
-    }
-
-    private static Uri ReplaceUri(Uri oldUri, Uri newUri)
-    {
-        return new Uri(newUri, oldUri.AbsolutePath);
     }
 
     public void Dispose()

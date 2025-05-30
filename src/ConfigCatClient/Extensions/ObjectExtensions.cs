@@ -1,7 +1,5 @@
-using System.Diagnostics;
 using System.Globalization;
 using ConfigCat.Client;
-using ConfigCat.Client.Utils;
 
 #if USE_NEWTONSOFT_JSON
 using JsonValue = Newtonsoft.Json.Linq.JValue;

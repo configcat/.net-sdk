@@ -1,4 +1,3 @@
-using System;
 using ConfigCat.Client.Utils;
 
 #if USE_NEWTONSOFT_JSON

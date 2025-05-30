@@ -1,14 +1,9 @@
 using System;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
 using ConfigCat.Client.Evaluation;
 using ConfigCat.Client.Utils;
-
-#if USE_NEWTONSOFT_JSON
-using Newtonsoft.Json;
-#else
-using System.Text.Json.Serialization;
-#endif
 
 namespace ConfigCat.Client;
 
@@ -16,44 +11,28 @@ internal struct SettingValue
 {
     private object? value;
 
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "b")]
-#else
     [JsonPropertyName("b")]
-#endif
     public bool? BoolValue
     {
         readonly get => this.value as bool?;
         set => ModelHelper.SetOneOf(ref this.value, value?.AsCachedObject());
     }
 
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "s")]
-#else
     [JsonPropertyName("s")]
-#endif
     public string? StringValue
     {
         readonly get => this.value as string;
         set => ModelHelper.SetOneOf(ref this.value, value);
     }
 
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "i")]
-#else
     [JsonPropertyName("i")]
-#endif
     public int? IntValue
     {
         readonly get => this.value as int?;
         set => ModelHelper.SetOneOf(ref this.value, value);
     }
 
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "d")]
-#else
     [JsonPropertyName("d")]
-#endif
     public double? DoubleValue
     {
         readonly get => this.value as double?;

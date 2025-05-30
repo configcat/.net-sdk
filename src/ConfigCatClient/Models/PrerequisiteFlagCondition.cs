@@ -1,11 +1,6 @@
-using ConfigCat.Client.Utils;
-using ConfigCat.Client.Evaluation;
-
-#if USE_NEWTONSOFT_JSON
-using Newtonsoft.Json;
-#else
 using System.Text.Json.Serialization;
-#endif
+using ConfigCat.Client.Evaluation;
+using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client;
 
@@ -35,33 +30,15 @@ internal sealed class PrerequisiteFlagCondition : Condition, IPrerequisiteFlagCo
 {
     public const PrerequisiteFlagComparator UnknownComparator = (PrerequisiteFlagComparator)byte.MaxValue;
 
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "f")]
-#else
     [JsonPropertyName("f")]
-#endif
     public string? PrerequisiteFlagKey { get; set; }
 
     string IPrerequisiteFlagCondition.PrerequisiteFlagKey => PrerequisiteFlagKey ?? throw new InvalidConfigModelException("Prerequisite flag key is missing.");
 
-    private PrerequisiteFlagComparator comparator = UnknownComparator;
-
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "c")]
-#else
     [JsonPropertyName("c")]
-#endif
-    public PrerequisiteFlagComparator Comparator
-    {
-        get => this.comparator;
-        set => ModelHelper.SetEnum(ref this.comparator, value);
-    }
+    public PrerequisiteFlagComparator Comparator { get; set; } = UnknownComparator;
 
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "v")]
-#else
     [JsonPropertyName("v")]
-#endif
     public SettingValue ComparisonValue { get; set; }
 
     object IPrerequisiteFlagCondition.ComparisonValue => ComparisonValue.GetValue()!;

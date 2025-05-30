@@ -18,7 +18,7 @@ internal sealed class InMemoryConfigCache : ConfigCache
     {
         if (cancellationToken.IsCancellationRequested)
         {
-            return new ValueTask<CacheSyncResult>(cancellationToken.ToTask<CacheSyncResult>());
+            return new ValueTask<CacheSyncResult>(Task.FromCanceled<CacheSyncResult>(cancellationToken));
         }
 
         return new ValueTask<CacheSyncResult>(Get(key));
@@ -33,7 +33,7 @@ internal sealed class InMemoryConfigCache : ConfigCache
     {
         if (cancellationToken.IsCancellationRequested)
         {
-            return new ValueTask(cancellationToken.ToTask<ProjectConfig>());
+            return new ValueTask(Task.FromCanceled<ProjectConfig>(cancellationToken));
         }
 
         Set(key, config);

@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using System.Globalization;
 
@@ -24,7 +25,7 @@ internal struct LazyString
     public LazyString(string format, params object?[]? args)
     {
         this.format = format;
-        this.argsOrValue = args ?? ArrayUtils.EmptyArray<string>();
+        this.argsOrValue = args ?? Array.Empty<string>();
     }
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]

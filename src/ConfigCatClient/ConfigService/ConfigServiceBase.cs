@@ -5,13 +5,9 @@ using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
 using ConfigCat.Client.Shims;
 
-#if NET45
-using ConfigWithFetchResult = System.Tuple<ConfigCat.Client.ProjectConfig, ConfigCat.Client.FetchResult>;
-#else
-using ConfigWithFetchResult = System.ValueTuple<ConfigCat.Client.ProjectConfig, ConfigCat.Client.FetchResult>;
-#endif
-
 namespace ConfigCat.Client.ConfigService;
+
+using ConfigWithFetchResult = (ProjectConfig, FetchResult);
 
 internal abstract class ConfigServiceBase : IDisposable
 {
@@ -94,8 +90,8 @@ internal abstract class ConfigServiceBase : IDisposable
         var latestConfig = SyncUpWithCache();
         if (!IsOffline)
         {
-            var configWithFetchResult = RefreshConfigCore(latestConfig, isInitiatedByUser: true);
-            return RefreshResult.From(configWithFetchResult.Item2);
+            var (_, fetchResult) = RefreshConfigCore(latestConfig, isInitiatedByUser: true);
+            return RefreshResult.From(fetchResult);
         }
         else if (this.ConfigCache is ExternalConfigCache)
         {
@@ -124,8 +120,8 @@ internal abstract class ConfigServiceBase : IDisposable
         var latestConfig = await SyncUpWithCacheAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
         if (!IsOffline)
         {
-            var configWithFetchResult = await RefreshConfigCoreAsync(latestConfig, isInitiatedByUser: true, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
-            return RefreshResult.From(configWithFetchResult.Item2);
+            var (_, fetchResult) = await RefreshConfigCoreAsync(latestConfig, isInitiatedByUser: true, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+            return RefreshResult.From(fetchResult);
         }
         else if (this.ConfigCache is ExternalConfigCache)
         {
@@ -338,8 +334,8 @@ internal abstract class ConfigServiceBase : IDisposable
                 cacheSyncUpTask = this.pendingCacheSyncUp;
                 if (cacheSyncUpTask is null or { IsCompleted: true })
                 {
-                    cacheSyncUpTcs = TaskShim.CreateSafeCompletionSource(out cacheSyncUpTask);
-                    this.pendingCacheSyncUp = cacheSyncUpTask;
+                    cacheSyncUpTcs = TaskShim.CreateSafeCompletionSource<ProjectConfig>();
+                    this.pendingCacheSyncUp = cacheSyncUpTask = cacheSyncUpTcs.Task;
                 }
             }
 

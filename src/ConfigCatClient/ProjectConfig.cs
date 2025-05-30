@@ -89,7 +89,7 @@ internal sealed class ProjectConfig
         var httpETagSpan = value.AsSpan(index, endIndex - index);
 
         index = endIndex + 1;
-        var configJsonSpan = value.AsMemory(index);
+        var configJsonSpan = value.AsSpan(index);
 
         Config? config;
         string? configJson;

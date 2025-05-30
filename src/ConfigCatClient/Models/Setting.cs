@@ -1,14 +1,10 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
-using ConfigCat.Client.Utils;
-using ConfigCat.Client.Evaluation;
-
-#if USE_NEWTONSOFT_JSON
-using Newtonsoft.Json;
-#else
 using System.Text.Json.Serialization;
-#endif
+using ConfigCat.Client.Evaluation;
+using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client;
 
@@ -42,24 +38,10 @@ internal sealed class Setting : SettingValueContainer, ISetting
 {
     public const SettingType UnknownType = (SettingType)byte.MaxValue;
 
-    private SettingType settingType = UnknownType;
-
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "t")]
-#else
     [JsonPropertyName("t")]
-#endif
-    public SettingType SettingType
-    {
-        get => this.settingType;
-        set => ModelHelper.SetEnum(ref this.settingType, value);
-    }
+    public SettingType SettingType { get; set; } = UnknownType;
 
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "a")]
-#else
     [JsonPropertyName("a")]
-#endif
     [NotNull]
     public string? PercentageOptionsAttribute { get; set; }
 
@@ -67,15 +49,11 @@ internal sealed class Setting : SettingValueContainer, ISetting
 
     private TargetingRule[]? targetingRules;
 
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "r")]
-#else
     [JsonPropertyName("r")]
-#endif
     [NotNull]
     public TargetingRule[]? TargetingRules
     {
-        get => this.targetingRules ?? ArrayUtils.EmptyArray<TargetingRule>();
+        get => this.targetingRules ?? Array.Empty<TargetingRule>();
         set => this.targetingRules = value;
     }
 
@@ -83,26 +61,22 @@ internal sealed class Setting : SettingValueContainer, ISetting
 
     IReadOnlyList<ITargetingRule> ISetting.TargetingRules => this.targetingRulesReadOnly ??= this.targetingRules is { Length: > 0 }
         ? new ReadOnlyCollection<ITargetingRule>(this.targetingRules)
-        : ArrayUtils.EmptyArray<ITargetingRule>();
+        : Array.Empty<ITargetingRule>();
 
     private PercentageOption[]? percentageOptions;
 
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "p")]
-#else
     [JsonPropertyName("p")]
-#endif
     [NotNull]
     public PercentageOption[]? PercentageOptions
     {
-        get => this.percentageOptions ?? ArrayUtils.EmptyArray<PercentageOption>();
+        get => this.percentageOptions ?? Array.Empty<PercentageOption>();
         set => this.percentageOptions = value;
     }
 
     private IReadOnlyList<IPercentageOption>? percentageOptionsReadOnly;
     IReadOnlyList<IPercentageOption> ISetting.PercentageOptions => this.percentageOptionsReadOnly ??= this.percentageOptions is { Length: > 0 }
         ? new ReadOnlyCollection<IPercentageOption>(this.percentageOptions)
-        : ArrayUtils.EmptyArray<IPercentageOption>();
+        : Array.Empty<IPercentageOption>();
 
     [JsonIgnore]
     public string? ConfigJsonSalt { get; private set; }

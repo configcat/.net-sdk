@@ -1,10 +1,4 @@
 using System;
-using ConfigCat.Client.Override;
-
-#if USE_NEWTONSOFT_JSON
-using System.IO;
-using Newtonsoft.Json;
-#else
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
@@ -13,11 +7,10 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
-#endif
+using ConfigCat.Client.Override;
 
 namespace ConfigCat.Client.Utils;
 
-#if !USE_NEWTONSOFT_JSON
 [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata)]
 [JsonSerializable(typeof(Config))]
 [JsonSerializable(typeof(LocalFileDataSource.SimplifiedConfig))]
@@ -30,40 +23,21 @@ internal partial class SourceGenSerializationContext : JsonSerializerContext
     // * https://devblogs.microsoft.com/dotnet/try-the-new-system-text-json-source-generator/
     // * https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/source-generation
 }
-#endif
 
 internal static partial class SerializationHelper
 {
-#if USE_NEWTONSOFT_JSON
-    private static readonly JsonSerializer Serializer = JsonSerializer.Create();
-
-    private static T? Deserialize<T>(ReadOnlyMemory<char> json)
-    {
-        using var stringReader = new StringReader(json.ToString());
-        using var reader = new JsonTextReader(stringReader);
-        return Serializer.Deserialize<T>(reader);
-    }
-#else
     private static readonly SourceGenSerializationContext TolerantSerializationContext = new SourceGenSerializationContext(new JsonSerializerOptions
     {
         AllowTrailingCommas = true,
         ReadCommentHandling = JsonCommentHandling.Skip,
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     });
-#endif
 
-    // NOTE: It would be better to use ReadOnlySpan<char>, however when the full string is wrapped in a span, json.ToString() result in a copy of the string.
-    // This is not the case with ReadOnlyMemory<char>, so we use that until support for .NET 4.5 support is dropped.
-
-    public static Config? DeserializeConfig(ReadOnlyMemory<char> json, bool tolerant = false, bool throwOnError = true)
+    public static Config? DeserializeConfig(ReadOnlySpan<char> json, bool tolerant = false, bool throwOnError = true)
     {
         try
         {
-#if USE_NEWTONSOFT_JSON
-            return Deserialize<Config>(json);
-#else
-            return JsonSerializer.Deserialize(json.Span, tolerant ? TolerantSerializationContext.Config : SourceGenSerializationContext.Default.Config);
-#endif
+            return JsonSerializer.Deserialize(json, tolerant ? TolerantSerializationContext.Config : SourceGenSerializationContext.Default.Config);
         }
         catch when (!throwOnError)
         {
@@ -71,15 +45,11 @@ internal static partial class SerializationHelper
         }
     }
 
-    public static LocalFileDataSource.SimplifiedConfig? DeserializeSimplifiedConfig(ReadOnlyMemory<char> json, bool tolerant = false, bool throwOnError = true)
+    public static LocalFileDataSource.SimplifiedConfig? DeserializeSimplifiedConfig(ReadOnlySpan<char> json, bool tolerant = false, bool throwOnError = true)
     {
         try
         {
-#if USE_NEWTONSOFT_JSON
-            return Deserialize<LocalFileDataSource.SimplifiedConfig>(json);
-#else
-            return JsonSerializer.Deserialize(json.Span, tolerant ? TolerantSerializationContext.SimplifiedConfig : SourceGenSerializationContext.Default.SimplifiedConfig);
-#endif
+            return JsonSerializer.Deserialize(json, tolerant ? TolerantSerializationContext.SimplifiedConfig : SourceGenSerializationContext.Default.SimplifiedConfig);
         }
         catch when (!throwOnError)
         {
@@ -87,15 +57,11 @@ internal static partial class SerializationHelper
         }
     }
 
-    public static string[]? DeserializeStringArray(ReadOnlyMemory<char> json, bool tolerant = false, bool throwOnError = true)
+    public static string[]? DeserializeStringArray(ReadOnlySpan<char> json, bool tolerant = false, bool throwOnError = true)
     {
         try
         {
-#if USE_NEWTONSOFT_JSON
-            return Deserialize<string[]>(json);
-#else
-            return JsonSerializer.Deserialize(json.Span, tolerant ? TolerantSerializationContext.StringArray : SourceGenSerializationContext.Default.StringArray);
-#endif
+            return JsonSerializer.Deserialize(json, tolerant ? TolerantSerializationContext.StringArray : SourceGenSerializationContext.Default.StringArray);
         }
         catch when (!throwOnError)
         {
@@ -105,19 +71,12 @@ internal static partial class SerializationHelper
 
     public static string SerializeStringArray(string[] obj, bool unescapeAstral = false)
     {
-#if USE_NEWTONSOFT_JSON
-        return JsonConvert.SerializeObject(obj);
-#else
         var json = JsonSerializer.Serialize(obj, TolerantSerializationContext.StringArray);
         return unescapeAstral ? UnescapeAstralCodePoints(json) : json;
-#endif
     }
 
     public static string SerializeUser(User obj, bool unescapeAstral = false)
     {
-#if USE_NEWTONSOFT_JSON
-        return JsonConvert.SerializeObject(obj.GetAllAttributes());
-#else
         // NOTE: When using System.Text.Json source generation, polymorphic types can't be serialized unless
         // all the possible concrete type are listed using JsonSerializableAttribute.
         // However, we allow consumers to pass values of any type in custom user attributes, so obviously
@@ -131,10 +90,8 @@ internal static partial class SerializationHelper
 
         var json = JsonSerializer.Serialize(attributes!, TolerantSerializationContext.DictionaryStringJsonNode);
         return unescapeAstral ? UnescapeAstralCodePoints(json) : json;
-#endif
     }
 
-#if !USE_NEWTONSOFT_JSON
     private static JsonNode? UnknownValueToJsonNode(object? value, ref HashSet<object>? visitedCollections)
     {
         if (value is null)
@@ -254,5 +211,4 @@ internal static partial class SerializationHelper
             return char.ConvertFromUtf32(char.ConvertToUtf32((char)highSurrogate, (char)lowSurrogate));
         });
     }
-#endif
 }

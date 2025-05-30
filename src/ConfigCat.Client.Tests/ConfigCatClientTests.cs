@@ -488,7 +488,7 @@ public class ConfigCatClientTests
             onFetchAsync: delegate { throw new InvalidOperationException(); },
             configServiceFactory: (_, _, loggerWrapper, hooks) => new NullConfigService(loggerWrapper, hooks: hooks),
             evaluatorFactory: null, configCacheFactory: null,
-            overrideDataSourceFactory: logger => Tuple.Create(OverrideBehaviour.LocalOnly, (IOverrideDataSource)new LocalFileDataSource(configJsonFilePath, autoReload: false, logger)),
+            overrideDataSourceFactory: logger => (OverrideBehaviour.LocalOnly, new LocalFileDataSource(configJsonFilePath, autoReload: false, logger)),
             hooks, out _
         );
 
@@ -2434,7 +2434,7 @@ public class ConfigCatClientTests
         Func<IConfigFetcher, CacheParameters, LoggerWrapper, Hooks?, IConfigService> configServiceFactory,
         Func<LoggerWrapper, IRolloutEvaluator>? evaluatorFactory,
         Func<LoggerWrapper, ConfigCache>? configCacheFactory,
-        Func<LoggerWrapper, Tuple<OverrideBehaviour, IOverrideDataSource>>? overrideDataSourceFactory,
+        Func<LoggerWrapper, (OverrideBehaviour Behavior, IOverrideDataSource DataSource)>? overrideDataSourceFactory,
         Hooks? hooks,
         out IConfigService configService)
     {
@@ -2450,7 +2450,7 @@ public class ConfigCatClientTests
         var overrideDataSource = overrideDataSourceFactory?.Invoke(loggerWrapper);
 
         configService = configServiceFactory(fetcherMock.Object, cacheParams, loggerWrapper, hooks);
-        return new ConfigCatClient(configService, loggerMock.Object, evaluator, overrideDataSource?.Item1, overrideDataSource?.Item2, hooks: hooks);
+        return new ConfigCatClient(configService, loggerMock.Object, evaluator, overrideDataSource?.Behavior, overrideDataSource?.DataSource, hooks: hooks);
     }
 
     private static int ParseETagAsInt32(string? etag)

@@ -139,7 +139,7 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
             }
 
             Config config;
-            try { config = Config.Deserialize(response.Body.AsMemory()); }
+            try { config = Config.Deserialize(response.Body.AsSpan()); }
             catch (Exception ex) { return new DeserializedResponse(response, ex); }
 
             if (config.Preferences is null)

@@ -1,30 +1,19 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net45;net461;netcoreapp3.1;net5.0;net6.0;net8.0;net9.0</TargetFrameworks>
+    <TargetFrameworks>net462;net481;netcoreapp2.1;netcoreapp3.1;net6.0;net8.0;net9.0</TargetFrameworks>
     <IsPackable>false</IsPackable>
     <AssemblyName>ConfigCatClientTests</AssemblyName>
     <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\ConfigCatClient.snk</AssemblyOriginatorKeyFile>
     <LangVersion>12.0</LangVersion>
     <Nullable>enable</Nullable>
     <WarningsAsErrors>nullable</WarningsAsErrors>
-    <NoWarn>CS0618;CS1685</NoWarn>
-    <AssemblyOriginatorKeyFile>..\ConfigCatClient.snk</AssemblyOriginatorKeyFile>
+    <NoWarn>CS0618;CS1685;NU1902;NU1903</NoWarn>
+    <SuppressTfmSupportBuildWarnings Condition="'$(TargetFramework)' == 'netcoreapp2.1'">true</SuppressTfmSupportBuildWarnings>
   </PropertyGroup>
 
   <Choose>
-    <When Condition="'$(TargetFramework)' == 'net45'">
-      <PropertyGroup>
-        <DefineConstants>USE_NEWTONSOFT_JSON</DefineConstants>
-      </PropertyGroup>
-
-      <ItemGroup>
-        <PackageReference Include="MSTest.TestAdapter" Version="2.2.10" />
-        <PackageReference Include="MSTest.TestFramework" Version="2.2.10" />
-        <PackageReference Include="System.ValueTuple" Version="4.5.0" />
-      </ItemGroup>
-    </When>
-
     <When Condition="'$(TargetFramework)' == 'net8.0'">
       <ItemGroup>
         <!-- DynamicData matrix tests won't show up in VS 2022 using MSTest.TestAdapter v2.2.10.
@@ -52,7 +41,6 @@
     </PackageReference>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.2.0" />
     <PackageReference Include="Moq" Version="4.16.1" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
     <!--Do not remove this reference, it was added due to a SNYK security report-->
     <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />

@@ -3,17 +3,14 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using ConfigCat.Client.Evaluation;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-#if USE_NEWTONSOFT_JSON
-using JsonValue = Newtonsoft.Json.Linq.JValue;
-#else
-using JsonValue = System.Text.Json.JsonElement;
-#endif
-
 namespace ConfigCat.Client.Tests;
+
+using JsonValue = JsonElement;
 
 [TestClass]
 [DoNotParallelize]
@@ -645,12 +642,7 @@ public class OverrideTests
     public void OverrideValueTypeMismatchShouldBeHandledCorrectly_SimplifiedConfig(string overrideValueJson, object defaultValue, object expectedEvaluatedValue)
     {
         const string key = "flag";
-        var overrideValue =
-#if USE_NEWTONSOFT_JSON
-            overrideValueJson.AsMemory().Deserialize<Newtonsoft.Json.Linq.JToken>();
-#else
-            overrideValueJson.AsMemory().Deserialize<System.Text.Json.JsonElement>();
-#endif
+        var overrideValue = overrideValueJson.AsSpan().Deserialize<JsonValue>();
 
         var filePath = Path.GetTempFileName();
         File.WriteAllText(filePath, $"{{ \"flags\": {{ \"{key}\": {overrideValueJson} }}, /* comment */ }}");
@@ -683,11 +675,7 @@ public class OverrideTests
             {
                 Assert.IsTrue(actualEvaluatedValueDetails.IsDefaultValue);
                 Assert.IsNotNull(actualEvaluatedValueDetails.ErrorMessage);
-#if USE_NEWTONSOFT_JSON
-                if (overrideValue is not JsonValue overrideJsonValue || overrideJsonValue.ToSettingValue(out _).HasUnsupportedValue)
-#else
                 if (overrideValue.ToSettingValue(out _).HasUnsupportedValue)
-#endif
                 {
                     Assert.AreEqual(EvaluationErrorCode.InvalidConfigModel, actualEvaluatedValueDetails.ErrorCode);
                     Assert.IsInstanceOfType(actualEvaluatedValueDetails.ErrorException, typeof(InvalidConfigModelException));

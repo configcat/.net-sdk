@@ -25,7 +25,7 @@ public partial record class ConfigLocation
 #if BENCHMARK_OLD
             return configJson.Deserialize<Config>() ?? throw new InvalidOperationException("Invalid config JSON content: " + configJson);
 #else
-            return Config.Deserialize(configJson.AsMemory());
+            return Config.Deserialize(configJson.AsSpan());
 #endif
         }
     }

@@ -1,12 +1,6 @@
 using System;
 using System.Collections.Generic;
 
-#if USE_NEWTONSOFT_JSON
-using Newtonsoft.Json;
-#else
-using System.Text.Json.Serialization;
-#endif
-
 namespace ConfigCat.Client;
 
 /// <summary>

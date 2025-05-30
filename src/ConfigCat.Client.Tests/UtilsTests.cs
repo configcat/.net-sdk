@@ -136,28 +136,6 @@ public class UtilsTests
         Assert.IsFalse(ModelHelper.IsValidOneOf(field));
     }
 
-    private static IEnumerable<object?[]> GetEnumValues() => Enum.GetValues(typeof(SettingType))
-        .Cast<SettingType>()
-        .Concat(new[] { Setting.UnknownType })
-        .Select(t => new object?[] { t });
-
-    [DataTestMethod]
-    [DynamicData(nameof(GetEnumValues), DynamicDataSourceType.Method)]
-    public void ModelHelper_SetEnum_Works(SettingType enumValue)
-    {
-        SettingType field = default;
-
-        if (Enum.IsDefined(typeof(SettingType), enumValue))
-        {
-            ModelHelper.SetEnum(ref field, enumValue);
-            Assert.AreEqual(enumValue, field);
-        }
-        else
-        {
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => ModelHelper.SetEnum(ref field, enumValue));
-        }
-    }
-
     [DataTestMethod]
     [DataRow(null, false, true, null)]
     [DataRow("abc", false, true, "abc")]
@@ -232,12 +210,7 @@ public class UtilsTests
             }
         };
 
-#if NET45
-        var ex = Assert.ThrowsException<Newtonsoft.Json.JsonSerializationException>(() => SerializationHelper.SerializeUser(user));
-        StringAssert.StartsWith(ex.Message, "Self referencing loop detected");
-#else
         var ex = Assert.ThrowsException<InvalidOperationException>(() => SerializationHelper.SerializeUser(user));
         StringAssert.StartsWith(ex.Message, "A circular reference was detected");
-#endif
     }
 }

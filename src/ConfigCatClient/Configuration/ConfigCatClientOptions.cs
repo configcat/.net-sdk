@@ -96,7 +96,7 @@ public class ConfigCatClientOptions : IProvidesHooks
     public FlagOverrides? FlagOverrides { get; set; }
 
     /// <summary>
-    /// The default user, used as fallback when there's no user parameter is passed to the setting evaluation methods like <see cref="IConfigCatClient.GetValue"/>, <see cref="IConfigCatClient.GetValueDetails"/>, etc.
+    /// The default user, used as fallback when there's no user parameter is passed to the setting evaluation methods like <see cref="IConfigCatClient.GetValueAsync"/>, <see cref="IConfigCatClient.GetValueDetailsAsync"/>, etc.
     /// </summary>
     public User? DefaultUser { get; set; }
 

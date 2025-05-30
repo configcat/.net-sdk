@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Shims;
@@ -108,14 +110,14 @@ internal sealed class LocalFileDataSource : IOverrideDataSource, IDisposable
                 try
                 {
                     var content = File.ReadAllText(this.fullPath);
-                    var simplified = SerializationHelper.DeserializeSimplifiedConfig(content.AsMemory(), tolerant: true, throwOnError: false);
+                    var simplified = SerializationHelper.DeserializeSimplifiedConfig(content.AsSpan(), tolerant: true, throwOnError: false);
                     if (simplified?.Entries is not null)
                     {
                         this.overrideValues = simplified.Entries.ToDictionary(kv => kv.Key, kv => kv.Value.ToSetting());
                         break;
                     }
 
-                    var deserialized = Config.Deserialize(content.AsMemory(), tolerant: true);
+                    var deserialized = Config.Deserialize(content.AsSpan(), tolerant: true);
                     this.overrideValues = deserialized.Settings;
                     break;
                 }
@@ -158,12 +160,7 @@ internal sealed class LocalFileDataSource : IOverrideDataSource, IDisposable
 
     internal sealed class SimplifiedConfig
     {
-#if USE_NEWTONSOFT_JSON
-        [Newtonsoft.Json.JsonProperty(PropertyName = "flags")]
-        public Dictionary<string, object>? Entries { get; set; }
-#else
-        [System.Text.Json.Serialization.JsonPropertyName("flags")]
-        public Dictionary<string, System.Text.Json.JsonElement>? Entries { get; set; }
-#endif
+        [JsonPropertyName("flags")]
+        public Dictionary<string, JsonElement>? Entries { get; set; }
     }
 }

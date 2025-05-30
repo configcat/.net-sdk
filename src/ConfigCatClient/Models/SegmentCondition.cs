@@ -1,11 +1,6 @@
-using ConfigCat.Client.Utils;
-using ConfigCat.Client.Evaluation;
-
-#if USE_NEWTONSOFT_JSON
-using Newtonsoft.Json;
-#else
 using System.Text.Json.Serialization;
-#endif
+using ConfigCat.Client.Evaluation;
+using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client;
 
@@ -29,11 +24,7 @@ internal sealed class SegmentCondition : Condition, ISegmentCondition
 {
     public const SegmentComparator UnknownComparator = (SegmentComparator)byte.MaxValue;
 
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "s")]
-#else
     [JsonPropertyName("s")]
-#endif
     public int SegmentIndex { get; set; } = -1;
 
     [JsonIgnore]
@@ -41,18 +32,8 @@ internal sealed class SegmentCondition : Condition, ISegmentCondition
 
     ISegment ISegmentCondition.Segment => Segment ?? throw new InvalidConfigModelException("Segment reference is invalid.");
 
-    private SegmentComparator comparator = UnknownComparator;
-
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "c")]
-#else
     [JsonPropertyName("c")]
-#endif
-    public SegmentComparator Comparator
-    {
-        get => this.comparator;
-        set => ModelHelper.SetEnum(ref this.comparator, value);
-    }
+    public SegmentComparator Comparator { get; set; } = UnknownComparator;
 
     internal void OnConfigDeserialized(Config config)
     {

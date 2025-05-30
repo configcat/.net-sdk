@@ -254,9 +254,9 @@ internal abstract class ConfigServiceBase : IDisposable
         // InMemoryConfigCache always executes synchronously, so we special-case it for better performance.
         if (this.ConfigCache is InMemoryConfigCache inMemoryConfigCache)
         {
-            var syncResultTask = inMemoryConfigCache.GetAsync(this.CacheKey, cancellationToken);
-            Debug.Assert(syncResultTask.IsCompleted);
-            var syncResult = syncResultTask.GetAwaiter().GetResult();
+            var cacheGetTask = inMemoryConfigCache.GetAsync(this.CacheKey, cancellationToken);
+            Debug.Assert(cacheGetTask.IsCompleted);
+            var syncResult = cacheGetTask.GetAwaiter().GetResult();
             Debug.Assert(!syncResult.HasChanged);
             return new ValueTask<ProjectConfig>(syncResult.Config);
         }
@@ -270,9 +270,9 @@ internal abstract class ConfigServiceBase : IDisposable
         {
             // NOTE: We want to start the cache sync operation directly on the current thread for performance and
             // backward compatibility reasons. However, this involves calling user-provided code
-            // (IConfigCatCache.GetAsync), which, if implemented incorrectly, may have a long-running initial
-            // synchronous part, or may not be actual async code at all but a long-running synchronous operation
-            // returning a completed task. Thus, we shouldn't directly start the cache sync operation within a lock.
+            // (IConfigCatCache.GetAsync), which may have a long-running initial synchronous part, or may not be
+            // actual async code at all but a long-running synchronous operation returning a completed task.
+            // Thus, we shouldn't directly start the cache sync operation within a lock.
             // Instead, we create a TaskCompletionSource to proxy the operation.
 
             lock (this.ConfigCache)
@@ -287,11 +287,23 @@ internal abstract class ConfigServiceBase : IDisposable
                 }
             }
 
-            // TODO: optimize sync path
-
             if (cacheSyncUpTcs is not null) // is this thread the initiator of the operation?
             {
-                ExecuteOperationAndCleanUp(cacheSyncUpTcs, cacheSyncUpTask!);
+                var cacheGetTask = this.ConfigCache.GetAsync(this.CacheKey, DisposeToken);
+                if (cacheGetTask.IsCompleted)
+                {
+                    // If the user-provided cache implementation is actually synchronous, let's avoid the cost of the
+                    // async state machine. (See also the advanced pattern in
+                    // https://devblogs.microsoft.com/dotnet/understanding-the-whys-whats-and-whens-of-valuetask/)
+                    var syncResult = cacheGetTask.GetAwaiter().GetResult();
+                    OnCacheSynced(syncResult);
+                    cacheSyncUpTcs.TrySetResult(syncResult.Config);
+                    _ = Interlocked.CompareExchange(ref this.pendingCacheSyncUp, value: null, comparand: cacheSyncUpTask);
+                }
+                else
+                {
+                    AwaitAndCleanUp(cacheGetTask, cacheSyncUpTcs, cacheSyncUpTask!);
+                }
             }
         }
         catch (Exception ex)
@@ -323,13 +335,13 @@ internal abstract class ConfigServiceBase : IDisposable
 
         return new ValueTask<ProjectConfig>(cacheSyncUpTask.WaitAsync(cancellationToken));
 
-        async void ExecuteOperationAndCleanUp(TaskCompletionSource<ProjectConfig> cacheSyncUpTcs, Task<ProjectConfig> cacheSyncUpTask)
+        async void AwaitAndCleanUp(ValueTask<CacheSyncResult> cacheGetTask, TaskCompletionSource<ProjectConfig> cacheSyncUpTcs, Task<ProjectConfig> cacheSyncUpTask)
         {
             try
             {
                 try
                 {
-                    var syncResult = await this.ConfigCache.GetAsync(this.CacheKey, DisposeToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+                    var syncResult = await cacheGetTask.ConfigureAwait(TaskShim.ContinueOnCapturedContext);
                     OnCacheSynced(syncResult);
                     cacheSyncUpTcs.TrySetResult(syncResult.Config);
                 }

@@ -16,11 +16,6 @@ internal sealed class ManualPollConfigService : ConfigServiceBase, IConfigServic
 
     public Task<ClientCacheState> ReadyTask { get; }
 
-    public ProjectConfig GetConfig()
-    {
-        return SyncUpWithCache();
-    }
-
     public async ValueTask<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default)
     {
         return await SyncUpWithCacheAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);

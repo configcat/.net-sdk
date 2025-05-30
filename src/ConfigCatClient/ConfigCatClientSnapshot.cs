@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using ConfigCat.Client.Evaluation;
-using ConfigCat.Client.Utils;
 
 using static ConfigCat.Client.ConfigCatClient;
 

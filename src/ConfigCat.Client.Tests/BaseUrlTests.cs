@@ -1,5 +1,6 @@
 using System;
 using System.Net.Http;
+using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ConfigCat.Client.Tests;
@@ -17,7 +18,7 @@ public class BaseUrlTests
     private readonly Uri notWorkingBaseUrl = new("https://thiswillnotwork.configcat.com");
 
     [TestMethod]
-    public void BaseUrl_Override_AutoPoll_Works()
+    public async Task BaseUrl_Override_AutoPoll_Works()
     {
         using (var client = ConfigCatClient.Get(SDKKEY, options =>
         {
@@ -26,7 +27,7 @@ public class BaseUrlTests
             options.HttpClientHandler = SharedHandler;
         }))
         {
-            var actual = client.GetValue("stringDefaultCat", "N/A");
+            var actual = await client.GetValueAsync("stringDefaultCat", "N/A");
             Assert.AreEqual("Cat", actual);
         }
 
@@ -37,13 +38,13 @@ public class BaseUrlTests
             options.HttpClientHandler = SharedHandler;
         }))
         {
-            var actual = client.GetValue("stringDefaultCat", "N/A");
+            var actual = await client.GetValueAsync("stringDefaultCat", "N/A");
             Assert.AreEqual("N/A", actual);
         }
     }
 
     [TestMethod]
-    public void BaseUrl_Override_ManualPoll_Works()
+    public async Task BaseUrl_Override_ManualPoll_Works()
     {
         using (var client = ConfigCatClient.Get(SDKKEY, options =>
         {
@@ -52,8 +53,8 @@ public class BaseUrlTests
             options.HttpClientHandler = SharedHandler;
         }))
         {
-            client.ForceRefresh();
-            var actual = client.GetValue("stringDefaultCat", "N/A");
+            await client.ForceRefreshAsync();
+            var actual = await client.GetValueAsync("stringDefaultCat", "N/A");
             Assert.AreEqual("Cat", actual);
         }
 
@@ -64,14 +65,14 @@ public class BaseUrlTests
             options.HttpClientHandler = SharedHandler;
         }))
         {
-            client.ForceRefresh();
-            var actual = client.GetValue("stringDefaultCat", "N/A");
+            await client.ForceRefreshAsync();
+            var actual = await client.GetValueAsync("stringDefaultCat", "N/A");
             Assert.AreEqual("N/A", actual);
         }
     }
 
     [TestMethod]
-    public void BaseUrl_Override_LazyLoad_Works()
+    public async Task BaseUrl_Override_LazyLoad_Works()
     {
         using (var client = ConfigCatClient.Get(SDKKEY, options =>
         {
@@ -80,7 +81,7 @@ public class BaseUrlTests
             options.HttpClientHandler = SharedHandler;
         }))
         {
-            var actual = client.GetValue("stringDefaultCat", "N/A");
+            var actual = await client.GetValueAsync("stringDefaultCat", "N/A");
             Assert.AreEqual("Cat", actual);
         }
 
@@ -91,7 +92,7 @@ public class BaseUrlTests
             options.HttpClientHandler = SharedHandler;
         }))
         {
-            var actual = client.GetValue("stringDefaultCat", "N/A");
+            var actual = await client.GetValueAsync("stringDefaultCat", "N/A");
             Assert.AreEqual("N/A", actual);
         }
     }

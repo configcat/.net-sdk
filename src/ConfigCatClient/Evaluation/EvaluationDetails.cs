@@ -83,7 +83,7 @@ public abstract class EvaluationDetails
     public User? User { get; set; }
 
     /// <summary>
-    /// Indicates whether the default value passed to the setting evaluation methods like <see cref="IConfigCatClient.GetValue"/>, <see cref="IConfigCatClient.GetValueDetails"/>, etc.
+    /// Indicates whether the default value passed to the setting evaluation methods like <see cref="IConfigCatClient.GetValueAsync"/>, <see cref="IConfigCatClient.GetValueDetailsAsync"/>, etc.
     /// is used as the result of the evaluation.
     /// </summary>
     public bool IsDefaultValue { get; set; }

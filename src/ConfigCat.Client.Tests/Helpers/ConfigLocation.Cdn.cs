@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using ConfigCat.Client.Configuration;
 
 namespace ConfigCat.Client.Tests.Helpers;
@@ -37,7 +38,7 @@ public partial record class ConfigLocation
                 options.IsCustomBaseUrl,
                 options.HttpTimeout);
 
-            var fetchResult = configFetcher.Fetch(ProjectConfig.Empty);
+            var fetchResult = Task.Run(() => configFetcher.FetchAsync(ProjectConfig.Empty)).GetAwaiter().GetResult();
             return fetchResult.IsSuccess
                 ? fetchResult.Config.Config!
                 : throw new InvalidOperationException("Could not fetch config from CDN: " + fetchResult.ErrorMessage);

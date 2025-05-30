@@ -34,13 +34,6 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
         this.timeout = timeout;
     }
 
-    public FetchResult Fetch(ProjectConfig lastConfig)
-    {
-        // NOTE: This method is unused now, we keep it because of tests for now,
-        // until the synchronous code paths are deleted soon.
-        return TaskShim.Current.Run(() => FetchAsync(lastConfig)).GetAwaiter().GetResult();
-    }
-
     public async Task<FetchResult> FetchAsync(ProjectConfig lastConfig, CancellationToken cancellationToken = default)
     {
         FormattableLogMessage logMessage;

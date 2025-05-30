@@ -85,36 +85,6 @@ internal abstract class ConfigServiceBase : IDisposable
 
     public ProjectConfig GetInMemoryConfig() => this.ConfigCache.LocalCachedConfig;
 
-    public virtual RefreshResult RefreshConfig()
-    {
-        var latestConfig = SyncUpWithCache();
-        if (!IsOffline)
-        {
-            var (_, fetchResult) = RefreshConfigCore(latestConfig, isInitiatedByUser: true);
-            return RefreshResult.From(fetchResult);
-        }
-        else if (this.ConfigCache is ExternalConfigCache)
-        {
-            return RefreshResult.Success();
-        }
-        else
-        {
-            var logMessage = this.Logger.ConfigServiceCannotInitiateHttpCalls();
-            return RefreshResult.Failure(RefreshErrorCode.OfflineClient, logMessage.ToLazyString());
-        }
-    }
-
-    protected ConfigWithFetchResult RefreshConfigCore(ProjectConfig latestConfig, bool isInitiatedByUser)
-    {
-        // NOTE: We go sync over async here, however it's safe to do that in this case as
-        // BeginConfigRefreshOrJoinPending will run the fetch operation on the thread pool,
-        // where there's no synchronization context which awaits want to return to,
-        // thus, they won't try to run continuations on this thread where we're block waiting.
-        // Plus, the synchronous code paths will be deleted soon anyway.
-
-        return BeginConfigRefreshOrJoinPending(latestConfig, isInitiatedByUser, useAsyncCache: false).GetAwaiter().GetResult();
-    }
-
     public virtual async ValueTask<RefreshResult> RefreshConfigAsync(CancellationToken cancellationToken = default)
     {
         var latestConfig = await SyncUpWithCacheAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
@@ -135,12 +105,6 @@ internal abstract class ConfigServiceBase : IDisposable
     }
 
     protected Task<ConfigWithFetchResult> RefreshConfigCoreAsync(ProjectConfig latestConfig, bool isInitiatedByUser, CancellationToken cancellationToken)
-    {
-        return BeginConfigRefreshOrJoinPending(latestConfig, isInitiatedByUser, useAsyncCache: true, cancellationToken);
-    }
-
-    private Task<ConfigWithFetchResult> BeginConfigRefreshOrJoinPending(ProjectConfig latestConfig, bool isInitiatedByUser, bool useAsyncCache,
-        CancellationToken cancellationToken = default)
     {
         Task<ConfigWithFetchResult>? configRefreshTask;
         bool isInitiator;
@@ -170,16 +134,9 @@ internal abstract class ConfigServiceBase : IDisposable
 
                     if (shouldUpdateCache)
                     {
-                        // NOTE: ExternalConfigCache.Set/SetAsync makes sure that the external cache is not overwritten with empty
+                        // NOTE: ExternalConfigCache.SetAsync makes sure that the external cache is not overwritten with empty
                         // config data under any circumstances.
-                        if (useAsyncCache)
-                        {
-                            await this.ConfigCache.SetAsync(this.CacheKey, fetchResult.Config, DisposeToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
-                        }
-                        else
-                        {
-                            this.ConfigCache.Set(this.CacheKey, fetchResult.Config);
-                        }
+                        await this.ConfigCache.SetAsync(this.CacheKey, fetchResult.Config, DisposeToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 
                         latestConfig = fetchResult.Config;
                     }
@@ -292,15 +249,6 @@ internal abstract class ConfigServiceBase : IDisposable
 
     public abstract ClientCacheState GetCacheState(ProjectConfig cachedConfig);
 
-    protected ProjectConfig SyncUpWithCache()
-    {
-        // NOTE: We don't try to join concurrent asynchronous cache synchronization because it would be hard, if not
-        // impossible to do that in a deadlock-free way. Plus, the synchronous code paths will be deleted soon anyway.
-        var syncResult = this.ConfigCache.Get(this.CacheKey);
-        OnCacheSynced(syncResult);
-        return syncResult.Config;
-    }
-
     protected ValueTask<ProjectConfig> SyncUpWithCacheAsync(CancellationToken cancellationToken = default)
     {
         // InMemoryConfigCache always executes synchronously, so we special-case it for better performance.
@@ -338,6 +286,8 @@ internal abstract class ConfigServiceBase : IDisposable
                     this.pendingCacheSyncUp = cacheSyncUpTask = cacheSyncUpTcs.Task;
                 }
             }
+
+            // TODO: optimize sync path
 
             if (cacheSyncUpTcs is not null) // is this thread the initiator of the operation?
             {

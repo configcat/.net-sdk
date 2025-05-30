@@ -34,8 +34,7 @@ internal sealed class LazyLoadConfigService : ConfigServiceBase, IConfigService
 
             if (!IsOffline)
             {
-                var configWithFetchResult = RefreshConfigCore(cachedConfig, isInitiatedByUser: false);
-                return configWithFetchResult.Item1;
+                (cachedConfig, _) = RefreshConfigCore(cachedConfig, isInitiatedByUser: false);
             }
         }
 
@@ -55,8 +54,7 @@ internal sealed class LazyLoadConfigService : ConfigServiceBase, IConfigService
 
             if (!IsOffline)
             {
-                var configWithFetchResult = await RefreshConfigCoreAsync(cachedConfig, isInitiatedByUser: false, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
-                return configWithFetchResult.Item1;
+                (cachedConfig, _) = await RefreshConfigCoreAsync(cachedConfig, isInitiatedByUser: false, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
             }
         }
 

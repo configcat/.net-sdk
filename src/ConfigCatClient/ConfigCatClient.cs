@@ -453,14 +453,14 @@ public sealed class ConfigCatClient : IConfigCatClient
             var settings = GetSettings();
             if (!EvaluationHelper.CheckSettingsAvailable(settings.Value, Logger, defaultReturnValue))
             {
-                return ArrayUtils.EmptyArray<string>();
+                return Array.Empty<string>();
             }
-            return settings.Value.ReadOnlyKeys();
+            return settings.Value.Keys;
         }
         catch (Exception ex)
         {
             Logger.SettingEvaluationError(nameof(GetAllKeys), defaultReturnValue, ex);
-            return ArrayUtils.EmptyArray<string>();
+            return Array.Empty<string>();
         }
     }
 
@@ -473,9 +473,9 @@ public sealed class ConfigCatClient : IConfigCatClient
             var settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
             if (!EvaluationHelper.CheckSettingsAvailable(settings.Value, Logger, defaultReturnValue))
             {
-                return ArrayUtils.EmptyArray<string>();
+                return Array.Empty<string>();
             }
-            return settings.Value.ReadOnlyKeys();
+            return settings.Value.Keys;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -484,7 +484,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         catch (Exception ex)
         {
             Logger.SettingEvaluationError(nameof(GetAllKeysAsync), defaultReturnValue, ex);
-            return ArrayUtils.EmptyArray<string>();
+            return Array.Empty<string>();
         }
     }
 
@@ -575,7 +575,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         catch (Exception ex)
         {
             Logger.SettingEvaluationError(nameof(GetAllValueDetails), defaultReturnValue, ex);
-            return ArrayUtils.EmptyArray<EvaluationDetails>();
+            return Array.Empty<EvaluationDetails>();
         }
 
         if (evaluationExceptions is { Count: > 0 })
@@ -610,7 +610,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         catch (Exception ex)
         {
             Logger.SettingEvaluationError(nameof(GetAllValueDetailsAsync), defaultReturnValue, ex);
-            return ArrayUtils.EmptyArray<EvaluationDetails>();
+            return Array.Empty<EvaluationDetails>();
         }
 
         if (evaluationExceptions is { Count: > 0 })

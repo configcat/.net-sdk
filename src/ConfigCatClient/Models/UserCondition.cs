@@ -1,13 +1,9 @@
-using System.Collections.ObjectModel;
-using ConfigCat.Client.Utils;
-using ConfigCat.Client.Evaluation;
+using System;
 using System.Collections.Generic;
-
-#if USE_NEWTONSOFT_JSON
-using Newtonsoft.Json;
-#else
+using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;
-#endif
+using ConfigCat.Client.Evaluation;
+using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client;
 
@@ -37,57 +33,31 @@ internal sealed class UserCondition : Condition, IUserCondition
 {
     public const UserComparator UnknownComparator = (UserComparator)byte.MaxValue;
 
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "a")]
-#else
     [JsonPropertyName("a")]
-#endif
     public string? ComparisonAttribute { get; set; }
 
     string IUserCondition.ComparisonAttribute => ComparisonAttribute ?? throw new InvalidConfigModelException("Comparison attribute name is missing.");
 
-    private UserComparator comparator = UnknownComparator;
-
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "c")]
-#else
     [JsonPropertyName("c")]
-#endif
-    public UserComparator Comparator
-    {
-        get => this.comparator;
-        set => ModelHelper.SetEnum(ref this.comparator, value);
-    }
+    public UserComparator Comparator { get; set; } = UnknownComparator;
 
     private object? comparisonValue;
 
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "s")]
-#else
     [JsonPropertyName("s")]
-#endif
     public string? StringValue
     {
         get => this.comparisonValue as string;
         set => ModelHelper.SetOneOf(ref this.comparisonValue, value);
     }
 
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "d")]
-#else
     [JsonPropertyName("d")]
-#endif
     public double? DoubleValue
     {
         get => this.comparisonValue as double?;
         set => ModelHelper.SetOneOf(ref this.comparisonValue, value);
     }
 
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "l")]
-#else
     [JsonPropertyName("l")]
-#endif
     public string[]? StringListValue
     {
         get => this.comparisonValue as string[];
@@ -97,7 +67,7 @@ internal sealed class UserCondition : Condition, IUserCondition
     private object? comparisonValueReadOnly;
 
     object IUserCondition.ComparisonValue => this.comparisonValueReadOnly ??= GetComparisonValue() is var comparisonValue && comparisonValue is string[] stringListValue
-        ? (stringListValue.Length > 0 ? new ReadOnlyCollection<string>(stringListValue) : ArrayUtils.EmptyArray<string>())
+        ? (stringListValue.Length > 0 ? new ReadOnlyCollection<string>(stringListValue) : Array.Empty<string>())
         : comparisonValue!;
 
     public object? GetComparisonValue(bool throwIfInvalid = true)

@@ -3,23 +3,17 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using ConfigCat.Client.Evaluation;
 using ConfigCat.Client.Tests.Helpers;
 using ConfigCat.Client.Utils;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 
-#if NET45
-using Newtonsoft.Json;
-using JsonObject = Newtonsoft.Json.Linq.JObject;
-using JsonValue = Newtonsoft.Json.Linq.JValue;
-#else
-using System.Text.Json.Serialization;
-using JsonObject = System.Text.Json.JsonElement;
-using JsonValue = System.Text.Json.JsonElement;
-#endif
-
 namespace ConfigCat.Client.Tests;
+
+using JsonObject = JsonElement;
+using JsonValue = JsonElement;
 
 [TestClass]
 public class EvaluationLogTests
@@ -180,9 +174,9 @@ public class EvaluationLogTests
     {
         var filePath = Path.Combine(TestDataRootPath, testSetName + ".json");
         var fileContent = File.ReadAllText(filePath);
-        var testSet = fileContent.AsMemory().Deserialize<TestSet>();
+        var testSet = fileContent.AsSpan().Deserialize<TestSet>();
 
-        foreach (var testCase in testSet!.tests ?? ArrayUtils.EmptyArray<TestCase>())
+        foreach (var testCase in testSet!.tests ?? Array.Empty<TestCase>())
         {
             yield return new object?[]
             {
@@ -200,10 +194,10 @@ public class EvaluationLogTests
 
     private static void RunTest(string testSetName, string? sdkKey, string? baseUrlOrOverrideFileName, string key, string? defaultValue, string? userObject, string? expectedReturnValue, string expectedLogFileName)
     {
-        var defaultValueParsed = defaultValue?.AsMemory().Deserialize<JsonValue>()!.ToSettingValue(out var settingType).GetValue();
-        var expectedReturnValueParsed = expectedReturnValue?.AsMemory().Deserialize<JsonValue>()!.ToSettingValue(out _).GetValue();
+        var defaultValueParsed = defaultValue?.AsSpan().Deserialize<JsonValue>()!.ToSettingValue(out var settingType).GetValue();
+        var expectedReturnValueParsed = expectedReturnValue?.AsSpan().Deserialize<JsonValue>()!.ToSettingValue(out _).GetValue();
 
-        var userObjectParsed = userObject?.AsMemory().Deserialize<Dictionary<string, string>?>();
+        var userObjectParsed = userObject?.AsSpan().Deserialize<Dictionary<string, string>?>();
         User? user;
         if (userObjectParsed is not null)
         {

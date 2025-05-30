@@ -274,7 +274,7 @@ public class ConfigServiceTests
         var cachedPc = CreateUpToDatePc(timeStamp, pollInterval);
         var fetchedPc = CreateFreshPc(timeStamp);
 
-        var cacheSetSignalTcs = TaskShim.CreateSafeCompletionSource<object?>(out var cacheSetSignalTask);
+        var cacheSetSignalTcs = TaskShim.CreateSafeCompletionSource<object?>();
 
         this.cacheMock.SetupGet(m => m.LocalCachedConfig).Returns(cachedPc);
 
@@ -300,7 +300,7 @@ public class ConfigServiceTests
 
         // Act
 
-        await cacheSetSignalTask;
+        await cacheSetSignalTcs.Task;
 
         await service.GetConfigAsync();
         service.Dispose();

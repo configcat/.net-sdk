@@ -1,14 +1,10 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
-using ConfigCat.Client.Utils;
-using ConfigCat.Client.Evaluation;
-
-#if USE_NEWTONSOFT_JSON
-using Newtonsoft.Json;
-#else
 using System.Text.Json.Serialization;
-#endif
+using ConfigCat.Client.Evaluation;
+using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client;
 
@@ -30,33 +26,25 @@ public interface ISegment
 
 internal sealed class Segment : ISegment
 {
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "n")]
-#else
     [JsonPropertyName("n")]
-#endif
     public string? Name { get; set; }
 
     string ISegment.Name => Name ?? throw new InvalidConfigModelException("Segment name is missing.");
 
     private UserCondition[]? conditions;
 
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "r")]
-#else
     [JsonPropertyName("r")]
-#endif
     [NotNull]
     public UserCondition[]? Conditions
     {
-        get => this.conditions ?? ArrayUtils.EmptyArray<UserCondition>();
+        get => this.conditions ?? Array.Empty<UserCondition>();
         set => this.conditions = value;
     }
 
     private IReadOnlyList<IUserCondition>? conditionsReadOnly;
     IReadOnlyList<IUserCondition> ISegment.Conditions => this.conditionsReadOnly ??= this.conditions is { Length: > 0 }
         ? new ReadOnlyCollection<IUserCondition>(this.conditions)
-        : ArrayUtils.EmptyArray<IUserCondition>();
+        : Array.Empty<IUserCondition>();
 
     public override string ToString()
     {

@@ -1,15 +1,11 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using ConfigCat.Client.Utils;
-using ConfigCat.Client.Evaluation;
-
-#if USE_NEWTONSOFT_JSON
-using Newtonsoft.Json;
-#else
 using System.Text.Json.Serialization;
-#endif
+using ConfigCat.Client.Evaluation;
+using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client;
 
@@ -39,30 +35,22 @@ internal sealed class TargetingRule : ITargetingRule
 {
     private ConditionContainer[]? conditions;
 
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "c")]
-#else
     [JsonPropertyName("c")]
-#endif
     [NotNull]
     public ConditionContainer[]? Conditions
     {
-        get => this.conditions ?? ArrayUtils.EmptyArray<ConditionContainer>();
+        get => this.conditions ?? Array.Empty<ConditionContainer>();
         set => this.conditions = value;
     }
 
     private IReadOnlyList<ICondition>? conditionsReadOnly;
     IReadOnlyList<ICondition> ITargetingRule.Conditions => this.conditionsReadOnly ??= this.conditions is { Length: > 0 } conditions
         ? conditions.Select(condition => condition.GetCondition()!).ToArray()
-        : ArrayUtils.EmptyArray<ICondition>();
+        : Array.Empty<ICondition>();
 
     private object? then;
 
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "p")]
-#else
     [JsonPropertyName("p")]
-#endif
     public PercentageOption[]? PercentageOptions
     {
         get => this.then as PercentageOption[];
@@ -71,14 +59,10 @@ internal sealed class TargetingRule : ITargetingRule
 
     private IReadOnlyList<IPercentageOption>? percentageOptionsReadOnly;
     IReadOnlyList<IPercentageOption>? ITargetingRule.PercentageOptions => this.percentageOptionsReadOnly ??= this.then is PercentageOption[] percentageOptions
-        ? (percentageOptions.Length > 0 ? new ReadOnlyCollection<IPercentageOption>(percentageOptions) : ArrayUtils.EmptyArray<IPercentageOption>())
+        ? (percentageOptions.Length > 0 ? new ReadOnlyCollection<IPercentageOption>(percentageOptions) : Array.Empty<IPercentageOption>())
         : null;
 
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "s")]
-#else
     [JsonPropertyName("s")]
-#endif
     public SimpleSettingValue? SimpleValue
     {
         get => this.then as SimpleSettingValue;

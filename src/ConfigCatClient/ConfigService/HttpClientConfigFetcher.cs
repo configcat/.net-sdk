@@ -11,8 +11,10 @@ namespace ConfigCat.Client;
 
 internal class HttpClientConfigFetcher : IConfigCatConfigFetcher
 {
+    private static readonly object ObjectDisposedToken = false.AsCachedObject();
+
     private readonly HttpClientHandler? httpClientHandler;
-    private volatile HttpClient? httpClient;
+    private volatile object? httpClient; // either null or a HttpClient or ObjectDisposedToken
 
     public HttpClientConfigFetcher(HttpClientHandler? httpClientHandler)
     {
@@ -21,7 +23,30 @@ internal class HttpClientConfigFetcher : IConfigCatConfigFetcher
 
     public void Dispose()
     {
-        this.httpClient?.Dispose();
+        var httpClientObj = Interlocked.Exchange(ref this.httpClient, ObjectDisposedToken);
+        (httpClientObj as HttpClient)?.Dispose();
+    }
+
+    private void ResetClient(HttpClient currentHttpClient)
+    {
+        _ = Interlocked.CompareExchange(ref this.httpClient, value: null, comparand: currentHttpClient);
+    }
+
+    private HttpClient EnsureClient(TimeSpan timeout)
+    {
+        if (this.httpClient is not { } httpClientObj)
+        {
+            var newHttpClient = CreateClient(timeout);
+            httpClientObj = Interlocked.CompareExchange(ref this.httpClient, newHttpClient, comparand: null) ?? newHttpClient;
+        }
+
+        var httpClient = httpClientObj as HttpClient
+            ?? throw new ObjectDisposedException(nameof(HttpClientConfigFetcher));
+
+        // NOTE: Request timeout should not change during the lifetime of the client instance.
+        Debug.Assert(httpClient.Timeout == timeout, "Request timeout changed.");
+
+        return httpClient;
     }
 
     private HttpClient CreateClient(TimeSpan timeout)
@@ -49,21 +74,7 @@ internal class HttpClientConfigFetcher : IConfigCatConfigFetcher
 
     public async Task<FetchResponse> FetchAsync(FetchRequest request, CancellationToken cancellationToken)
     {
-        var httpClient = this.httpClient;
-        if (httpClient is null)
-        {
-            httpClient = CreateClient(request.Timeout);
-
-            if (Interlocked.CompareExchange(ref this.httpClient, httpClient, comparand: null) is { } currentHttpClient)
-            {
-                httpClient = currentHttpClient;
-            }
-        }
-        else
-        {
-            // NOTE: Request timeout should not change during the lifetime of the client instance.
-            Debug.Assert(httpClient.Timeout == request.Timeout, "Request timeout changed.");
-        }
+        var httpClient = EnsureClient(request.Timeout);
 
         var httpRequest = new HttpRequestMessage
         {
@@ -101,30 +112,40 @@ internal class HttpClientConfigFetcher : IConfigCatConfigFetcher
                 var response = new FetchResponse(httpResponse);
                 if (!response.IsExpected)
                 {
-                    this.httpClient = null;
+                    ResetClient(httpClient);
                 }
                 return response;
             }
         }
-        catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        catch (ObjectDisposedException ex)
         {
-            // NOTE: Unfortunately, we can't check the CancellationToken property of the exception in the when condition above because
-            // it seems that HttpClient.SendAsync combines our token with another one under the hood (at least, in runtimes earlier than .NET 6),
-            // so we'd get a Linked2CancellationTokenSource here instead of our token which we pass to the HttpClient.SendAsync method...
-
-            this.httpClient = null;
+            // It is possible that HttpClient.Dispose is called between EnsureClient and SendAsync. In such cases SendAsync will throw
+            // an ObjectDisposedException. Wrap it in an OperationCanceledException and let callers deal with it.
+            throw new OperationCanceledException(message: null, ex);
+        }
+        catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested
+            // NOTE: Request timeout and calling HttpClient.Dispose while SendAsync is in progress both result in a TaskCanceledException.
+            // It seems there's no built-in way to tell these cases apart.
+            && !ReferenceEquals(this.httpClient, ObjectDisposedToken))
+        {
+            ResetClient(httpClient);
             throw FetchErrorException.Timeout(httpClient.Timeout, ex);
+        }
+        catch (OperationCanceledException)
+        {
+            // If the cancellation has been requested externally or happened because of HttpClient.Dispose, let the exception bubble up.
+            throw;
         }
         catch (HttpRequestException ex)
         {
             // Let the HttpClient to be recreated so it can pick up potentially changed DNS entries
             // (see also https://learn.microsoft.com/en-us/dotnet/fundamentals/networking/http/httpclient-guidelines#dns-behavior).
-            this.httpClient = null;
+            ResetClient(httpClient);
             throw FetchErrorException.Failure((ex.InnerException as WebException)?.Status, ex);
         }
         catch
         {
-            this.httpClient = null;
+            ResetClient(httpClient);
             throw;
         }
     }

@@ -93,6 +93,10 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
                     return FetchResult.Failure(lastConfig, RefreshErrorCode.UnexpectedHttpResponse, logMessage.ToLazyString());
             }
         }
+        catch (ObjectDisposedException ex)
+        {
+            throw new OperationCanceledException(message: null, ex);
+        }
         catch (OperationCanceledException)
         {
             throw;

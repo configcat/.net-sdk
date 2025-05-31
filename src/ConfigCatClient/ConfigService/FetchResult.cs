@@ -8,7 +8,7 @@ namespace ConfigCat.Client;
 
 internal readonly struct FetchResult
 {
-    private static readonly object NotModifiedToken = new();
+    private static readonly object NotModifiedToken = false.AsCachedObject();
 
     public static FetchResult Success(ProjectConfig config)
     {

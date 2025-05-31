@@ -64,9 +64,9 @@ internal abstract class ConfigServiceBase : IDisposable
 
     protected virtual void Dispose(bool disposing)
     {
-        if (disposing && this.ConfigFetcher is IDisposable disposable)
+        if (disposing)
         {
-            disposable.Dispose();
+            (this.ConfigFetcher as IDisposable)?.Dispose();
         }
     }
 

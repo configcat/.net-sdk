@@ -34,13 +34,6 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
         this.timeout = timeout;
     }
 
-    public FetchResult Fetch(ProjectConfig lastConfig)
-    {
-        // NOTE: This method is unused now, we keep it because of tests for now,
-        // until the synchronous code paths are deleted soon.
-        return TaskShim.Current.Run(() => FetchAsync(lastConfig)).GetAwaiter().GetResult();
-    }
-
     public async Task<FetchResult> FetchAsync(ProjectConfig lastConfig, CancellationToken cancellationToken = default)
     {
         FormattableLogMessage logMessage;
@@ -139,7 +132,7 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
             }
 
             Config config;
-            try { config = Config.Deserialize(response.Body.AsMemory()); }
+            try { config = Config.Deserialize(response.Body.AsSpan()); }
             catch (Exception ex) { return new DeserializedResponse(response, ex); }
 
             if (config.Preferences is null)

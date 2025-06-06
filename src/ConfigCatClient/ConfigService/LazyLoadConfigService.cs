@@ -21,27 +21,6 @@ internal sealed class LazyLoadConfigService : ConfigServiceBase, IConfigService
 
     public Task<ClientCacheState> ReadyTask { get; }
 
-    public ProjectConfig GetConfig()
-    {
-        var cachedConfig = SyncUpWithCache();
-
-        if (cachedConfig.IsExpired(expiration: this.cacheTimeToLive))
-        {
-            if (!cachedConfig.IsEmpty)
-            {
-                OnConfigExpired();
-            }
-
-            if (!IsOffline)
-            {
-                var configWithFetchResult = RefreshConfigCore(cachedConfig, isInitiatedByUser: false);
-                return configWithFetchResult.Item1;
-            }
-        }
-
-        return cachedConfig;
-    }
-
     public async ValueTask<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default)
     {
         var cachedConfig = await SyncUpWithCacheAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
@@ -55,8 +34,7 @@ internal sealed class LazyLoadConfigService : ConfigServiceBase, IConfigService
 
             if (!IsOffline)
             {
-                var configWithFetchResult = await RefreshConfigCoreAsync(cachedConfig, isInitiatedByUser: false, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
-                return configWithFetchResult.Item1;
+                (cachedConfig, _) = await RefreshConfigCoreAsync(cachedConfig, isInitiatedByUser: false, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
             }
         }
 

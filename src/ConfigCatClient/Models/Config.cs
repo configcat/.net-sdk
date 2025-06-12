@@ -3,14 +3,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using ConfigCat.Client.Utils;
-
-#if USE_NEWTONSOFT_JSON
-using Newtonsoft.Json;
-using System.Runtime.Serialization;
-#else
 using System.Text.Json.Serialization;
-#endif
+using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client;
 
@@ -35,52 +29,37 @@ public interface IConfig
     IReadOnlyDictionary<string, ISetting> Settings { get; }
 }
 
-internal sealed class Config : IConfig
-#if !USE_NEWTONSOFT_JSON
-    , IJsonOnDeserialized
-#endif
+internal sealed class Config : IConfig, IJsonOnDeserialized
 {
-    public static Config Deserialize(ReadOnlyMemory<char> configJson, bool tolerant = false)
+    public static Config Deserialize(ReadOnlySpan<char> configJson, bool tolerant = false)
     {
         return SerializationHelper.DeserializeConfig(configJson, tolerant)
-            ?? throw new ArgumentException("Invalid config JSON content: " + configJson, nameof(configJson));
+            ?? throw new ArgumentException("Invalid config JSON content: " + configJson.ToString(), nameof(configJson));
     }
 
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "p")]
-#else
     [JsonPropertyName("p")]
-#endif
     public Preferences? Preferences { get; set; }
 
     string? IConfig.Salt => Preferences?.Salt;
 
     private Segment[]? segments;
 
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "s")]
-#else
     [JsonPropertyName("s")]
-#endif
     [NotNull]
     public Segment[]? Segments
     {
-        get => this.segments ?? ArrayUtils.EmptyArray<Segment>();
+        get => this.segments ?? Array.Empty<Segment>();
         set => this.segments = value;
     }
 
     private IReadOnlyList<ISegment>? segmentsReadOnly;
     IReadOnlyList<ISegment> IConfig.Segments => this.segmentsReadOnly ??= this.segments is { Length: > 0 }
         ? new ReadOnlyCollection<ISegment>(this.segments)
-        : ArrayUtils.EmptyArray<ISegment>();
+        : Array.Empty<ISegment>();
 
     private Dictionary<string, Setting>? settings;
 
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "f")]
-#else
     [JsonPropertyName("f")]
-#endif
     [NotNull]
     public Dictionary<string, Setting>? Settings
     {
@@ -92,11 +71,6 @@ internal sealed class Config : IConfig
     IReadOnlyDictionary<string, ISetting> IConfig.Settings => this.settingsReadOnly ??= this.settings is { Count: > 0 }
         ? this.settings.ToDictionary(kvp => kvp.Key, kvp => (ISetting)kvp.Value)
         : new Dictionary<string, ISetting>();
-
-#if USE_NEWTONSOFT_JSON
-    [OnDeserialized]
-    internal void OnDeserialized(StreamingContext context) => OnDeserialized();
-#endif
 
     public void OnDeserialized()
     {

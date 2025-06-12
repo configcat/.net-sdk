@@ -1,5 +1,5 @@
+using System;
 using System.Linq;
-using ConfigCat.Client.Utils;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 
@@ -18,7 +18,7 @@ public class ConfigCatClientSnapshotTests
 
         Assert.AreEqual(ClientCacheState.NoFlagData, snapshot.CacheState);
         Assert.IsNull(snapshot.FetchedConfig);
-        CollectionAssert.AreEqual(ArrayUtils.EmptyArray<string>(), snapshot.GetAllKeys().ToArray());
+        CollectionAssert.AreEqual(Array.Empty<string>(), snapshot.GetAllKeys().ToArray());
         Assert.AreEqual("", snapshot.GetValue(key, defaultValue));
         var evaluationDetails = snapshot.GetValueDetails(key, defaultValue);
         Assert.IsNotNull(evaluationDetails);

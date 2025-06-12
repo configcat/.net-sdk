@@ -11,14 +11,7 @@ internal static class DateTimeUtils
         // NOTE: Internally we should always work with UTC datetime values (as DateTimeKind.Unspecified can lead to incorrect results).
         Debug.Assert(dateTime.Kind == DateTimeKind.Utc, "Non-UTC datetime encountered.");
 
-#if !NET45
         return new DateTimeOffset(dateTime).ToUnixTimeMilliseconds();
-#else
-        // Based on: https://github.com/dotnet/runtime/blob/v6.0.13/src/libraries/System.Private.CoreLib/src/System/DateTimeOffset.cs#L629
-
-        const long unixEpochMilliseconds = 62_135_596_800_000L;
-        return dateTime.Ticks / TimeSpan.TicksPerMillisecond - unixEpochMilliseconds;
-#endif
     }
 
     public static string ToUnixTimeStamp(this DateTime dateTime)
@@ -28,7 +21,6 @@ internal static class DateTimeUtils
 
     public static bool TryConvertFromUnixTimeMilliseconds(long milliseconds, out DateTime dateTime)
     {
-#if !NET45
         try
         {
             dateTime = DateTimeOffset.FromUnixTimeMilliseconds(milliseconds).UtcDateTime;
@@ -39,23 +31,6 @@ internal static class DateTimeUtils
             dateTime = default;
             return false;
         }
-#else
-        // Based on: https://github.com/dotnet/runtime/blob/v6.0.13/src/libraries/System.Private.CoreLib/src/System/DateTimeOffset.cs#L443
-
-        const long unixEpochMilliseconds = 62_135_596_800_000L;
-        const long unixMinMilliseconds = 0 / TimeSpan.TicksPerMillisecond - unixEpochMilliseconds;
-        const long unixMaxMilliseconds = 3_155_378_975_999_999_999L / TimeSpan.TicksPerMillisecond - unixEpochMilliseconds;
-
-        if (milliseconds < unixMinMilliseconds || milliseconds > unixMaxMilliseconds)
-        {
-            dateTime = default;
-            return false;
-        }
-
-        var ticks = (milliseconds + unixEpochMilliseconds) * TimeSpan.TicksPerMillisecond;
-        dateTime = new DateTime(ticks, DateTimeKind.Utc);
-        return true;
-#endif
     }
 
     public static bool TryConvertFromUnixTimeSeconds(double seconds, out DateTime dateTime)

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.Json.Serialization;
 using ConfigCat.Client.Utils;
@@ -9,70 +8,67 @@ using ConfigCat.Client.Utils;
 namespace ConfigCat.Client;
 
 /// <summary>
-/// Details of a ConfigCat config.
+/// Defines the data model of a ConfigCat config.
 /// </summary>
-public interface IConfig
+public sealed class Config : IJsonOnDeserialized
 {
     /// <summary>
-    /// The salt that was used to hash sensitive comparison values.
+    /// Deserializes the specified config JSON to a <see cref="Config"/> data model.
     /// </summary>
-    string? Salt { get; }
+    public static Config Deserialize(ReadOnlySpan<char> configJson)
+    {
+        return Deserialize(configJson, tolerant: true);
+    }
 
-    /// <summary>
-    /// The list of segments.
-    /// </summary>
-    IReadOnlyList<ISegment> Segments { get; }
-
-    /// <summary>
-    /// The dictionary of settings.
-    /// </summary>
-    IReadOnlyDictionary<string, ISetting> Settings { get; }
-}
-
-internal sealed class Config : IConfig, IJsonOnDeserialized
-{
-    public static Config Deserialize(ReadOnlySpan<char> configJson, bool tolerant = false)
+    internal static Config Deserialize(ReadOnlySpan<char> configJson, bool tolerant)
     {
         return SerializationHelper.DeserializeConfig(configJson, tolerant)
             ?? throw new ArgumentException("Invalid config JSON content: " + configJson.ToString(), nameof(configJson));
     }
 
-    [JsonPropertyName("p")]
-    public Preferences? Preferences { get; set; }
+    [JsonConstructor]
+    internal Config() { }
 
-    string? IConfig.Salt => Preferences?.Salt;
+    [JsonInclude, JsonPropertyName("p")]
+    internal Preferences? preferences;
 
-    private Segment[]? segments;
+    /// <summary>
+    /// The salt that was used to hash sensitive comparison values.
+    /// </summary>
+    [JsonIgnore]
+    public string? Salt => this.preferences?.Salt;
 
-    [JsonPropertyName("s")]
-    [NotNull]
-    public Segment[]? Segments
-    {
-        get => this.segments ?? Array.Empty<Segment>();
-        set => this.segments = value;
-    }
+    [JsonInclude, JsonPropertyName("s")]
+    internal Segment[]? segments;
 
-    private IReadOnlyList<ISegment>? segmentsReadOnly;
-    IReadOnlyList<ISegment> IConfig.Segments => this.segmentsReadOnly ??= this.segments is { Length: > 0 }
-        ? new ReadOnlyCollection<ISegment>(this.segments)
-        : Array.Empty<ISegment>();
+    internal Segment[] SegmentsOrEmpty => this.segments ?? Array.Empty<Segment>();
 
-    private Dictionary<string, Setting>? settings;
+    private IReadOnlyList<Segment>? segmentsReadOnly;
 
-    [JsonPropertyName("f")]
-    [NotNull]
-    public Dictionary<string, Setting>? Settings
-    {
-        get => this.settings ??= new Dictionary<string, Setting>();
-        set => this.settings = value;
-    }
+    /// <summary>
+    /// The list of segments.
+    /// </summary>
+    [JsonIgnore]
+    public IReadOnlyList<Segment> Segments => this.segmentsReadOnly ??= this.segments is { Length: > 0 }
+        ? new ReadOnlyCollection<Segment>(this.segments)
+        : Array.Empty<Segment>();
 
-    private IReadOnlyDictionary<string, ISetting>? settingsReadOnly;
-    IReadOnlyDictionary<string, ISetting> IConfig.Settings => this.settingsReadOnly ??= this.settings is { Count: > 0 }
-        ? this.settings.ToDictionary(kvp => kvp.Key, kvp => (ISetting)kvp.Value)
-        : new Dictionary<string, ISetting>();
+    [JsonInclude, JsonPropertyName("f")]
+    internal Dictionary<string, Setting>? settings;
 
-    public void OnDeserialized()
+    internal Dictionary<string, Setting> SettingsOrEmpty => this.settings ??= new Dictionary<string, Setting>();
+
+    private IReadOnlyDictionary<string, Setting>? settingsReadOnly;
+
+    /// <summary>
+    /// The dictionary of settings.
+    /// </summary>
+    [JsonIgnore]
+    public IReadOnlyDictionary<string, Setting> Settings => this.settingsReadOnly ??= this.settings is { Count: > 0 }
+        ? this.settings.ToDictionary(kvp => kvp.Key, kvp => kvp.Value)
+        : new Dictionary<string, Setting>();
+
+    void IJsonOnDeserialized.OnDeserialized()
     {
         if (this.settings is { Count: > 0 })
         {

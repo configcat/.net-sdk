@@ -1,14 +1,17 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 
 namespace ConfigCat.Client.Tests.Helpers;
 
 internal static class ConfigHelper
 {
+    public static Dictionary<string, Setting> GetSettings(this Config config) => config.SettingsOrEmpty;
+
     public static ProjectConfig FromString(string configJson, string? httpETag, DateTime timeStamp)
     {
-        return new ProjectConfig(configJson, Config.Deserialize(configJson.AsSpan()), timeStamp, httpETag);
+        return new ProjectConfig(configJson, Config.Deserialize(configJson.AsSpan(), tolerant: false), timeStamp, httpETag);
     }
 
     public static ProjectConfig FromFile(string configJsonFilePath, string? httpETag, DateTime timeStamp)

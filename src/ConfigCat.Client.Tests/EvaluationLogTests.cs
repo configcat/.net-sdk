@@ -233,7 +233,7 @@ public class EvaluationLogTests
             ? new ConfigLocation.Cdn(sdkKey, baseUrlOrOverrideFileName)
             : new ConfigLocation.LocalFile(TestDataRootPath, "_overrides", baseUrlOrOverrideFileName!);
 
-        var settings = configLocation.FetchConfigCached().Settings;
+        var settings = configLocation.FetchConfigCached().SettingsOrEmpty;
 
         var evaluator = new RolloutEvaluator(logger);
         var evaluationDetails = evaluator.Evaluate(settings, key, defaultValueParsed, user, remoteConfig: null, logger);
@@ -294,7 +294,7 @@ public class EvaluationLogTests
     [DataRow(LogLevel.Debug, true)]
     public void EvaluationLogShouldBeBuiltOnlyWhenNecessary(LogLevel logLevel, bool expectedIsLogBuilt)
     {
-        var settings = new ConfigLocation.Cdn("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/AG6C1ngVb0CvM07un6JisQ").FetchConfigCached().Settings;
+        var settings = new ConfigLocation.Cdn("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/AG6C1ngVb0CvM07un6JisQ").FetchConfigCached().SettingsOrEmpty;
 
         var logEvents = new List<LogEvent>();
         var logger = LoggingHelper.CreateCapturingLogger(logEvents, logLevel).AsWrapper();

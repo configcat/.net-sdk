@@ -43,7 +43,7 @@ public class ModelTests
     [DataRow(FlagDependencyV6SampleSdkKey, null, "boolDependsOnBool", 0, 0, new[] { "Flag 'mainBoolFlag' EQUALS 'True'" })]
     public void Condition_ToString(string? sdkKey, string baseUrlOrFileName, string settingKey, int targetingRuleIndex, int conditionIndex, string[] expectedResultLines)
     {
-        IConfig config = GetConfigLocation(sdkKey, baseUrlOrFileName).FetchConfigCached();
+        Config config = GetConfigLocation(sdkKey, baseUrlOrFileName).FetchConfigCached();
         var setting = config.Settings[settingKey];
         var targetingRule = setting.TargetingRules[targetingRuleIndex];
         var condition = targetingRule.Conditions[conditionIndex];
@@ -57,12 +57,12 @@ public class ModelTests
     [DataRow(ComparatorsV6SampleSdkKey, null, "missingPercentageAttribute", 0, 0, new[] { "50%: 'Falcon'" })]
     public void PercentageOption_ToString(string? sdkKey, string baseUrlOrFileName, string settingKey, int targetingRuleIndex, int percentageOptionIndex, string[] expectedResultLines)
     {
-        IConfig config = GetConfigLocation(sdkKey, baseUrlOrFileName).FetchConfigCached();
+        Config config = GetConfigLocation(sdkKey, baseUrlOrFileName).FetchConfigCached();
         var setting = config.Settings[settingKey];
         var percentageOptions = targetingRuleIndex >= 0
             ? setting.TargetingRules[targetingRuleIndex].PercentageOptions
             : setting.PercentageOptions;
-        IPercentageOption percentageOption = percentageOptions![percentageOptionIndex];
+        PercentageOption percentageOption = percentageOptions![percentageOptionIndex];
         var actualResult = percentageOption!.ToString();
         var expectedResult = string.Join(Environment.NewLine, expectedResultLines);
         Assert.AreEqual(expectedResult, actualResult);
@@ -90,7 +90,7 @@ public class ModelTests
     })]
     public void TargetingRule_ToString(string? sdkKey, string baseUrlOrFileName, string settingKey, int targetingRuleIndex, string[] expectedResultLines)
     {
-        IConfig config = GetConfigLocation(sdkKey, baseUrlOrFileName).FetchConfigCached();
+        Config config = GetConfigLocation(sdkKey, baseUrlOrFileName).FetchConfigCached();
         var setting = config.Settings[settingKey];
         var targetingRule = setting.TargetingRules[targetingRuleIndex];
         var actualResult = targetingRule.ToString();
@@ -155,7 +155,7 @@ public class ModelTests
     })]
     public void Setting_ToString(string? sdkKey, string baseUrlOrFileName, string settingKey, string[] expectedResultLines)
     {
-        IConfig config = GetConfigLocation(sdkKey, baseUrlOrFileName).FetchConfigCached();
+        Config config = GetConfigLocation(sdkKey, baseUrlOrFileName).FetchConfigCached();
         var setting = config.Settings[settingKey];
         var actualResult = setting.ToString();
         var expectedResult = string.Join(Environment.NewLine, expectedResultLines);
@@ -166,7 +166,7 @@ public class ModelTests
     [DataRow(SegmentsV6SampleSdkKey, null, 0, new[] { "User.Email IS ONE OF [<2 hashed values>]" })]
     public void Segment_ToString(string? sdkKey, string baseUrlOrFileName, int segmentIndex, string[] expectedResultLines)
     {
-        IConfig config = GetConfigLocation(sdkKey, baseUrlOrFileName).FetchConfigCached();
+        Config config = GetConfigLocation(sdkKey, baseUrlOrFileName).FetchConfigCached();
         var segment = config.Segments[segmentIndex];
         var actualResult = segment.ToString();
         var expectedResult = string.Join(Environment.NewLine, expectedResultLines);

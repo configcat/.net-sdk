@@ -10,7 +10,7 @@
     <Nullable>enable</Nullable>
     <WarningsAsErrors>nullable</WarningsAsErrors>
     <NoWarn>CS1685;NU1902;NU1903</NoWarn>
-    <SuppressTfmSupportBuildWarnings Condition="'$(TargetFramework)' == 'netcoreapp2.1'">true</SuppressTfmSupportBuildWarnings>
+    <SuppressTfmSupportBuildWarnings Condition="'$(TargetFramework)' == 'netcoreapp2.1' OR '$(TargetFramework)' == 'netcoreapp3.1'">true</SuppressTfmSupportBuildWarnings>
   </PropertyGroup>
 
   <Choose>

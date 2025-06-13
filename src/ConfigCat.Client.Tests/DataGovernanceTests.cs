@@ -406,7 +406,7 @@ public class DataGovernanceTests
     {
         var response = new Config
         {
-            Preferences = new Preferences
+            preferences = new Preferences
             {
                 BaseUrl = (url ?? ConfigCatClientOptions.BaseUrlGlobal).ToString(),
                 RedirectMode = redirectMode
@@ -415,7 +415,7 @@ public class DataGovernanceTests
 
         if (withSettings)
         {
-            response.Settings.Add("myKey", "foo".ToSetting());
+            response.SettingsOrEmpty.Add("myKey", "foo".ToSetting());
         }
 
         return response;

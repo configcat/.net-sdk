@@ -233,7 +233,7 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
         var logger = new Mock<IConfigCatLogger>().Object.AsWrapper();
         var evaluator = new RolloutEvaluator(logger);
 
-        var ex = Assert.ThrowsException<InvalidConfigModelException>(() => evaluator.Evaluate<object?>(config!.Settings, key, defaultValue: null, user: null, remoteConfig: null, logger));
+        var ex = Assert.ThrowsException<InvalidConfigModelException>(() => evaluator.Evaluate<object?>(config!.SettingsOrEmpty, key, defaultValue: null, user: null, remoteConfig: null, logger));
 
         StringAssert.Contains(ex.Message, "Circular dependency detected");
         StringAssert.Contains(ex.Message, dependencyCycle);
@@ -407,7 +407,7 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
 
         var user = userId is not null ? new User(userId) { Email = email, Custom = { ["PercentageBase"] = percentageBase! } } : null;
 
-        var evaluationDetails = evaluator.Evaluate<object?>(config!.Settings, key, defaultValue: null, user, remoteConfig: null, logger);
+        var evaluationDetails = evaluator.Evaluate<object?>(config!.SettingsOrEmpty, key, defaultValue: null, user, remoteConfig: null, logger);
 
         Assert.AreEqual(expectedReturnValue, evaluationDetails.Value);
         Assert.AreEqual(expectedIsExpectedMatchedTargetingRuleSet, evaluationDetails.MatchedTargetingRule is not null);
@@ -428,7 +428,7 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
         var user = new User("12345") { Custom = { [customAttributeName] = customAttributeValue } };
 
         const string key = "boolTextEqualsNumber";
-        var evaluationDetails = evaluator.Evaluate<bool?>(config!.Settings, key, defaultValue: null, user, remoteConfig: null, logger);
+        var evaluationDetails = evaluator.Evaluate<bool?>(config!.SettingsOrEmpty, key, defaultValue: null, user, remoteConfig: null, logger);
 
         Assert.AreEqual(true, evaluationDetails.Value);
 
@@ -588,7 +588,7 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
 
         var user = userId is not null ? new User(userId) { Custom = { [customAttributeName] = customAttributeValue! } } : null;
 
-        var evaluationDetails = evaluator.Evaluate<object?>(config!.Settings, key, defaultValue: null, user, remoteConfig: null, logger);
+        var evaluationDetails = evaluator.Evaluate<object?>(config!.SettingsOrEmpty, key, defaultValue: null, user, remoteConfig: null, logger);
 
         Assert.AreEqual(expectedReturnValue, evaluationDetails.Value);
     }
@@ -654,7 +654,7 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
         };
 
         const string defaultValue = "default";
-        var actualReturnValue = evaluator.Evaluate(config!.Settings, key, defaultValue, user, remoteConfig: null, logger).Value;
+        var actualReturnValue = evaluator.Evaluate(config!.SettingsOrEmpty, key, defaultValue, user, remoteConfig: null, logger).Value;
 
         Assert.AreEqual(expectedReturnValue, actualReturnValue);
     }
@@ -718,7 +718,7 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
         };
 
         const string defaultValue = "default";
-        var actualReturnValue = evaluator.Evaluate(config!.Settings, key, defaultValue, user, remoteConfig: null, logger).Value;
+        var actualReturnValue = evaluator.Evaluate(config!.SettingsOrEmpty, key, defaultValue, user, remoteConfig: null, logger).Value;
 
         Assert.AreEqual(expectedReturnValue, actualReturnValue);
     }
@@ -773,7 +773,7 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
 
         const string defaultValue = "default";
         string actualReturnValue;
-        try { actualReturnValue = evaluator.Evaluate(config!.Settings, key, defaultValue, user, remoteConfig: null, logger).Value; }
+        try { actualReturnValue = evaluator.Evaluate(config!.SettingsOrEmpty, key, defaultValue, user, remoteConfig: null, logger).Value; }
         catch (InvalidOperationException) { actualReturnValue = defaultValue; }
 
         Assert.AreEqual(expectedReturnValue, actualReturnValue);

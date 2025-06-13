@@ -120,30 +120,30 @@ internal static class EvaluationHelper
             var key = kvp.Key;
             var setting = kvp.Value;
 
-            if (setting.VariationId == variationId)
+            if (setting.variationId == variationId)
             {
-                settingType = setting.SettingType;
-                return new KeyValuePair<string, SettingValue>(key, setting.Value);
+                settingType = setting.settingType;
+                return new KeyValuePair<string, SettingValue>(key, setting.value);
             }
 
-            foreach (var targetingRule in setting.TargetingRules)
+            foreach (var targetingRule in setting.TargetingRulesOrEmpty)
             {
-                if (targetingRule.SimpleValue is { } simpleValue)
+                if (targetingRule.SimpleValueOrNull is { } simpleValue)
                 {
-                    if (simpleValue.VariationId == variationId)
+                    if (simpleValue.variationId == variationId)
                     {
-                        settingType = setting.SettingType;
-                        return new KeyValuePair<string, SettingValue>(key, simpleValue.Value);
+                        settingType = setting.settingType;
+                        return new KeyValuePair<string, SettingValue>(key, simpleValue.value);
                     }
                 }
-                else if (targetingRule.PercentageOptions is { Length: > 0 } percentageOptions)
+                else if (targetingRule.PercentageOptionsOrNull is { Length: > 0 } percentageOptions)
                 {
                     foreach (var percentageOption in percentageOptions)
                     {
-                        if (percentageOption.VariationId == variationId)
+                        if (percentageOption.variationId == variationId)
                         {
-                            settingType = setting.SettingType;
-                            return new KeyValuePair<string, SettingValue>(key, percentageOption.Value);
+                            settingType = setting.settingType;
+                            return new KeyValuePair<string, SettingValue>(key, percentageOption.value);
                         }
                     }
                 }
@@ -153,12 +153,12 @@ internal static class EvaluationHelper
                 }
             }
 
-            foreach (var percentageOption in setting.PercentageOptions)
+            foreach (var percentageOption in setting.PercentageOptionsOrEmpty)
             {
-                if (percentageOption.VariationId == variationId)
+                if (percentageOption.variationId == variationId)
                 {
-                    settingType = setting.SettingType;
-                    return new KeyValuePair<string, SettingValue>(key, percentageOption.Value);
+                    settingType = setting.settingType;
+                    return new KeyValuePair<string, SettingValue>(key, percentageOption.value);
                 }
             }
         }

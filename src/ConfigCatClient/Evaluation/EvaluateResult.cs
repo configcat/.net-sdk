@@ -10,8 +10,8 @@ internal readonly struct EvaluateResult
     }
 
     private readonly SettingValueContainer selectedValue;
-    public SettingValue Value => this.selectedValue.Value;
-    public string? VariationId => this.selectedValue.VariationId;
+    public SettingValue Value => this.selectedValue.value;
+    public string? VariationId => this.selectedValue.variationId;
 
     public readonly TargetingRule? MatchedTargetingRule;
     public readonly PercentageOption? MatchedPercentageOption;

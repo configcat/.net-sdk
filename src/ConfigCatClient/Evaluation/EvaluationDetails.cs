@@ -110,12 +110,12 @@ public abstract class EvaluationDetails
     /// <summary>
     /// The targeting rule (if any) that matched during the evaluation and was used to return the evaluated value.
     /// </summary>
-    public ITargetingRule? MatchedTargetingRule { get; set; }
+    public TargetingRule? MatchedTargetingRule { get; set; }
 
     /// <summary>
     /// The percentage option (if any) that was used to select the evaluated value.
     /// </summary>
-    public IPercentageOption? MatchedPercentageOption { get; set; }
+    public PercentageOption? MatchedPercentageOption { get; set; }
 }
 
 /// <inheritdoc/>

@@ -132,22 +132,22 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
             }
 
             Config config;
-            try { config = Config.Deserialize(response.Body.AsSpan()); }
+            try { config = Config.Deserialize(response.Body.AsSpan(), tolerant: false); }
             catch (Exception ex) { return new DeserializedResponse(response, ex); }
 
-            if (config.Preferences is null)
+            if (config.preferences is null)
             {
                 return new DeserializedResponse(response, config);
             }
 
             Uri newBaseUri;
 
-            if (config.Preferences.BaseUrl is not { } newBaseUrl || this.baseUri.Equals(newBaseUri = GetBaseUri(newBaseUrl)))
+            if (config.preferences.BaseUrl is not { } newBaseUrl || this.baseUri.Equals(newBaseUri = GetBaseUri(newBaseUrl)))
             {
                 return new DeserializedResponse(response, config);
             }
 
-            RedirectMode redirect = config.Preferences.RedirectMode;
+            RedirectMode redirect = config.preferences.RedirectMode;
 
             if (this.isCustomUri && redirect != RedirectMode.Force)
             {

@@ -42,7 +42,7 @@ public readonly struct ConfigCatClientSnapshot : IConfigCatClientSnapshot
         : ((IConfigCatClientSnapshot?)this.evaluationServicesOrFakeImpl)?.CacheState ?? ClientCacheState.NoFlagData;
 
     /// <inheritdoc/>>
-    public IConfig? FetchedConfig => this.evaluationServicesOrFakeImpl is EvaluationServices
+    public Config? FetchedConfig => this.evaluationServicesOrFakeImpl is EvaluationServices
         ? this.settings.RemoteConfig?.Config
         : ((IConfigCatClientSnapshot?)this.evaluationServicesOrFakeImpl)?.FetchedConfig ?? null;
 

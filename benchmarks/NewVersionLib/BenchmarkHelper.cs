@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
 using ConfigCat.Client.Tests.Helpers;
 
 namespace ConfigCat.Client.Benchmarks.New;
@@ -15,32 +17,32 @@ public static partial class BenchmarkHelper
     {
         var config = new Config
         {
-            Preferences = new Preferences
+            preferences = new Preferences
             {
                 Salt = "LKQu1a62agfNnWuGwA8cZglf4x0yZSbY2En7WQn5dWw"
             },
-            Settings =
+            settings = new Dictionary<string, Setting>()
             {
                 ["basicFlag"] = new Setting
                 {
-                    SettingType = SettingType.Boolean,
-                    Value = new SettingValue { BoolValue = true },
+                    settingType = SettingType.Boolean,
+                    value = new SettingValue { BoolValue = true },
                 },
                 ["complexFlag"] = new Setting
                 {
-                    SettingType = SettingType.String,
-                    TargetingRules = new[]
+                    settingType = SettingType.String,
+                    targetingRules = new[]
                     {
                         new TargetingRule
                         {
-                            Conditions = new[]
+                            conditions = new[]
                             {
                                 new ConditionContainer
                                 {
                                     UserCondition =  new UserCondition()
                                     {
-                                        ComparisonAttribute = nameof(User.Identifier),
-                                        Comparator = UserComparator.SensitiveTextIsOneOf,
+                                        comparisonAttribute = nameof(User.Identifier),
+                                        comparator = UserComparator.SensitiveTextIsOneOf,
                                         StringListValue = new[]
                                         {
                                             "61418c941ecda8031d08ab86ec821e676fde7b6a59cd16b1e7191503c2f8297d",
@@ -49,100 +51,100 @@ public static partial class BenchmarkHelper
                                     }
                                 },
                             },
-                            SimpleValue = new SimpleSettingValue { Value = new SettingValue { StringValue =  "a" } },
+                            SimpleValueOrNull = new SimpleSettingValue { value = new SettingValue { StringValue =  "a" } },
                         },
                         new TargetingRule
                         {
-                            Conditions = new[]
+                            conditions = new[]
                             {
                                 new ConditionContainer
                                 {
                                     UserCondition =  new UserCondition()
                                     {
-                                        ComparisonAttribute = nameof(User.Email),
-                                        Comparator = UserComparator.TextContainsAnyOf,
+                                        comparisonAttribute = nameof(User.Email),
+                                        comparator = UserComparator.TextContainsAnyOf,
                                         StringListValue = new[] { "@example.com" }
                                     }
                                 },
                             },
-                            SimpleValue = new SimpleSettingValue { Value = new SettingValue { StringValue =  "b" } },
+                            SimpleValueOrNull = new SimpleSettingValue { value = new SettingValue { StringValue =  "b" } },
                         },
                         new TargetingRule
                         {
-                            Conditions = new[]
+                            conditions = new[]
                             {
                                 new ConditionContainer
                                 {
                                     UserCondition =  new UserCondition()
                                     {
-                                        ComparisonAttribute = "Version",
-                                        Comparator = UserComparator.SemVerIsOneOf,
+                                        comparisonAttribute = "Version",
+                                        comparator = UserComparator.SemVerIsOneOf,
                                         StringListValue = new[] { "1.0.0", "2.0.0" }
                                     }
                                 },
                             },
-                            SimpleValue = new SimpleSettingValue { Value = new SettingValue { StringValue =  "c" } },
+                            SimpleValueOrNull = new SimpleSettingValue { value = new SettingValue { StringValue =  "c" } },
                         },
                         new TargetingRule
                         {
-                            Conditions = new[]
+                            conditions = new[]
                             {
                                 new ConditionContainer
                                 {
                                     UserCondition =  new UserCondition()
                                     {
-                                        ComparisonAttribute = "Version",
-                                        Comparator = UserComparator.SemVerGreater,
+                                        comparisonAttribute = "Version",
+                                        comparator = UserComparator.SemVerGreater,
                                         StringValue = "3.0.0"
                                     }
                                 },
                             },
-                            SimpleValue = new SimpleSettingValue { Value = new SettingValue { StringValue =  "d" } },
+                            SimpleValueOrNull = new SimpleSettingValue { value = new SettingValue { StringValue =  "d" } },
                         },
                         new TargetingRule
                         {
-                            Conditions = new[]
+                            conditions = new[]
                             {
                                 new ConditionContainer
                                 {
                                     UserCondition =  new UserCondition()
                                     {
-                                        ComparisonAttribute = "Number",
-                                        Comparator = UserComparator.NumberGreater,
+                                        comparisonAttribute = "Number",
+                                        comparator = UserComparator.NumberGreater,
                                         DoubleValue = 3.14
                                     }
                                 },
                             },
-                            SimpleValue = new SimpleSettingValue { Value = new SettingValue { StringValue =  "e" } },
+                            SimpleValueOrNull = new SimpleSettingValue { value = new SettingValue { StringValue =  "e" } },
                         },
                         new TargetingRule
                         {
-                            PercentageOptions = new[]
+                            PercentageOptionsOrNull = new[]
                             {
                                 new PercentageOption
                                 {
-                                    Percentage = 20,
-                                    Value = new SettingValue { StringValue =  "p20" }
+                                    percentage = 20,
+                                    value = new SettingValue { StringValue =  "p20" }
                                 },
                                 new PercentageOption
                                 {
-                                    Percentage = 30,
-                                    Value = new SettingValue { StringValue =  "p30" }
+                                    percentage = 30,
+                                    value = new SettingValue { StringValue =  "p30" }
                                 },
                                 new PercentageOption
                                 {
-                                    Percentage = 50,
-                                    Value = new SettingValue { StringValue =  "p50" }
+                                    percentage = 50,
+                                    value = new SettingValue { StringValue =  "p50" }
                                 },
                             }
                         },
                     },
-                    Value = new SettingValue { StringValue =  "fallback" }
+                    value = new SettingValue { StringValue = "fallback" }
                 }
             }
         };
 
-        config.OnDeserialized();
+        ((IJsonOnDeserialized)config).OnDeserialized();
         return config;
     })();
 }

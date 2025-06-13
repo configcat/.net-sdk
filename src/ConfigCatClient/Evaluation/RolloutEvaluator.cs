@@ -58,12 +58,12 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                 // 1. when the setting type is missing from the config JSON (which should occur in the case of a full config JSON flag override only) or
                 // 2. when the setting comes from a non-full config JSON flag override and has an unsupported value (see also ObjectExtensions.ToSetting).
                 // The latter case is handled by SettingValue.GetValue<T> below.
-                if (context.Setting.SettingType != Setting.UnknownType && context.Setting.SettingType != expectedSettingType)
+                if (context.Setting.settingType != Setting.UnknownType && context.Setting.settingType != expectedSettingType)
                 {
                     throw new EvaluationErrorException(EvaluationErrorCode.SettingValueTypeMismatch,
                         "The type of a setting must match the type of the specified default value. "
-                        + $"Setting's type was {context.Setting.SettingType} but the default value's type was {typeof(T)}. "
-                        + $"Please use a default value which corresponds to the setting type {context.Setting.SettingType}. "
+                        + $"Setting's type was {context.Setting.settingType} but the default value's type was {typeof(T)}. "
+                        + $"Please use a default value which corresponds to the setting type {context.Setting.settingType}. "
                         + "Learn more: https://configcat.com/docs/sdk-reference/dotnet/#setting-type-mapping");
                 }
 
@@ -75,8 +75,8 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             {
                 result = EvaluateSetting(ref context);
 
-                returnValue = (T)(context.Setting.SettingType != Setting.UnknownType
-                    ? result.Value.GetValue(context.Setting.SettingType)!
+                returnValue = (T)(context.Setting.settingType != Setting.UnknownType
+                    ? result.Value.GetValue(context.Setting.settingType)!
                     : result.Value.GetValue()!);
             }
 
@@ -104,13 +104,13 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
     private EvaluateResult EvaluateSetting(ref EvaluateContext context)
     {
-        var targetingRules = context.Setting.TargetingRules;
+        var targetingRules = context.Setting.TargetingRulesOrEmpty;
         if (targetingRules.Length > 0 && TryEvaluateTargetingRules(targetingRules, ref context, out var evaluateResult))
         {
             return evaluateResult;
         }
 
-        var percentageOptions = context.Setting.PercentageOptions;
+        var percentageOptions = context.Setting.PercentageOptionsOrEmpty;
         if (percentageOptions.Length > 0 && TryEvaluatePercentageOptions(percentageOptions, matchedTargetingRule: null, ref context, out evaluateResult))
         {
             return evaluateResult;
@@ -129,7 +129,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         for (var i = 0; i < targetingRules.Length; i++)
         {
             var targetingRule = targetingRules[i];
-            var conditions = targetingRule.Conditions;
+            var conditions = targetingRule.ConditionsOrEmpty;
 
             var isMatch = EvaluateConditions(conditions, targetingRule, contextSalt: context.Key, ref context, out var error);
             if (!isMatch)
@@ -144,13 +144,13 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                 continue;
             }
 
-            if (targetingRule.SimpleValue is { } simpleValue)
+            if (targetingRule.SimpleValueOrNull is { } simpleValue)
             {
                 result = new EvaluateResult(simpleValue, matchedTargetingRule: targetingRule);
                 return true;
             }
 
-            var percentageOptions = targetingRule.PercentageOptions;
+            var percentageOptions = targetingRule.PercentageOptionsOrNull;
             if (percentageOptions is not { Length: > 0 })
             {
                 throw new InvalidConfigModelException("Targeting rule THEN part is missing or invalid.");
@@ -191,7 +191,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             return false;
         }
 
-        var percentageOptionsAttributeName = context.Setting.PercentageOptionsAttribute;
+        var percentageOptionsAttributeName = context.Setting.percentageOptionsAttribute;
         object? percentageOptionsAttributeValue;
 
         if (percentageOptionsAttributeName is null)
@@ -237,7 +237,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         {
             var percentageOption = percentageOptions[i];
 
-            bucket += percentageOption.Percentage;
+            bucket += percentageOption.percentage;
 
             if (hashValue >= bucket)
             {
@@ -246,8 +246,8 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
             if (logBuilder is not null)
             {
-                var percentageOptionValue = percentageOption.Value.GetValue(throwIfInvalid: false) ?? EvaluateLogHelper.InvalidValuePlaceholder;
-                logBuilder.NewLine().Append($"- Hash value {hashValue} selects % option {i + 1} ({percentageOption.Percentage}%), '{percentageOptionValue}'.");
+                var percentageOptionValue = percentageOption.value.GetValue(throwIfInvalid: false) ?? EvaluateLogHelper.InvalidValuePlaceholder;
+                logBuilder.NewLine().Append($"- Hash value {hashValue} selects % option {i + 1} ({percentageOption.percentage}%), '{percentageOptionValue}'.");
             }
 
             result = new EvaluateResult(percentageOption, matchedTargetingRule, matchedPercentageOption: percentageOption);
@@ -359,7 +359,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             return false;
         }
 
-        var userAttributeName = condition.ComparisonAttribute ?? throw new InvalidConfigModelException("Comparison attribute name is missing.");
+        var userAttributeName = condition.comparisonAttribute ?? throw new InvalidConfigModelException("Comparison attribute name is missing.");
         var userAttributeValue = context.User.GetAttribute(userAttributeName);
 
         if (userAttributeValue is null || userAttributeValue is string { Length: 0 })
@@ -369,7 +369,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             return false;
         }
 
-        var comparator = condition.Comparator;
+        var comparator = condition.comparator;
         switch (comparator)
         {
             case UserComparator.TextEquals:
@@ -381,7 +381,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             case UserComparator.SensitiveTextNotEquals:
                 text = GetUserAttributeValueAsText(userAttributeName, userAttributeValue, condition, context.Key);
                 return EvaluateSensitiveTextEquals(text, condition.StringValue,
-                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, negate: comparator == UserComparator.SensitiveTextNotEquals);
+                    EnsureConfigJsonSalt(context.Setting.configJsonSalt), contextSalt, negate: comparator == UserComparator.SensitiveTextNotEquals);
 
             case UserComparator.TextIsOneOf:
             case UserComparator.TextIsNotOneOf:
@@ -392,7 +392,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             case UserComparator.SensitiveTextIsNotOneOf:
                 text = GetUserAttributeValueAsText(userAttributeName, userAttributeValue, condition, context.Key);
                 return EvaluateSensitiveTextIsOneOf(text, condition.StringListValue,
-                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, negate: comparator == UserComparator.SensitiveTextIsNotOneOf);
+                    EnsureConfigJsonSalt(context.Setting.configJsonSalt), contextSalt, negate: comparator == UserComparator.SensitiveTextIsNotOneOf);
 
             case UserComparator.TextStartsWithAnyOf:
             case UserComparator.TextNotStartsWithAnyOf:
@@ -403,7 +403,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             case UserComparator.SensitiveTextNotStartsWithAnyOf:
                 text = GetUserAttributeValueAsText(userAttributeName, userAttributeValue, condition, context.Key);
                 return EvaluateSensitiveTextSliceEqualsAnyOf(text, condition.StringListValue,
-                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, startsWith: true, negate: comparator == UserComparator.SensitiveTextNotStartsWithAnyOf);
+                    EnsureConfigJsonSalt(context.Setting.configJsonSalt), contextSalt, startsWith: true, negate: comparator == UserComparator.SensitiveTextNotStartsWithAnyOf);
 
             case UserComparator.TextEndsWithAnyOf:
             case UserComparator.TextNotEndsWithAnyOf:
@@ -414,7 +414,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             case UserComparator.SensitiveTextNotEndsWithAnyOf:
                 text = GetUserAttributeValueAsText(userAttributeName, userAttributeValue, condition, context.Key);
                 return EvaluateSensitiveTextSliceEqualsAnyOf(text, condition.StringListValue,
-                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, startsWith: false, negate: comparator == UserComparator.SensitiveTextNotEndsWithAnyOf);
+                    EnsureConfigJsonSalt(context.Setting.configJsonSalt), contextSalt, startsWith: false, negate: comparator == UserComparator.SensitiveTextNotEndsWithAnyOf);
 
             case UserComparator.TextContainsAnyOf:
             case UserComparator.TextNotContainsAnyOf:
@@ -456,7 +456,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             case UserComparator.SensitiveArrayNotContainsAnyOf:
                 stringArray = GetUserAttributeValueAsStringArray(userAttributeName, userAttributeValue, condition, context.Key, out error);
                 return error is null && EvaluateSensitiveArrayContainsAnyOf(stringArray!, condition.StringListValue,
-                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, negate: comparator == UserComparator.SensitiveArrayNotContainsAnyOf);
+                    EnsureConfigJsonSalt(context.Setting.configJsonSalt), contextSalt, negate: comparator == UserComparator.SensitiveArrayNotContainsAnyOf);
 
             default:
                 throw new InvalidConfigModelException("Comparison operator is invalid.");
@@ -714,7 +714,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         logBuilder?.AppendPrerequisiteFlagCondition(condition, context.Settings);
 
         Setting? prerequisiteFlag;
-        var prerequisiteFlagKey = condition.PrerequisiteFlagKey;
+        var prerequisiteFlagKey = condition.prerequisiteFlagKey;
         if (prerequisiteFlagKey is null)
         {
             throw new InvalidConfigModelException("Prerequisite flag key is missing.");
@@ -724,10 +724,10 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             throw new InvalidConfigModelException("Prerequisite flag is missing.");
         }
 
-        var comparisonValue = EnsureComparisonValue(condition.ComparisonValue.GetValue(throwIfInvalid: false));
+        var comparisonValue = EnsureComparisonValue(condition.comparisonValue.GetValue(throwIfInvalid: false));
 
         var expectedSettingType = comparisonValue.GetType().ToSettingType();
-        if (prerequisiteFlag.SettingType != Setting.UnknownType && prerequisiteFlag.SettingType != expectedSettingType)
+        if (prerequisiteFlag.settingType != Setting.UnknownType && prerequisiteFlag.settingType != expectedSettingType)
         {
             throw new InvalidConfigModelException($"Type mismatch between comparison value '{comparisonValue}' and prerequisite flag '{prerequisiteFlagKey}'.");
         }
@@ -753,7 +753,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
         var prerequisiteFlagValue = prerequisiteFlagEvaluateResult.Value.GetValue(expectedSettingType, throwIfInvalid: true)!;
 
-        var comparator = condition.Comparator;
+        var comparator = condition.comparator;
         var result = comparator switch
         {
             PrerequisiteFlagComparator.Equals => prerequisiteFlagValue.Equals(comparisonValue),
@@ -791,9 +791,9 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             return false;
         }
 
-        var segment = condition.Segment ?? throw new InvalidConfigModelException("Segment reference is invalid.");
+        var segment = condition.segment ?? throw new InvalidConfigModelException("Segment reference is invalid.");
 
-        if (segment.Name is not { Length: > 0 })
+        if (segment.name is not { Length: > 0 })
         {
             throw new InvalidConfigModelException("Segment name is missing.");
         }
@@ -801,11 +801,11 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         logBuilder?
             .NewLine("(")
             .IncreaseIndent()
-            .NewLine().Append($"Evaluating segment '{segment.Name}':");
+            .NewLine().Append($"Evaluating segment '{segment.name}':");
 
-        var segmentResult = EvaluateConditions(segment.Conditions, targetingRule: null, contextSalt: segment.Name, ref context, out error);
+        var segmentResult = EvaluateConditions(segment.ConditionsOrEmpty, targetingRule: null, contextSalt: segment.name, ref context, out error);
 
-        var comparator = condition.Comparator;
+        var comparator = condition.comparator;
         var result = error is null && comparator switch
         {
             SegmentComparator.IsIn => segmentResult,

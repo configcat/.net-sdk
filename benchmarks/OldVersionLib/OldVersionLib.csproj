@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <PackageReference Include="ConfigCat.Client" Version="8.2.0" />
+    <PackageReference Include="System.Text.Json" Version="8.0.5" Condition="'$(TargetFramework)' == 'net48'" />
   </ItemGroup>
 
   <ItemGroup>

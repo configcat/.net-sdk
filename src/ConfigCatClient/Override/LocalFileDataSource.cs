@@ -118,7 +118,7 @@ internal sealed class LocalFileDataSource : IOverrideDataSource, IDisposable
                     }
 
                     var deserialized = Config.Deserialize(content.AsSpan(), tolerant: true);
-                    this.overrideValues = deserialized.Settings;
+                    this.overrideValues = deserialized.SettingsOrEmpty;
                     break;
                 }
                 // this logic ensures that we keep trying to open the file for max 10s

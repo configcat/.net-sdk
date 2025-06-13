@@ -11,41 +11,36 @@ namespace ConfigCat.Client;
 /// <summary>
 /// Describes a segment.
 /// </summary>
-public interface ISegment
+public sealed class Segment
 {
+    [JsonConstructor]
+    internal Segment() { }
+
+    [JsonInclude, JsonPropertyName("n")]
+    internal string? name;
+
     /// <summary>
     /// The name of the segment.
     /// </summary>
-    string Name { get; }
+    [JsonIgnore]
+    public string Name => this.name ?? throw new InvalidConfigModelException("Segment name is missing.");
+
+    [JsonInclude, JsonPropertyName("r")]
+    internal UserCondition[]? conditions;
+
+    internal UserCondition[] ConditionsOrEmpty => this.conditions ?? Array.Empty<UserCondition>();
+
+    private IReadOnlyList<UserCondition>? conditionsReadOnly;
 
     /// <summary>
     /// The list of segment rule conditions (where there is a logical AND relation between the items).
     /// </summary>
-    IReadOnlyList<IUserCondition> Conditions { get; }
-}
+    [JsonIgnore]
+    public IReadOnlyList<UserCondition> Conditions => this.conditionsReadOnly ??= this.conditions is { Length: > 0 }
+        ? new ReadOnlyCollection<UserCondition>(this.conditions)
+        : Array.Empty<UserCondition>();
 
-internal sealed class Segment : ISegment
-{
-    [JsonPropertyName("n")]
-    public string? Name { get; set; }
-
-    string ISegment.Name => Name ?? throw new InvalidConfigModelException("Segment name is missing.");
-
-    private UserCondition[]? conditions;
-
-    [JsonPropertyName("r")]
-    [NotNull]
-    public UserCondition[]? Conditions
-    {
-        get => this.conditions ?? Array.Empty<UserCondition>();
-        set => this.conditions = value;
-    }
-
-    private IReadOnlyList<IUserCondition>? conditionsReadOnly;
-    IReadOnlyList<IUserCondition> ISegment.Conditions => this.conditionsReadOnly ??= this.conditions is { Length: > 0 }
-        ? new ReadOnlyCollection<IUserCondition>(this.conditions)
-        : Array.Empty<IUserCondition>();
-
+    /// <inheritdoc />
     public override string ToString()
     {
         return new IndentedTextBuilder()

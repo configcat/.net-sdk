@@ -35,11 +35,27 @@ internal abstract class TaskShim
         // * https://devblogs.microsoft.com/premier-developer/the-danger-of-taskcompletionsourcet-class/
         // * https://blog.stephencleary.com/2012/12/dont-block-in-asynchronous-code.html
 
+        TaskCompletionSource<TResult> tcs;
 #if !NET45
-        var tcs = new TaskCompletionSource<TResult>(TaskCreationOptions.RunContinuationsAsynchronously);
-        task = tcs.Task;
+        if (!ContinueOnCapturedContext)
+        {
+            tcs = new TaskCompletionSource<TResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+            task = tcs.Task;
+        }
+        else
+        {
+            tcs = new TaskCompletionSource<TResult>();
+            task = Awaited(tcs.Task);
+
+            static async Task<TResult> Awaited(Task<TResult> tcsTask)
+            {
+                var result = await tcsTask;
+                await Task.Yield();
+                return result;
+            }
+        }
 #else
-        var tcs = new TaskCompletionSource<TResult>();
+        tcs = new TaskCompletionSource<TResult>();
         task = tcs.Task
             .ContinueWith(task => task.GetAwaiter().GetResult(), cancellationToken, TaskContinuationOptions.LazyCancellation, TaskScheduler.Default);
 #endif

@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Specialized;
 using System.Globalization;
 using System.Net;
 using System.Threading;
@@ -90,7 +91,7 @@ public class SingletonServices : MonoBehaviour
                 ? cancellationToken.Register(() =>
                 {
                     try
-                    { 
+                    {
                         if (wait is not null)
                         {
                             this.singletonServices.StopCoroutine(wait);
@@ -135,29 +136,39 @@ public class SingletonServices : MonoBehaviour
             cancellationToken.ThrowIfCancellationRequested();
 
             var uri = request.Uri;
+            NameValueCollection query = null;
 
-            // NOTE: It's intentional that we don't specify the If-None-Match header.
-            // The browser should automatically handle it, adding it manually would cause an unnecessary CORS OPTIONS request.
-            // For the case where the browser doesn't handle it, we also send the etag in the ccetag query parameter.
-
-            if (request.LastETag is not null)
-            {
-                var query = HttpUtility.ParseQueryString(uri.Query);
-                query["ccetag"] = request.LastETag;
-                var uriBuilder = new UriBuilder(uri);
-                uriBuilder.Query = query.ToString();
-                uri = uriBuilder.Uri;
-            }
-            
-            Debug.Log($"Fetching config at {uri}...");
-
-            using var webRequest = UnityWebRequest.Get(uri);
+            // NOTE: We shouldn't specify additional request headers in Unity WebGL because
+            // that would cause an unnecessary CORS OPTIONS request in browsers.
+            // We send the necessary information in the query string instead.
 
             for (int i = 0, n = request.Headers.Count; i < n; i++)
             {
                 var header = request.Headers[i];
-                webRequest.SetRequestHeader(header.Key, header.Value);
+                if ("X-ConfigCat-UserAgent".Equals(header.Key, StringComparison.OrdinalIgnoreCase))
+                {
+                    query ??= HttpUtility.ParseQueryString(uri.Query);
+                    query["sdk"] = header.Value;
+                    break;
+                }
             }
+
+            if (request.LastETag is not null)
+            {
+                query ??= HttpUtility.ParseQueryString(uri.Query);
+                query["ccetag"] = request.LastETag;
+            }
+
+            if (query is not null)
+            {
+                var uriBuilder = new UriBuilder(uri);
+                uriBuilder.Query = query.ToString();
+                uri = uriBuilder.Uri;
+            }
+
+            Debug.Log($"Fetching config at {uri}...");
+
+            using var webRequest = UnityWebRequest.Get(uri);
 
             webRequest.timeout = (int)request.Timeout.TotalSeconds;
 
@@ -192,7 +203,7 @@ public class SingletonServices : MonoBehaviour
                 Debug.Log($"Fetching config timed out.");
                 throw FetchErrorException.Timeout(TimeSpan.FromSeconds(webRequest.timeout));
             }
-            else 
+            else
             {
                 Debug.Log($"Fetching config failed due to {webRequest.result}: {webRequest.error}");
                 throw FetchErrorException.Failure(null, new Exception($"Web request failed due to {webRequest.result}: {webRequest.error}"));

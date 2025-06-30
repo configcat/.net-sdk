@@ -282,8 +282,8 @@ internal abstract class ConfigServiceBase : IDisposable
                 cacheSyncUpTask = this.pendingCacheSyncUp;
                 if (cacheSyncUpTask is null or { IsCompleted: true })
                 {
-                    cacheSyncUpTcs = TaskShim.CreateSafeCompletionSource<ProjectConfig>();
-                    this.pendingCacheSyncUp = cacheSyncUpTask = cacheSyncUpTcs.Task;
+                    cacheSyncUpTcs = TaskShim.CreateSafeCompletionSource(out cacheSyncUpTask);
+                    this.pendingCacheSyncUp = cacheSyncUpTask;
                 }
             }
 

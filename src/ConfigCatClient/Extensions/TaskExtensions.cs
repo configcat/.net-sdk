@@ -28,12 +28,12 @@ internal static class TaskExtensions
 
         static async Task<T> Awaited(Task task, CancellationToken cancellationToken)
         {
-            var cancellationTcs = TaskShim.CreateSafeCompletionSource<T>();
+            var cancellationTcs = TaskShim.CreateSafeCompletionSource<T>(out var cancellationTask);
             var tokenRegistration = cancellationToken.Register(() => cancellationTcs.TrySetCanceled(cancellationToken), useSynchronizationContext: TaskShim.ContinueOnCapturedContext);
 
             using (tokenRegistration)
             {
-                var completedTask = await Task.WhenAny(task, cancellationTcs.Task).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+                var completedTask = await Task.WhenAny(task, cancellationTask).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
                 if (completedTask is Task<T> taskWithResult)
                 {
                     return taskWithResult.GetAwaiter().GetResult();

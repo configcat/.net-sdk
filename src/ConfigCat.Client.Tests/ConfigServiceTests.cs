@@ -274,7 +274,7 @@ public class ConfigServiceTests
         var cachedPc = CreateUpToDatePc(timeStamp, pollInterval);
         var fetchedPc = CreateFreshPc(timeStamp);
 
-        var cacheSetSignalTcs = TaskShim.CreateSafeCompletionSource<object?>();
+        var cacheSetSignalTcs = TaskShim.CreateSafeCompletionSource<object?>(out var cacheSetSignalTask);
 
         this.cacheMock.SetupGet(m => m.LocalCachedConfig).Returns(cachedPc);
 
@@ -300,7 +300,7 @@ public class ConfigServiceTests
 
         // Act
 
-        await cacheSetSignalTcs.Task;
+        await cacheSetSignalTask;
 
         await service.GetConfigAsync();
         service.Dispose();
@@ -1504,9 +1504,9 @@ public class ConfigServiceTests
         var task1 = service.RefreshConfigAsync(cts.Token).AsTask();
         var task2 = Task.Run(async () =>
         {
-            var waitForCancellationTcs = TaskShim.CreateSafeCompletionSource<object?>();
+            var waitForCancellationTcs = TaskShim.CreateSafeCompletionSource<object?>(out var waitForCancellationTask);
             cts.Token.Register(() => waitForCancellationTcs.SetResult(null));
-            await waitForCancellationTcs.Task;
+            await waitForCancellationTask;
 
             await Task.Delay(delayMs / 6);
             return await service.RefreshConfigAsync();

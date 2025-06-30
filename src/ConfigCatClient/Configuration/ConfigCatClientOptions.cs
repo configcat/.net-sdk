@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
 using ConfigCat.Client.Cache;
 
@@ -63,20 +64,15 @@ public class ConfigCatClientOptions : IProvidesHooks
     /// </summary>
     public HttpClientHandler? HttpClientHandler { get; set; }
 
-    private Uri baseUrl = BaseUrlGlobal;
-
     /// <summary>
     /// The base URL of the remote server providing the latest version of the config.
     /// Defaults to the URL of the ConfigCat CDN.<br/>
     /// If you want to use a proxy server between your application and ConfigCat, you need to set this property to the proxy URL.
     /// </summary>
-    public Uri BaseUrl
-    {
-        get => this.baseUrl;
-        set => this.baseUrl = value ?? throw new ArgumentNullException(nameof(value));
-    }
+    public Uri? BaseUrl { get; set; }
 
-    internal bool IsCustomBaseUrl => BaseUrl != BaseUrlGlobal && BaseUrl != BaseUrlEu;
+    [MemberNotNullWhen(true, nameof(BaseUrl))]
+    internal bool IsCustomBaseUrl => BaseUrl is not null;
 
     /// <summary>
     /// Set this property to be in sync with the Data Governance preference on the Dashboard:
@@ -114,18 +110,16 @@ public class ConfigCatClientOptions : IProvidesHooks
 
     internal Uri GetBaseUri()
     {
-        var baseUri = BaseUrl;
-
         if (!IsCustomBaseUrl)
         {
-            baseUri = DataGovernance switch
+            return DataGovernance switch
             {
                 DataGovernance.EuOnly => BaseUrlEu,
                 _ => BaseUrlGlobal,
             };
         }
 
-        return baseUri;
+        return BaseUrl;
     }
 
     internal static Uri GetConfigUri(Uri baseUri, string sdkKey)

@@ -29,13 +29,33 @@ internal abstract class TaskShim
 
     internal static bool ContinueOnCapturedContext => ConfigCatClient.PlatformCompatibilityOptions.continueOnCapturedContext;
 
-    internal static TaskCompletionSource<TResult> CreateSafeCompletionSource<TResult>()
+    internal static TaskCompletionSource<TResult> CreateSafeCompletionSource<TResult>(out Task<TResult> task)
     {
         // See also:
         // * https://devblogs.microsoft.com/premier-developer/the-danger-of-taskcompletionsourcet-class/
         // * https://blog.stephencleary.com/2012/12/dont-block-in-asynchronous-code.html
 
-        return new TaskCompletionSource<TResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource<TResult> tcs;
+
+        if (!ContinueOnCapturedContext)
+        {
+            tcs = new TaskCompletionSource<TResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+            task = tcs.Task;
+        }
+        else
+        {
+            tcs = new TaskCompletionSource<TResult>();
+            task = Awaited(tcs.Task);
+
+            static async Task<TResult> Awaited(Task<TResult> tcsTask)
+            {
+                var result = await tcsTask;
+                await Task.Yield();
+                return result;
+            }
+        }
+
+        return tcs;
     }
 
     /// <summary>

@@ -24,7 +24,7 @@ jobs:
           {rt: "4.8.1", tfm: net481},
         ]
     name: Build & test on .NET ${{ matrix.dotnet-version.rt }}
-    runs-on: windows-2022
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4

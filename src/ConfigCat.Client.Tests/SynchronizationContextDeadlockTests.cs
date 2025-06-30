@@ -83,11 +83,8 @@ public class SynchronizationContextDeadlockTests
 
     private static readonly Dictionary<string, object?[]> SpecificMethodParams = new()
     {
-        ["GetValue"] = new object?[] { "x", null, null },
         ["GetValueAsync"] = new object?[] { "x", null, null, CancellationToken.None },
-        ["GetValueDetails"] = new object?[] { "x", null, null },
         ["GetValueDetailsAsync"] = new object?[] { "x", null, null, CancellationToken.None },
-        ["GetKeyAndValue"] = new object?[] { "x" },
         ["GetKeyAndValueAsync"] = new object?[] { "x", CancellationToken.None },
         ["SetDefaultUser"] = new object?[] { new User("id") },
     };

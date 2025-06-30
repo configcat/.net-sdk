@@ -79,7 +79,7 @@ public class LazyLoad : PollingMode
 /// </summary>
 /// <remarks>
 /// In this mode, the ConfigCat SDK will not download the config data automatically. You need to update the cache
-/// manually, by calling <see cref="ConfigCatClient.ForceRefresh"/> or <see cref="ConfigCatClient.ForceRefreshAsync"/>.
+/// manually, by calling <see cref="ConfigCatClient.ForceRefreshAsync"/>.
 /// </remarks>
 public class ManualPoll : PollingMode
 {

@@ -30,19 +30,6 @@ internal sealed class ExternalConfigCache : ConfigCache
         }
     }
 
-    public override CacheSyncResult Get(string key)
-    {
-        try
-        {
-            return GetCore(this.cache.Get(key));
-        }
-        catch (Exception ex)
-        {
-            this.logger.ConfigServiceCacheReadError(ex);
-            return new CacheSyncResult(LocalCachedConfig);
-        }
-    }
-
     public override async ValueTask<CacheSyncResult> GetAsync(string key, CancellationToken cancellationToken = default)
     {
         try
@@ -78,21 +65,6 @@ internal sealed class ExternalConfigCache : ConfigCache
 
         var hasChanged = !ProjectConfig.ContentEquals(newCachedConfig, oldCachedConfig);
         return new CacheSyncResult(newCachedConfig, hasChanged);
-    }
-
-    public override void Set(string key, ProjectConfig config)
-    {
-        try
-        {
-            if (SetCore(config) is { } serializedConfig)
-            {
-                this.cache.Set(key, serializedConfig);
-            }
-        }
-        catch (Exception ex)
-        {
-            this.logger.ConfigServiceCacheWriteError(ex);
-        }
     }
 
     public override async ValueTask SetAsync(string key, ProjectConfig config, CancellationToken cancellationToken = default)

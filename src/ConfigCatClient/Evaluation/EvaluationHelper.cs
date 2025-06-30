@@ -43,7 +43,7 @@ internal static class EvaluationHelper
         if (!CheckSettingsAvailable(settings, logger, defaultReturnValue))
         {
             exceptions = null;
-            return ArrayUtils.EmptyArray<EvaluationDetails>();
+            return Array.Empty<EvaluationDetails>();
         }
 
         var evaluationDetailsArray = new EvaluationDetails[settings.Count];

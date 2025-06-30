@@ -7,7 +7,7 @@ namespace ConfigCat.Client;
 // E.g. if a strong reference chain like AutoPollConfigService -> ... -> ConfigCatClient existed, the client instance could not be collected
 // because the background polling loop would keep the AutoPollConfigService alive indefinetely, which in turn would keep alive ConfigCatClient.
 // We need to break such strong reference chains with a weak reference somewhere. As consumers are free to add hook event handlers which
-// close over the client instance (e.g. client.ConfigChanged += (_, e) => { client.GetValue(...) }), that is, a chain like
+// close over the client instance (e.g. client.ConfigChanged += (_, e) => { client.Snapshot().GetValue(...); }), that is, a chain like
 // AutoPollConfigService -> Hooks -> EventHandler.Target -> ConfigCatClient can be created, it is the hooks reference that we need to make weak.
 internal readonly struct SafeHooksWrapper
 {

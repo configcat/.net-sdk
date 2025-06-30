@@ -316,10 +316,8 @@ public class ConfigServiceTests
         this.fetcherMock.Verify(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [DataTestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
-    public async Task AutoPollConfigService_GetConfig_ShouldReturnCachedConfigWhenCachedConfigIsNotExpired(bool isAsync)
+    [TestMethod]
+    public async Task AutoPollConfigService_GetConfigAsync_ShouldReturnCachedConfigWhenCachedConfigIsNotExpired()
     {
         // Arrange
 
@@ -331,7 +329,7 @@ public class ConfigServiceTests
 
         const string cacheKey = "";
         var cache = new InMemoryConfigCache();
-        cache.Set(cacheKey, cachedPc);
+        await cache.SetAsync(cacheKey, cachedPc);
 
         this.fetcherMock
             .Setup(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>()))
@@ -349,7 +347,7 @@ public class ConfigServiceTests
         // Give a bit of time to the polling loop to do the first iteration.
         await Task.Delay(TimeSpan.FromTicks(pollInterval.Ticks / 4));
 
-        var actualPc = isAsync ? await service.GetConfigAsync() : service.GetConfig();
+        var actualPc = await service.GetConfigAsync();
 
         // Assert
 
@@ -358,10 +356,8 @@ public class ConfigServiceTests
         this.fetcherMock.Verify(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    [DataTestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
-    public async Task AutoPollConfigService_GetConfig_ShouldWaitForFetchWhenCachedConfigIsExpired(bool isAsync)
+    [TestMethod]
+    public async Task AutoPollConfigService_GetConfigAsync_ShouldWaitForFetchWhenCachedConfigIsExpired()
     {
         // Arrange
 
@@ -373,7 +369,7 @@ public class ConfigServiceTests
 
         const string cacheKey = "";
         var cache = new InMemoryConfigCache();
-        cache.Set(cacheKey, cachedPc);
+        await cache.SetAsync(cacheKey, cachedPc);
 
         this.fetcherMock
             .Setup(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>()))
@@ -391,7 +387,7 @@ public class ConfigServiceTests
         // Give a bit of time to the polling loop to do the first iteration.
         await Task.Delay(TimeSpan.FromTicks(pollInterval.Ticks / 4));
 
-        var actualPc = isAsync ? await service.GetConfigAsync() : service.GetConfig();
+        var actualPc = await service.GetConfigAsync();
 
         // Assert
 
@@ -761,12 +757,10 @@ public class ConfigServiceTests
         configService.Dispose();
     }
 
-    [DataRow(false, false)]
-    [DataRow(true, false)]
-    [DataRow(false, true)]
-    [DataRow(true, true)]
+    [DataRow(false)]
+    [DataRow(true)]
     [DataTestMethod]
-    public async Task AutoPollConfigService_GetConfig_ReturnsCachedConfigWhenCachedConfigIsNotExpired(bool isAsync, bool waitForClientReady)
+    public async Task AutoPollConfigService_GetConfigAsync_ReturnsCachedConfigWhenCachedConfigIsNotExpired(bool waitForClientReady)
     {
         // Arrange 
 
@@ -785,7 +779,7 @@ public class ConfigServiceTests
         hooks.ConfigFetched += (s, e) => Interlocked.Increment(ref configFetchedEventCount);
 
         var cache = new InMemoryConfigCache();
-        cache.Set(null!, cachedPc);
+        await cache.SetAsync(null!, cachedPc);
 
         this.fetcherMock.Setup(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>())).ReturnsAsync(FetchResult.Success(fetchedPc));
 
@@ -807,7 +801,7 @@ public class ConfigServiceTests
                 await service.ReadyTask;
             }
 
-            actualPc = isAsync ? await service.GetConfigAsync() : service.GetConfig();
+            actualPc = await service.GetConfigAsync();
         }
 
         GC.KeepAlive(hooks);
@@ -826,10 +820,8 @@ public class ConfigServiceTests
         Assert.AreEqual(0, Volatile.Read(ref configFetchedEventCount));
     }
 
-    [DataRow(false)]
-    [DataRow(true)]
-    [DataTestMethod]
-    public async Task AutoPollConfigService_GetConfig_FetchesConfigWhenCachedConfigIsExpired(bool isAsync)
+    [TestMethod]
+    public async Task AutoPollConfigService_GetConfigAsync_FetchesConfigWhenCachedConfigIsExpired()
     {
         // Arrange 
 
@@ -848,7 +840,7 @@ public class ConfigServiceTests
         hooks.ConfigFetched += (s, e) => configFetchedEvents.Enqueue(e);
 
         var cache = new InMemoryConfigCache();
-        cache.Set(null!, cachedPc);
+        await cache.SetAsync(null!, cachedPc);
 
         this.fetcherMock.Setup(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>())).ReturnsAsync(FetchResult.Success(fetchedPc));
 
@@ -866,7 +858,7 @@ public class ConfigServiceTests
         ProjectConfig actualPc;
         using (service)
         {
-            actualPc = isAsync ? await service.GetConfigAsync() : service.GetConfig();
+            actualPc = await service.GetConfigAsync();
 
             // Allow some time for other initalization callbacks to execute.
             using var cts = new CancellationTokenSource();
@@ -898,14 +890,11 @@ public class ConfigServiceTests
         Assert.AreEqual(RefreshErrorCode.None, configFetchedEvent.Result.ErrorCode);
     }
 
-    [DataRow(false, false, true)]
-    [DataRow(true, false, true)]
-    [DataRow(false, true, true)]
-    [DataRow(true, true, true)]
-    [DataRow(false, true, false)]
-    [DataRow(true, true, false)]
+    [DataRow(false, true)]
+    [DataRow(true, true)]
+    [DataRow(true, false)]
     [DataTestMethod]
-    public async Task AutoPollConfigService_GetConfig_ReturnsExpiredConfigWhenCantRefreshWithinMaxInitWaitTime(bool isAsync, bool failure, bool updateTimeStamp)
+    public async Task AutoPollConfigService_GetConfigAsync_ReturnsExpiredConfigWhenCantRefreshWithinMaxInitWaitTime(bool failure, bool updateTimeStamp)
     {
         // Arrange 
 
@@ -924,7 +913,7 @@ public class ConfigServiceTests
         hooks.ConfigFetched += (s, e) => configFetchedEvents.Enqueue(e);
 
         var cache = new InMemoryConfigCache();
-        cache.Set(null!, cachedPc);
+        await cache.SetAsync(null!, cachedPc);
 
         this.fetcherMock.Setup(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>())).ReturnsAsync(
             failure ? FetchResult.Failure(fetchedPc, RefreshErrorCode.HttpRequestFailure, "network error") : FetchResult.NotModified(fetchedPc));
@@ -943,7 +932,7 @@ public class ConfigServiceTests
         ProjectConfig actualPc;
         using (service)
         {
-            actualPc = isAsync ? await service.GetConfigAsync() : service.GetConfig();
+            actualPc = await service.GetConfigAsync();
 
             // Allow some time for other initalization callbacks to execute.
             using var cts = new CancellationTokenSource();
@@ -997,7 +986,7 @@ public class ConfigServiceTests
 
         if (projectConfig is not null)
         {
-            cache.Set(key: null!, projectConfig);
+            await cache.SetAsync(key: null!, projectConfig);
         }
 
         var config = PollingModes.AutoPoll(pollInterval);
@@ -1133,10 +1122,8 @@ public class ConfigServiceTests
         Assert.AreEqual("222", configChangedEventArray[1].NewConfig.Salt);
     }
 
-    [DataRow(false)]
-    [DataRow(true)]
-    [DataTestMethod]
-    public async Task LazyLoadConfigService_GetConfig_ReturnsCachedConfigWhenCachedConfigIsNotExpired(bool isAsync)
+    [TestMethod]
+    public async Task LazyLoadConfigService_GetConfigAsync_ReturnsCachedConfigWhenCachedConfigIsNotExpired()
     {
         // Arrange 
 
@@ -1154,16 +1141,9 @@ public class ConfigServiceTests
         hooks.ConfigFetched += (s, e) => Interlocked.Increment(ref configFetchedEventCount);
 
         var cache = new InMemoryConfigCache();
-        cache.Set(null!, cachedPc);
+        await cache.SetAsync(null!, cachedPc);
 
-        if (isAsync)
-        {
-            this.fetcherMock.Setup(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>())).ReturnsAsync(FetchResult.Success(fetchedPc));
-        }
-        else
-        {
-            this.fetcherMock.Setup(m => m.Fetch(cachedPc)).Returns(FetchResult.Success(fetchedPc));
-        }
+        this.fetcherMock.Setup(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>())).ReturnsAsync(FetchResult.Success(fetchedPc));
 
         var config = PollingModes.LazyLoad(cacheTimeToLive);
         var service = new LazyLoadConfigService(this.fetcherMock.Object,
@@ -1177,7 +1157,7 @@ public class ConfigServiceTests
         ProjectConfig actualPc;
         using (service)
         {
-            actualPc = isAsync ? await service.GetConfigAsync() : service.GetConfig();
+            actualPc = await service.GetConfigAsync();
         }
 
         GC.KeepAlive(hooks);
@@ -1186,24 +1166,15 @@ public class ConfigServiceTests
 
         Assert.AreEqual(cachedPc, actualPc);
 
-        if (isAsync)
-        {
-            this.fetcherMock.Verify(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>()), Times.Never);
-        }
-        else
-        {
-            this.fetcherMock.Verify(m => m.Fetch(cachedPc), Times.Never);
-        }
+        this.fetcherMock.Verify(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>()), Times.Never);
 
         Assert.AreEqual(1, Volatile.Read(ref clientReadyEventCount));
 
         Assert.AreEqual(0, Volatile.Read(ref configFetchedEventCount));
     }
 
-    [DataRow(false)]
-    [DataRow(true)]
-    [DataTestMethod]
-    public async Task LazyLoadConfigService_GetConfig_FetchesConfigWhenCachedConfigIsExpired(bool isAsync)
+    [TestMethod]
+    public async Task LazyLoadConfigService_GetConfigaAsync_FetchesConfigWhenCachedConfigIsExpired()
     {
         // Arrange 
 
@@ -1221,7 +1192,7 @@ public class ConfigServiceTests
         hooks.ConfigFetched += (s, e) => configFetchedEvents.Enqueue(e);
 
         var cache = new InMemoryConfigCache();
-        cache.Set(null!, cachedPc);
+        await cache.SetAsync(null!, cachedPc);
 
         this.fetcherMock.Setup(m => m.FetchAsync(cachedPc, It.IsAny<CancellationToken>())).ReturnsAsync(FetchResult.Success(fetchedPc));
 
@@ -1237,7 +1208,7 @@ public class ConfigServiceTests
         ProjectConfig actualPc;
         using (service)
         {
-            actualPc = isAsync ? await service.GetConfigAsync() : service.GetConfig();
+            actualPc = await service.GetConfigAsync();
         }
 
         GC.KeepAlive(hooks);
@@ -1366,10 +1337,8 @@ public class ConfigServiceTests
         };
     }
 
-    [DataTestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
-    public async Task ConfigService_OnlyOneConfigRefreshShouldBeInProgressAtATime_Success(bool isAsync)
+    [TestMethod]
+    public async Task ConfigService_OnlyOneConfigRefreshShouldBeInProgressAtATime_Success()
     {
         // Arrange
 
@@ -1382,25 +1351,13 @@ public class ConfigServiceTests
 
         var lastConfig = ConfigHelper.FromString("{}", timeStamp: ProjectConfig.GenerateTimeStamp(), httpETag: "\"ETAG\"");
 
-        if (isAsync)
-        {
-            this.cacheMock
-                .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new CacheSyncResult(lastConfig));
+        this.cacheMock
+            .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CacheSyncResult(lastConfig));
 
-            this.cacheMock
-                .Setup(m => m.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()))
-                .Returns(default(ValueTask));
-        }
-        else
-        {
-            this.cacheMock
-                .Setup(m => m.Get(It.IsAny<string>()))
-                .Returns(new CacheSyncResult(lastConfig));
-
-            this.cacheMock
-                .Setup(m => m.Set(It.IsAny<string>(), It.IsAny<ProjectConfig>()));
-        }
+        this.cacheMock
+            .Setup(m => m.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()))
+            .Returns(default(ValueTask));
 
         var hooks = new Hooks();
 
@@ -1418,12 +1375,8 @@ public class ConfigServiceTests
 
         // Act
 
-        var task1 = isAsync
-            ? Task.Run(() => service.RefreshConfigAsync().AsTask())
-            : Task.Factory.StartNew(() => service.RefreshConfig(), default, TaskCreationOptions.LongRunning, TaskScheduler.Default);
-        var task2 = isAsync
-            ? service.RefreshConfigAsync().AsTask()
-            : Task.Factory.StartNew(() => service.RefreshConfig(), default, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+        var task1 = Task.Run(() => service.RefreshConfigAsync().AsTask());
+        var task2 = service.RefreshConfigAsync().AsTask();
 
         var refreshResults = await Task.WhenAll(task1, task2);
 
@@ -1445,10 +1398,8 @@ public class ConfigServiceTests
         Assert.AreEqual("0", configChangedEvent.NewConfig.Salt);
     }
 
-    [DataTestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
-    public async Task ConfigService_OnlyOneConfigRefreshShouldBeInProgressAtATime_Failure(bool isAsync)
+    [TestMethod]
+    public async Task ConfigService_OnlyOneConfigRefreshShouldBeInProgressAtATime_Failure()
     {
         // Arrange
 
@@ -1462,25 +1413,13 @@ public class ConfigServiceTests
 
         var lastConfig = ConfigHelper.FromString("{}", timeStamp: ProjectConfig.GenerateTimeStamp(), httpETag: "\"ETAG\"");
 
-        if (isAsync)
-        {
-            this.cacheMock
-                .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new CacheSyncResult(lastConfig));
+        this.cacheMock
+            .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CacheSyncResult(lastConfig));
 
-            this.cacheMock
-                .Setup(m => m.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()))
-                .Returns(default(ValueTask));
-        }
-        else
-        {
-            this.cacheMock
-                .Setup(m => m.Get(It.IsAny<string>()))
-                .Returns(new CacheSyncResult(lastConfig));
-
-            this.cacheMock
-                .Setup(m => m.Set(It.IsAny<string>(), It.IsAny<ProjectConfig>()));
-        }
+        this.cacheMock
+            .Setup(m => m.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()))
+            .Returns(default(ValueTask));
 
         var hooks = new Hooks();
 
@@ -1498,12 +1437,8 @@ public class ConfigServiceTests
 
         // Act
 
-        var task1 = isAsync
-            ? Task.Run(() => service.RefreshConfigAsync().AsTask())
-            : Task.Factory.StartNew(() => service.RefreshConfig(), default, TaskCreationOptions.LongRunning, TaskScheduler.Default);
-        var task2 = isAsync
-            ? service.RefreshConfigAsync().AsTask()
-            : Task.Factory.StartNew(() => service.RefreshConfig(), default, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+        var task1 = Task.Run(() => service.RefreshConfigAsync().AsTask());
+        var task2 = service.RefreshConfigAsync().AsTask();
 
         var refreshResults = await Task.WhenAll(task1, task2);
 
@@ -1549,13 +1484,6 @@ public class ConfigServiceTests
             .Setup(m => m.SetAsync(It.IsAny<string>(), It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>()))
             .Returns(default(ValueTask));
 
-        this.cacheMock
-            .Setup(m => m.Get(It.IsAny<string>()))
-            .Returns(new CacheSyncResult(lastConfig));
-
-        this.cacheMock
-            .Setup(m => m.Set(It.IsAny<string>(), It.IsAny<ProjectConfig>()));
-
         var hooks = new Hooks();
 
         var configFetchedEvents = new ConcurrentQueue<ConfigFetchedEventArgs>();
@@ -1574,12 +1502,15 @@ public class ConfigServiceTests
 
         using var cts = new CancellationTokenSource(delayMs / 3);
         var task1 = service.RefreshConfigAsync(cts.Token).AsTask();
-        var task2 = Task.Factory.StartNew(() =>
+        var task2 = Task.Run(async () =>
         {
-            cts.Token.WaitHandle.WaitOne();
-            Thread.Sleep(delayMs / 6);
-            return service.RefreshConfig();
-        }, default, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            var waitForCancellationTcs = TaskShim.CreateSafeCompletionSource<object?>(out var waitForCancellationTask);
+            cts.Token.Register(() => waitForCancellationTcs.SetResult(null));
+            await waitForCancellationTask;
+
+            await Task.Delay(delayMs / 6);
+            return await service.RefreshConfigAsync();
+        });
 
         await Assert.ThrowsExceptionAsync<TaskCanceledException>(async () => await Task.WhenAll(task1, task2));
 

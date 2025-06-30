@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using ConfigCat.Client.Evaluation;
-using ConfigCat.Client.Utils;
 
 using static ConfigCat.Client.ConfigCatClient;
 
@@ -54,10 +53,10 @@ public readonly struct ConfigCatClientSnapshot : IConfigCatClientSnapshot
         {
             return this.evaluationServicesOrFakeImpl is not null
                 ? ((IConfigCatClientSnapshot)this.evaluationServicesOrFakeImpl).GetAllKeys()
-                : ArrayUtils.EmptyArray<string>();
+                : Array.Empty<string>();
         }
 
-        return this.settings.Value is { } settings ? settings.ReadOnlyKeys() : ArrayUtils.EmptyArray<string>();
+        return this.settings.Value is { } settings ? settings.Keys : Array.Empty<string>();
     }
 
     /// <inheritdoc/>>

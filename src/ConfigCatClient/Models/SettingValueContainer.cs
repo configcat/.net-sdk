@@ -1,8 +1,4 @@
-#if USE_NEWTONSOFT_JSON
-using Newtonsoft.Json;
-#else
 using System.Text.Json.Serialization;
-#endif
 
 namespace ConfigCat.Client;
 
@@ -25,20 +21,12 @@ public interface ISettingValueContainer
 
 internal abstract class SettingValueContainer : ISettingValueContainer
 {
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "v")]
-#else
     [JsonPropertyName("v")]
-#endif
     public SettingValue Value { get; set; }
 
     object ISettingValueContainer.Value => Value.GetValue()!;
 
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "i")]
-#else
     [JsonPropertyName("i")]
-#endif
     public string? VariationId { get; set; }
 }
 

@@ -9,8 +9,8 @@
 ConfigCat SDK for .NET provides easy integration for your application to [ConfigCat](https://configcat.com).
 
 ## Supported runtimes
-- .NET 5+
-- .NET Framework 4.5+
+- .NET 6+
+- .NET Framework 4.6.2+
 - Other runtimes which implement .NET Standard 2.0+ like .NET Core 2.0+, Xamarin.Android 8.0+, Xamarin.iOS 10.14+, etc. (For more details, see the [Platform compatiblity](#platform-compatibility) section below.)
 
 ## Getting Started
@@ -62,7 +62,7 @@ client.Dispose();
 > Alternatively, you can also close all open clients at once using the `ConfigCatClient.DisposeAll()` method.
 
 ## Getting user specific setting values with Targeting
-Using this feature, you will be able to get different setting values for different users in your application by passing a `User Object` to the `GetValue()` function.
+Using this feature, you will be able to get different setting values for different users in your application by passing a `User Object` to the `GetValueAsync()` function.
 
 Read more about [Targeting here](https://configcat.com/docs/advanced/targeting).
 ```c#
@@ -88,8 +88,8 @@ The ConfigCat SDK supports all the widespread .NET JIT runtimes, everything that
 Starting with v9.3.0, it can also be used in applications that employ [trimmed self-contained](https://learn.microsoft.com/en-us/dotnet/core/deploying/trimming/trim-self-contained) or various [ahead-of-time (AOT) compilation](https://en.wikipedia.org/wiki/Ahead-of-time_compilation) deployment models.
 
 Based on our tests, the SDK is compatible with the following runtimes/deployment models:
-* .NET Framework 4.5+ (including Ngen)
-* .NET Core 3.1, .NET 5+ (including Crossgen2/ReadyToRun and Native AOT)
+* .NET Framework 4.6.2+ (including Ngen)
+* .NET Core 2.0+, .NET 5+ (including Crossgen2/ReadyToRun and Native AOT)
 * Mono 5.10+
 * .NET for Android (formerly known as Xamarin.Android)
 * .NET for iOS (formerly known as Xamarin.iOS)

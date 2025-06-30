@@ -25,11 +25,9 @@
 
 using System;
 using System.Globalization;
-using System.Text;
-#if !NETSTANDARD
 using System.Runtime.Serialization;
 using System.Security.Permissions;
-#endif
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace ConfigCat.Client.Versioning;
@@ -38,12 +36,8 @@ namespace ConfigCat.Client.Versioning;
 /// A semantic version implementation.
 /// Conforms with v2.0.0 of http://semver.org
 /// </summary>
-#if NETSTANDARD
-public sealed class SemVersion : IEquatable<SemVersion>, IComparable<SemVersion>, IComparable
-#else
 [Serializable]
 public sealed partial class SemVersion : IEquatable<SemVersion>, IComparable<SemVersion>, IComparable, ISerializable
-#endif
 {
 #if NET7_0_OR_GREATER
     [GeneratedRegex(@"^(?<major>\d+)" +
@@ -60,17 +54,12 @@ public sealed partial class SemVersion : IEquatable<SemVersion>, IComparable<Sem
         @"(?>\.(?<patch>\d+))?" +
         @"(?>\-(?<pre>[0-9A-Za-z\-\.]+))?" +
         @"(?>\+(?<build>[0-9A-Za-z\-\.]+))?$",
-#if NETSTANDARD
-        RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture,
-#else
         RegexOptions.CultureInvariant | RegexOptions.Compiled | RegexOptions.ExplicitCapture,
-#endif
         TimeSpan.FromSeconds(0.5));
 
     private static Regex ParseEx() => ParseExCached;
 #endif
 
-#if !NETSTANDARD
 #pragma warning disable CA1801 // Parameter unused
     /// <summary>
     /// Deserializes a <see cref="SemVersion"/>.
@@ -87,7 +76,6 @@ public sealed partial class SemVersion : IEquatable<SemVersion>, IComparable<Sem
         Prerelease = semVersion.Prerelease;
         Build = semVersion.Build;
     }
-#endif
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SemVersion" /> class.
@@ -524,7 +512,6 @@ public sealed partial class SemVersion : IEquatable<SemVersion>, IComparable<Sem
         }
     }
 
-#if !NETSTANDARD
     /// <summary>
     /// Populates a <see cref="SerializationInfo"/> with the data needed to serialize the target object.
     /// </summary>
@@ -536,7 +523,6 @@ public sealed partial class SemVersion : IEquatable<SemVersion>, IComparable<Sem
         if (info == null) throw new ArgumentNullException(nameof(info));
         info.AddValue("SemVersion", ToString());
     }
-#endif
 
 #pragma warning disable CA2225 // Operator overloads have named alternates
     /// <summary>

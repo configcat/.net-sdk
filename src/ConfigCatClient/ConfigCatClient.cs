@@ -292,44 +292,6 @@ public sealed class ConfigCatClient : IConfigCatClient
     }
 
     /// <inheritdoc />
-    [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
-    public T GetValue<T>(string key, T defaultValue, User? user = null)
-    {
-        if (key is null)
-        {
-            throw new ArgumentNullException(nameof(key));
-        }
-
-        if (key.Length == 0)
-        {
-            throw new ArgumentException("Key cannot be empty.", nameof(key));
-        }
-
-        typeof(T).EnsureSupportedSettingClrType(nameof(T));
-
-        T value;
-        EvaluationDetails<T> evaluationDetails;
-        SettingsWithRemoteConfig settings = default;
-        user ??= this.defaultUser;
-        try
-        {
-            settings = GetSettings();
-            evaluationDetails = ConfigEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, Logger);
-            value = evaluationDetails.Value;
-        }
-        catch (Exception ex)
-        {
-            Logger.SettingEvaluationError(nameof(GetValue), key, nameof(defaultValue), defaultValue, ex);
-            evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user,
-                ex.Message, ex, EvaluationHelper.GetErrorCode(ex));
-            value = defaultValue;
-        }
-
-        this.hooks.RaiseFlagEvaluated(evaluationDetails);
-        return value;
-    }
-
-    /// <inheritdoc />
     public async Task<T> GetValueAsync<T>(string key, T defaultValue, User? user = null, CancellationToken cancellationToken = default)
     {
         if (key is null)
@@ -371,41 +333,6 @@ public sealed class ConfigCatClient : IConfigCatClient
     }
 
     /// <inheritdoc />
-    [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
-    public EvaluationDetails<T> GetValueDetails<T>(string key, T defaultValue, User? user = null)
-    {
-        if (key is null)
-        {
-            throw new ArgumentNullException(nameof(key));
-        }
-
-        if (key.Length == 0)
-        {
-            throw new ArgumentException("Key cannot be empty.", nameof(key));
-        }
-
-        typeof(T).EnsureSupportedSettingClrType(nameof(T));
-
-        EvaluationDetails<T> evaluationDetails;
-        SettingsWithRemoteConfig settings = default;
-        user ??= this.defaultUser;
-        try
-        {
-            settings = GetSettings();
-            evaluationDetails = ConfigEvaluator.Evaluate(settings.Value, key, defaultValue, user, settings.RemoteConfig, Logger);
-        }
-        catch (Exception ex)
-        {
-            Logger.SettingEvaluationError(nameof(GetValueDetails), key, nameof(defaultValue), defaultValue, ex);
-            evaluationDetails = EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: settings.RemoteConfig?.TimeStamp, user,
-                ex.Message, ex, EvaluationHelper.GetErrorCode(ex));
-        }
-
-        this.hooks.RaiseFlagEvaluated(evaluationDetails);
-        return evaluationDetails;
-    }
-
-    /// <inheritdoc />
     public async Task<EvaluationDetails<T>> GetValueDetailsAsync<T>(string key, T defaultValue, User? user = null, CancellationToken cancellationToken = default)
     {
         if (key is null)
@@ -444,27 +371,6 @@ public sealed class ConfigCatClient : IConfigCatClient
     }
 
     /// <inheritdoc />
-    [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
-    public IReadOnlyCollection<string> GetAllKeys()
-    {
-        const string defaultReturnValue = "empty collection";
-        try
-        {
-            var settings = GetSettings();
-            if (!EvaluationHelper.CheckSettingsAvailable(settings.Value, Logger, defaultReturnValue))
-            {
-                return ArrayUtils.EmptyArray<string>();
-            }
-            return settings.Value.ReadOnlyKeys();
-        }
-        catch (Exception ex)
-        {
-            Logger.SettingEvaluationError(nameof(GetAllKeys), defaultReturnValue, ex);
-            return ArrayUtils.EmptyArray<string>();
-        }
-    }
-
-    /// <inheritdoc />
     public async Task<IReadOnlyCollection<string>> GetAllKeysAsync(CancellationToken cancellationToken = default)
     {
         const string defaultReturnValue = "empty collection";
@@ -473,9 +379,9 @@ public sealed class ConfigCatClient : IConfigCatClient
             var settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
             if (!EvaluationHelper.CheckSettingsAvailable(settings.Value, Logger, defaultReturnValue))
             {
-                return ArrayUtils.EmptyArray<string>();
+                return Array.Empty<string>();
             }
-            return settings.Value.ReadOnlyKeys();
+            return settings.Value.Keys;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -484,42 +390,8 @@ public sealed class ConfigCatClient : IConfigCatClient
         catch (Exception ex)
         {
             Logger.SettingEvaluationError(nameof(GetAllKeysAsync), defaultReturnValue, ex);
-            return ArrayUtils.EmptyArray<string>();
+            return Array.Empty<string>();
         }
-    }
-
-    /// <inheritdoc />
-    [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
-    public IReadOnlyDictionary<string, object?> GetAllValues(User? user = null)
-    {
-        const string defaultReturnValue = "empty dictionary";
-        Dictionary<string, object?> result;
-        EvaluationDetails[]? evaluationDetailsArray;
-        IReadOnlyList<Exception>? evaluationExceptions;
-        user ??= this.defaultUser;
-        try
-        {
-            var settings = GetSettings();
-            evaluationDetailsArray = ConfigEvaluator.EvaluateAll(settings.Value, user, settings.RemoteConfig, Logger, defaultReturnValue, out evaluationExceptions);
-            result = evaluationDetailsArray.ToDictionary(details => details.Key, details => details.Value);
-        }
-        catch (Exception ex)
-        {
-            Logger.SettingEvaluationError(nameof(GetAllValues), defaultReturnValue, ex);
-            return new Dictionary<string, object?>();
-        }
-
-        if (evaluationExceptions is { Count: > 0 })
-        {
-            Logger.SettingEvaluationError(nameof(GetAllValues), "evaluation result", new AggregateException(evaluationExceptions));
-        }
-
-        foreach (var evaluationDetails in evaluationDetailsArray)
-        {
-            this.hooks.RaiseFlagEvaluated(evaluationDetails);
-        }
-
-        return result;
     }
 
     /// <inheritdoc />
@@ -560,38 +432,6 @@ public sealed class ConfigCatClient : IConfigCatClient
     }
 
     /// <inheritdoc />
-    [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
-    public IReadOnlyList<EvaluationDetails> GetAllValueDetails(User? user = null)
-    {
-        const string defaultReturnValue = "empty list";
-        EvaluationDetails[]? evaluationDetailsArray;
-        IReadOnlyList<Exception>? evaluationExceptions;
-        user ??= this.defaultUser;
-        try
-        {
-            var settings = GetSettings();
-            evaluationDetailsArray = ConfigEvaluator.EvaluateAll(settings.Value, user, settings.RemoteConfig, Logger, defaultReturnValue, out evaluationExceptions);
-        }
-        catch (Exception ex)
-        {
-            Logger.SettingEvaluationError(nameof(GetAllValueDetails), defaultReturnValue, ex);
-            return ArrayUtils.EmptyArray<EvaluationDetails>();
-        }
-
-        if (evaluationExceptions is { Count: > 0 })
-        {
-            Logger.SettingEvaluationError(nameof(GetAllValueDetails), "evaluation result", new AggregateException(evaluationExceptions));
-        }
-
-        foreach (var evaluationDetails in evaluationDetailsArray)
-        {
-            this.hooks.RaiseFlagEvaluated(evaluationDetails);
-        }
-
-        return evaluationDetailsArray;
-    }
-
-    /// <inheritdoc />
     public async Task<IReadOnlyList<EvaluationDetails>> GetAllValueDetailsAsync(User? user = null, CancellationToken cancellationToken = default)
     {
         const string defaultReturnValue = "empty list";
@@ -610,7 +450,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         catch (Exception ex)
         {
             Logger.SettingEvaluationError(nameof(GetAllValueDetailsAsync), defaultReturnValue, ex);
-            return ArrayUtils.EmptyArray<EvaluationDetails>();
+            return Array.Empty<EvaluationDetails>();
         }
 
         if (evaluationExceptions is { Count: > 0 })
@@ -624,35 +464,6 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
 
         return evaluationDetailsArray;
-    }
-
-    /// <inheritdoc />
-    [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
-    public KeyValuePair<string, T>? GetKeyAndValue<T>(string variationId)
-    {
-        if (variationId is null)
-        {
-            throw new ArgumentNullException(nameof(variationId));
-        }
-
-        if (variationId.Length == 0)
-        {
-            throw new ArgumentException("Variation ID cannot be empty.", nameof(variationId));
-        }
-
-        typeof(T).EnsureSupportedSettingClrType(nameof(T));
-
-        const string defaultReturnValue = "null";
-        try
-        {
-            var settings = GetSettings();
-            return EvaluationHelper.GetKeyAndValue<T>(settings.Value, variationId, Logger, defaultReturnValue);
-        }
-        catch (Exception ex)
-        {
-            Logger.SettingEvaluationError(nameof(GetKeyAndValue), defaultReturnValue, ex);
-            return null;
-        }
     }
 
     /// <inheritdoc />
@@ -688,21 +499,6 @@ public sealed class ConfigCatClient : IConfigCatClient
     }
 
     /// <inheritdoc />
-    [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
-    public RefreshResult ForceRefresh()
-    {
-        try
-        {
-            return this.configService.RefreshConfig();
-        }
-        catch (Exception ex)
-        {
-            Logger.ForceRefreshError(nameof(ForceRefresh), ex);
-            return RefreshResult.Failure(RefreshErrorCode.UnexpectedError, ex.Message, ex);
-        }
-    }
-
-    /// <inheritdoc />
     public async Task<RefreshResult> ForceRefreshAsync(CancellationToken cancellationToken = default)
     {
         try
@@ -720,33 +516,31 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
     }
 
-    private SettingsWithRemoteConfig GetSettings(bool syncWithExternalCache = true)
+    private SettingsWithRemoteConfig GetInMemorySettings()
     {
         Dictionary<string, Setting> local;
         SettingsWithRemoteConfig remote;
         switch (this.overrideBehaviour)
         {
             case null:
-                return GetRemoteConfig(syncWithExternalCache);
+                return GetRemoteConfig();
             case OverrideBehaviour.LocalOnly:
                 return new SettingsWithRemoteConfig(this.overrideDataSource!.GetOverrides(), remoteConfig: null);
             case OverrideBehaviour.LocalOverRemote:
                 local = this.overrideDataSource!.GetOverrides();
-                remote = GetRemoteConfig(syncWithExternalCache);
+                remote = GetRemoteConfig();
                 return new SettingsWithRemoteConfig(remote.Value.MergeOverwriteWith(local), remote.RemoteConfig);
             case OverrideBehaviour.RemoteOverLocal:
                 local = this.overrideDataSource!.GetOverrides();
-                remote = GetRemoteConfig(syncWithExternalCache);
+                remote = GetRemoteConfig();
                 return new SettingsWithRemoteConfig(local.MergeOverwriteWith(remote.Value), remote.RemoteConfig);
             default:
                 throw new InvalidOperationException(); // execution should never get here
         }
 
-        SettingsWithRemoteConfig GetRemoteConfig(bool syncWithExternalCache = true)
+        SettingsWithRemoteConfig GetRemoteConfig()
         {
-            var config = syncWithExternalCache
-                ? this.configService.GetConfig()
-                : this.configService.GetInMemoryConfig();
+            var config = this.configService.GetInMemoryConfig();
             var settings = !config.IsEmpty ? config.Config.Settings : null;
             return new SettingsWithRemoteConfig(settings, config);
         }
@@ -824,7 +618,7 @@ public sealed class ConfigCatClient : IConfigCatClient
     /// <inheritdoc />
     public ConfigCatClientSnapshot Snapshot()
     {
-        var settings = GetSettings(syncWithExternalCache: false);
+        var settings = GetInMemorySettings();
         var cacheState = this.configService.GetCacheState(settings.RemoteConfig ?? ProjectConfig.Empty);
         return new ConfigCatClientSnapshot(this.evaluationServices, settings, this.defaultUser, cacheState);
     }

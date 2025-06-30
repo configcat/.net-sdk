@@ -26,32 +26,4 @@ internal static class DictionaryExtensions
 
         return result;
     }
-
-    public static IReadOnlyCollection<TKey> ReadOnlyKeys<TKey, TValue>(this Dictionary<TKey, TValue> source)
-        where TKey : notnull
-    {
-#if !NET45
-        return source.Keys;
-#else
-        return new ReadOnlyCollectionAdapter<TKey>(source.Keys);
-#endif
-    }
-
-#if NET45
-    private sealed class ReadOnlyCollectionAdapter<T> : IReadOnlyCollection<T>
-    {
-        private readonly ICollection<T> collection;
-
-        public ReadOnlyCollectionAdapter(ICollection<T> collection)
-        {
-            this.collection = collection;
-        }
-
-        public int Count => this.collection.Count;
-
-        public IEnumerator<T> GetEnumerator() => this.collection.GetEnumerator();
-
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-    }
-#endif
 }

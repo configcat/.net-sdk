@@ -18,17 +18,13 @@ internal sealed class NullConfigService : IConfigService
 
     public ProjectConfig GetInMemoryConfig() => ProjectConfig.Empty;
 
-    public ProjectConfig GetConfig() => ProjectConfig.Empty;
-
     public ValueTask<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default) => new ValueTask<ProjectConfig>(ProjectConfig.Empty);
 
-    public RefreshResult RefreshConfig()
+    public ValueTask<RefreshResult> RefreshConfigAsync(CancellationToken cancellationToken = default)
     {
-        return RefreshResult.Failure(RefreshErrorCode.LocalOnlyClient,
-            $"Client is configured to use the {nameof(OverrideBehaviour.LocalOnly)} override behavior, which prevents synchronization with external cache and making HTTP requests.");
+        return new ValueTask<RefreshResult>(RefreshResult.Failure(RefreshErrorCode.LocalOnlyClient,
+            $"Client is configured to use the {nameof(OverrideBehaviour.LocalOnly)} override behavior, which prevents synchronization with external cache and making HTTP requests."));
     }
-
-    public ValueTask<RefreshResult> RefreshConfigAsync(CancellationToken cancellationToken = default) => new ValueTask<RefreshResult>(RefreshConfig());
 
     public bool IsOffline => true;
 

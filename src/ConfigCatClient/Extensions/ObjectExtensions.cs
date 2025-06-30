@@ -1,11 +1,6 @@
 using System.Globalization;
+using System.Text.Json;
 using ConfigCat.Client;
-
-#if USE_NEWTONSOFT_JSON
-using JsonValue = Newtonsoft.Json.Linq.JValue;
-#else
-using JsonValue = System.Text.Json.JsonElement;
-#endif
 
 namespace System;
 
@@ -43,47 +38,26 @@ internal static class ObjectExtensions
         return value.GetTypeCode() is TypeCode.Single or TypeCode.Double;
     }
 
-    internal static SettingValue ToSettingValue(this JsonValue value, out SettingType settingType)
+    internal static SettingValue ToSettingValue(this JsonElement value, out SettingType settingType)
     {
-#if USE_NEWTONSOFT_JSON
-        switch (value.Type)
-        {
-            case Newtonsoft.Json.Linq.JTokenType.String:
-                settingType = SettingType.String;
-                return new SettingValue { StringValue = Newtonsoft.Json.Linq.Extensions.Value<string>(value) };
-
-            case Newtonsoft.Json.Linq.JTokenType.Boolean:
-                settingType = SettingType.Boolean;
-                return new SettingValue { BoolValue = Newtonsoft.Json.Linq.Extensions.Value<bool>(value) };
-
-            case Newtonsoft.Json.Linq.JTokenType.Integer when IsWithinAllowedIntRange(value):
-                settingType = SettingType.Int;
-                return new SettingValue { IntValue = Newtonsoft.Json.Linq.Extensions.Value<int>(value) };
-
-            case Newtonsoft.Json.Linq.JTokenType.Float when IsWithinAllowedDoubleRange(value):
-                settingType = SettingType.Double;
-                return new SettingValue { DoubleValue = Newtonsoft.Json.Linq.Extensions.Value<double>(value) };
-        }
-#else
         switch (value.ValueKind)
         {
-            case Text.Json.JsonValueKind.String:
+            case JsonValueKind.String:
                 settingType = SettingType.String;
                 return new SettingValue { StringValue = value.GetString() };
 
-            case Text.Json.JsonValueKind.False or Text.Json.JsonValueKind.True:
+            case JsonValueKind.False or JsonValueKind.True:
                 settingType = SettingType.Boolean;
                 return new SettingValue { BoolValue = value.GetBoolean() };
 
-            case Text.Json.JsonValueKind.Number when value.TryGetInt32(out var intValue):
+            case JsonValueKind.Number when value.TryGetInt32(out var intValue):
                 settingType = SettingType.Int;
                 return new SettingValue { IntValue = intValue };
 
-            case Text.Json.JsonValueKind.Number when value.TryGetDouble(out var doubleValue):
+            case JsonValueKind.Number when value.TryGetDouble(out var doubleValue):
                 settingType = SettingType.Double;
                 return new SettingValue { DoubleValue = doubleValue };
         }
-#endif
 
         settingType = Setting.UnknownType;
         return new SettingValue { UnsupportedValue = value };
@@ -122,7 +96,7 @@ internal static class ObjectExtensions
     {
         var setting = new Setting
         {
-            Value = value is JsonValue jsonValue
+            Value = value is JsonElement jsonValue
                 ? jsonValue.ToSettingValue(out var settingType)
                 : value.ToSettingValue(out settingType),
         };

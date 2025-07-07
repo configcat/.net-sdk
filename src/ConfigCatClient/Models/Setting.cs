@@ -31,6 +31,9 @@ public sealed class Setting : SettingValueContainer
     /// <summary>
     /// Setting type.
     /// </summary>
+    /// <remarks>
+    /// Can also be <see cref="byte.MaxValue"/> when the setting comes from a simple flag override with an unsupported value.
+    /// </remarks>
     [JsonIgnore]
     public SettingType SettingType => this.settingType;
 

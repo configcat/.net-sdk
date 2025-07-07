@@ -113,7 +113,7 @@ internal sealed class LocalFileDataSource : IOverrideDataSource, IDisposable
                     var simplified = SerializationHelper.DeserializeSimplifiedConfig(content.AsSpan(), tolerant: true, throwOnError: false);
                     if (simplified?.Entries is not null)
                     {
-                        this.overrideValues = simplified.Entries.ToDictionary(kv => kv.Key, kv => kv.Value.ToSetting());
+                        this.overrideValues = simplified.Entries.ToDictionary(kv => kv.Key, kv => Setting.FromValue(kv.Value));
                         break;
                     }
 

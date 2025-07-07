@@ -12,7 +12,13 @@ namespace ConfigCat.Client;
 /// </summary>
 public sealed class Setting : SettingValueContainer
 {
-    // TODO: Add FromValue method?
+    /// <summary>
+    /// Creates a setting that can be used for feature flag evaluation from the specified value.
+    /// </summary>
+    public static Setting FromValue(object value)
+    {
+        return value.ToSetting();
+    }
 
     internal const SettingType UnknownType = (SettingType)byte.MaxValue;
 

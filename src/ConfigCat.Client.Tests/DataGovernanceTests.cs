@@ -415,7 +415,7 @@ public class DataGovernanceTests
 
         if (withSettings)
         {
-            response.SettingsOrEmpty.Add("myKey", "foo".ToSetting());
+            response.SettingsOrEmpty.Add("myKey", Setting.FromValue("foo"));
         }
 
         return response;

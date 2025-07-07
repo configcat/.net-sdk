@@ -8,13 +8,18 @@ using ConfigCat.Client.Utils;
 namespace ConfigCat.Client;
 
 /// <summary>
-/// Defines the data model of a ConfigCat config.
+/// Describes a ConfigCat config's data model used for feature flag evaluation.
 /// </summary>
 public sealed class Config : IJsonOnDeserialized
 {
     /// <summary>
-    /// Deserializes the specified config JSON to a <see cref="Config"/> data model.
+    /// Deserializes the specified config JSON to a <see cref="Config"/> model that can be used for feature flag evaluation.
     /// </summary>
+    /// <remarks>
+    /// Does superficial model validation only, meaning that the method makes sure that the specified config JSON
+    /// matches the type definition of the <see cref="Config"/> model, but doesn't check for semantic issues. E.g. doesn't validate
+    /// whether referenced segments and feature flags actually exist. (Such issues are checked during feature flag evaluation.)
+    /// </remarks>
     public static Config Deserialize(ReadOnlySpan<char> configJson)
     {
         return Deserialize(configJson, tolerant: true);

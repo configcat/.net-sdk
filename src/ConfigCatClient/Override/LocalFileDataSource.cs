@@ -113,12 +113,12 @@ internal sealed class LocalFileDataSource : IOverrideDataSource, IDisposable
                     var simplified = SerializationHelper.DeserializeSimplifiedConfig(content.AsSpan(), tolerant: true, throwOnError: false);
                     if (simplified?.Entries is not null)
                     {
-                        this.overrideValues = simplified.Entries.ToDictionary(kv => kv.Key, kv => kv.Value.ToSetting());
+                        this.overrideValues = simplified.Entries.ToDictionary(kv => kv.Key, kv => Setting.FromValue(kv.Value));
                         break;
                     }
 
                     var deserialized = Config.Deserialize(content.AsSpan(), tolerant: true);
-                    this.overrideValues = deserialized.Settings;
+                    this.overrideValues = deserialized.SettingsOrEmpty;
                     break;
                 }
                 // this logic ensures that we keep trying to open the file for max 10s

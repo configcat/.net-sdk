@@ -96,14 +96,14 @@ internal static class ObjectExtensions
     {
         var setting = new Setting
         {
-            Value = value is JsonElement jsonValue
+            value = value is JsonElement jsonValue
                 ? jsonValue.ToSettingValue(out var settingType)
                 : value.ToSettingValue(out settingType),
         };
 
         if (settingType != Setting.UnknownType)
         {
-            setting.SettingType = settingType;
+            setting.settingType = settingType;
         }
 
         return setting;

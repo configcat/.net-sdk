@@ -33,7 +33,7 @@ internal readonly struct SafeHooksWrapper
         => Hooks.RaiseConfigFetched(result, isInitiatedByUser);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public void RaiseConfigChanged(IConfig newConfig)
+    public void RaiseConfigChanged(Config newConfig)
         => Hooks.RaiseConfigChanged(newConfig);
 
     [MethodImpl(MethodImplOptions.NoInlining)]

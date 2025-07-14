@@ -35,7 +35,7 @@ public class MatrixTestRunnerBase<TDescriptor> where TDescriptor : IMatrixTestDe
     public MatrixTestRunnerBase()
     {
         this.isVariationIdMatrixTest = DescriptorInstance is IVariationIdMatrixTest;
-        this.config = DescriptorInstance.ConfigLocation.FetchConfigCached().Settings;
+        this.config = DescriptorInstance.ConfigLocation.FetchConfigCached().GetSettings();
     }
 
     public static IEnumerable<object?[]> GetTests()

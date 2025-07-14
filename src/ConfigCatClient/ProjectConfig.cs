@@ -95,7 +95,7 @@ internal sealed class ProjectConfig
         string? configJson;
         if (configJsonSpan.Length > 0)
         {
-            config = Config.Deserialize(configJsonSpan);
+            config = Config.Deserialize(configJsonSpan, tolerant: false);
             configJson = configJsonSpan.ToString();
         }
         else

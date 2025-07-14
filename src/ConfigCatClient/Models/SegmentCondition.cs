@@ -7,43 +7,43 @@ namespace ConfigCat.Client;
 /// <summary>
 /// Describes a condition that is based on a segment.
 /// </summary>
-public interface ISegmentCondition : ICondition
+public sealed class SegmentCondition : Condition
 {
+    internal const SegmentComparator UnknownComparator = (SegmentComparator)byte.MaxValue;
+
+    [JsonConstructor]
+    internal SegmentCondition() { }
+
+    [JsonInclude, JsonPropertyName("s")]
+    internal int segmentIndex = -1;
+
+    internal Segment? segment;
+
     /// <summary>
     /// The segment that the condition is based on.
     /// </summary>
-    ISegment Segment { get; }
+    [JsonIgnore]
+    public Segment Segment => this.segment ?? throw new InvalidConfigModelException("Segment reference is invalid.");
+
+    [JsonInclude, JsonPropertyName("c")]
+    internal SegmentComparator comparator = UnknownComparator;
 
     /// <summary>
     /// The operator which defines the expected result of the evaluation of the segment.
     /// </summary>
-    SegmentComparator Comparator { get; }
-}
-
-internal sealed class SegmentCondition : Condition, ISegmentCondition
-{
-    public const SegmentComparator UnknownComparator = (SegmentComparator)byte.MaxValue;
-
-    [JsonPropertyName("s")]
-    public int SegmentIndex { get; set; } = -1;
-
     [JsonIgnore]
-    public Segment? Segment { get; private set; }
-
-    ISegment ISegmentCondition.Segment => Segment ?? throw new InvalidConfigModelException("Segment reference is invalid.");
-
-    [JsonPropertyName("c")]
-    public SegmentComparator Comparator { get; set; } = UnknownComparator;
+    public SegmentComparator Comparator => this.comparator;
 
     internal void OnConfigDeserialized(Config config)
     {
-        var segments = config.Segments;
-        if (0 <= SegmentIndex && SegmentIndex < segments.Length)
+        var segments = config.SegmentsOrEmpty;
+        if (0 <= this.segmentIndex && this.segmentIndex < segments.Length)
         {
-            Segment = segments[SegmentIndex];
+            this.segment = segments[this.segmentIndex];
         }
     }
 
+    /// <inheritdoc />
     public override string ToString()
     {
         return new IndentedTextBuilder()

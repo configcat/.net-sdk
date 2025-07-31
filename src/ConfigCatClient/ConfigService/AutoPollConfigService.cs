@@ -44,6 +44,8 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
 
         this.maxInitWaitTime = options.MaxInitWaitTime >= TimeSpan.Zero ? options.MaxInitWaitTime : Timeout.InfiniteTimeSpan;
 
+        PrepareClientForEvents(this, hooks);
+
         var initialCacheSyncUpTask = SyncUpWithCacheAsync().AsTask();
 
         // This task will complete as soon as

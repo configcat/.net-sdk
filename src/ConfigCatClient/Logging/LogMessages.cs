@@ -33,7 +33,7 @@ internal static partial class LoggerExtensions
         $"Error occurred in the `{methodName}` method while evaluating setting '{key}'. Returning the `{defaultParamName}` parameter that you specified in your application: '{defaultParamValue}'.",
         "METHOD_NAME", "KEY", "DEFAULT_PARAM_NAME", "DEFAULT_PARAM_VALUE");
 
-    public static FormattableLogMessage ForceRefreshError(this LoggerWrapper logger, string methodName, Exception ex) => logger.LogInterpolated(
+    public static FormattableLogMessage ClientMethodError(this LoggerWrapper logger, string methodName, Exception ex) => logger.LogInterpolated(
         LogLevel.Error, 1003, ex,
         $"Error occurred in the `{methodName}` method.",
         "METHOD_NAME");

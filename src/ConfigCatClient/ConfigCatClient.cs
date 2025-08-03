@@ -711,7 +711,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
         catch (Exception ex)
         {
-            Logger.ForceRefreshError(nameof(ForceRefresh), ex);
+            Logger.ClientMethodError(nameof(ForceRefresh), ex);
             return RefreshResult.Failure(RefreshErrorCode.UnexpectedError, ex.Message, ex);
         }
     }
@@ -729,7 +729,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
         catch (Exception ex)
         {
-            Logger.ForceRefreshError(nameof(ForceRefreshAsync), ex);
+            Logger.ClientMethodError(nameof(ForceRefreshAsync), ex);
             return RefreshResult.Failure(RefreshErrorCode.UnexpectedError, ex.Message, ex);
         }
     }
@@ -813,9 +813,19 @@ public sealed class ConfigCatClient : IConfigCatClient
     /// <inheritdoc />
     public ConfigCatClientSnapshot Snapshot()
     {
-        var settings = GetSettings(syncWithExternalCache: false);
-        var cacheState = this.configService.GetCacheState(settings.RemoteConfig ?? ProjectConfig.Empty);
-        return new ConfigCatClientSnapshot(this.evaluationServices, settings, this.defaultUser, cacheState);
+        SettingsWithRemoteConfig settings;
+        try
+        {
+            settings = GetSettings(syncWithExternalCache: false);
+            var cacheState = this.configService.GetCacheState(settings.RemoteConfig ?? ProjectConfig.Empty);
+            return new ConfigCatClientSnapshot(this.evaluationServices, settings, this.defaultUser, cacheState);
+        }
+        catch (Exception ex)
+        {
+            Logger.ClientMethodError(nameof(Snapshot), ex);
+            settings = new SettingsWithRemoteConfig(new Dictionary<string, Setting>(), remoteConfig: null);
+            return new ConfigCatClientSnapshot(this.evaluationServices, settings, this.defaultUser, this.configService.GetCacheState(ProjectConfig.Empty));
+        }
     }
 
     /// <inheritdoc />

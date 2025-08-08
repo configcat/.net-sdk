@@ -15,6 +15,8 @@ internal sealed class LazyLoadConfigService : ConfigServiceBase, IConfigService
     {
         this.cacheTimeToLive = cacheTimeToLive;
 
+        PrepareClientForEvents(this, hooks);
+
         var initialCacheSyncUpTask = SyncUpWithCacheAsync().AsTask();
         ReadyTask = GetReadyTask(initialCacheSyncUpTask);
     }

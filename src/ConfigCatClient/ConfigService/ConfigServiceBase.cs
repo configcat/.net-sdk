@@ -15,6 +15,11 @@ namespace ConfigCat.Client.ConfigService;
 
 internal abstract class ConfigServiceBase : IDisposable
 {
+    public static void PrepareClientForEvents(IConfigService instance, SafeHooksWrapper hooks)
+    {
+        (hooks.Hooks.Sender as ConfigCatClient)?.InitializeConfigService(instance);
+    }
+
     protected internal enum Status
     {
         Online,

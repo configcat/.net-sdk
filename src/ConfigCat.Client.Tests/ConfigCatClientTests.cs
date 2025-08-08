@@ -2047,6 +2047,54 @@ public class ConfigCatClientTests
         Assert.AreEqual(2, errorEvents.Count);
     }
 
+    [DataRow(nameof(AutoPoll), ClientCacheState.HasUpToDateFlagData)]
+    [DataRow(nameof(LazyLoad), ClientCacheState.HasUpToDateFlagData)]
+    [DataRow(nameof(ManualPoll), ClientCacheState.HasCachedFlagDataOnly)]
+    [DataRow(null, ClientCacheState.HasLocalOverrideFlagDataOnly)]
+    [DataTestMethod]
+    public void Hooks_ClientShouldAlreadyBeUsableWhenEventIsEmittedDuringInitialization(string? pollingMode, ClientCacheState expectedCacheState)
+    {
+        var fakeCache = new FakeExternalCache();
+        const string configJson = "{\"f\":{\"debug\":{\"t\":0,\"v\":{\"b\":true}}}}";
+        fakeCache.CachedValue = ProjectConfig.Serialize(new ProjectConfig(configJson, Config.Deserialize(configJson.AsSpan()), ProjectConfig.GenerateTimeStamp(), "etag"));
+
+        var configFetcherMock = new Mock<IConfigCatConfigFetcher>();
+        configFetcherMock
+            .Setup(m => m.FetchAsync(It.IsAny<FetchRequest>(), It.IsAny<CancellationToken>()))
+            .Callback((FetchRequest _, CancellationToken ct) => Task.Delay(Timeout.Infinite, ct));
+
+        IConfigCatClientSnapshot? snapshot = null;
+
+        var options = pollingMode switch
+        {
+            nameof(AutoPoll) => new ConfigCatClientOptions { PollingMode = PollingModes.AutoPoll() },
+            nameof(LazyLoad) => new ConfigCatClientOptions { PollingMode = PollingModes.LazyLoad() },
+            nameof(ManualPoll) => new ConfigCatClientOptions { PollingMode = PollingModes.ManualPoll },
+            null => new ConfigCatClientOptions { FlagOverrides = FlagOverrides.LocalDictionary(new Dictionary<string, object> { ["debug"] = true }, OverrideBehaviour.LocalOnly) },
+            _ => throw new ArgumentOutOfRangeException(nameof(pollingMode), pollingMode, null)
+        };
+
+        options.ConfigCache = fakeCache;
+        options.ConfigFetcher = configFetcherMock.Object;
+        if (pollingMode is not null)
+        {
+            options.ConfigChanged += (s, e) => snapshot = ((IConfigCatClient)s!).Snapshot();
+        }
+        else
+        {
+            options.ClientReady += (s, e) => snapshot = ((IConfigCatClient)s!).Snapshot();
+        }
+
+        Assert.IsNull(snapshot);
+
+        using var client = new ConfigCatClient("SDK-KEY", options);
+
+        Assert.IsNotNull(snapshot);
+        Assert.AreEqual(expectedCacheState, snapshot.CacheState);
+        Assert.AreEqual(pollingMode is not null, snapshot.FetchedConfig is not null);
+        Assert.IsTrue(snapshot.GetValue("debug", (bool?)null));
+    }
+
     [TestMethod]
     public async Task LogFilter_Works()
     {

@@ -1,4 +1,6 @@
 using System;
+using ConfigCat.Client.Cache;
+using ConfigCat.Client.ConfigService;
 
 namespace ConfigCat.Client.Configuration;
 
@@ -10,6 +12,8 @@ public abstract class PollingMode
     private protected PollingMode() { }
 
     internal abstract string Identifier { get; }
+
+    internal abstract IConfigService CreateConfigService(IConfigFetcher fetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline, SafeHooksWrapper hooks);
 }
 
 /// <summary>
@@ -45,6 +49,11 @@ public class AutoPoll : PollingMode
             ? maxInitWaitTime
             : throw new ArgumentOutOfRangeException(nameof(maxInitWaitTime), maxInitWaitTime, $"Value must be less than or equal to {maxTimerInterval}.");
     }
+
+    internal override IConfigService CreateConfigService(IConfigFetcher fetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline, SafeHooksWrapper hooks)
+    {
+        return new AutoPollConfigService(this, fetcher, cacheParameters, logger, isOffline, hooks);
+    }
 }
 
 /// <summary>
@@ -72,6 +81,11 @@ public class LazyLoad : PollingMode
             ? cacheTimeToLive
             : throw new ArgumentOutOfRangeException(nameof(cacheTimeToLive), cacheTimeToLive, $"Value must be between {minCacheTimeToLive} and {maxCacheTimeToLive}.");
     }
+
+    internal override IConfigService CreateConfigService(IConfigFetcher fetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline, SafeHooksWrapper hooks)
+    {
+        return new LazyLoadConfigService(fetcher, cacheParameters, logger, CacheTimeToLive, isOffline, hooks);
+    }
 }
 
 /// <summary>
@@ -84,4 +98,9 @@ public class LazyLoad : PollingMode
 public class ManualPoll : PollingMode
 {
     internal override string Identifier => "m";
+
+    internal override IConfigService CreateConfigService(IConfigFetcher fetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline, SafeHooksWrapper hooks)
+    {
+        return new ManualPollConfigService(fetcher, cacheParameters, logger, isOffline, hooks);
+    }
 }

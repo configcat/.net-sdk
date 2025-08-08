@@ -28,9 +28,10 @@ internal class Hooks : IProvidesHooks
         return !ReferenceEquals(originalEvents, DisconnectedEvents);
     }
 
-    public virtual void SetSender(IConfigCatClient client)
+    public virtual IConfigCatClient? Sender
     {
-        this.client = client;
+        get => this.client;
+        set => this.client = value;
     }
 
     public void RaiseClientReady(ClientCacheState cacheState)

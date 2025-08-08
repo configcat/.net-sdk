@@ -11,6 +11,8 @@ internal sealed class NullConfigService : IConfigService
     {
         this.logger = logger;
 
+        ConfigServiceBase.PrepareClientForEvents(this, hooks);
+
         hooks.RaiseClientReady(ClientCacheState.HasLocalOverrideFlagDataOnly);
     }
 

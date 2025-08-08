@@ -11,5 +11,9 @@ internal sealed class NullHooks : Hooks
         return false;
     }
 
-    public override void SetSender(IConfigCatClient client) { /* this is an intentional no-op */ }
+    public override IConfigCatClient? Sender
+    {
+        get => null;
+        set { /* this is an intentional no-op */  }
+    }
 }

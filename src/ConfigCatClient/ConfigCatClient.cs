@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -38,7 +39,7 @@ public sealed class ConfigCatClient : IConfigCatClient
 
     private readonly string? sdkKey; // may be null in case of testing
     private readonly EvaluationServices evaluationServices;
-    private readonly IConfigService configService;
+    private IConfigService configService;
     private readonly IOverrideDataSource? overrideDataSource;
     private readonly OverrideBehaviour? overrideBehaviour;
     private readonly Hooks hooks;
@@ -97,7 +98,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         this.sdkKey = sdkKey;
 
         this.hooks = options.YieldHooks();
-        this.hooks.SetSender(this);
+        this.hooks.Sender = this;
 
         // To avoid possible memory leaks, the components of the client or client snapshots should not
         // hold a strong reference to the hooks object (see also SafeHooksWrapper).
@@ -126,8 +127,11 @@ public sealed class ConfigCatClient : IConfigCatClient
 
         var pollingMode = options.PollingMode ?? ConfigCatClientOptions.CreateDefaultPollingMode();
 
-        this.configService = this.overrideBehaviour != OverrideBehaviour.LocalOnly
-            ? DetermineConfigService(pollingMode,
+        // At this point the client instance must be fully initialized (apart from the configService field) because it
+        // may be accessed from a handler of an event that is raised during the initialization of the config service.
+        // (At the same time, the config service must initialize the configService field before raising any events.)
+        var configService = this.overrideBehaviour != OverrideBehaviour.LocalOnly
+            ? pollingMode.CreateConfigService(
                 new DefaultConfigFetcher(sdkKey,
                     options.GetBaseUri(),
                     GetProductVersion(pollingMode),
@@ -142,6 +146,16 @@ public sealed class ConfigCatClient : IConfigCatClient
                 options.Offline,
                 hooksWrapper)
             : new NullConfigService(logger, hooksWrapper);
+
+        Debug.Assert(ReferenceEquals(this.configService, configService) || this.hooks.Sender is null, $"The {nameof(this.configService)} field was not initialized.");
+
+        this.configService = configService;
+    }
+
+    internal void InitializeConfigService(IConfigService instance)
+    {
+        Debug.Assert(this.configService is null, $"The {nameof(this.configService)} field was already initialized.");
+        this.configService = instance;
     }
 
     // For test purposes only
@@ -154,7 +168,7 @@ public sealed class ConfigCatClient : IConfigCatClient
 #endif
 
         this.hooks = hooks ?? NullHooks.Instance;
-        this.hooks.SetSender(this);
+        this.hooks.Sender = this;
         var hooksWrapper = new SafeHooksWrapper(this.hooks);
 
         this.evaluationServices = new EvaluationServices(evaluator, hooksWrapper, new LoggerWrapper(logger, logFilter, hooks));
@@ -511,7 +525,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
         catch (Exception ex)
         {
-            Logger.ForceRefreshError(nameof(ForceRefreshAsync), ex);
+            Logger.ClientMethodError(nameof(ForceRefreshAsync), ex);
             return RefreshResult.Failure(RefreshErrorCode.UnexpectedError, ex.Message, ex);
         }
     }
@@ -578,31 +592,6 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
     }
 
-    private static IConfigService DetermineConfigService(PollingMode pollingMode, IConfigFetcher fetcher, CacheParameters cacheParameters, LoggerWrapper logger, bool isOffline, SafeHooksWrapper hooks)
-    {
-        return pollingMode switch
-        {
-            AutoPoll autoPoll => new AutoPollConfigService(autoPoll,
-                fetcher,
-                cacheParameters,
-                logger,
-                isOffline,
-                hooks),
-            LazyLoad lazyLoad => new LazyLoadConfigService(fetcher,
-                cacheParameters,
-                logger,
-                lazyLoad.CacheTimeToLive,
-                isOffline,
-                hooks),
-            ManualPoll => new ManualPollConfigService(fetcher,
-                cacheParameters,
-                logger,
-                isOffline,
-                hooks),
-            _ => throw new ArgumentException("Invalid polling mode.", nameof(pollingMode)),
-        };
-    }
-
     /// <inheritdoc />
     public void SetDefaultUser(User user)
     {
@@ -618,9 +607,19 @@ public sealed class ConfigCatClient : IConfigCatClient
     /// <inheritdoc />
     public ConfigCatClientSnapshot Snapshot()
     {
-        var settings = GetInMemorySettings();
-        var cacheState = this.configService.GetCacheState(settings.RemoteConfig ?? ProjectConfig.Empty);
-        return new ConfigCatClientSnapshot(this.evaluationServices, settings, this.defaultUser, cacheState);
+        SettingsWithRemoteConfig settings;
+        try
+        {
+            settings = GetInMemorySettings();
+            var cacheState = this.configService.GetCacheState(settings.RemoteConfig ?? ProjectConfig.Empty);
+            return new ConfigCatClientSnapshot(this.evaluationServices, settings, this.defaultUser, cacheState);
+        }
+        catch (Exception ex)
+        {
+            Logger.ClientMethodError(nameof(Snapshot), ex);
+            settings = new SettingsWithRemoteConfig(new Dictionary<string, Setting>(), remoteConfig: null);
+            return new ConfigCatClientSnapshot(this.evaluationServices, settings, this.defaultUser, this.configService.GetCacheState(ProjectConfig.Empty));
+        }
     }
 
     /// <inheritdoc />

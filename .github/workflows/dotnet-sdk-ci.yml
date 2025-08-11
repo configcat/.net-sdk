@@ -26,7 +26,7 @@ jobs:
     name: Build & test on .NET ${{ matrix.dotnet-version.rt }}
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: |
@@ -56,7 +56,7 @@ jobs:
     name: Build & test on .NET ${{ matrix.dotnet-version.rt }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: |

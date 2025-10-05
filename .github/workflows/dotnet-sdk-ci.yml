@@ -52,6 +52,8 @@ jobs:
           - dotnet-version: {rt: "3.1.x", sdk: "3.1.100", tfm: netcoreapp3.1}
             os: ubuntu-latest
           - dotnet-version: {rt: "3.1.x", sdk: "3.1.100", tfm: netcoreapp3.1}
+            os: windows-latest
+          - dotnet-version: {rt: "3.1.x", sdk: "3.1.100", tfm: netcoreapp3.1}
             os: macOS-latest
     name: Build & test on .NET ${{ matrix.dotnet-version.rt }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}

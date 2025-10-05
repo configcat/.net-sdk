@@ -84,6 +84,10 @@ internal static class DateTimeUtils
 
     public static TimeSpan GetMonotonicTime()
     {
+#if NET
         return TimeSpan.FromMilliseconds(Environment.TickCount64);
+#else
+        return TimeSpan.FromSeconds(Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency);
+#endif
     }
 }

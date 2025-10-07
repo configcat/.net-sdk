@@ -78,13 +78,15 @@ jobs:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags')
     steps:
-    - uses: actions/checkout@v4
-    
-    - uses: actions/setup-dotnet@v4
+    - uses: actions/checkout@v5
+
+    - uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: '9.0.x'
 
     - name: Install InheritDocTool
       run: |
-        dotnet tool install -g InheritDocTool
+        dotnet tool install InheritDocTool -g --allow-roll-forward
 
     - name: Determine version
       run: |

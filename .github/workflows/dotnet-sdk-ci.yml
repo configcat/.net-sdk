@@ -100,7 +100,7 @@ jobs:
 
     - name: Run InheritDocTool
       run: |
-        inheritdoc -o
+        InheritDoc -o
 
     - name: Pack
       run: |

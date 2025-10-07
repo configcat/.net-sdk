@@ -1,6 +1,6 @@
 # ConfigCat SDK for .NET
 
-[![Build status](https://ci.appveyor.com/api/projects/status/3kygp783vc2uv9xr?svg=true)](https://ci.appveyor.com/project/ConfigCat/net-sdk)
+[![Build status](https://github.com/configcat/.net-sdk/actions/workflows/dotnet-sdk-ci.yml/badge.svg?branch=master)](https://github.com/configcat/.net-sdk/actions/workflows/dotnet-sdk-ci.yml)
 [![NuGet Version](https://img.shields.io/nuget/v/ConfigCat.Client)](https://www.nuget.org/packages/ConfigCat.Client/)
 [![Sonar Coverage](https://img.shields.io/sonar/coverage/net-sdk?logo=SonarCloud&server=https%3A%2F%2Fsonarcloud.io)](https://sonarcloud.io/project/overview?id=net-sdk) 
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=net-sdk&metric=alert_status)](https://sonarcloud.io/dashboard?id=net-sdk)

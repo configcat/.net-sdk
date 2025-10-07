@@ -7,7 +7,7 @@
     <DelaySign>false</DelaySign>
     <AssemblyOriginatorKeyFile>..\ConfigCatClient.snk</AssemblyOriginatorKeyFile>
     <Version Condition="$(Version) == ''">0.1.0</Version>
-    <Copyright>Copyright © ConfigCat 2020</Copyright>
+    <Copyright>Copyright © ConfigCat 2025</Copyright>
     <Company>ConfigCat</Company>
     <Authors>ConfigCat</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>

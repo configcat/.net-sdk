@@ -119,5 +119,7 @@ jobs:
 
     # Symbol packages are auto-pushed, see: https://learn.microsoft.com/en-us/nuget/create-packages/symbol-packages-snupkg#publishing-a-symbol-package
     - name: Push to NuGet
+      env:
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
       run: |
-        dotnet nuget push artifacts/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+        dotnet nuget push artifacts/*.nupkg --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json

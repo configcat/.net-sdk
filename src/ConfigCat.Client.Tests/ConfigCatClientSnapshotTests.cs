@@ -28,13 +28,19 @@ public class ConfigCatClientSnapshotTests
         Assert.IsNotNull(evaluationDetails.ErrorMessage);
     }
 
-    [TestMethod]
-    public void CanMockSnapshot()
+    [DataTestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public void CanMockSnapshot(bool success)
     {
         const ClientCacheState cacheState = ClientCacheState.HasUpToDateFlagData;
         var fetchedConfig = new Config();
         var keys = new[] { "key1", "key2" };
-        var evaluationDetails = new EvaluationDetails<string>("key1", "value");
+        var defaultValue = "";
+        var user = new User("0");
+        var evaluationDetails = success
+            ? EvaluationDetails.Success(keys[0], "value", "var1", new TargetingRule(), new PercentageOption(), user, DateTime.UtcNow)
+            : EvaluationDetails.Failure(keys[1], defaultValue, EvaluationErrorCode.UnexpectedError, "Something went wrong.", new Exception(), user, DateTime.UtcNow);
 
         var mock = new Mock<IConfigCatClientSnapshot>();
         mock.SetupGet(m => m.CacheState).Returns(cacheState);
@@ -48,7 +54,7 @@ public class ConfigCatClientSnapshotTests
         Assert.AreEqual(cacheState, snapshot.CacheState);
         Assert.AreEqual(fetchedConfig, snapshot.FetchedConfig);
         CollectionAssert.AreEqual(keys, snapshot.GetAllKeys().ToArray());
-        Assert.AreEqual(evaluationDetails.Value, snapshot.GetValue(evaluationDetails.Key, ""));
-        Assert.AreSame(evaluationDetails, snapshot.GetValueDetails(evaluationDetails.Key, ""));
+        Assert.AreEqual(evaluationDetails.Value, snapshot.GetValue(evaluationDetails.Key, defaultValue, user));
+        Assert.AreEqual(evaluationDetails, snapshot.GetValueDetails(evaluationDetails.Key, defaultValue, user));
     }
 }

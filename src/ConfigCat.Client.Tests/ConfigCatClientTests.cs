@@ -915,7 +915,7 @@ public class ConfigCatClientTests
         Assert.IsNull(actual.MatchedPercentageOption);
 
         Assert.AreEqual(1, flagEvaluatedEvents.Count);
-        Assert.AreSame(actual, flagEvaluatedEvents[0].EvaluationDetails);
+        Assert.AreEqual(actual, flagEvaluatedEvents[0].EvaluationDetails);
     }
 
     [TestMethod]
@@ -975,7 +975,7 @@ public class ConfigCatClientTests
             var flagEvaluatedDetails = flagEvaluatedEvents.Select(e => e.EvaluationDetails).FirstOrDefault(details => details.Key == expectedItem.Key);
 
             Assert.IsNotNull(flagEvaluatedDetails);
-            Assert.AreSame(actualDetails, flagEvaluatedDetails);
+            Assert.AreEqual(actualDetails, flagEvaluatedDetails);
         }
     }
 
@@ -1088,7 +1088,7 @@ public class ConfigCatClientTests
             var flagEvaluatedDetails = flagEvaluatedEvents.Select(e => e.EvaluationDetails).FirstOrDefault(details => details.Key == key);
 
             Assert.IsNotNull(flagEvaluatedDetails);
-            Assert.AreSame(actualDetails, flagEvaluatedDetails);
+            Assert.AreEqual(actualDetails, flagEvaluatedDetails);
         }
 
         Assert.AreEqual(1, errorEvents.Count);

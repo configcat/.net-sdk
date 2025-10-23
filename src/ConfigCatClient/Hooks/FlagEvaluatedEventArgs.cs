@@ -7,13 +7,14 @@ namespace ConfigCat.Client;
 /// </summary>
 public class FlagEvaluatedEventArgs : EventArgs
 {
-    internal FlagEvaluatedEventArgs(EvaluationDetails evaluationDetails)
+    internal FlagEvaluatedEventArgs(in EvaluationDetails evaluationDetails)
     {
-        EvaluationDetails = evaluationDetails;
+        this.evaluationDetails = evaluationDetails;
     }
 
+    private readonly EvaluationDetails evaluationDetails;
     /// <summary>
     /// The <see cref="Client.EvaluationDetails"/> object resulted from the evaluation of a feature flag or setting.
     /// </summary>
-    public EvaluationDetails EvaluationDetails { get; }
+    public ref readonly EvaluationDetails EvaluationDetails => ref this.evaluationDetails;
 }

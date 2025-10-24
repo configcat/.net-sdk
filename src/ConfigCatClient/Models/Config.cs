@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text.Json.Serialization;
 using ConfigCat.Client.Utils;
+using ConfigCat.Client.Versioning;
 
 namespace ConfigCat.Client;
 
@@ -77,9 +78,11 @@ public sealed class Config : IJsonOnDeserialized
     {
         if (this.settings is { Count: > 0 })
         {
+            Dictionary<string, SemVersion?>? semVerCache = null;
+
             foreach (var setting in this.settings.Values)
             {
-                setting.OnConfigDeserialized(this);
+                setting.OnConfigDeserialized(this, ref semVerCache);
             }
         }
     }

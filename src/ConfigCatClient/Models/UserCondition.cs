@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;
 using ConfigCat.Client.Evaluation;
 using ConfigCat.Client.Utils;
+using ConfigCat.Client.Versioning;
 
 namespace ConfigCat.Client;
 
@@ -58,16 +59,39 @@ public sealed class UserCondition : Condition
         set => ModelHelper.SetOneOf(ref this.comparisonValue, value);
     }
 
-    private object? comparisonValueReadOnly;
+    internal SemVersion? SemVerValue => this.comparisonValueReadOnly as SemVersion;
+
+    internal SemVersion?[]? SemVerListValue => this.comparisonValueReadOnly is SemVerList semVerList ? semVerList.Parsed : null;
+
+    private object? comparisonValueReadOnly; // also used for storing a preparsed value (StrongBox<SemVersion?> or SemVerList)
 
     /// <summary>
     /// The value that the User Object attribute is compared to.
     /// Can be a value of the following types: <see cref="string"/> (including a semantic version), <see cref="double"/> or <see cref="IReadOnlyList{T}" /> where T is <see cref="string"/>.
     /// </summary>
     [JsonIgnore]
-    public object ComparisonValue => this.comparisonValueReadOnly ??= GetComparisonValue() is var comparisonValue && comparisonValue is string[] stringListValue
-        ? (stringListValue.Length > 0 ? new ReadOnlyCollection<string>(stringListValue) : Array.Empty<string>())
-        : comparisonValue!;
+    public object ComparisonValue
+    {
+        get
+        {
+            switch (this.comparisonValueReadOnly)
+            {
+                case null:
+                    var comparisonValue = GetComparisonValue();
+                    return this.comparisonValueReadOnly = comparisonValue is string[] stringListValue
+                        ? (stringListValue.Length > 0 ? new ReadOnlyCollection<string>(stringListValue) : Array.Empty<string>())
+                        : comparisonValue!;
+                case SemVersion:
+                    return this.comparisonValue!;
+                case SemVerList semVerList:
+                    stringListValue = (string[])this.comparisonValue!;
+                    return semVerList.ReadOnly ??=
+                        stringListValue.Length > 0 ? new ReadOnlyCollection<string>(stringListValue) : Array.Empty<string>();
+                default:
+                    return this.comparisonValueReadOnly;
+            }
+        }
+    }
 
     internal object? GetComparisonValue(bool throwIfInvalid = true)
     {
@@ -76,11 +100,77 @@ public sealed class UserCondition : Condition
             : (!throwIfInvalid ? null : throw new InvalidConfigModelException("Comparison value is missing or invalid."));
     }
 
+    internal void OnConfigDeserialized(ref Dictionary<string, SemVersion?>? semVerCache)
+    {
+        // NOTE: We preparse version and version list comparison values to improve feature flag evaluation performance
+        // (both execution time and memory allocation).
+
+        switch (Comparator)
+        {
+            case UserComparator.SemVerIsOneOf:
+            case UserComparator.SemVerIsNotOneOf:
+                if (GetComparisonValue(throwIfInvalid: false) is string[] stringListValue)
+                {
+                    var parsedSemVers = new SemVersion?[stringListValue.Length];
+                    for (var i = 0; i < stringListValue.Length; i++)
+                    {
+                        parsedSemVers[i] = stringListValue[i] is { } value
+                            ? GetOrParseVersion(value, ref semVerCache)
+                            : null;
+                    }
+                    this.comparisonValueReadOnly = new SemVerList(parsedSemVers);
+                }
+                break;
+            case UserComparator.SemVerLess:
+            case UserComparator.SemVerLessOrEquals:
+            case UserComparator.SemVerGreater:
+            case UserComparator.SemVerGreaterOrEquals:
+                if (GetComparisonValue(throwIfInvalid: false) is string stringValue)
+                {
+                    this.comparisonValueReadOnly = GetOrParseVersion(stringValue, ref semVerCache);
+                }
+                break;
+        }
+    }
+
     /// <inheritdoc />
     public override string ToString()
     {
         return new IndentedTextBuilder()
             .AppendUserCondition(this)
             .ToString();
+    }
+
+    private static SemVersion? GetOrParseVersion(string value, ref Dictionary<string, SemVersion?>? semVerCache)
+    {
+        SemVersion? semVer;
+
+        if (semVerCache is null)
+        {
+            semVerCache = new Dictionary<string, SemVersion?>();
+        }
+        else if (semVerCache.TryGetValue(value, out semVer))
+        {
+            return semVer;
+        }
+
+        if (!SemVersion.TryParse(value.Trim(), out semVer, strict: true))
+        {
+            semVer = null;
+        }
+
+        semVerCache[value] = semVer;
+        return semVer;
+    }
+
+    private sealed class SemVerList
+    {
+        public SemVerList(SemVersion?[] parsed)
+        {
+            this.Parsed = parsed;
+        }
+
+        public readonly SemVersion?[] Parsed;
+        public IReadOnlyCollection<string>? ReadOnly;
     }
 }

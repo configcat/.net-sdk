@@ -363,7 +363,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         var userAttributeName = condition.comparisonAttribute ?? throw new InvalidConfigModelException("Comparison attribute name is missing.");
         var userAttributeValue = context.User.GetAttribute(userAttributeName);
 
-        if (userAttributeValue is null || userAttributeValue is string { Length: 0 })
+        if (userAttributeValue is null or string { Length: 0 })
         {
             this.logger.UserObjectAttributeIsMissing(condition, context.Key, userAttributeName);
             error = string.Format(CultureInfo.InvariantCulture, MissingUserAttributeError, userAttributeName);
@@ -425,14 +425,14 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             case UserComparator.SemVerIsOneOf:
             case UserComparator.SemVerIsNotOneOf:
                 var version = GetUserAttributeValueAsSemVer(userAttributeName, userAttributeValue, condition, context.Key, out error);
-                return error is null && EvaluateSemVerIsOneOf(version!, condition.StringListValue, negate: comparator == UserComparator.SemVerIsNotOneOf);
+                return error is null && EvaluateSemVerIsOneOf(version!, condition.StringListValue, condition.SemVerListValue, negate: comparator == UserComparator.SemVerIsNotOneOf);
 
             case UserComparator.SemVerLess:
             case UserComparator.SemVerLessOrEquals:
             case UserComparator.SemVerGreater:
             case UserComparator.SemVerGreaterOrEquals:
                 version = GetUserAttributeValueAsSemVer(userAttributeName, userAttributeValue, condition, context.Key, out error);
-                return error is null && EvaluateSemVerRelation(version!, comparator, condition.StringValue);
+                return error is null && EvaluateSemVerRelation(version!, comparator, condition.StringValue, condition.SemVerValue);
 
             case UserComparator.NumberEquals:
             case UserComparator.NumberNotEquals:
@@ -589,7 +589,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return negate;
     }
 
-    private static bool EvaluateSemVerIsOneOf(SemVersion version, string[]? comparisonValues, bool negate)
+    private static bool EvaluateSemVerIsOneOf(SemVersion version, string[]? comparisonValues, SemVersion?[]? parsedComparisonValues, bool negate)
     {
         EnsureComparisonValue(comparisonValues);
 
@@ -606,7 +606,8 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                 continue;
             }
 
-            if (!SemVersion.TryParse(item.Trim(), out var version2, strict: true))
+            var version2 = parsedComparisonValues![i];
+            if (version2 is null)
             {
                 // NOTE: Previous versions of the evaluation algorithm ignored invalid comparison values.
                 // We keep this behavior for backward compatibility.
@@ -625,11 +626,12 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return result ^ negate;
     }
 
-    private static bool EvaluateSemVerRelation(SemVersion version, UserComparator comparator, string? comparisonValue)
+    private static bool EvaluateSemVerRelation(SemVersion version, UserComparator comparator, string? comparisonValue, SemVersion? parsedComparisonValue)
     {
         EnsureComparisonValue(comparisonValue);
 
-        if (!SemVersion.TryParse(comparisonValue.Trim(), out var version2, strict: true))
+        var version2 = parsedComparisonValue!;
+        if (version2 is null)
         {
             return false;
         }

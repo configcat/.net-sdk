@@ -15,7 +15,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ConfigCat.Client" Version="8.2.0" />
+    <PackageReference Include="ConfigCat.Client" Version="9.4.3" />
     <PackageReference Include="System.Text.Json" Version="8.0.5" Condition="'$(TargetFramework)' == 'net48'" />
   </ItemGroup>
 
@@ -29,7 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="data\sample_v5_old.json">
+    <None Include="..\..\src\ConfigCat.Client.Tests\data\*" Link="data\%(Filename)%(Extension)">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

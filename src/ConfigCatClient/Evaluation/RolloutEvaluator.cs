@@ -914,7 +914,17 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
     private SemVersion? GetUserAttributeValueAsSemVer(string attributeName, object attributeValue, UserCondition condition, string key, out string? error)
     {
-        if (attributeValue is string text && SemVersion.TryParse(text.Trim(), out var version, strict: true))
+        if (attributeValue is SemVersion version)
+        {
+            error = null;
+            return version;
+        }
+        else if (attributeValue is Version clrVersion)
+        {
+            error = null;
+            return new SemVersion(clrVersion);
+        }
+        else if (attributeValue is string text && SemVersion.TryParse(text.Trim(), out version!, strict: true))
         {
             error = null;
             return version;

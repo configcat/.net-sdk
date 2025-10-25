@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.Json.Serialization;
 using ConfigCat.Client.Evaluation;
@@ -50,7 +48,7 @@ public sealed class TargetingRule
     /// </summary>
     [JsonIgnore]
     public IReadOnlyList<PercentageOption>? PercentageOptions => this.percentageOptionsReadOnly ??= this.then is PercentageOption[] percentageOptions
-        ? (percentageOptions.Length > 0 ? new ReadOnlyCollection<PercentageOption>(percentageOptions) : Array.Empty<PercentageOption>())
+        ? percentageOptions.AsReadOnly()
         : null;
 
     [JsonInclude, JsonPropertyName("s")]

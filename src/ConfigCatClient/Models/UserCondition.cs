@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;
 using ConfigCat.Client.Evaluation;
 using ConfigCat.Client.Utils;
@@ -79,14 +77,13 @@ public sealed class UserCondition : Condition
                 case null:
                     var comparisonValue = GetComparisonValue();
                     return this.comparisonValueReadOnly = comparisonValue is string[] stringListValue
-                        ? (stringListValue.Length > 0 ? new ReadOnlyCollection<string>(stringListValue) : Array.Empty<string>())
+                        ? stringListValue.AsReadOnly()
                         : comparisonValue!;
                 case SemVersion:
                     return this.comparisonValue!;
                 case SemVerList semVerList:
                     stringListValue = (string[])this.comparisonValue!;
-                    return semVerList.ReadOnly ??=
-                        stringListValue.Length > 0 ? new ReadOnlyCollection<string>(stringListValue) : Array.Empty<string>();
+                    return semVerList.ReadOnly ??= stringListValue.AsReadOnly();
                 default:
                     return this.comparisonValueReadOnly;
             }

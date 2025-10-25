@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;
 using ConfigCat.Client.Evaluation;
 using ConfigCat.Client.Utils;
@@ -58,9 +57,7 @@ public sealed class Setting : SettingValueContainer
     /// The list of targeting rules (where there is a logical OR relation between the items).
     /// </summary>
     [JsonIgnore]
-    public IReadOnlyList<TargetingRule> TargetingRules => this.targetingRulesReadOnly ??= this.targetingRules is { Length: > 0 }
-        ? new ReadOnlyCollection<TargetingRule>(this.targetingRules)
-        : Array.Empty<TargetingRule>();
+    public IReadOnlyList<TargetingRule> TargetingRules => this.targetingRulesReadOnly ??= this.targetingRules.AsReadOnly();
 
     [JsonInclude, JsonPropertyName("p")]
     internal PercentageOption[]? percentageOptions;
@@ -73,9 +70,7 @@ public sealed class Setting : SettingValueContainer
     /// The list of percentage options.
     /// </summary>
     [JsonIgnore]
-    public IReadOnlyList<PercentageOption> PercentageOptions => this.percentageOptionsReadOnly ??= this.percentageOptions is { Length: > 0 }
-        ? new ReadOnlyCollection<PercentageOption>(this.percentageOptions)
-        : Array.Empty<PercentageOption>();
+    public IReadOnlyList<PercentageOption> PercentageOptions => this.percentageOptionsReadOnly ??= this.percentageOptions.AsReadOnly();
 
     internal string? configJsonSalt;
 

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text.Json.Serialization;
 using ConfigCat.Client.Utils;
@@ -55,9 +54,7 @@ public sealed class Config : IJsonOnDeserialized
     /// The list of segments.
     /// </summary>
     [JsonIgnore]
-    public IReadOnlyList<Segment> Segments => this.segmentsReadOnly ??= this.segments is { Length: > 0 }
-        ? new ReadOnlyCollection<Segment>(this.segments)
-        : Array.Empty<Segment>();
+    public IReadOnlyList<Segment> Segments => this.segmentsReadOnly ??= this.segments.AsReadOnly();
 
     [JsonInclude, JsonPropertyName("f")]
     internal Dictionary<string, Setting>? settings;

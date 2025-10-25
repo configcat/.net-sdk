@@ -1,7 +1,14 @@
+using System.Collections.ObjectModel;
+
 namespace System.Collections.Generic;
 
-internal static class DictionaryExtensions
+internal static class CollectionExtensions
 {
+    public static IReadOnlyList<T> AsReadOnly<T>(this T[]? source)
+    {
+        return source is { Length: > 0 } ? new ReadOnlyCollection<T>(source) : Array.Empty<T>();
+    }
+
     public static Dictionary<TKey, TValue> MergeOverwriteWith<TKey, TValue>(this Dictionary<TKey, TValue>? source, Dictionary<TKey, TValue>? other)
         where TKey : notnull
     {

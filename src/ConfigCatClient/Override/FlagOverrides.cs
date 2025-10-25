@@ -9,24 +9,35 @@ namespace ConfigCat.Client;
 /// </summary>
 public class FlagOverrides
 {
-    private readonly string? filePath;
+    private readonly object dataSource; // either an IOverrideDataSource or IDictionary<string, object> or string
     private readonly bool autoReload;
 
-    private readonly IDictionary<string, object>? dictionary;
+    private FlagOverrides(object dataSource, OverrideBehaviour overrideBehaviour)
+    {
+        this.dataSource = dataSource;
+        OverrideBehaviour = overrideBehaviour;
+    }
 
     private FlagOverrides(string filePath, bool autoReload, OverrideBehaviour overrideBehaviour)
+        : this(filePath, overrideBehaviour)
     {
-        this.filePath = filePath;
         this.autoReload = autoReload;
-        OverrideBehaviour = overrideBehaviour;
     }
 
     private FlagOverrides(IDictionary<string, object> dictionary, bool watchChanges, OverrideBehaviour overrideBehaviour)
+        : this(dictionary, overrideBehaviour)
     {
-        this.dictionary = dictionary;
         this.autoReload = watchChanges;
-        OverrideBehaviour = overrideBehaviour;
     }
+
+    /// <summary>
+    ///  Creates an instance of the <see cref="FlagOverrides"/> class that uses a user-provided <see cref="IOverrideDataSource"/> implementation.
+    /// </summary>
+    /// <param name="dataSource">The override data source.</param>
+    /// <param name="overrideBehaviour">The override behaviour. Specifies whether the local values should override the remote values
+    /// or local values should only be used when a remote value doesn't exist or the local values should be used only.</param>
+    public FlagOverrides(IOverrideDataSource dataSource, OverrideBehaviour overrideBehaviour)
+        : this((object)dataSource, overrideBehaviour) { }
 
     /// <summary>
     /// The override behaviour.
@@ -35,13 +46,12 @@ public class FlagOverrides
 
     internal IOverrideDataSource BuildDataSource(LoggerWrapper logger)
     {
-        if (this.dictionary is not null)
-            return new LocalDictionaryDataSource(this.dictionary, this.autoReload);
-
-        if (this.filePath is not null)
-            return new LocalFileDataSource(this.filePath, this.autoReload, logger);
-
-        throw new InvalidOperationException("Could not determine the right override data source.");
+        return this.dataSource switch
+        {
+            IDictionary<string, object> dictionary => new LocalDictionaryDataSource(dictionary, this.autoReload),
+            string filePath => new LocalFileDataSource(filePath, this.autoReload, logger),
+            _ => (IOverrideDataSource)this.dataSource
+        };
     }
 
     /// <summary>

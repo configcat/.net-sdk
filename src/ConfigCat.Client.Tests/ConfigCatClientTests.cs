@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -1192,11 +1193,11 @@ public class ConfigCatClientTests
 
         Func<Task> action = methodName switch
         {
-            nameof(IConfigCatClient.GetValueAsync) => () => client.GetValueAsync("KEY", "", cancellationToken: cts.Token),
-            nameof(IConfigCatClient.GetValueDetailsAsync) => () => client.GetValueDetailsAsync("KEY", "", cancellationToken: cts.Token),
-            nameof(IConfigCatClient.GetAllKeysAsync) => () => client.GetAllKeysAsync(cancellationToken: cts.Token),
-            nameof(IConfigCatClient.GetAllValuesAsync) => () => client.GetAllValuesAsync(cancellationToken: cts.Token),
-            nameof(IConfigCatClient.GetAllValueDetailsAsync) => () => client.GetAllValueDetailsAsync(cancellationToken: cts.Token),
+            nameof(IConfigCatClient.GetValueAsync) => () => client.GetValueAsync("KEY", "", cancellationToken: cts.Token).AsTask(),
+            nameof(IConfigCatClient.GetValueDetailsAsync) => () => client.GetValueDetailsAsync("KEY", "", cancellationToken: cts.Token).AsTask(),
+            nameof(IConfigCatClient.GetAllKeysAsync) => () => client.GetAllKeysAsync(cancellationToken: cts.Token).AsTask(),
+            nameof(IConfigCatClient.GetAllValuesAsync) => () => client.GetAllValuesAsync(cancellationToken: cts.Token).AsTask(),
+            nameof(IConfigCatClient.GetAllValueDetailsAsync) => () => client.GetAllValueDetailsAsync(cancellationToken: cts.Token).AsTask(),
             _ => throw new ArgumentOutOfRangeException(nameof(methodName))
         };
 

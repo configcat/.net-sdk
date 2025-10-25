@@ -514,8 +514,16 @@ public class OverrideTests
             .GetGenericMethodDefinition()
             .MakeGenericMethod(defaultValue.GetType());
 
-        var getValueDetailsTask = (Task)method.Invoke(client, new[] { key, defaultValue, null, CancellationToken.None })!;
+        var getValueDetailsValueTask = method.Invoke(client, new[] { key, defaultValue, null, CancellationToken.None })!;
+
+        var asTaskMethod = typeof(ValueTask<>)
+            .MakeGenericType(typeof(EvaluationDetails<>).MakeGenericType(defaultValue.GetType()))
+            .GetMethod(nameof(ValueTask<object>.AsTask))!;
+
+        var getValueDetailsTask = (Task)asTaskMethod.Invoke(getValueDetailsValueTask, Array.Empty<object>())!;
+
         await getValueDetailsTask;
+
         var actualEvaluatedValueDetails = (IEvaluationDetails)typeof(Task<>)
             .MakeGenericType(typeof(EvaluationDetails<>).MakeGenericType(defaultValue.GetType()))
             .GetProperty(nameof(Task<object>.Result))!
@@ -599,8 +607,16 @@ public class OverrideTests
                 .GetGenericMethodDefinition()
                 .MakeGenericMethod(defaultValue.GetType());
 
-            var getValueDetailsTask = (Task)method.Invoke(client, new[] { key, defaultValue, null, CancellationToken.None })!;
+            var getValueDetailsValueTask = method.Invoke(client, new[] { key, defaultValue, null, CancellationToken.None })!;
+
+            var asTaskMethod = typeof(ValueTask<>)
+                .MakeGenericType(typeof(EvaluationDetails<>).MakeGenericType(defaultValue.GetType()))
+                .GetMethod(nameof(ValueTask<object>.AsTask))!;
+
+            var getValueDetailsTask = (Task)asTaskMethod.Invoke(getValueDetailsValueTask, Array.Empty<object>())!;
+
             await getValueDetailsTask;
+
             var actualEvaluatedValueDetails = (IEvaluationDetails)typeof(Task<>)
                 .MakeGenericType(typeof(EvaluationDetails<>).MakeGenericType(defaultValue.GetType()))
                 .GetProperty(nameof(Task<object>.Result))!

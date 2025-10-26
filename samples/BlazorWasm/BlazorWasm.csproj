@@ -15,13 +15,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\ConfigCatClient\ConfigCatClient.csproj" />
+    <ProjectReference Include="..\..\src\ConfigCat.HostingIntegration.Core\ConfigCat.HostingIntegration.Core.csproj" />
     <!-- Use PackageReference instead of the ProjectReference above in your application. -->
-    <!--<PackageReference Include="ConfigCat.Client" Version="9.*" />-->
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Include="..\ASP.NETCore\WebApplication\Adapters\ConfigCatToMSLoggerAdapter.cs" Link="Adapters\ConfigCatToMSLoggerAdapter.cs" />
+    <!--<PackageReference Include="ConfigCat.HostingIntegration.Core" Version="*" />-->
   </ItemGroup>
 
 </Project>

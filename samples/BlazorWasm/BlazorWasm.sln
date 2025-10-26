@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConfigCatClient", "..\..\sr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorWasm", "BlazorWasm.csproj", "{B0E7F85F-048E-48A5-91BA-BB73FF3D7118}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConfigCat.HostingIntegration.Core", "..\..\src\ConfigCat.HostingIntegration.Core\ConfigCat.HostingIntegration.Core.csproj", "{4B83F5A5-BCE7-AC5A-BD1E-E6320FDFC5CC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Benchmark|Any CPU = Benchmark|Any CPU
@@ -28,12 +30,19 @@ Global
 		{B0E7F85F-048E-48A5-91BA-BB73FF3D7118}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B0E7F85F-048E-48A5-91BA-BB73FF3D7118}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B0E7F85F-048E-48A5-91BA-BB73FF3D7118}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4B83F5A5-BCE7-AC5A-BD1E-E6320FDFC5CC}.Benchmark|Any CPU.ActiveCfg = Benchmark|Any CPU
+		{4B83F5A5-BCE7-AC5A-BD1E-E6320FDFC5CC}.Benchmark|Any CPU.Build.0 = Benchmark|Any CPU
+		{4B83F5A5-BCE7-AC5A-BD1E-E6320FDFC5CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4B83F5A5-BCE7-AC5A-BD1E-E6320FDFC5CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4B83F5A5-BCE7-AC5A-BD1E-E6320FDFC5CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4B83F5A5-BCE7-AC5A-BD1E-E6320FDFC5CC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{8F64DC62-D524-4310-A620-03D65ED829BC} = {73A8C054-9067-4474-B6D0-A0A924DF5DB6}
+		{4B83F5A5-BCE7-AC5A-BD1E-E6320FDFC5CC} = {73A8C054-9067-4474-B6D0-A0A924DF5DB6}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {5F653DA7-4E85-40D3-AB27-E2599966E0AC}

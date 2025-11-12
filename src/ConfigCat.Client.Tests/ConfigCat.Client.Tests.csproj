@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net45;net461;netcoreapp3.1;net5.0;net6.0;net8.0;net9.0</TargetFrameworks>
+    <TargetFrameworks>net45;net461;netcoreapp3.1;net5.0;net6.0;net8.0;net9.0;net10.0</TargetFrameworks>
     <IsPackable>false</IsPackable>
     <AssemblyName>ConfigCatClientTests</AssemblyName>
     <SignAssembly>true</SignAssembly>
@@ -25,13 +25,13 @@
       </ItemGroup>
     </When>
 
-    <When Condition="'$(TargetFramework)' == 'net8.0'">
+    <When Condition="'$(TargetFramework)' == 'net10.0'">
       <ItemGroup>
         <!-- DynamicData matrix tests won't show up in VS 2022 using MSTest.TestAdapter v2.2.10.
          It seems we'd need v3.x to make that work. But v3.x supports .NET 4.6.2+ only...
          However, as test discovery may be pretty slow because of the large number of test cases,
          it's usually sufficient to see separate test results for only one of the target frameworks,
-         so we enable v3.x on the latest LTS version (.NET 8) only. -->
+         so we enable v3.x on the latest LTS version (.NET 10) only. -->
         <PackageReference Include="MSTest.TestAdapter" Version="3.1.1" />
         <PackageReference Include="MSTest.TestFramework" Version="3.1.1" />
       </ItemGroup>

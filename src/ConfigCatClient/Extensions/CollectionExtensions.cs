@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace System.Collections.Generic;
 
@@ -9,7 +10,18 @@ internal static class CollectionExtensions
         return source is { Length: > 0 } ? new ReadOnlyCollection<T>(source) : Array.Empty<T>();
     }
 
-    public static Dictionary<TKey, TValue> MergeOverwriteWith<TKey, TValue>(this Dictionary<TKey, TValue>? source, Dictionary<TKey, TValue>? other)
+    public static IReadOnlyCollection<TKey> KeyCollection<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> source)
+        where TKey : notnull
+    {
+        return
+            // NOTE: It's worth special-casing Dictionary<TKey, TValue> for performance since it will almost always be
+            // the underlying type in our use cases.
+            source is Dictionary<TKey, TValue> dictionary ? dictionary.Keys
+            : source.Keys is IReadOnlyCollection<TKey> keyCollection ? keyCollection
+            : source.Keys.ToArray();
+    }
+
+    public static Dictionary<TKey, TValue> MergeOverwriteWith<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue>? source, IReadOnlyDictionary<TKey, TValue>? other)
         where TKey : notnull
     {
         Dictionary<TKey, TValue> result;

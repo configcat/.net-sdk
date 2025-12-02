@@ -7,11 +7,11 @@ namespace ConfigCat.Client.Utils;
 
 internal readonly struct StringListFormatter : IFormattable
 {
-    private readonly ICollection<string> collection;
+    private readonly IReadOnlyCollection<string> collection;
     private readonly int maxLength;
     private readonly Func<int, string>? getOmittedItemsText;
 
-    public StringListFormatter(ICollection<string> collection, int maxLength = 0, Func<int, string>? getOmittedItemsText = null)
+    public StringListFormatter(IReadOnlyCollection<string> collection, int maxLength = 0, Func<int, string>? getOmittedItemsText = null)
     {
         this.collection = collection;
         this.maxLength = maxLength;

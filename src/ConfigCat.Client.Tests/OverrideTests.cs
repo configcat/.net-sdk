@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Evaluation;
+using ConfigCat.Client.Override;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ConfigCat.Client.Tests;
@@ -470,6 +471,106 @@ public class OverrideTests
         }
     }
 
+    [TestMethod]
+    public async Task CustomDataSource()
+    {
+        // "Beta users" segment: Email IS ONE OF ['jane@example.com', 'john@example.com']
+        const string configJson =
+            """
+            {
+              "p": {
+                "s": "UZWYnRWPwF7hApMquVrUmyPRGziigICYz372JOYqXgw=",
+              },
+              "s": [
+                {
+                  "n": "Beta users",
+                  "r": [
+                    {
+                      "a": "Email",
+                      "c": 16,
+                      "l": [
+                        "89f6d080752f2969b6802c399e6141885c4ce40fb151f41b9ec955c1f4790490",
+                        "2dde8bd2436cb07d45fb455847f8a09ea2427313c278b3352a39db31e6106c4c",
+                      ],
+                    },
+                  ],
+                },
+              ],
+              "f": {
+                "isInSegment": {
+                  "t": 0,
+                  "r": [
+                    {
+                      "c": [
+                        {
+                          "s": {
+                            "s": 0,
+                            "c": 0,
+                          },
+                        },
+                      ],
+                      "s": {
+                        "v": {
+                          "b": true,
+                        },
+                        "i": "1",
+                      },
+                    },
+                  ],
+                  "v": {
+                    "b": false,
+                  },
+                  "i": "0",
+                },
+                "isNotInSegment": {
+                  "t": 0,
+                  "r": [
+                    {
+                      "c": [
+                        {
+                          "s": {
+                            "s": 0,
+                            "c": 1,
+                          },
+                        },
+                      ],
+                      "s": {
+                        "v": {
+                          "b": true,
+                        },
+                        "i": "1",
+                      },
+                    },
+                  ],
+                  "v": {
+                    "b": false,
+                  },
+                  "i": "0",
+                },
+              },
+            }
+            """;
+
+        var config = Config.Deserialize(configJson.AsSpan());
+
+        var customDataSource = new ConfigBasedOverrideDataSource(config);
+
+        using var client = ConfigCatClient.Get("localhost-123456789012/1234567890123456789012", options =>
+        {
+            options.FlagOverrides = new FlagOverrides(customDataSource, OverrideBehaviour.LocalOnly);
+            options.PollingMode = PollingModes.ManualPoll;
+        });
+
+
+        var keys = client.Snapshot().GetAllKeys();
+        CollectionAssert.AreEquivalent(new string[] { "isInSegment", "isNotInSegment" }, keys.ToArray());
+
+        var user = new User("12345") { Email = "jane@example.com" };
+
+        Assert.IsTrue(await client.GetValueAsync<bool?>("isInSegment", null, user));
+        Assert.IsFalse(await client.GetValueAsync<bool?>("isNotInSegment", null, user));
+    }
+
     [DataRow(true, false, true)]
     [DataRow(true, "", "")]
     [DataRow(true, 0, 0)]
@@ -671,5 +772,17 @@ public class OverrideTests
         using var stream = File.OpenWrite(path);
         using var writer = new StreamWriter(stream);
         await writer.WriteAsync(GetJsonContent(content));
+    }
+
+    private sealed class ConfigBasedOverrideDataSource : IOverrideDataSource
+    {
+        private readonly Config config;
+
+        public ConfigBasedOverrideDataSource(Config config)
+        {
+            this.config = config;
+        }
+
+        public IReadOnlyDictionary<string, Setting> GetOverrides() => this.config.Settings;
     }
 }

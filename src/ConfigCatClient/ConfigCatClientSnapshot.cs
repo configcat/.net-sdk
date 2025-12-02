@@ -56,7 +56,7 @@ public readonly struct ConfigCatClientSnapshot : IConfigCatClientSnapshot
                 : Array.Empty<string>();
         }
 
-        return this.settings.Value is { } settings ? settings.Keys : Array.Empty<string>();
+        return this.settings.Value is { } settings ? settings.KeyCollection() : Array.Empty<string>();
     }
 
     /// <inheritdoc/>>

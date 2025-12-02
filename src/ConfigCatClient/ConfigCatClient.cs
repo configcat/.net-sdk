@@ -395,7 +395,7 @@ public sealed class ConfigCatClient : IConfigCatClient
             {
                 return Array.Empty<string>();
             }
-            return settings.Value.Keys;
+            return settings.Value.KeyCollection();
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -532,22 +532,23 @@ public sealed class ConfigCatClient : IConfigCatClient
 
     private SettingsWithRemoteConfig GetInMemorySettings()
     {
-        Dictionary<string, Setting> local;
+        IReadOnlyDictionary<string, Setting> local;
         SettingsWithRemoteConfig remote;
         switch (this.overrideBehaviour)
         {
             case null:
                 return GetRemoteConfig();
             case OverrideBehaviour.LocalOnly:
-                return new SettingsWithRemoteConfig(this.overrideDataSource!.GetOverrides(), remoteConfig: null);
+                local = this.overrideDataSource!.GetOverrides();
+                return new SettingsWithRemoteConfig(local, remoteConfig: null);
             case OverrideBehaviour.LocalOverRemote:
                 local = this.overrideDataSource!.GetOverrides();
                 remote = GetRemoteConfig();
-                return new SettingsWithRemoteConfig(remote.Value.MergeOverwriteWith(local), remote.RemoteConfig);
+                return new SettingsWithRemoteConfig(remote.Value is { Count: > 0 } ? remote.Value.MergeOverwriteWith(local) : local, remoteConfig: null);
             case OverrideBehaviour.RemoteOverLocal:
                 local = this.overrideDataSource!.GetOverrides();
                 remote = GetRemoteConfig();
-                return new SettingsWithRemoteConfig(local.MergeOverwriteWith(remote.Value), remote.RemoteConfig);
+                return new SettingsWithRemoteConfig(remote.Value is { Count: > 0 } ? local.MergeOverwriteWith(remote.Value) : local, remote.RemoteConfig);
             default:
                 throw new InvalidOperationException(); // execution should never get here
         }
@@ -564,22 +565,23 @@ public sealed class ConfigCatClient : IConfigCatClient
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        Dictionary<string, Setting> local;
+        IReadOnlyDictionary<string, Setting> local;
         SettingsWithRemoteConfig remote;
         switch (this.overrideBehaviour)
         {
             case null:
                 return await GetRemoteConfigAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
             case OverrideBehaviour.LocalOnly:
-                return new SettingsWithRemoteConfig(await this.overrideDataSource!.GetOverridesAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext), remoteConfig: null);
+                local = this.overrideDataSource!.GetOverrides();
+                return new SettingsWithRemoteConfig(local, remoteConfig: null);
             case OverrideBehaviour.LocalOverRemote:
-                local = await this.overrideDataSource!.GetOverridesAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+                local = this.overrideDataSource!.GetOverrides();
                 remote = await GetRemoteConfigAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
-                return new SettingsWithRemoteConfig(remote.Value.MergeOverwriteWith(local), remote.RemoteConfig);
+                return new SettingsWithRemoteConfig(remote.Value is { Count: > 0 } ? remote.Value.MergeOverwriteWith(local) : local, remoteConfig: null);
             case OverrideBehaviour.RemoteOverLocal:
-                local = await this.overrideDataSource!.GetOverridesAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+                local = this.overrideDataSource!.GetOverrides();
                 remote = await GetRemoteConfigAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
-                return new SettingsWithRemoteConfig(local.MergeOverwriteWith(remote.Value), remote.RemoteConfig);
+                return new SettingsWithRemoteConfig(remote.Value is { Count: > 0 } ? local.MergeOverwriteWith(remote.Value) : local, remote.RemoteConfig);
             default:
                 throw new InvalidOperationException(); // execution should never get here
         }
@@ -680,13 +682,13 @@ public sealed class ConfigCatClient : IConfigCatClient
 
     internal readonly struct SettingsWithRemoteConfig
     {
-        public SettingsWithRemoteConfig(Dictionary<string, Setting>? value, ProjectConfig? remoteConfig)
+        public SettingsWithRemoteConfig(IReadOnlyDictionary<string, Setting>? value, ProjectConfig? remoteConfig)
         {
             Value = value;
             RemoteConfig = remoteConfig;
         }
 
-        public Dictionary<string, Setting>? Value { get; }
+        public IReadOnlyDictionary<string, Setting>? Value { get; }
         public ProjectConfig? RemoteConfig { get; }
     }
 

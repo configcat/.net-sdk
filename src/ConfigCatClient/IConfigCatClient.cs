@@ -37,7 +37,7 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// <exception cref="ArgumentException"><paramref name="key"/> is an empty string.</exception>
     /// <exception cref="ArgumentException"><typeparamref name="T"/> is not an allowed type.</exception>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> is canceled during the execution of the task.</exception>
-    Task<T> GetValueAsync<T>(string key, T defaultValue, User? user = null, CancellationToken cancellationToken = default);
+    ValueTask<T> GetValueAsync<T>(string key, T defaultValue, User? user = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the value along with evaluation details of a feature flag or setting identified by <paramref name="key"/> asynchronously.
@@ -61,14 +61,14 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// <exception cref="ArgumentException"><paramref name="key"/> is an empty string.</exception>
     /// <exception cref="ArgumentException"><typeparamref name="T"/> is not an allowed type.</exception>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> is canceled during the execution of the task.</exception>
-    Task<EvaluationDetails<T>> GetValueDetailsAsync<T>(string key, T defaultValue, User? user = null, CancellationToken cancellationToken = default);
+    ValueTask<EvaluationDetails<T>> GetValueDetailsAsync<T>(string key, T defaultValue, User? user = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns all setting keys asynchronously.
     /// </summary>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the collection of keys.</returns>
-    Task<IReadOnlyCollection<string>> GetAllKeysAsync(CancellationToken cancellationToken = default);
+    ValueTask<IReadOnlyCollection<string>> GetAllKeysAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the keys and values of all feature flags and settings asynchronously.
@@ -76,7 +76,7 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// <param name="user">The User Object to use for evaluating targeting rules and percentage options.</param>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the dictionary containing the keys and values.</returns>
-    Task<IReadOnlyDictionary<string, object?>> GetAllValuesAsync(User? user = null, CancellationToken cancellationToken = default);
+    ValueTask<IReadOnlyDictionary<string, object?>> GetAllValuesAsync(User? user = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the values along with evaluation details of all feature flags and settings asynchronously.
@@ -84,7 +84,7 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// <param name="user">The User Object to use for evaluating targeting rules and percentage options.</param>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the list of values along with evaluation details.</returns>
-    Task<IReadOnlyList<EvaluationDetails>> GetAllValueDetailsAsync(User? user = null, CancellationToken cancellationToken = default);
+    ValueTask<IReadOnlyList<EvaluationDetails>> GetAllValueDetailsAsync(User? user = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the key of a feature flag or setting and its value identified by the given Variation ID (analytics) asynchronously.
@@ -101,7 +101,7 @@ public interface IConfigCatClient : IProvidesHooks, IDisposable
     /// <exception cref="ArgumentException"><paramref name="variationId"/> is an empty string.</exception>
     /// <exception cref="ArgumentException"><typeparamref name="T"/> is not an allowed type.</exception>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> is canceled during the execution of the task.</exception>
-    Task<KeyValuePair<string, T>?> GetKeyAndValueAsync<T>(string variationId, CancellationToken cancellationToken = default);
+    ValueTask<KeyValuePair<string, T>?> GetKeyAndValueAsync<T>(string variationId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Updates the internally cached config by synchronizing with the external cache (if any),

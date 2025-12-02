@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -14,6 +15,7 @@ using ConfigCat.Client.ConfigService;
 using ConfigCat.Client.Configuration;
 using ConfigCat.Client.Evaluation;
 using ConfigCat.Client.Override;
+using ConfigCat.Client.Shims;
 using ConfigCat.Client.Tests.Fakes;
 using ConfigCat.Client.Tests.Helpers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -199,7 +201,6 @@ public class ConfigCatClientTests
         var sw = new Stopwatch();
         sw.Start();
         using var client = CreateClientWithMockedFetcher("1", this.loggerMock, this.fetcherMock,
-            onFetch: _ => throw new NotImplementedException(),
             onFetchAsync: async (cfg, _) =>
             {
                 await Task.Delay(delay);
@@ -230,7 +231,6 @@ public class ConfigCatClientTests
         var sw = new Stopwatch();
         sw.Start();
         using var client = CreateClientWithMockedFetcher("1", this.loggerMock, this.fetcherMock,
-            onFetch: _ => throw new NotImplementedException(),
             onFetchAsync: async (cfg, _) =>
             {
                 await Task.Delay(delay);
@@ -290,7 +290,6 @@ public class ConfigCatClientTests
         var sw = new Stopwatch();
         sw.Start();
         using var client = CreateClientWithMockedFetcher("1", this.loggerMock, this.fetcherMock,
-            onFetch: _ => throw new NotImplementedException(),
             onFetchAsync: async (cfg, _) =>
             {
                 await Task.Delay(delay);
@@ -336,7 +335,6 @@ public class ConfigCatClientTests
         var sw = new Stopwatch();
         sw.Start();
         using var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
-            onFetch: _ => throw new NotImplementedException(),
             onFetchAsync: async (cfg, _) =>
             {
                 await Task.Delay(delay);
@@ -380,7 +378,6 @@ public class ConfigCatClientTests
         var hooks = new Hooks();
 
         using var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
-            onFetch: cfg => FetchResult.NotModified(pc.With(ProjectConfig.GenerateTimeStamp())),
             onFetchAsync: (cfg, _) => Task.FromResult(FetchResult.NotModified(pc.With(ProjectConfig.GenerateTimeStamp()))),
             configServiceFactory: (fetcher, cacheParams, loggerWrapper, hooks) => new LazyLoadConfigService(this.fetcherMock.Object, cacheParams, loggerWrapper, cacheTimeToLive, hooks: hooks),
             evaluatorFactory: null,
@@ -415,7 +412,6 @@ public class ConfigCatClientTests
         var hooks = new Hooks();
 
         using var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
-            onFetch: cfg => FetchResult.NotModified(pc.With(ProjectConfig.GenerateTimeStamp())),
             onFetchAsync: (cfg, _) => Task.FromResult(FetchResult.NotModified(pc.With(ProjectConfig.GenerateTimeStamp()))),
             configServiceFactory: (fetcher, cacheParams, loggerWrapper, hooks) => new LazyLoadConfigService(this.fetcherMock.Object, cacheParams, loggerWrapper, cacheTimeToLive, hooks: hooks),
             evaluatorFactory: null,
@@ -448,7 +444,6 @@ public class ConfigCatClientTests
         var hooks = new Hooks();
 
         using var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
-            onFetch: cfg => FetchResult.NotModified(pc.With(ProjectConfig.GenerateTimeStamp())),
             onFetchAsync: (cfg, _) => Task.FromResult(FetchResult.NotModified(pc.With(ProjectConfig.GenerateTimeStamp()))),
             configServiceFactory: (fetcher, cacheParams, loggerWrapper, hooks) => new ManualPollConfigService(this.fetcherMock.Object, cacheParams, loggerWrapper, hooks: hooks),
             evaluatorFactory: null,
@@ -476,7 +471,6 @@ public class ConfigCatClientTests
         var hooks = new Hooks();
 
         using var client = CreateClientWithMockedFetcher("1", this.loggerMock, this.fetcherMock,
-            onFetch: delegate { throw new InvalidOperationException(); },
             onFetchAsync: delegate { throw new InvalidOperationException(); },
             configServiceFactory: (_, _, loggerWrapper, hooks) => new NullConfigService(loggerWrapper, hooks: hooks),
             evaluatorFactory: null, configCacheFactory: null,
@@ -515,7 +509,6 @@ public class ConfigCatClientTests
         };
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
-            onFetch: _ => throw new NotImplementedException(),
             onFetchAsync: (_, _) => Task.FromResult<FetchResult>(default!),
             configServiceFactory,
             evaluatorFactory: null,
@@ -915,7 +908,7 @@ public class ConfigCatClientTests
         Assert.IsNull(actual.MatchedPercentageOption);
 
         Assert.AreEqual(1, flagEvaluatedEvents.Count);
-        Assert.AreSame(actual, flagEvaluatedEvents[0].EvaluationDetails);
+        Assert.AreEqual(actual, flagEvaluatedEvents[0].EvaluationDetails);
     }
 
     [TestMethod]
@@ -975,7 +968,7 @@ public class ConfigCatClientTests
             var flagEvaluatedDetails = flagEvaluatedEvents.Select(e => e.EvaluationDetails).FirstOrDefault(details => details.Key == expectedItem.Key);
 
             Assert.IsNotNull(flagEvaluatedDetails);
-            Assert.AreSame(actualDetails, flagEvaluatedDetails);
+            Assert.AreEqual(actualDetails, flagEvaluatedDetails);
         }
     }
 
@@ -1088,7 +1081,7 @@ public class ConfigCatClientTests
             var flagEvaluatedDetails = flagEvaluatedEvents.Select(e => e.EvaluationDetails).FirstOrDefault(details => details.Key == key);
 
             Assert.IsNotNull(flagEvaluatedDetails);
-            Assert.AreSame(actualDetails, flagEvaluatedDetails);
+            Assert.AreEqual(actualDetails, flagEvaluatedDetails);
         }
 
         Assert.AreEqual(1, errorEvents.Count);
@@ -1200,11 +1193,11 @@ public class ConfigCatClientTests
 
         Func<Task> action = methodName switch
         {
-            nameof(IConfigCatClient.GetValueAsync) => () => client.GetValueAsync("KEY", "", cancellationToken: cts.Token),
-            nameof(IConfigCatClient.GetValueDetailsAsync) => () => client.GetValueDetailsAsync("KEY", "", cancellationToken: cts.Token),
-            nameof(IConfigCatClient.GetAllKeysAsync) => () => client.GetAllKeysAsync(cancellationToken: cts.Token),
-            nameof(IConfigCatClient.GetAllValuesAsync) => () => client.GetAllValuesAsync(cancellationToken: cts.Token),
-            nameof(IConfigCatClient.GetAllValueDetailsAsync) => () => client.GetAllValueDetailsAsync(cancellationToken: cts.Token),
+            nameof(IConfigCatClient.GetValueAsync) => () => client.GetValueAsync("KEY", "", cancellationToken: cts.Token).AsTask(),
+            nameof(IConfigCatClient.GetValueDetailsAsync) => () => client.GetValueDetailsAsync("KEY", "", cancellationToken: cts.Token).AsTask(),
+            nameof(IConfigCatClient.GetAllKeysAsync) => () => client.GetAllKeysAsync(cancellationToken: cts.Token).AsTask(),
+            nameof(IConfigCatClient.GetAllValuesAsync) => () => client.GetAllValuesAsync(cancellationToken: cts.Token).AsTask(),
+            nameof(IConfigCatClient.GetAllValueDetailsAsync) => () => client.GetAllValueDetailsAsync(cancellationToken: cts.Token).AsTask(),
             _ => throw new ArgumentOutOfRangeException(nameof(methodName))
         };
 
@@ -1640,7 +1633,7 @@ public class ConfigCatClientTests
 
             if (pollingMode == nameof(AutoPoll))
             {
-                await Task.Delay(100);
+                await Task.Delay(500);
                 expectedFetchAsyncCount++;
             }
 
@@ -2158,7 +2151,7 @@ public class ConfigCatClientTests
         var configCacheLocal = configCache = new InMemoryConfigCache();
 
         return CreateClientWithMockedFetcher(cacheKey, loggerMock, fetcherMock,
-            onFetch, onFetchAsync: (pc, _) => Task.FromResult(onFetch(pc)),
+            onFetchAsync: (pc, _) => Task.FromResult(onFetch(pc)),
             configServiceFactory, evaluatorFactory,
             configCacheFactory: _ => configCacheLocal,
             overrideDataSourceFactory: null, hooks, out configService);
@@ -2167,7 +2160,6 @@ public class ConfigCatClientTests
     private static IConfigCatClient CreateClientWithMockedFetcher(string cacheKey,
         Mock<IConfigCatLogger> loggerMock,
         Mock<IConfigFetcher> fetcherMock,
-        Func<ProjectConfig, FetchResult> onFetch,
         Func<ProjectConfig, CancellationToken, Task<FetchResult>> onFetchAsync,
         Func<IConfigFetcher, CacheParameters, LoggerWrapper, Hooks?, IConfigService> configServiceFactory,
         Func<LoggerWrapper, IRolloutEvaluator>? evaluatorFactory,

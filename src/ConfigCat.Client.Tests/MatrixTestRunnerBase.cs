@@ -6,8 +6,6 @@ using ConfigCat.Client.Evaluation;
 using ConfigCat.Client.Tests.Helpers;
 
 #if BENCHMARK_OLD
-using Config = ConfigCat.Client.SettingsWithPreferences;
-
 namespace ConfigCat.Client.Benchmarks.Old;
 #elif BENCHMARK_NEW
 namespace ConfigCat.Client.Benchmarks.New;

@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using ConfigCat.Client.Evaluation;
 using ConfigCat.Client.Utils;
@@ -36,9 +34,7 @@ public sealed class Segment
     /// The list of segment rule conditions (where there is a logical AND relation between the items).
     /// </summary>
     [JsonIgnore]
-    public IReadOnlyList<UserCondition> Conditions => this.conditionsReadOnly ??= this.conditions is { Length: > 0 }
-        ? new ReadOnlyCollection<UserCondition>(this.conditions)
-        : Array.Empty<UserCondition>();
+    public IReadOnlyList<UserCondition> Conditions => this.conditionsReadOnly ??= this.conditions.AsReadOnly();
 
     /// <inheritdoc />
     public override string ToString()

@@ -3,6 +3,7 @@ extern alias from_project;
 
 using System;
 using BenchmarkDotNet.Attributes;
+using from_project::ConfigCat.Client.Versioning;
 
 namespace ConfigCat.Client.Benchmarks;
 
@@ -24,44 +25,45 @@ public class FlagEvaluationBenchmark
         this.userOld = new("Cat") { Email = "cat@configcat.com", Custom = { ["Version"] = "1.1.1", ["Number"] = "1" } };
 
         this.evaluationServicesNew = New.BenchmarkHelper.CreateEvaluationServices(LogInfo);
-        this.userNew = new("Cat") { Email = "cat@configcat.com", Custom = { ["Version"] = "1.1.1", ["Number"] = "1" } };
+        var parsedVersion = SemVersion.Parse("1.1.1");
+        this.userNew = new("Cat") { Email = "cat@configcat.com", Custom = { ["Version"] = parsedVersion, ["Number"] = "1" } };
     }
 
     [Params(false, true)]
     public bool LogInfo { get; set; }
 
     [Benchmark]
-    public object Basic_ConfigV5()
+    public bool Basic_v9()
     {
-        return Old.BenchmarkHelper.Evaluate(this.evaluationServicesOld, "basicFlag", false);
+        return Old.BenchmarkHelper.Evaluate(this.evaluationServicesOld, "basicFlag", false).Value;
     }
 
     [Benchmark]
-    public object Basic_ConfigV6()
+    public bool Basic_vNext()
     {
-        return New.BenchmarkHelper.Evaluate(this.evaluationServicesNew, "basicFlag", false);
+        return New.BenchmarkHelper.Evaluate(this.evaluationServicesNew, "basicFlag", false).Value;
     }
 
     [Benchmark]
-    public object Complex_ConfigV5()
+    public string Complex_v9()
     {
-        return Old.BenchmarkHelper.Evaluate(this.evaluationServicesOld, "complexFlag", "", this.userOld);
+        return Old.BenchmarkHelper.Evaluate(this.evaluationServicesOld, "complexFlag", "", this.userOld).Value;
     }
 
     [Benchmark]
-    public object Complex_ConfigV6()
+    public string Complex_vNext()
     {
-        return New.BenchmarkHelper.Evaluate(this.evaluationServicesNew, "complexFlag", "", this.userNew);
+        return New.BenchmarkHelper.Evaluate(this.evaluationServicesNew, "complexFlag", "", this.userNew).Value;
     }
 
     [Benchmark]
-    public object All_ConfigV5()
+    public Array All_v9()
     {
         return Old.BenchmarkHelper.EvaluateAll(this.evaluationServicesOld, this.userOld);
     }
 
     [Benchmark]
-    public object All_ConfigV6()
+    public Array All_vNext()
     {
         return New.BenchmarkHelper.EvaluateAll(this.evaluationServicesNew, this.userNew);
     }

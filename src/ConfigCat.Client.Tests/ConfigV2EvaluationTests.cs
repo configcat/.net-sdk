@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using ConfigCat.Client.Configuration;
 using ConfigCat.Client.Evaluation;
 using ConfigCat.Client.Tests.Helpers;
+using ConfigCat.Client.Versioning;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 
@@ -447,6 +448,14 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
     [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/iV8vH2MBakKxkFZylxHmTg", "lessThanWithPercentage", "12345", "Custom1", "0.9.9", "< 1.0.0")]
     [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/iV8vH2MBakKxkFZylxHmTg", "lessThanWithPercentage", "12345", "Custom1", "1.0.0", "20%")]
     [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/iV8vH2MBakKxkFZylxHmTg", "lessThanWithPercentage", "12345", "Custom1", "1.1", "20%")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/iV8vH2MBakKxkFZylxHmTg", "lessThanWithPercentage", "12345", "Custom1", "semversion:0.0", "< 1.0.0")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/iV8vH2MBakKxkFZylxHmTg", "lessThanWithPercentage", "12345", "Custom1", "semversion:0.9.9", "< 1.0.0")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/iV8vH2MBakKxkFZylxHmTg", "lessThanWithPercentage", "12345", "Custom1", "semversion:1.0.0", "20%")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/iV8vH2MBakKxkFZylxHmTg", "lessThanWithPercentage", "12345", "Custom1", "semversion:1.1", "20%")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/iV8vH2MBakKxkFZylxHmTg", "lessThanWithPercentage", "12345", "Custom1", "version:0.0", "< 1.0.0")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/iV8vH2MBakKxkFZylxHmTg", "lessThanWithPercentage", "12345", "Custom1", "version:0.9.9", "< 1.0.0")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/iV8vH2MBakKxkFZylxHmTg", "lessThanWithPercentage", "12345", "Custom1", "version:1.0.0", "20%")]
+    [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/iV8vH2MBakKxkFZylxHmTg", "lessThanWithPercentage", "12345", "Custom1", "version:1.1", "20%")]
     [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/iV8vH2MBakKxkFZylxHmTg", "lessThanWithPercentage", "12345", "Custom1", 0, "20%")]
     [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/iV8vH2MBakKxkFZylxHmTg", "lessThanWithPercentage", "12345", "Custom1", 0.9, "20%")]
     [DataRow("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/iV8vH2MBakKxkFZylxHmTg", "lessThanWithPercentage", "12345", "Custom1", 2, "20%")]
@@ -570,8 +579,21 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
 
         if (customAttributeValue is string s)
         {
-            const string decimalPrefix = "decimal:", dateTimePrefix = "datetime:", dateTimeOffsetPrefix = "datetimeoffset:";
-            if (s.StartsWith(decimalPrefix, StringComparison.Ordinal))
+            const string
+                semVersionPrefix = "semversion:",
+                versionPrefix = "version:",
+                decimalPrefix = "decimal:",
+                dateTimePrefix = "datetime:",
+                dateTimeOffsetPrefix = "datetimeoffset:";
+            if (s.StartsWith(semVersionPrefix, StringComparison.Ordinal))
+            {
+                customAttributeValue = SemVersion.Parse(s.Substring(semVersionPrefix.Length));
+            }
+            else if (s.StartsWith(versionPrefix, StringComparison.Ordinal))
+            {
+                customAttributeValue = Version.Parse(s.Substring(versionPrefix.Length));
+            }
+            else if (s.StartsWith(decimalPrefix, StringComparison.Ordinal))
             {
                 customAttributeValue = decimal.Parse(s.Substring(decimalPrefix.Length));
             }

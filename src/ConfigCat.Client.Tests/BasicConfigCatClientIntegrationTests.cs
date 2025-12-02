@@ -268,7 +268,7 @@ public class BasicConfigCatClientIntegrationTests
         Assert.AreEqual("7a0be518", actual.VariationId);
 
         Assert.AreEqual(1, flagEvaluatedEvents.Count);
-        Assert.AreSame(actual, flagEvaluatedEvents[0].EvaluationDetails);
+        Assert.AreEqual(actual, flagEvaluatedEvents[0].EvaluationDetails);
     }
 
     [TestMethod]

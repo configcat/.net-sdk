@@ -1,5 +1,5 @@
-using System.Reflection;
-using System.Text.Json;
+using System;
+using System.Collections.Generic;
 using ConfigCat.Client.Tests.Helpers;
 
 namespace ConfigCat.Client.Benchmarks.Old;
@@ -8,97 +8,142 @@ public static partial class BenchmarkHelper
 {
     public class BasicMatrixTestsDescriptor : IMatrixTestDescriptor
     {
-        public ConfigLocation ConfigLocation => new ConfigLocation.LocalFile("data", "sample_v5_old.json");
+        public ConfigLocation ConfigLocation => new ConfigLocation.LocalFile("data", "sample_v5.json");
         public string MatrixResultFileName => "testmatrix.csv";
     }
 
-    private static readonly SettingsWithPreferences Config = new SettingsWithPreferences
+    private static readonly Config Config = new Func<Config>(() =>
     {
-        Settings =
+        var config = new Config
         {
-            ["basicFlag"] = CreateSetting(SettingType.Boolean, JsonDocument.Parse("true").RootElement),
-            ["complexFlag"] = CreateSetting(SettingType.String,  JsonDocument.Parse("\"fallback\"").RootElement,
-                new[]
+            Preferences = new Preferences
+            {
+                Salt = "LKQu1a62agfNnWuGwA8cZglf4x0yZSbY2En7WQn5dWw"
+            },
+            Settings = new Dictionary<string, Setting>()
+            {
+                ["basicFlag"] = new Setting
                 {
-                    new RolloutRule
-                    {
-                        Order = 0,
-                        ComparisonAttribute = nameof(User.Identifier),
-                        Comparator = Comparator.SensitiveOneOf,
-                        ComparisonValue = "68d93aa74a0aa1664f65ad6c0515f24769b15c84,8409e4e5d27a1465165012b03b2606f0e5b08250",
-                        Value = JsonDocument.Parse("\"a\"").RootElement,
-                    },
-                    new RolloutRule
-                    {
-                        Order = 1,
-                        ComparisonAttribute = nameof(User.Email),
-                        Comparator = Comparator.Contains,
-                        ComparisonValue = "@example.com",
-                        Value = JsonDocument.Parse("\"b\"").RootElement,
-                    },
-                    new RolloutRule
-                    {
-                        Order = 2,
-                        ComparisonAttribute = "Version",
-                        Comparator = Comparator.SemVerIn,
-                        ComparisonValue = "1.0.0, 2.0.0",
-                        Value = JsonDocument.Parse("\"c\"").RootElement,
-                    },
-                    new RolloutRule
-                    {
-                        Order = 3,
-                        ComparisonAttribute = "Version",
-                        Comparator = Comparator.SemVerGreaterThan,
-                        ComparisonValue = "3.0.0",
-                        Value = JsonDocument.Parse("\"d\"").RootElement,
-                    },
-                    new RolloutRule
-                    {
-                        Order = 4,
-                        ComparisonAttribute = "Number",
-                        Comparator = Comparator.NumberGreaterThan,
-                        ComparisonValue = "3.14",
-                        Value = JsonDocument.Parse("\"e\"").RootElement,
-                    },
+                    SettingType = SettingType.Boolean,
+                    Value = new SettingValue { BoolValue = true },
                 },
-                new[]
+                ["complexFlag"] = new Setting
                 {
-                    new RolloutPercentageItem
+                    SettingType = SettingType.String,
+                    TargetingRules = new[]
                     {
-                        Percentage = 20,
-                        Value = JsonDocument.Parse("\"p20\"").RootElement
+                        new TargetingRule
+                        {
+                            Conditions = new[]
+                            {
+                                new ConditionContainer
+                                {
+                                    UserCondition =  new UserCondition()
+                                    {
+                                        ComparisonAttribute = nameof(User.Identifier),
+                                        Comparator = UserComparator.SensitiveTextIsOneOf,
+                                        StringListValue = new[]
+                                        {
+                                            "61418c941ecda8031d08ab86ec821e676fde7b6a59cd16b1e7191503c2f8297d",
+                                            "2ebea0310612c4c40d183b0c123d9bd425cf54f1e101f42858e701b5077cba01"
+                                        }
+                                    }
+                                },
+                            },
+                            SimpleValue = new SimpleSettingValue { Value = new SettingValue { StringValue =  "a" } },
+                        },
+                        new TargetingRule
+                        {
+                            Conditions = new[]
+                            {
+                                new ConditionContainer
+                                {
+                                    UserCondition =  new UserCondition()
+                                    {
+                                        ComparisonAttribute = nameof(User.Email),
+                                        Comparator = UserComparator.TextContainsAnyOf,
+                                        StringListValue = new[] { "@example.com" }
+                                    }
+                                },
+                            },
+                            SimpleValue = new SimpleSettingValue { Value = new SettingValue { StringValue =  "b" } },
+                        },
+                        new TargetingRule
+                        {
+                            Conditions = new[]
+                            {
+                                new ConditionContainer
+                                {
+                                    UserCondition =  new UserCondition()
+                                    {
+                                        ComparisonAttribute = "Version",
+                                        Comparator = UserComparator.SemVerIsOneOf,
+                                        StringListValue = new[] { "1.0.0", "2.0.0" }
+                                    }
+                                },
+                            },
+                            SimpleValue = new SimpleSettingValue { Value = new SettingValue { StringValue =  "c" } },
+                        },
+                        new TargetingRule
+                        {
+                            Conditions = new[]
+                            {
+                                new ConditionContainer
+                                {
+                                    UserCondition =  new UserCondition()
+                                    {
+                                        ComparisonAttribute = "Version",
+                                        Comparator = UserComparator.SemVerGreater,
+                                        StringValue = "3.0.0"
+                                    }
+                                },
+                            },
+                            SimpleValue = new SimpleSettingValue { Value = new SettingValue { StringValue =  "d" } },
+                        },
+                        new TargetingRule
+                        {
+                            Conditions = new[]
+                            {
+                                new ConditionContainer
+                                {
+                                    UserCondition =  new UserCondition()
+                                    {
+                                        ComparisonAttribute = "Number",
+                                        Comparator = UserComparator.NumberGreater,
+                                        DoubleValue = 3.14
+                                    }
+                                },
+                            },
+                            SimpleValue = new SimpleSettingValue { Value = new SettingValue { StringValue =  "e" } },
+                        },
+                        new TargetingRule
+                        {
+                            PercentageOptions = new[]
+                            {
+                                new PercentageOption
+                                {
+                                    Percentage = 20,
+                                    Value = new SettingValue { StringValue =  "p20" }
+                                },
+                                new PercentageOption
+                                {
+                                    Percentage = 30,
+                                    Value = new SettingValue { StringValue =  "p30" }
+                                },
+                                new PercentageOption
+                                {
+                                    Percentage = 50,
+                                    Value = new SettingValue { StringValue =  "p50" }
+                                },
+                            }
+                        },
                     },
-                    new RolloutPercentageItem
-                    {
-                        Percentage = 30,
-                        Value = JsonDocument.Parse("\"p30\"").RootElement
-                    },
-                    new RolloutPercentageItem
-                    {
-                        Percentage = 50,
-                        Value = JsonDocument.Parse("\"p50\"").RootElement
-                    },
-                })
-        }
-    };
-
-    private static Setting CreateSetting(SettingType settingType, JsonElement value, RolloutRule[]? targetingRules = null, RolloutPercentageItem[]? percentageOptions = null)
-    {
-        var setting = new Setting
-        {
-            SettingType = settingType,
-            Value = value,
+                    Value = new SettingValue { StringValue = "fallback" }
+                }
+            }
         };
 
-        SetPrivatePropertyValue(setting, nameof(setting.RolloutRules), targetingRules);
-        SetPrivatePropertyValue(setting, nameof(setting.RolloutPercentageItems), percentageOptions);
-
-        return setting;
-    }
-
-    private static void SetPrivatePropertyValue(object obj, string propertyName, object? value)
-    {
-        var type = obj.GetType();
-        type.InvokeMember(propertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.SetProperty, null, obj, new[] { value });
-    }
+        config.OnDeserialized();
+        return config;
+    })();
 }

@@ -113,7 +113,7 @@ jobs:
         dotnet pack src/ConfigCatClient/ConfigCatClient.csproj -c Release --no-build /p:PackageOutputPath=../../artifacts /p:Version=$VERSION
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       with:
         name: packages
         path: artifacts

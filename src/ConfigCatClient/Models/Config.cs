@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text.Json.Serialization;
 using ConfigCat.Client.Utils;
+using ConfigCat.Client.Versioning;
 
 namespace ConfigCat.Client;
 
@@ -54,9 +54,7 @@ public sealed class Config : IJsonOnDeserialized
     /// The list of segments.
     /// </summary>
     [JsonIgnore]
-    public IReadOnlyList<Segment> Segments => this.segmentsReadOnly ??= this.segments is { Length: > 0 }
-        ? new ReadOnlyCollection<Segment>(this.segments)
-        : Array.Empty<Segment>();
+    public IReadOnlyList<Segment> Segments => this.segmentsReadOnly ??= this.segments.AsReadOnly();
 
     [JsonInclude, JsonPropertyName("f")]
     internal Dictionary<string, Setting>? settings;
@@ -77,9 +75,11 @@ public sealed class Config : IJsonOnDeserialized
     {
         if (this.settings is { Count: > 0 })
         {
+            Dictionary<string, SemVersion?>? semVerCache = null;
+
             foreach (var setting in this.settings.Values)
             {
-                setting.OnConfigDeserialized(this);
+                setting.OnConfigDeserialized(this, ref semVerCache);
             }
         }
     }

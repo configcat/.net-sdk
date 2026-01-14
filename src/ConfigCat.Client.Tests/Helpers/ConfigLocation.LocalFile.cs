@@ -1,10 +1,6 @@
 using System;
 using System.IO;
 
-#if BENCHMARK_OLD
-using Config = ConfigCat.Client.SettingsWithPreferences;
-#endif
-
 namespace ConfigCat.Client.Tests.Helpers;
 
 public partial record class ConfigLocation
@@ -23,7 +19,7 @@ public partial record class ConfigLocation
             using StreamReader reader = new(stream);
             var configJson = reader.ReadToEnd();
 #if BENCHMARK_OLD
-            return configJson.Deserialize<Config>() ?? throw new InvalidOperationException("Invalid config JSON content: " + configJson);
+            return Config.Deserialize(configJson.AsMemory(), tolerant: false);
 #else
             return Config.Deserialize(configJson.AsSpan(), tolerant: false);
 #endif

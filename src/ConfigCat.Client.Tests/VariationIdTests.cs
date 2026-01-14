@@ -54,7 +54,9 @@ public class VariationIdTests
 
         ConfigCatClientSnapshot snapshot;
         EvaluationDetails[] allValueDetails = useSnapshot
-            ? (snapshot = client.Snapshot()).GetAllKeys().Select(keys => snapshot.GetValueDetails<object?>(keys, null)).ToArray()
+            ? (snapshot = client.Snapshot()).GetAllKeys()
+                .Select(keys => (EvaluationDetails)snapshot.GetValueDetails<object?>(keys, null))
+                .ToArray()
             : (await client.GetAllValueDetailsAsync()).ToArray();
 
         Assert.AreEqual(3, allValueDetails.Length);
@@ -74,7 +76,9 @@ public class VariationIdTests
 
         ConfigCatClientSnapshot snapshot;
         EvaluationDetails[] allValueDetails = useSnapshot
-            ? (snapshot = client.Snapshot()).GetAllKeys().Select(keys => snapshot.GetValueDetails<object?>(keys, null)).ToArray()
+            ? (snapshot = client.Snapshot()).GetAllKeys()
+                .Select(keys => (EvaluationDetails)snapshot.GetValueDetails<object?>(keys, null))
+                .ToArray()
             : (await client.GetAllValueDetailsAsync()).ToArray();
 
         Assert.AreEqual(0, allValueDetails.Length);

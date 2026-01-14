@@ -1,11 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.Json.Serialization;
 using ConfigCat.Client.Evaluation;
 using ConfigCat.Client.Utils;
+using ConfigCat.Client.Versioning;
 
 namespace ConfigCat.Client;
 
@@ -49,7 +48,7 @@ public sealed class TargetingRule
     /// </summary>
     [JsonIgnore]
     public IReadOnlyList<PercentageOption>? PercentageOptions => this.percentageOptionsReadOnly ??= this.then is PercentageOption[] percentageOptions
-        ? (percentageOptions.Length > 0 ? new ReadOnlyCollection<PercentageOption>(percentageOptions) : Array.Empty<PercentageOption>())
+        ? percentageOptions.AsReadOnly()
         : null;
 
     [JsonInclude, JsonPropertyName("s")]
@@ -65,11 +64,16 @@ public sealed class TargetingRule
     [JsonIgnore]
     public SettingValueContainer? SimpleValue => SimpleValueOrNull;
 
-    internal void OnConfigDeserialized(Config config)
+    internal void OnConfigDeserialized(Config config, ref Dictionary<string, SemVersion?>? semVerCache)
     {
-        foreach (var condition in ConditionsOrEmpty)
+        foreach (var conditionContainer in ConditionsOrEmpty)
         {
-            if (condition.GetCondition(throwIfInvalid: false) is SegmentCondition segmentCondition)
+            var condition = conditionContainer.GetCondition(throwIfInvalid: false);
+            if (condition is UserCondition userCondition)
+            {
+                userCondition.OnConfigDeserialized(ref semVerCache);
+            }
+            else if (condition is SegmentCondition segmentCondition)
             {
                 segmentCondition.OnConfigDeserialized(config);
             }

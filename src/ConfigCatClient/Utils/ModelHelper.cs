@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace ConfigCat.Client.Utils;
 
 internal static class ModelHelper
@@ -12,7 +14,7 @@ internal static class ModelHelper
         }
     }
 
-    public static bool IsValidOneOf(object? field)
+    public static bool IsValidOneOf([NotNullWhen(true)] object? field)
     {
         return field is not null && !ReferenceEquals(field, MultipleValuesToken);
     }

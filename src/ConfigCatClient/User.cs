@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ConfigCat.Client.Versioning;
 
 namespace ConfigCat.Client;
 
@@ -44,6 +45,8 @@ public class User
     /// </para>
     /// <para>
     /// SemVer-based comparators (IS ONE OF, &lt;, &gt;=, etc.)<br/>
+    /// * accept <see cref="SemVersion"/> values containing a preparsed semver value,<br/>
+    /// * accept <see cref="Version"/> values, which are automatically converted to a semver value,<br/>
     /// * accept <see cref="string"/> values containing a properly formatted, valid semver value,<br/>
     /// * all other values are considered invalid (a warning will be logged and the currently evaluated targeting rule will be skipped).
     /// </para>

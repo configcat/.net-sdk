@@ -18,12 +18,21 @@
 //OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //THE SOFTWARE.
 
-#nullable disable
+/*
+Original source code: https://github.com/WalkerCodeRanger/semver
+Modifications made by ConfigCat:
+- Added nullable reference type annotations.
+- Added checks to ensure major, minor and patch version numbers are non-negative.
+- Removed implicit conversion from string.
+- Enabled regex source generation for .NET 7+.
+*/
+
 #pragma warning disable IDE0011 // Add braces
 #pragma warning disable IDE0055 // Fix formatting
 #pragma warning disable SYSLIB0003 // SecurityAction' is obsolete: 'Code Access Security is not supported or honored by the runtime.'
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.Serialization;
 using System.Security.Permissions;
@@ -47,6 +56,7 @@ public sealed partial class SemVersion : IEquatable<SemVersion>, IComparable<Sem
         @"(?>\+(?<build>[0-9A-Za-z\-\.]+))?$",
         RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture,
         500)]
+
     private static partial Regex ParseEx();
 #else
     private static readonly Regex ParseExCached = new Regex(@"^(?<major>\d+)" +
@@ -69,7 +79,7 @@ public sealed partial class SemVersion : IEquatable<SemVersion>, IComparable<Sem
 #pragma warning restore CA1801 // Parameter unused
     {
         if (info == null) throw new ArgumentNullException(nameof(info));
-        var semVersion = Parse(info.GetString("SemVersion"));
+        var semVersion = Parse(info.GetString("SemVersion") ?? "");
         Major = semVersion.Major;
         Minor = semVersion.Minor;
         Patch = semVersion.Patch;
@@ -85,11 +95,13 @@ public sealed partial class SemVersion : IEquatable<SemVersion>, IComparable<Sem
     /// <param name="patch">The patch version.</param>
     /// <param name="prerelease">The prerelease version (e.g. "alpha").</param>
     /// <param name="build">The build metadata (e.g. "nightly.232").</param>
-    public SemVersion(int major, int minor = 0, int patch = 0, string prerelease = "", string build = "")
+    public SemVersion(int major, int minor = 0, int patch = 0, string? prerelease = "", string? build = "")
     {
-        Major = major;
-        Minor = minor;
-        Patch = patch;
+        const string versionNumberOutOfRangeMessage = "Value must be non-negative.";
+
+        Major = major >= 0 ? major : throw new ArgumentOutOfRangeException(nameof(major), major, versionNumberOutOfRangeMessage);
+        Minor = minor >= 0 ? minor : throw new ArgumentOutOfRangeException(nameof(minor), minor, versionNumberOutOfRangeMessage);
+        Patch = patch >= 0 ? patch : throw new ArgumentOutOfRangeException(nameof(patch), patch, versionNumberOutOfRangeMessage);
 
         Prerelease = prerelease ?? "";
         Build = build ?? "";
@@ -171,7 +183,7 @@ public sealed partial class SemVersion : IEquatable<SemVersion>, IComparable<Sem
     /// <param name="strict">If set to <see langword="true"/> minor and patch version are required,
     /// otherwise they are optional.</param>
     /// <returns><see langword="false"/> when a invalid version string is passed, otherwise <see langword="true"/>.</returns>
-    public static bool TryParse(string version, out SemVersion semver, bool strict = false)
+    public static bool TryParse(string? version, [NotNullWhen(true)] out SemVersion? semver, bool strict = false)
     {
         semver = null;
         if (version is null) return false;
@@ -252,7 +264,7 @@ public sealed partial class SemVersion : IEquatable<SemVersion>, IComparable<Sem
     /// <code>version.Change(patch: 4)</code>
     /// </example>
     public SemVersion Change(int? major = null, int? minor = null, int? patch = null,
-        string prerelease = null, string build = null)
+        string? prerelease = null, string? build = null)
     {
         return new SemVersion(
             major ?? Major,
@@ -346,9 +358,9 @@ public sealed partial class SemVersion : IEquatable<SemVersion>, IComparable<Sem
     ///  Greater than zero: This instance follows <paramref name="obj" /> in the sort order.
     /// </returns>
     /// <exception cref="InvalidCastException"><paramref name="obj"/> is not a <see cref="SemVersion"/>.</exception>
-    public int CompareTo(object obj)
+    public int CompareTo(object? obj)
     {
-        return CompareTo((SemVersion)obj);
+        return CompareTo((SemVersion?)obj);
     }
 
     /// <summary>
@@ -364,14 +376,14 @@ public sealed partial class SemVersion : IEquatable<SemVersion>, IComparable<Sem
     ///  Zero: This instance occurs in the same position in the sort order as <paramref name="other" />.
     ///  Greater than zero: This instance follows <paramref name="other" /> in the sort order.
     /// </returns>
-    public int CompareTo(SemVersion other)
+    public int CompareTo(SemVersion? other)
     {
         var r = CompareByPrecedence(other);
         if (r != 0) return r;
 
 #pragma warning disable CA1062 // Validate arguments of public methods
         // If other is null, CompareByPrecedence() returns 1
-        return CompareComponent(Build, other.Build);
+        return CompareComponent(Build, other!.Build);
 #pragma warning restore CA1062 // Validate arguments of public methods
     }
 
@@ -398,7 +410,7 @@ public sealed partial class SemVersion : IEquatable<SemVersion>, IComparable<Sem
     ///  Zero: This instance occurs in the same position in the sort order as <paramref name="other" />.
     ///  Greater than zero: This instance follows <paramref name="other" /> in the sort order.
     /// </returns>
-    public int CompareByPrecedence(SemVersion other)
+    public int CompareByPrecedence(SemVersion? other)
     {
         if (other is null)
             return 1;
@@ -415,7 +427,7 @@ public sealed partial class SemVersion : IEquatable<SemVersion>, IComparable<Sem
         return CompareComponent(Prerelease, other.Prerelease, true);
     }
 
-    private static int CompareComponent(string a, string b, bool nonemptyIsLower = false)
+    private static int CompareComponent(string? a, string? b, bool nonemptyIsLower = false)
     {
         var aEmpty = string.IsNullOrEmpty(a);
         var bEmpty = string.IsNullOrEmpty(b);
@@ -427,8 +439,8 @@ public sealed partial class SemVersion : IEquatable<SemVersion>, IComparable<Sem
         if (bEmpty)
             return nonemptyIsLower ? -1 : 1;
 
-        var aComps = a.Split('.');
-        var bComps = b.Split('.');
+        var aComps = a!.Split('.');
+        var bComps = b!.Split('.');
 
         var minLen = Math.Min(aComps.Length, bComps.Length);
         for (int i = 0; i < minLen; i++)
@@ -465,7 +477,7 @@ public sealed partial class SemVersion : IEquatable<SemVersion>, IComparable<Sem
     /// <returns>
     ///   <see langword="true"/> if the specified <see cref="object" /> is equal to this instance, otherwise <see langword="false"/>.
     /// </returns>
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         return Equals(obj as SemVersion);
     }
@@ -477,7 +489,7 @@ public sealed partial class SemVersion : IEquatable<SemVersion>, IComparable<Sem
     /// <returns>
     ///   <see langword="true"/> if the specified <see cref="SemVersion" /> is equal to this instance, otherwise <see langword="false"/>.
     /// </returns>
-    public bool Equals(SemVersion other)
+    public bool Equals(SemVersion? other)
     {
         if (other is null)
             return false;
@@ -522,21 +534,6 @@ public sealed partial class SemVersion : IEquatable<SemVersion>, IComparable<Sem
     {
         if (info == null) throw new ArgumentNullException(nameof(info));
         info.AddValue("SemVersion", ToString());
-    }
-
-#pragma warning disable CA2225 // Operator overloads have named alternates
-    /// <summary>
-    /// Implicit conversion from <see cref="string"/> to <see cref="SemVersion"/>.
-    /// </summary>
-    /// <param name="version">The semantic version.</param>
-    /// <returns>The <see cref="SemVersion"/> object.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="version"/> is <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentException">The version number has an invalid format.</exception>
-    /// <exception cref="OverflowException">The Major, Minor, or Patch versions are larger than <code>int.MaxValue</code>.</exception>
-    public static implicit operator SemVersion(string version)
-#pragma warning restore CA2225 // Operator overloads have named alternates
-    {
-        return Parse(version);
     }
 
     /// <summary>

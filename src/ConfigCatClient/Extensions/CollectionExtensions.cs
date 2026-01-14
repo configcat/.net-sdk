@@ -1,9 +1,15 @@
+using System.Collections.ObjectModel;
 using System.Linq;
 
 namespace System.Collections.Generic;
 
-internal static class DictionaryExtensions
+internal static class CollectionExtensions
 {
+    public static IReadOnlyList<T> AsReadOnly<T>(this T[]? source)
+    {
+        return source is { Length: > 0 } ? new ReadOnlyCollection<T>(source) : Array.Empty<T>();
+    }
+
     public static IReadOnlyCollection<TKey> KeyCollection<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> source)
         where TKey : notnull
     {

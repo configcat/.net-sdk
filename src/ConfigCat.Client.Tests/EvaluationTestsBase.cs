@@ -89,7 +89,7 @@ public abstract class EvaluationTestsBase
             this.logger,
         };
 
-        var evaluationDetails = (EvaluationDetails)EvaluateMethodDefinition.MakeGenericMethod(settingClrType).Invoke(null, args)!;
+        var evaluationDetails = (IEvaluationDetails)EvaluateMethodDefinition.MakeGenericMethod(settingClrType).Invoke(null, args)!;
 
         Assert.AreEqual(expectedValue, evaluationDetails.Value);
     }

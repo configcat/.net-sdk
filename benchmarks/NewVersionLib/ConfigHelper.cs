@@ -1,7 +1,3 @@
-#if BENCHMARK_OLD
-using Config = ConfigCat.Client.SettingsWithPreferences;
-#endif
-
 using System.Collections.Generic;
 
 namespace ConfigCat.Client.Tests.Helpers;

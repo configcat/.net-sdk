@@ -1,7 +1,10 @@
 extern alias from_nuget;
 extern alias from_project;
+
 using BenchmarkDotNet.Attributes;
 using System;
+
+#pragma warning disable CS0618 // Type or member is obsolete
 
 namespace ConfigCat.Client.Benchmarks;
 

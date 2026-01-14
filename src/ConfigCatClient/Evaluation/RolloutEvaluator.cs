@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -220,7 +221,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
         logBuilder?.NewLine().Append($"Evaluating % options based on the User.{percentageOptionsAttributeName} attribute:");
 
-        var sha1 = (context.Key + UserAttributeValueToString(percentageOptionsAttributeValue)).Sha1();
+        var sha1 = HashPercentageOptionsAttribute(context.Key, UserAttributeValueToString(percentageOptionsAttributeValue));
 
         // NOTE: this is equivalent to hashValue = int.Parse(sha1.ToHexString().Substring(0, 7), NumberStyles.HexNumber) % 100;
         var hashValue =
@@ -362,7 +363,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         var userAttributeName = condition.comparisonAttribute ?? throw new InvalidConfigModelException("Comparison attribute name is missing.");
         var userAttributeValue = context.User.GetAttribute(userAttributeName);
 
-        if (userAttributeValue is null || userAttributeValue is string { Length: 0 })
+        if (userAttributeValue is null or string { Length: 0 })
         {
             this.logger.UserObjectAttributeIsMissing(condition, context.Key, userAttributeName);
             error = string.Format(CultureInfo.InvariantCulture, MissingUserAttributeError, userAttributeName);
@@ -424,14 +425,14 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             case UserComparator.SemVerIsOneOf:
             case UserComparator.SemVerIsNotOneOf:
                 var version = GetUserAttributeValueAsSemVer(userAttributeName, userAttributeValue, condition, context.Key, out error);
-                return error is null && EvaluateSemVerIsOneOf(version!, condition.StringListValue, negate: comparator == UserComparator.SemVerIsNotOneOf);
+                return error is null && EvaluateSemVerIsOneOf(version!, condition.StringListValue, condition.SemVerListValue, negate: comparator == UserComparator.SemVerIsNotOneOf);
 
             case UserComparator.SemVerLess:
             case UserComparator.SemVerLessOrEquals:
             case UserComparator.SemVerGreater:
             case UserComparator.SemVerGreaterOrEquals:
                 version = GetUserAttributeValueAsSemVer(userAttributeName, userAttributeValue, condition, context.Key, out error);
-                return error is null && EvaluateSemVerRelation(version!, comparator, condition.StringValue);
+                return error is null && EvaluateSemVerRelation(version!, comparator, condition.StringValue, condition.SemVerValue);
 
             case UserComparator.NumberEquals:
             case UserComparator.NumberNotEquals:
@@ -588,7 +589,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return negate;
     }
 
-    private static bool EvaluateSemVerIsOneOf(SemVersion version, string[]? comparisonValues, bool negate)
+    private static bool EvaluateSemVerIsOneOf(SemVersion version, string[]? comparisonValues, SemVersion?[]? parsedComparisonValues, bool negate)
     {
         EnsureComparisonValue(comparisonValues);
 
@@ -605,7 +606,8 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                 continue;
             }
 
-            if (!SemVersion.TryParse(item.Trim(), out var version2, strict: true))
+            var version2 = parsedComparisonValues![i];
+            if (version2 is null)
             {
                 // NOTE: Previous versions of the evaluation algorithm ignored invalid comparison values.
                 // We keep this behavior for backward compatibility.
@@ -624,11 +626,12 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return result ^ negate;
     }
 
-    private static bool EvaluateSemVerRelation(SemVersion version, UserComparator comparator, string? comparisonValue)
+    private static bool EvaluateSemVerRelation(SemVersion version, UserComparator comparator, string? comparisonValue, SemVersion? parsedComparisonValue)
     {
         EnsureComparisonValue(comparisonValue);
 
-        if (!SemVersion.TryParse(comparisonValue.Trim(), out var version2, strict: true))
+        var version2 = parsedComparisonValue!;
+        if (version2 is null)
         {
             return false;
         }
@@ -835,18 +838,40 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return result;
     }
 
+    private static byte[] HashPercentageOptionsAttribute(string contextKey, string attributeValue)
+    {
+        var contextKeyByteCount = Encoding.UTF8.GetByteCount(contextKey);
+        var attributeValueByteCount = Encoding.UTF8.GetByteCount(attributeValue);
+        var totalByteCount = contextKeyByteCount + attributeValueByteCount;
+
+        var bytes = ArrayPool<byte>.Shared.Rent(totalByteCount);
+        try
+        {
+            Encoding.UTF8.GetBytes(contextKey, 0, contextKey.Length, bytes, 0);
+            Encoding.UTF8.GetBytes(attributeValue, 0, attributeValue.Length, bytes, contextKeyByteCount);
+
+            return new ArraySegment<byte>(bytes, 0, totalByteCount).Sha1();
+        }
+        finally { ArrayPool<byte>.Shared.Return(bytes); }
+    }
+
     private static byte[] HashComparisonValue(string value, string configJsonSalt, string contextSalt)
     {
         var valueByteCount = Encoding.UTF8.GetByteCount(value);
         var configJsonSaltByteCount = Encoding.UTF8.GetByteCount(configJsonSalt);
         var contextSaltByteCount = Encoding.UTF8.GetByteCount(contextSalt);
-        var bytes = new byte[valueByteCount + configJsonSaltByteCount + contextSaltByteCount];
+        var totalByteCount = valueByteCount + configJsonSaltByteCount + contextSaltByteCount;
 
-        Encoding.UTF8.GetBytes(value, 0, value.Length, bytes, 0);
-        Encoding.UTF8.GetBytes(configJsonSalt, 0, configJsonSalt.Length, bytes, valueByteCount);
-        Encoding.UTF8.GetBytes(contextSalt, 0, contextSalt.Length, bytes, valueByteCount + configJsonSaltByteCount);
+        var bytes = ArrayPool<byte>.Shared.Rent(totalByteCount);
+        try
+        {
+            Encoding.UTF8.GetBytes(value, 0, value.Length, bytes, 0);
+            Encoding.UTF8.GetBytes(configJsonSalt, 0, configJsonSalt.Length, bytes, valueByteCount);
+            Encoding.UTF8.GetBytes(contextSalt, 0, contextSalt.Length, bytes, valueByteCount + configJsonSaltByteCount);
 
-        return bytes.Sha256();
+            return new ArraySegment<byte>(bytes, 0, totalByteCount).Sha256();
+        }
+        finally { ArrayPool<byte>.Shared.Return(bytes); }
     }
 
     private static byte[] HashComparisonValue(ReadOnlySpan<byte> valueUtf8, string configJsonSalt, string contextSalt)
@@ -854,13 +879,18 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         var valueByteCount = valueUtf8.Length;
         var configJsonSaltByteCount = Encoding.UTF8.GetByteCount(configJsonSalt);
         var contextSaltByteCount = Encoding.UTF8.GetByteCount(contextSalt);
-        var bytes = new byte[valueByteCount + configJsonSaltByteCount + contextSaltByteCount];
+        var totalByteCount = valueByteCount + configJsonSaltByteCount + contextSaltByteCount;
 
-        valueUtf8.CopyTo(bytes);
-        Encoding.UTF8.GetBytes(configJsonSalt, 0, configJsonSalt.Length, bytes, valueByteCount);
-        Encoding.UTF8.GetBytes(contextSalt, 0, contextSalt.Length, bytes, valueByteCount + configJsonSaltByteCount);
+        var bytes = ArrayPool<byte>.Shared.Rent(totalByteCount);
+        try
+        {
+            valueUtf8.CopyTo(bytes);
+            Encoding.UTF8.GetBytes(configJsonSalt, 0, configJsonSalt.Length, bytes, valueByteCount);
+            Encoding.UTF8.GetBytes(contextSalt, 0, contextSalt.Length, bytes, valueByteCount + configJsonSaltByteCount);
 
-        return bytes.Sha256();
+            return new ArraySegment<byte>(bytes, 0, totalByteCount).Sha256();
+        }
+        finally { ArrayPool<byte>.Shared.Return(bytes); }
     }
 
     private static string EnsureConfigJsonSalt([NotNull] string? value)
@@ -914,7 +944,17 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
     private SemVersion? GetUserAttributeValueAsSemVer(string attributeName, object attributeValue, UserCondition condition, string key, out string? error)
     {
-        if (attributeValue is string text && SemVersion.TryParse(text.Trim(), out var version, strict: true))
+        if (attributeValue is SemVersion version)
+        {
+            error = null;
+            return version;
+        }
+        else if (attributeValue is Version clrVersion)
+        {
+            error = null;
+            return new SemVersion(clrVersion);
+        }
+        else if (attributeValue is string text && SemVersion.TryParse(text.Trim(), out version!, strict: true))
         {
             error = null;
             return version;

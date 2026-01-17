@@ -1,8 +1,8 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0-android;net8.0-ios</TargetFrameworks>
-    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net8.0-windows10.0.19041.0</TargetFrameworks>
+    <TargetFrameworks>net10.0-android;net10.0-ios</TargetFrameworks>
+    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net10.0-windows10.0.19041.0</TargetFrameworks>
     <WindowsPackageType>None</WindowsPackageType>
     
     <OutputType>Exe</OutputType>
@@ -49,15 +49,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
-    <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\ConfigCat.HostingIntegration.Core\ConfigCat.HostingIntegration.Core.csproj" />
+    <ProjectReference Include="..\..\src\ConfigCat.Extensions.Hosting\ConfigCat.Extensions.Hosting.csproj" />
     <!-- Use PackageReference instead of the ProjectReference above in your application. -->
-    <!--<PackageReference Include="ConfigCat.HostingIntegration.Core" Version="*" />-->
+    <!--<PackageReference Include="ConfigCat.Extensions.Hosting" Version="*" />-->
+    <PackageReference Include="Microsoft.Maui.Controls" Version="10.0.30" />
+    <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="10.0.30" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.2" />
   </ItemGroup>
 
 </Project>

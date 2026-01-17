@@ -73,7 +73,7 @@ public class ConfigCatToMSLoggerAdapter(ILogger<ConfigCatClient> logger) : IConf
                 return this.message.Format;
             }
 
-            return this.originalFormatCache.GetOrAdd(new OriginalFormatCacheKey(this.message), key =>
+            return this.originalFormatCache.GetOrAdd(new OriginalFormatCacheKey(this.message), static key =>
             {
                 var argNamePlaceholders = Array.ConvertAll(key.ArgNames, name => "{" + name + "}");
                 return string.Format(CultureInfo.InvariantCulture, key.Format, argNamePlaceholders);
@@ -100,7 +100,7 @@ public class ConfigCatToMSLoggerAdapter(ILogger<ConfigCatClient> logger) : IConf
 
         public bool Equals(OriginalFormatCacheKey other) => ReferenceEquals(this.Format, other.Format);
 
-        public override bool Equals(object? obj) => obj is OriginalFormatCacheKey && Equals((OriginalFormatCacheKey)obj);
+        public override bool Equals(object? obj) => obj is OriginalFormatCacheKey other && Equals(other);
 
         public override int GetHashCode() => RuntimeHelpers.GetHashCode(this.Format);
     }

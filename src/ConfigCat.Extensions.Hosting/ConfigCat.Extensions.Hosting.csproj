@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net462;netstandard2.0;netstandard2.1;net8.0</TargetFrameworks>
+    <TargetFrameworks>net462;netstandard2.0;netstandard2.1;net8.0;net9.0;net10.0</TargetFrameworks>
     <SignAssembly>true</SignAssembly>
     <DelaySign>false</DelaySign>
     <AssemblyOriginatorKeyFile>..\ConfigCatClient.snk</AssemblyOriginatorKeyFile>
@@ -31,25 +31,56 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
-    <!-- Enable trimming and AOT compilation -->
+    <!-- Ensure support for trimming and AOT compilation -->
     <IsTrimmable Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">true</IsTrimmable>
     <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">true</IsAotCompatible>
     <EnableConfigurationBindingGenerator Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">true</EnableConfigurationBindingGenerator>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="all" />
-    <None Include="icon.png" Pack="true" Visible="false" PackagePath="" />
+  </ItemGroup>
+
+  <Choose>
+    <When Condition="'$(TargetFramework)' == 'net9.0'">
+      <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.0" PrivateAssets="all" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.0" />
+      </ItemGroup>
+    </When>
+
+    <When Condition="'$(TargetFramework)' == 'net10.0'">
+      <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.0" PrivateAssets="all" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.0" />
+      </ItemGroup>
+    </When>
+
+    <Otherwise>
+      <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0" PrivateAssets="all" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="8.0.0" />
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ConfigCatClient\ConfigCatClient.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\ConfigCatClient\icon.png" Pack="true" Visible="false" PackagePath="" LinkBase="" />
     <None Include="..\..\README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="ConfigCatClientTests, PublicKey=0024000004800000940000000602000000240000525341310004000001000100dbeb3ff4c4224a3ff3e5d2db0114a80df04bd0d2e00756f7f0b269d23079034782c543401246241b7bbd4dee1e205cb5a3f05ffcce681600a1578b66f0276822f399838962748414e7ec37b8f2b8fcc47a7340104683873f4f9d66ef72ec508abcd66814261e744df4e3610189953de230162b7b718bbeafee82245ec786eb93" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\ConfigCat.HostingIntegration.Core\ConfigCat.HostingIntegration.Core.csproj" />
   </ItemGroup>
 
 </Project>

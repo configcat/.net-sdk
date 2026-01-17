@@ -1,4 +1,5 @@
 using ConfigCat.Client;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace MauiSample;
@@ -21,13 +22,13 @@ public static class MauiProgram
         builder.Logging.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Information);
 #endif
 
-        builder.Services.AddConfigCat(builder.Configuration, configCatBuilder => configCatBuilder
+        builder.UseConfigCat()
             // Register ConfigCatClient as a singleton service so you can inject it in your components.
             .AddDefaultClient(options =>
             {
                 options.SdkKey = "PKDVCLf-Hq-h-kCzMp-L7Q/HhOWfwVtZ0mb30i9wi17GQ";
                 options.PollingMode = PollingModes.AutoPoll(pollInterval: TimeSpan.FromSeconds(5));
-            }));
+            });
 
         return builder.Build();
     }

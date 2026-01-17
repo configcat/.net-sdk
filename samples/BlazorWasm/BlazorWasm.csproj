@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0-browser</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RunAOTCompilation>true</RunAOTCompilation>
@@ -9,15 +9,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.7" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="8.0.7" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.Web.LibraryManager.Build" Version="2.1.175" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\ConfigCat.HostingIntegration.Core\ConfigCat.HostingIntegration.Core.csproj" />
+    <ProjectReference Include="..\..\src\ConfigCat.Extensions.Hosting\ConfigCat.Extensions.Hosting.csproj" />
     <!-- Use PackageReference instead of the ProjectReference above in your application. -->
-    <!--<PackageReference Include="ConfigCat.HostingIntegration.Core" Version="*" />-->
+    <!--<PackageReference Include="ConfigCat.Extensions.Hosting" Version="*" />-->
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.2" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Web.LibraryManager.Build" Version="3.0.71" />
   </ItemGroup>
 
 </Project>

@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using ConfigCat.Client;
-using ConfigCat.Client.Configuration;
 using ConfigCat.Extensions.Hosting.Adapters;
+using ConfigCat.Extensions.Hosting.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -29,13 +29,13 @@ public abstract class ConfigCatBuilder<TBuilder> where TBuilder : ConfigCatBuild
         });
     }
 
-    private protected readonly IServiceCollection? services;
-    private protected readonly IConfiguration? configuration;
+    private protected readonly IServiceCollection? services; // set for minimal hosting model only
+    private protected readonly IConfiguration? configuration; // set for minimal hosting model only
     private readonly Dictionary<string, ClientRegistration> clientRegistrations = new();
 
-    private protected ConfigCatBuilder() { }
+    private protected ConfigCatBuilder() { } // for legacy hosting model
 
-    private protected ConfigCatBuilder(IServiceCollection services, IConfiguration? configuration)
+    private protected ConfigCatBuilder(IServiceCollection services, IConfiguration? configuration) // for minimal hosting model
     {
         this.services = services;
         this.configuration = configuration;

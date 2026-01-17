@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
@@ -9,8 +9,8 @@
     <ProjectReference Include="..\..\..\src\ConfigCat.Extensions.Hosting\ConfigCat.Extensions.Hosting.csproj" />
     <!-- Use PackageReference instead of the ProjectReference above in your application. -->
     <!--<PackageReference Include="ConfigCat.Extensions.Hosting" Version="*" />-->
-    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.*" />
-    <PackageReference Include="Microsoft.Web.LibraryManager.Build" Version="2.1.175" />
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Web.LibraryManager.Build" Version="3.0.71" />
   </ItemGroup>
-  
+
 </Project>

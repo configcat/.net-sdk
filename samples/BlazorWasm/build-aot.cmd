@@ -1,3 +1,3 @@
 @ECHO OFF
 
-dotnet publish -c Release -f net8.0
+dotnet publish BlazorWasm.csproj -c Release -f net10.0-browser

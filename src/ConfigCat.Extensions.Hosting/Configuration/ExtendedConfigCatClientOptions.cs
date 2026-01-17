@@ -1,8 +1,10 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
+using ConfigCat.Client;
+using ConfigCat.Client.Configuration;
 
-namespace ConfigCat.Client.Configuration;
+namespace ConfigCat.Extensions.Hosting.Configuration;
 
 public sealed class ExtendedConfigCatClientOptions : ConfigCatClientOptions
 {
@@ -21,24 +23,20 @@ public sealed class ExtendedConfigCatClientOptions : ConfigCatClientOptions
             set => options.SdkKey = value;
         }
 
-        public PollingOptions Polling
+        public PollingOptions? Polling
         {
-            get => null!;
+            get => null; // getter is necessary for source generator, but no need to implement it
             set
             {
-                switch (value.Mode)
+                if (value is not null)
                 {
-                    case PollingModeEnum.AutoPoll:
-                        options.PollingMode = PollingModes.AutoPoll(value.PollInterval, value.MaxInitWaitTime);
-                        break;
-                    case PollingModeEnum.LazyLoad:
-                        options.PollingMode = PollingModes.LazyLoad(value.CacheTimeToLive);
-                        break;
-                    case PollingModeEnum.ManualPoll:
-                        options.PollingMode = PollingModes.ManualPoll;
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException(nameof(value), value, null);
+                    options.PollingMode = value.Mode switch
+                    {
+                        PollingModeEnum.AutoPoll => PollingModes.AutoPoll(value.PollInterval, value.MaxInitWaitTime),
+                        PollingModeEnum.LazyLoad => PollingModes.LazyLoad(value.CacheTimeToLive),
+                        PollingModeEnum.ManualPoll => PollingModes.ManualPoll,
+                        _ => throw new ArgumentOutOfRangeException(nameof(value), value, null),
+                    };
                 }
             }
         }

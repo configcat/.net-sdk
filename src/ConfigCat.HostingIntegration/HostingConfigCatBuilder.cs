@@ -3,7 +3,7 @@ using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-namespace ConfigCat.Extensions.Hosting;
+namespace ConfigCat.HostingIntegration;
 
 public sealed class HostingConfigCatBuilder : ConfigCatBuilder<HostingConfigCatBuilder>
 {

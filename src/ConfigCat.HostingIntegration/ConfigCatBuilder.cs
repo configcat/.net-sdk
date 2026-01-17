@@ -2,15 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using ConfigCat.Client;
-using ConfigCat.Extensions.Hosting.Adapters;
-using ConfigCat.Extensions.Hosting.Configuration;
+using ConfigCat.HostingIntegration.Adapters;
+using ConfigCat.HostingIntegration.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace ConfigCat.Extensions.Hosting;
+namespace ConfigCat.HostingIntegration;
 
 public abstract class ConfigCatBuilder<TBuilder> where TBuilder : ConfigCatBuilder<TBuilder>
 {

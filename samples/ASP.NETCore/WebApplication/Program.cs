@@ -1,4 +1,4 @@
-using ConfigCat.Extensions.Hosting;
+using ConfigCat.HostingIntegration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;

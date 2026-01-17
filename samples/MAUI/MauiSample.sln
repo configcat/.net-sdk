@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConfigCatClient", "..\..\sr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MauiSample", "MauiSample.csproj", "{01BA70A0-C71E-4672-80A3-90B080554A5D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConfigCat.Extensions.Hosting", "..\..\src\ConfigCat.Extensions.Hosting\ConfigCat.Extensions.Hosting.csproj", "{7D35FE59-3E34-7F1F-B69D-04B912765596}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConfigCat.HostingIntegration", "..\..\src\ConfigCat.HostingIntegration\ConfigCat.HostingIntegration.csproj", "{7D35FE59-3E34-7F1F-B69D-04B912765596}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

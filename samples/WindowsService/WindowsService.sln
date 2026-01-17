@@ -7,7 +7,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ProjectReferences", "Projec
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConfigCatClient", "..\..\src\ConfigCatClient\ConfigCatClient.csproj", "{8F64DC62-D524-4310-A620-03D65ED829BC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConfigCat.Extensions.Hosting", "..\..\src\ConfigCat.Extensions.Hosting\ConfigCat.Extensions.Hosting.csproj", "{7D35FE59-3E34-7F1F-B69D-04B912765596}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConfigCat.HostingIntegration", "..\..\src\ConfigCat.HostingIntegration\ConfigCat.HostingIntegration.csproj", "{7D35FE59-3E34-7F1F-B69D-04B912765596}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WindowsService", "WindowsService.csproj", "{FCFFC002-C088-41A6-23C9-9A3C503655B8}"
 EndProject

@@ -49,9 +49,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\ConfigCat.Extensions.Hosting\ConfigCat.Extensions.Hosting.csproj" />
+    <ProjectReference Include="..\..\src\ConfigCat.HostingIntegration\ConfigCat.HostingIntegration.csproj" />
     <!-- Use PackageReference instead of the ProjectReference above in your application. -->
-    <!--<PackageReference Include="ConfigCat.Extensions.Hosting" Version="*" />-->
+    <!--<PackageReference Include="ConfigCat.HostingIntegration" Version="*" />-->
     <PackageReference Include="Microsoft.Maui.Controls" Version="10.0.30" />
     <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="10.0.30" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.2" />

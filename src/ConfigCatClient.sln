@@ -12,7 +12,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConfigCatClient", "ConfigCa
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConfigCat.Client.Tests", "ConfigCat.Client.Tests\ConfigCat.Client.Tests.csproj", "{88B138B9-E95F-4532-B8BB-058346810CE9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConfigCat.Extensions.Hosting", "ConfigCat.Extensions.Hosting\ConfigCat.Extensions.Hosting.csproj", "{7184A706-6E3F-6ABC-692C-D82345EC3911}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConfigCat.HostingIntegration", "ConfigCat.HostingIntegration\ConfigCat.HostingIntegration.csproj", "{7184A706-6E3F-6ABC-692C-D82345EC3911}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

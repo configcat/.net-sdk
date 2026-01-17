@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConfigCatClient", "..\..\sr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorWasm", "BlazorWasm.csproj", "{B0E7F85F-048E-48A5-91BA-BB73FF3D7118}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConfigCat.Extensions.Hosting", "..\..\src\ConfigCat.Extensions.Hosting\ConfigCat.Extensions.Hosting.csproj", "{4B83F5A5-BCE7-AC5A-BD1E-E6320FDFC5CC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConfigCat.HostingIntegration", "..\..\src\ConfigCat.HostingIntegration\ConfigCat.HostingIntegration.csproj", "{4B83F5A5-BCE7-AC5A-BD1E-E6320FDFC5CC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

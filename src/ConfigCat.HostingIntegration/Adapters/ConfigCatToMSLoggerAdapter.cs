@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 using ConfigCat.Client;
 using Microsoft.Extensions.Logging;
 
-namespace ConfigCat.Extensions.Hosting.Adapters;
+namespace ConfigCat.HostingIntegration.Adapters;
 
 public class ConfigCatToMSLoggerAdapter(ILogger<ConfigCatClient> logger) : IConfigCatLogger
 {

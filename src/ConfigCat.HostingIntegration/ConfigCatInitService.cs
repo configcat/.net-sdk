@@ -10,7 +10,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace ConfigCat.Extensions.Hosting;
+namespace ConfigCat.HostingIntegration;
 
 internal sealed class ConfigCatInitService(IServiceProvider serviceProvider, IReadOnlyCollection<string> clientKeys, ConfigCatInitStrategy initStrategy) : IHostedLifecycleService
 {

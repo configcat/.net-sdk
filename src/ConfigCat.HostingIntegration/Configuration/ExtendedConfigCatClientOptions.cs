@@ -3,7 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using ConfigCat.Client;
 using ConfigCat.Client.Configuration;
 
-namespace ConfigCat.Extensions.Hosting.Configuration;
+namespace ConfigCat.HostingIntegration.Configuration;
 
 public sealed class ExtendedConfigCatClientOptions : ConfigCatClientOptions
 {

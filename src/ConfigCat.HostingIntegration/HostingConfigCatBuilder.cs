@@ -1,68 +1,92 @@
 using System;
-using System.Diagnostics;
+using System.Collections.Generic;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 namespace ConfigCat.HostingIntegration;
 
+using static ConfigCatBuilder;
+
 public sealed class HostingConfigCatBuilder : ConfigCatBuilder<HostingConfigCatBuilder>
 {
-    private const ConfigCatInitStrategy UnsetInitStrategy = (ConfigCatInitStrategy)(-1);
-    private const ConfigCatInitStrategy DefaultInitStrategy = ConfigCatInitStrategy.DoNotWaitForClientReady;
+    private ConfigCatInitStrategy initStrategy = ConfigCatInitArgs.UnsetInitStrategy;
 
-    private ConfigCatInitStrategy initStrategy = UnsetInitStrategy;
-
-    internal HostingConfigCatBuilder()
+    internal HostingConfigCatBuilder() // for legacy hosting model
         : base() { }
 
-    internal HostingConfigCatBuilder(IHostApplicationBuilder hostApplicationBuilder)
+    internal HostingConfigCatBuilder(IHostApplicationBuilder hostApplicationBuilder) // for minimal hosting model
         : base(hostApplicationBuilder.Services, hostApplicationBuilder.Configuration) { }
-
-    private void RegisterInitServiceIfNecessary(IServiceCollection services)
-    {
-        Debug.Assert(this.initStrategy != UnsetInitStrategy);
-
-        if (this.initStrategy != ConfigCatInitStrategy.DoNotWaitForClientReady)
-        {
-            services.AddHostedService(sp => new ConfigCatInitService(sp, ClientKeys, this.initStrategy));
-        }
-    }
 
     public HostingConfigCatBuilder UseInitStrategy(ConfigCatInitStrategy initStrategy)
     {
-        if (initStrategy is < ConfigCatInitStrategy.DoNotWaitForClientReady or > ConfigCatInitStrategy.WaitForClientReadyAndThrowOnFailure)
+        if (!ConfigCatInitArgs.IsValidInitStrategy(initStrategy))
         {
             throw new ArgumentOutOfRangeException(nameof(initStrategy), initStrategy, null!);
         }
 
-        if (this.initStrategy != initStrategy)
+        if (this.services is not null)
         {
-            if (this.services is not null && this.initStrategy is not (UnsetInitStrategy or ConfigCatInitStrategy.DoNotWaitForClientReady))
-            {
-                RemoveLast(this.services, descriptor => descriptor.ImplementationFactory?.Method.ReturnType == typeof(ConfigCatInitService));
-            }
-
-            this.initStrategy = initStrategy;
-
-            if (this.services is not null)
-            {
-                RegisterInitServiceIfNecessary(this.services);
-            }
+            var initServiceFactory = FindInitServiceFactory(this.services)!;
+            initServiceFactory.InitStrategy = initStrategy;
         }
+
+        this.initStrategy = initStrategy;
 
         return this;
     }
 
-    private protected override void OnClientRegistered(IServiceCollection services)
-    {
-        if (this.initStrategy == UnsetInitStrategy)
-        {
-            this.initStrategy = DefaultInitStrategy;
-        }
-
-        RegisterInitServiceIfNecessary(services);
-    }
-
     internal IServiceCollection Build(IServiceCollection services, HostBuilderContext context)
         => Build(services, context.Configuration);
+
+    private protected override void RegisterBaseServices(IServiceCollection services, IConfiguration? configuration)
+    {
+        if (FindInitServiceFactory(services) is not { } initServiceFactory)
+        {
+            initServiceFactory = new InitServiceFactory(services) { InitStrategy = this.initStrategy };
+            services.AddHostedService(initServiceFactory.CreateInitService);
+        }
+        else if (this.initStrategy != ConfigCatInitArgs.UnsetInitStrategy)
+        {
+            initServiceFactory.InitStrategy = this.initStrategy;
+        }
+
+        base.RegisterBaseServices(services, configuration);
+    }
+
+    private static InitServiceFactory? FindInitServiceFactory(IServiceCollection services)
+    {
+        var existingHostedService = FindLast(services,
+            descriptor =>
+                !descriptor.IsKeyedService
+                && descriptor.ServiceType == typeof(IHostedService)
+                && descriptor.ImplementationFactory?.Target is InitServiceFactory,
+            out _);
+
+        return (InitServiceFactory?)existingHostedService?.ImplementationFactory!.Target;
+    }
+
+    private sealed class InitServiceFactory(IServiceCollection services)
+    {
+        private object servicesOrClientNames = services; // either an IServiceCollection or IReadOnlyCollection<string>
+
+        public ConfigCatInitStrategy InitStrategy;
+
+        public ConfigCatInitService CreateInitService(IServiceProvider serviceProvider)
+        {
+            if (this.servicesOrClientNames is not IReadOnlyCollection<string> clientNames)
+            {
+                // NOTE: Overwriting this field unreferences the service collection so GC can clean it up.
+                this.servicesOrClientNames = clientNames = GetClientNamesFrom((IServiceCollection)this.servicesOrClientNames);
+            }
+
+            var effectiveInitStrategy = this.InitStrategy != ConfigCatInitArgs.UnsetInitStrategy
+                ? this.InitStrategy
+                : ConfigCatInitArgs.DefaultInitStrategy;
+
+            var args = new ConfigCatInitArgs(clientNames, effectiveInitStrategy);
+
+            return new ConfigCatInitService(serviceProvider.GetRequiredService<IConfigCatInitializer>(), args);
+        }
+    }
 }

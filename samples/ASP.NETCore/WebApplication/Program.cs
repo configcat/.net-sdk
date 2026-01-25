@@ -1,3 +1,5 @@
+using System;
+using ConfigCat.Client;
 using ConfigCat.HostingIntegration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -14,20 +16,17 @@ var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 builder.UseConfigCat()
-    // Register ConfigCatClient so you can inject it in your controllers, actions, etc.
-    .AddDefaultClient(options =>
-    {
-        // Settings made in this callback take precendence over the settings coming from configuration
-        // (environment variables, appsettings.json, etc.)
-
-        //options.SdkKey = "PKDVCLf-Hq-h-kCzMp-L7Q/HhOWfwVtZ0mb30i9wi17GQ";
-        //options.PollingMode = PollingModes.AutoPoll(pollInterval: TimeSpan.FromSeconds(5));
-    })
-    .AddKeyedClient("secondary", options =>
-    {
-        //options.SdkKey = "PKDVCLf-Hq-h-kCzMp-L7Q/HhOWfwVtZ0mb30i9wi17Gq";
-        //options.PollingMode = PollingModes.AutoPoll(pollInterval: TimeSpan.FromSeconds(5));
-    })
+    // Uncomment the following lines if you want to configure ConfigCat clients by code. Please note that
+    // if you add a client here that is already defined in the configuration, the settings from the
+    // configuration and the settings made by code will be merged, with the latter taking precedence.
+    //.AddDefaultClient(options =>
+    //{
+    //    options.PollingMode = PollingModes.AutoPoll(maxInitWaitTime: TimeSpan.FromSeconds(10));
+    //})
+    //.AddNamedClient("secondary", options =>
+    //{
+    //    options.SdkKey = "PKDVCLf-Hq-h-kCzMp-L7Q/HhOWfwVtZ0mb30i9wi17GQ";
+    //})
     .UseInitStrategy(ConfigCatInitStrategy.WaitForClientReadyAndLogOnFailure);
 
 var app = builder.Build();

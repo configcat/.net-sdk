@@ -15,6 +15,11 @@ public sealed class ExtendedConfigCatClientOptions : ConfigCatClientOptions
     // We can work around the issue by defining a wrapper class for configuration binding.
     internal sealed class BindingWrapper(ExtendedConfigCatClientOptions options)
     {
+        public BindingWrapper()
+            : this(new ExtendedConfigCatClientOptions()) { }
+
+        public ExtendedConfigCatClientOptions GetOptions() => options;
+
         [DisallowNull]
         public string? SdkKey
         {

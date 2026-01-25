@@ -1,3 +1,5 @@
+using System;
+using ConfigCat.Client;
 using ConfigCat.HostingIntegration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -15,14 +17,13 @@ public class Program
             .ConfigureConfigCat(builder =>
             {
                 builder
-                    .AddDefaultClient(options =>
-                    {
-                        // Settings made in this callback take precendence over the settings coming from configuration
-                        // (environment variables, appsettings.json, etc.)
-
-                        //options.SdkKey = "PKDVCLf-Hq-h-kCzMp-L7Q/HhOWfwVtZ0mb30i9wi17GQ";
-                        //options.PollingMode = PollingModes.AutoPoll(pollInterval: TimeSpan.FromSeconds(5));
-                    })
+                    // Uncomment the following lines if you want to configure ConfigCat clients by code. Please note that
+                    // if you add a client here that is already defined in the configuration, the settings from the
+                    // configuration and the settings made by code will be merged, with the latter taking precedence.
+                    //.AddDefaultClient(options =>
+                    //{
+                    //    options.PollingMode = PollingModes.AutoPoll(maxInitWaitTime: TimeSpan.FromSeconds(10));
+                    //})
                     .UseInitStrategy(ConfigCatInitStrategy.WaitForClientReadyAndLogOnFailure);
             })
             .ConfigureLogging((context, builder) =>

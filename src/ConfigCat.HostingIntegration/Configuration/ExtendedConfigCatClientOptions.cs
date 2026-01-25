@@ -11,11 +11,15 @@ public sealed class ExtendedConfigCatClientOptions : ConfigCatClientOptions
     [DisallowNull]
     public string? SdkKey { get; set; }
 
-    // NOTE: Unfortunately, it seems that there is no way to ignore properties from configuration binding at the moment,
-    // so using source generated configuration binding would result in a bunch of warnings.
-    // We can work around the issue by defining a wrapper class for configuration binding.
+    // NOTE: ConfigCatClientOptions is not configuration binding-friendly (especially problematic in the case of
+    // source generated configuration binding), but we can work this around using a wrapper class.
     internal sealed class BindingWrapper(ExtendedConfigCatClientOptions options)
     {
+        public BindingWrapper()
+            : this(new ExtendedConfigCatClientOptions()) { }
+
+        public ExtendedConfigCatClientOptions GetOptions() => options;
+
         [DisallowNull]
         public string? SdkKey
         {

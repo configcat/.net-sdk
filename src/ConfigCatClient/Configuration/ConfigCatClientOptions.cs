@@ -61,7 +61,7 @@ public class ConfigCatClientOptions : IProvidesHooks
 
     internal static PollingMode CreateDefaultPollingMode() => PollingModes.AutoPoll();
 
-    [Obsolete("This option is deprecated, thus it will be removed from the public API in a future major version. Please set the ConfigFetcher option to an instance of HttpClientConfigFetcher instead.")]
+    [Obsolete($"This option is deprecated, thus it will be removed from the public API in a future major version. Please set the {nameof(ConfigFetcher)} option to an instance of {nameof(HttpClientConfigFetcher)} instead.")]
     /// <summary>
     /// An optional <see cref="System.Net.Http.HttpClientHandler"/> for providing network credentials and proxy settings.
     /// </summary>

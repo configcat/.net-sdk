@@ -27,6 +27,8 @@ public sealed class HttpClientConfigFetcher : IConfigCatConfigFetcher
     private readonly HttpClientProvider? provideHttpClient;
     private volatile object? handlerState; // either null or a HandlerState or ObjectDisposedToken
 
+    internal LoggerWrapper? logger; // initialized by ConfigCatClient constructor
+
     public HttpClientConfigFetcher()
     {
         this.handlerState = new HandlerState();
@@ -71,6 +73,18 @@ public sealed class HttpClientConfigFetcher : IConfigCatConfigFetcher
     /// <inheritdoc />
     public async Task<FetchResponse> FetchAsync(FetchRequest request, CancellationToken cancellationToken)
     {
+        var logger = this.logger;
+        Guid requestId = default;
+
+        if (logger is not null && logger.IsEnabled(LogLevel.Debug))
+        {
+            requestId = Guid.NewGuid();
+
+            logger?.LogInterpolated(LogLevel.Debug, 0,
+                $"[{requestId}] Preparing request...",
+                new[] { "REQUEST_ID" });
+        }
+
         HttpClient httpClient;
         HandlerState? handlerState;
 
@@ -112,7 +126,22 @@ public sealed class HttpClientConfigFetcher : IConfigCatConfigFetcher
 
                 try
                 {
-                    var httpResponse = await httpClient.SendAsync(httpRequest, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+                    if (logger is not null && logger.IsEnabled(LogLevel.Debug))
+                    {
+                        logger?.LogInterpolated(LogLevel.Debug, 0,
+                            $"[{requestId}] Sending request... (Uri: '{httpRequest.RequestUri}', IfNoneMatch: '{httpRequest.Headers.IfNoneMatch?.ToString()}')",
+                            new[] { "REQUEST_ID", "URI", "IF_NONE_MATCH" });
+                    }
+
+                    var httpResponse = await httpClient.SendAsync(httpRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+                        .ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+
+                    if (logger is not null && logger.IsEnabled(LogLevel.Debug))
+                    {
+                        logger?.LogInterpolated(LogLevel.Debug, 0,
+                            $"[{requestId}] Received headers. (StatusCode: {httpResponse.StatusCode}, ReasonPhrase: '{httpResponse.ReasonPhrase}', ETag: '{httpResponse.Headers.ETag?.ToString()}')",
+                            new[] { "REQUEST_ID", "STATUS_CODE", "REASON_PHRASE", "ETAG" });
+                    }
 
                     if (httpResponse.StatusCode == HttpStatusCode.OK)
                     {
@@ -121,6 +150,13 @@ public sealed class HttpClientConfigFetcher : IConfigCatConfigFetcher
 #else
                         var httpResponseBody = await httpResponse.Content.ReadAsStringAsync().ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 #endif
+
+                        if (logger is not null && logger.IsEnabled(LogLevel.Debug))
+                        {
+                            logger?.LogInterpolated(LogLevel.Debug, 0,
+                                $"[{requestId}] Received body. (Length: {httpResponseBody.Length})",
+                                new[] { "REQUEST_ID", "LENGTH" });
+                        }
 
                         return new FetchResponse(httpResponse, httpResponseBody);
                     }
@@ -133,10 +169,16 @@ public sealed class HttpClientConfigFetcher : IConfigCatConfigFetcher
                         }
 
                         canRetry = retryCount < retryLimit;
-                        RenewClient(request, ref handlerStateObj, ref handlerState, ref httpClient, canRetry);
+                        RenewClient(requestId, request, ref handlerStateObj, ref handlerState, ref httpClient, canRetry);
                         if (!canRetry)
                         {
                             return response;
+                        }
+                        else if (logger is not null && logger.IsEnabled(LogLevel.Debug))
+                        {
+                            logger?.LogInterpolated(LogLevel.Debug, 0,
+                                $"[{requestId}] Received unexpected status code. Retrying...",
+                                new[] { "REQUEST_ID" });
                         }
                     }
                 }
@@ -150,10 +192,16 @@ public sealed class HttpClientConfigFetcher : IConfigCatConfigFetcher
                 catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
                 {
                     canRetry = retryCount < retryLimit;
-                    RenewClient(request, ref handlerStateObj, ref handlerState, ref httpClient, canRetry);
+                    RenewClient(requestId, request, ref handlerStateObj, ref handlerState, ref httpClient, canRetry);
                     if (!canRetry)
                     {
                         throw FetchErrorException.Timeout(httpClient.Timeout, ex);
+                    }
+                    else if (logger is not null && logger.IsEnabled(LogLevel.Debug))
+                    {
+                        logger?.LogInterpolated(LogLevel.Debug, 0, ex,
+                            $"[{requestId}] Request timed out. Retrying...",
+                            new[] { "REQUEST_ID" });
                     }
                 }
                 catch (OperationCanceledException)
@@ -164,10 +212,16 @@ public sealed class HttpClientConfigFetcher : IConfigCatConfigFetcher
                 catch (HttpRequestException ex)
                 {
                     canRetry = retryCount < retryLimit;
-                    RenewClient(request, ref handlerStateObj, ref handlerState, ref httpClient, canRetry);
+                    RenewClient(requestId, request, ref handlerStateObj, ref handlerState, ref httpClient, canRetry);
                     if (!canRetry)
                     {
                         throw FetchErrorException.Failure((ex.InnerException as WebException)?.Status, ex);
+                    }
+                    else if (logger is not null && logger.IsEnabled(LogLevel.Debug))
+                    {
+                        logger?.LogInterpolated(LogLevel.Debug, 0, ex,
+                            $"[{requestId}] Request failed. Retrying...",
+                            new[] { "REQUEST_ID" });
                     }
                 }
 
@@ -177,7 +231,8 @@ public sealed class HttpClientConfigFetcher : IConfigCatConfigFetcher
         }
         finally { httpClient.Dispose(); }
 
-        void RenewClient(FetchRequest request, ref object? handlerStateObj, ref HandlerState? handlerState, ref HttpClient httpClient, bool canRetry)
+        void RenewClient(in Guid requestId, FetchRequest request, ref object? handlerStateObj, ref HandlerState? handlerState,
+            ref HttpClient httpClient, bool canRetry)
         {
             // Attempt to renew the client so it can pick up potentially changed DNS entries.
             // See also: https://learn.microsoft.com/en-us/dotnet/fundamentals/networking/http/httpclient-guidelines#dns-behavior
@@ -235,6 +290,13 @@ public sealed class HttpClientConfigFetcher : IConfigCatConfigFetcher
 
             httpClient.Dispose();
             httpClient = newHttpClient;
+
+            if (logger is not null && logger.IsEnabled(LogLevel.Debug))
+            {
+                logger?.LogInterpolated(LogLevel.Debug, 0,
+                    $"[{requestId}] Renewed HttpClient.",
+                    new[] { "REQUEST_ID" });
+            }
         }
 
         static bool CheckDisposed(object? handlerStateObj, bool throwIfDisposed)

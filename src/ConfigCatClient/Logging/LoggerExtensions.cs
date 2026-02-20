@@ -21,12 +21,12 @@ internal static partial class LoggerExtensions
         return logMessage;
     }
 
-    public static FormattableLogMessage LogFormatted(this LoggerWrapper logger, LogLevel level, LogEventId eventId, string messageFormat, string[] argNames, object[] argValues)
+    public static FormattableLogMessage LogFormatted(this LoggerWrapper logger, LogLevel level, LogEventId eventId, string messageFormat, string[] argNames, object?[] argValues)
     {
         return LogFormatted(logger, level, eventId, exception: null, messageFormat, argNames, argValues);
     }
 
-    public static FormattableLogMessage LogFormatted(this LoggerWrapper logger, LogLevel level, LogEventId eventId, Exception? exception, string messageFormat, string[] argNames, object[] argValues)
+    public static FormattableLogMessage LogFormatted(this LoggerWrapper logger, LogLevel level, LogEventId eventId, Exception? exception, string messageFormat, string[] argNames, object?[] argValues)
     {
         if (logger is null)
         {

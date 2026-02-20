@@ -127,6 +127,15 @@ public sealed class ConfigCatClient : IConfigCatClient
 
         var pollingMode = options.PollingMode ?? ConfigCatClientOptions.CreateDefaultPollingMode();
 
+        var configFetcher = options.ConfigFetcher
+            ?? PlatformCompatibilityOptions.configFetcherFactory?.Invoke(options.HttpClientHandler)
+            ?? ConfigCatClientOptions.CreateDefaultConfigFetcher(options.HttpClientHandler);
+
+        if (configFetcher is HttpClientConfigFetcher httpClientConfigFetcher)
+        {
+            httpClientConfigFetcher.logger = logger;
+        }
+
         // At this point the client instance must be fully initialized (apart from the configService field) because it
         // may be accessed from a handler of an event that is raised during the initialization of the config service.
         // (At the same time, the config service must initialize the configService field before raising any events.)
@@ -136,9 +145,7 @@ public sealed class ConfigCatClient : IConfigCatClient
                     options.GetBaseUri(),
                     GetProductVersion(pollingMode),
                     logger,
-                    options.ConfigFetcher
-                        ?? PlatformCompatibilityOptions.configFetcherFactory?.Invoke(options.HttpClientHandler)
-                        ?? ConfigCatClientOptions.CreateDefaultConfigFetcher(options.HttpClientHandler),
+                    configFetcher,
                     options.IsCustomBaseUrl,
                     options.HttpTimeout),
                 cacheParameters,

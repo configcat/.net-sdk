@@ -40,7 +40,9 @@ public class ConfigCatClientOptions : IProvidesHooks
     /// </summary>
     public IConfigCatConfigFetcher? ConfigFetcher { get; set; }
 
-    internal static IConfigCatConfigFetcher CreateDefaultConfigFetcher(HttpClientHandler? httpClientHandler) => new HttpClientConfigFetcher(httpClientHandler);
+    internal static IConfigCatConfigFetcher CreateDefaultConfigFetcher(HttpClientHandler? httpClientHandler) => httpClientHandler is null
+        ? new HttpClientConfigFetcher()
+        : new HttpClientConfigFetcher(httpClientHandler);
 
     /// <summary>
     /// The cache implementation to use for storing and retrieving downloaded config data.
@@ -59,6 +61,7 @@ public class ConfigCatClientOptions : IProvidesHooks
 
     internal static PollingMode CreateDefaultPollingMode() => PollingModes.AutoPoll();
 
+    [Obsolete("This option is deprecated, thus it will be removed from the public API in a future major version. Please set the ConfigFetcher option to an instance of HttpClientConfigFetcher instead.")]
     /// <summary>
     /// An optional <see cref="System.Net.Http.HttpClientHandler"/> for providing network credentials and proxy settings.
     /// </summary>

@@ -33,7 +33,7 @@ public partial record class ConfigLocation
                 options.GetBaseUri(),
                 ConfigCatClient.GetProductVersion(options.PollingMode),
                 options.Logger!.AsWrapper(),
-                new HttpClientConfigFetcher(options.HttpClientHandler),
+                options.HttpClientHandler is null ? new HttpClientConfigFetcher() : new HttpClientConfigFetcher(options.HttpClientHandler),
                 options.IsCustomBaseUrl,
                 options.HttpTimeout);
 

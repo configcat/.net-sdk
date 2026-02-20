@@ -1,152 +1,292 @@
 using System;
-using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Shims;
+using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client;
 
-internal class HttpClientConfigFetcher : IConfigCatConfigFetcher
+public sealed class HttpClientConfigFetcher : IConfigCatConfigFetcher
 {
+    public delegate HttpClient HttpClientProvider(FetchRequest request, HttpClient? failedHttpClient = null);
+
     private static readonly object ObjectDisposedToken = false.AsCachedObject();
 
-    private readonly HttpClientHandler? httpClientHandler;
-    private volatile object? httpClient; // either null or a HttpClient or ObjectDisposedToken
+    // NOTE: The new handler implementation (SocketsHttpHandler) doesn't immediately close the connections in the pool
+    // on dispose but keeps them around for some time in the TIME_WAIT state, according to RFC 9293. The exact length
+    // of this period depends on OS settings but usually it's 1-4 min. A reasonable threshold for recreating handlers
+    // should be enough to avoid socket exhaustion, even in extreme cases.
+    // See also: https://learn.microsoft.com/en-us/dotnet/fundamentals/networking/http/httpclient-guidelines#pooled-connections
+    private static readonly TimeSpan RenewHandlerThreshold = TimeSpan.FromSeconds(30);
 
-    public HttpClientConfigFetcher(HttpClientHandler? httpClientHandler)
+    private static readonly TimeSpan RetryDelay = TimeSpan.FromMilliseconds(50);
+
+    private readonly HttpClientProvider? provideHttpClient;
+    private volatile object? handlerState; // either null or a HandlerState or ObjectDisposedToken
+
+    public HttpClientConfigFetcher()
     {
-        this.httpClientHandler = httpClientHandler;
+        this.handlerState = new HandlerState();
+    }
+
+    internal HttpClientConfigFetcher(HttpClientHandler httpClientHandler)
+    {
+        this.provideHttpClient = (request, _) => CreateClient(httpClientHandler, request.Timeout);
+    }
+
+    public HttpClientConfigFetcher(IWebProxy proxy)
+    {
+        this.handlerState = new HandlerState(proxy);
+    }
+
+    public HttpClientConfigFetcher(HttpClientProvider httpClientProvider)
+    {
+        this.provideHttpClient = httpClientProvider ?? throw new ArgumentNullException(nameof(httpClientProvider));
     }
 
     public void Dispose()
     {
-        var httpClientObj = Interlocked.Exchange(ref this.httpClient, ObjectDisposedToken);
-        (httpClientObj as HttpClient)?.Dispose();
+        var handlerState = Interlocked.Exchange(ref this.handlerState, ObjectDisposedToken);
+        (handlerState as HandlerState)?.Handler.Dispose();
     }
 
-    private void ResetClient(HttpClient currentHttpClient)
+    private static HandlerState GetHandlerOrThrow(object? handlerStateObj)
     {
-        _ = Interlocked.CompareExchange(ref this.httpClient, value: null, comparand: currentHttpClient);
+        return handlerStateObj is HandlerState handlerState
+            ? handlerState
+            : throw new ObjectDisposedException(nameof(HttpClientConfigFetcher));
     }
 
-    private HttpClient EnsureClient(TimeSpan timeout)
+    private static HttpClient CreateClient(HttpMessageHandler handler, TimeSpan timeout)
     {
-        if (this.httpClient is not { } httpClientObj)
+        return new HttpClient(handler, disposeHandler: false)
         {
-            var newHttpClient = CreateClient(timeout);
-            httpClientObj = Interlocked.CompareExchange(ref this.httpClient, newHttpClient, comparand: null) ?? newHttpClient;
-        }
-
-        var httpClient = httpClientObj as HttpClient
-            ?? throw new ObjectDisposedException(nameof(HttpClientConfigFetcher));
-
-        // NOTE: Request timeout should not change during the lifetime of the client instance.
-        Debug.Assert(httpClient.Timeout == timeout, "Request timeout changed.");
-
-        return httpClient;
+            Timeout = timeout,
+        };
     }
 
-    private HttpClient CreateClient(TimeSpan timeout)
+    /// <inheritdoc />
+    public async Task<FetchResponse> FetchAsync(FetchRequest request, CancellationToken cancellationToken)
     {
         HttpClient httpClient;
+        HandlerState? handlerState;
 
-        if (this.httpClientHandler is null)
+        var handlerStateObj = this.handlerState;
+        if (handlerStateObj is not null)
         {
-            var handler = new HttpClientHandler();
-            if (handler.SupportsAutomaticDecompression)
-            {
-                handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
-            }
-            httpClient = new HttpClient(handler);
+            handlerState = GetHandlerOrThrow(handlerStateObj);
+            httpClient = CreateClient(handlerState.Handler, request.Timeout);
         }
         else
         {
-            httpClient = new HttpClient(this.httpClientHandler, disposeHandler: false);
-        }
-
-        httpClient.Timeout = timeout;
-
-        return httpClient;
-    }
-
-    public async Task<FetchResponse> FetchAsync(FetchRequest request, CancellationToken cancellationToken)
-    {
-        var httpClient = EnsureClient(request.Timeout);
-
-        var httpRequest = new HttpRequestMessage
-        {
-            Method = HttpMethod.Get,
-            RequestUri = request.Uri,
-        };
-
-        for (int i = 0, n = request.Headers.Count; i < n; i++)
-        {
-            var header = request.Headers[i];
-            httpRequest.Headers.Add(header.Key, header.Value);
-        }
-
-        if (request.LastETag is not null)
-        {
-            httpRequest.Headers.IfNoneMatch.Add(EntityTagHeaderValue.Parse(request.LastETag));
+            handlerState = null;
+            httpClient = this.provideHttpClient!(request);
         }
 
         try
         {
-            var httpResponse = await httpClient.SendAsync(httpRequest, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+            const int retryLimit = 1;
+            bool canRetry;
 
-            if (httpResponse.StatusCode == HttpStatusCode.OK)
+            for (var retryCount = 0; ; retryCount++)
             {
+                var httpRequest = new HttpRequestMessage
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = request.Uri,
+                };
+
+                for (int i = 0, n = request.Headers.Count; i < n; i++)
+                {
+                    var header = request.Headers[i];
+                    httpRequest.Headers.Add(header.Key, header.Value);
+                }
+
+                if (request.LastETag is not null)
+                {
+                    httpRequest.Headers.IfNoneMatch.Add(EntityTagHeaderValue.Parse(request.LastETag));
+                }
+
+                try
+                {
+                    var httpResponse = await httpClient.SendAsync(httpRequest, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+
+                    if (httpResponse.StatusCode == HttpStatusCode.OK)
+                    {
 #if NET5_0_OR_GREATER
-                var httpResponseBody = await httpResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+                        var httpResponseBody = await httpResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 #else
-                var httpResponseBody = await httpResponse.Content.ReadAsStringAsync().ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+                        var httpResponseBody = await httpResponse.Content.ReadAsStringAsync().ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 #endif
 
-                return new FetchResponse(httpResponse, httpResponseBody);
+                        return new FetchResponse(httpResponse, httpResponseBody);
+                    }
+                    else
+                    {
+                        var response = new FetchResponse(httpResponse);
+                        if (response.IsExpected)
+                        {
+                            return response;
+                        }
+
+                        canRetry = retryCount < retryLimit;
+                        RenewClient(request, ref handlerStateObj, ref handlerState, ref httpClient, canRetry);
+                        if (!canRetry)
+                        {
+                            return response;
+                        }
+                    }
+                }
+                catch (ObjectDisposedException ex)
+                {
+                    // It is possible that the handler is disposed between the call to GetHandlerOrThrow and the call to SendAsync.
+                    // In such cases SendAsync will throw an ObjectDisposedException. Wrap it in an OperationCanceledException
+                    // and let callers deal with it.
+                    throw new OperationCanceledException(message: null, ex);
+                }
+                catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+                {
+                    canRetry = retryCount < retryLimit;
+                    RenewClient(request, ref handlerStateObj, ref handlerState, ref httpClient, canRetry);
+                    if (!canRetry)
+                    {
+                        throw FetchErrorException.Timeout(httpClient.Timeout, ex);
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    // If the cancellation has been requested externally, let the exception bubble up.
+                    throw;
+                }
+                catch (HttpRequestException ex)
+                {
+                    canRetry = retryCount < retryLimit;
+                    RenewClient(request, ref handlerStateObj, ref handlerState, ref httpClient, canRetry);
+                    if (!canRetry)
+                    {
+                        throw FetchErrorException.Failure((ex.InnerException as WebException)?.Status, ex);
+                    }
+                }
+
+                // Wait a little before trying again.
+                await TaskShim.Current.Delay(RetryDelay, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+            }
+        }
+        finally { httpClient.Dispose(); }
+
+        void RenewClient(FetchRequest request, ref object? handlerStateObj, ref HandlerState? handlerState, ref HttpClient httpClient, bool canRetry)
+        {
+            // Attempt to renew the client so it can pick up potentially changed DNS entries.
+            // See also: https://learn.microsoft.com/en-us/dotnet/fundamentals/networking/http/httpclient-guidelines#dns-behavior
+
+            HttpClient newHttpClient;
+            if (handlerState is not null)
+            {
+                // If using built-in handler management, try to renew the handler, i.e. create another connection pool.
+
+                if (handlerState.TimeElapsedSinceLastRenew < RenewHandlerThreshold)
+                {
+                    handlerStateObj = this.handlerState;
+                    CheckDisposed(handlerStateObj, throwIfDisposed: canRetry);
+                    return;
+                }
+
+                var renewedHandlerState = handlerState.Renew();
+                handlerStateObj = Interlocked.CompareExchange(ref this.handlerState, value: renewedHandlerState, comparand: handlerState);
+                if (ReferenceEquals(handlerStateObj, handlerState))
+                {
+                    // NOTE: We deliberately don't dispose the original handler as that would make potential
+                    // pending requests running concurrently on other threads fail. Instead, we leave it up to
+                    // the handler's finalizer to clean up unmanaged resources when requests are completed and
+                    // the handler is collected by GC.
+
+                    handlerState = renewedHandlerState;
+                }
+                else if (CheckDisposed(handlerStateObj, throwIfDisposed: canRetry))
+                {
+                    handlerState = (HandlerState)handlerStateObj!;
+                }
+                else
+                {
+                    return;
+                }
+
+                newHttpClient = CreateClient(handlerState.Handler, request.Timeout);
             }
             else
             {
-                var response = new FetchResponse(httpResponse);
-                if (!response.IsExpected)
+                // If client is provided externally, give consumer the opportunity to provide another instance for retrying.
+
+                handlerStateObj = this.handlerState;
+                if (!CheckDisposed(handlerStateObj, throwIfDisposed: canRetry))
                 {
-                    ResetClient(httpClient);
+                    return;
                 }
-                return response;
+
+                newHttpClient = this.provideHttpClient!(request, httpClient);
+                if (ReferenceEquals(newHttpClient, httpClient))
+                {
+                    return;
+                }
+            }
+
+            httpClient.Dispose();
+            httpClient = newHttpClient;
+        }
+
+        static bool CheckDisposed(object? handlerStateObj, bool throwIfDisposed)
+        {
+            if (!ReferenceEquals(handlerStateObj, ObjectDisposedToken))
+            {
+                return true;
+            }
+            else if (!throwIfDisposed)
+            {
+                return false;
+            }
+            else
+            {
+                try { GetHandlerOrThrow(handlerStateObj); }
+                catch (ObjectDisposedException ex) { throw new OperationCanceledException(message: null, ex); }
+                throw new InvalidOperationException(); // just for keeping the compiler happy
             }
         }
-        catch (ObjectDisposedException ex)
+    }
+
+    private sealed class HandlerState
+    {
+        public readonly HttpClientHandler Handler;
+        private readonly TimeSpan updateTime;
+
+        public HandlerState(IWebProxy? proxy = null)
+            : this(proxy, TimeSpan.MinValue) { }
+
+        private HandlerState(IWebProxy? proxy, TimeSpan updateTime)
         {
-            // It is possible that HttpClient.Dispose is called between EnsureClient and SendAsync. In such cases SendAsync will throw
-            // an ObjectDisposedException. Wrap it in an OperationCanceledException and let callers deal with it.
-            throw new OperationCanceledException(message: null, ex);
+            var handler = new HttpClientHandler();
+
+            if (proxy is not null)
+            {
+                handler.UseProxy = true;
+                handler.Proxy = proxy;
+            }
+
+            if (handler.SupportsAutomaticDecompression)
+            {
+                handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+            }
+
+            this.Handler = handler;
+            this.updateTime = updateTime;
         }
-        catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested
-            // NOTE: Request timeout and calling HttpClient.Dispose while SendAsync is in progress both result in a TaskCanceledException.
-            // It seems there's no built-in way to tell these cases apart.
-            && !ReferenceEquals(this.httpClient, ObjectDisposedToken))
-        {
-            ResetClient(httpClient);
-            throw FetchErrorException.Timeout(httpClient.Timeout, ex);
-        }
-        catch (OperationCanceledException)
-        {
-            // If the cancellation has been requested externally or happened because of HttpClient.Dispose, let the exception bubble up.
-            throw;
-        }
-        catch (HttpRequestException ex)
-        {
-            // Let the HttpClient to be recreated so it can pick up potentially changed DNS entries
-            // (see also https://learn.microsoft.com/en-us/dotnet/fundamentals/networking/http/httpclient-guidelines#dns-behavior).
-            ResetClient(httpClient);
-            throw FetchErrorException.Failure((ex.InnerException as WebException)?.Status, ex);
-        }
-        catch
-        {
-            ResetClient(httpClient);
-            throw;
-        }
+
+        public TimeSpan TimeElapsedSinceLastRenew => this.updateTime > TimeSpan.MinValue
+            ? DateTimeUtils.GetMonotonicTime() - this.updateTime
+            : TimeSpan.MaxValue;
+
+        public HandlerState Renew() => new(this.Handler.Proxy, DateTimeUtils.GetMonotonicTime());
     }
 }

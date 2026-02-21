@@ -1,5 +1,4 @@
 using System;
-using System.Net.Http;
 using System.Threading.Tasks;
 using ConfigCat.Client.Shims;
 
@@ -16,7 +15,7 @@ internal sealed class PlatformCompatibilityOptions
 {
     internal bool continueOnCapturedContext;
 
-    internal Func<HttpClientHandler?, IConfigCatConfigFetcher>? configFetcherFactory;
+    internal Func<IConfigCatConfigFetcher>? configFetcherFactory;
 
     internal TaskShim taskShim = TaskShim.Default;
 
@@ -35,7 +34,7 @@ internal sealed class PlatformCompatibilityOptions
 
     /// <summary>
     /// Configures the SDK to run in a Unity WebGL application. To make this actually work, it is necessary to provide an implementation for
-    /// <see cref="IConfigCatConfigFetcher"/> and an implementation for <see cref="TaskShim"/> to workaround
+    /// <see cref="IConfigCatConfigFetcher"/> and an implementation for <see cref="TaskShim"/> to work around
     /// <see href="https://docs.unity3d.com/Manual/ScriptingRestrictions.html">the restrictions of the Unity WebGL environments</see>.
     /// </summary>
     /// <param name="taskShim">The implementation of a few <see cref="Task"/>-related APIs used by the SDK.</param>
@@ -55,7 +54,7 @@ internal sealed class PlatformCompatibilityOptions
         EnsureNotFrozen();
 
         this.continueOnCapturedContext = true;
-        this.configFetcherFactory = (_) => configFetcherFactory();
+        this.configFetcherFactory = configFetcherFactory;
         this.taskShim = taskShim;
     }
 #endif

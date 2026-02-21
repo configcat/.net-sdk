@@ -128,13 +128,8 @@ public sealed class ConfigCatClient : IConfigCatClient
         var pollingMode = options.PollingMode ?? ConfigCatClientOptions.CreateDefaultPollingMode();
 
         var configFetcher = options.ConfigFetcher
-            ?? PlatformCompatibilityOptions.configFetcherFactory?.Invoke(options.HttpClientHandler)
-            ?? ConfigCatClientOptions.CreateDefaultConfigFetcher(options.HttpClientHandler);
-
-        if (configFetcher is HttpClientConfigFetcher httpClientConfigFetcher)
-        {
-            httpClientConfigFetcher.logger = logger;
-        }
+            ?? PlatformCompatibilityOptions.configFetcherFactory?.Invoke()
+            ?? ConfigCatClientOptions.CreateDefaultConfigFetcher(options.HttpClientHandler, options.Proxy, logger);
 
         // At this point the client instance must be fully initialized (apart from the configService field) because it
         // may be accessed from a handler of an event that is raised during the initialization of the config service.

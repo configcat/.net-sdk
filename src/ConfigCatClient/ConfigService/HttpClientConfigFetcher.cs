@@ -13,7 +13,7 @@ using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client;
 
-public sealed class HttpClientConfigFetcher : IConfigCatConfigFetcher
+public class HttpClientConfigFetcher : IConfigCatConfigFetcher
 {
     public delegate HttpClient HttpClientProvider(FetchRequest request, HttpClient? failedHttpClient = null);
 
@@ -81,6 +81,7 @@ public sealed class HttpClientConfigFetcher : IConfigCatConfigFetcher
         }
 
         var uri = request.Uri;
+        var isCustomUri = !ConfigCatClientOptions.IsCdnUri(request.Uri);
         var isRunningInBrowser = PlatformCompatibilityOptions.IsRunningInBrowser;
 
         if (isRunningInBrowser)
@@ -125,12 +126,23 @@ public sealed class HttpClientConfigFetcher : IConfigCatConfigFetcher
 
                 if (!isRunningInBrowser)
                 {
-                    SetRequestHeadersDefault(httpRequest.Headers, request.Headers);
+                    if (isCustomUri)
+                    {
+                        SetRequestHeaders(httpRequest.Headers, request.Headers);
+                    }
+                    else
+                    {
+                        SetRequestHeadersDefault(httpRequest.Headers, request.Headers);
+                    }
 
                     if (request.LastETag is not null)
                     {
                         httpRequest.Headers.IfNoneMatch.Add(EntityTagHeaderValue.Parse(request.LastETag));
                     }
+                }
+                else if (isCustomUri)
+                {
+                    SetRequestHeaders(httpRequest.Headers, request.Headers);
                 }
 
                 try
@@ -401,6 +413,14 @@ public sealed class HttpClientConfigFetcher : IConfigCatConfigFetcher
         {
             var header = headers[i];
             httpRequestHeaders.Add(header.Key, header.Value);
+        }
+    }
+
+    protected virtual void SetRequestHeaders(HttpRequestHeaders httpRequestHeaders, IReadOnlyList<KeyValuePair<string, string>> headers)
+    {
+        if (!PlatformCompatibilityOptions.IsRunningInBrowser)
+        {
+            SetRequestHeadersDefault(httpRequestHeaders, headers);
         }
     }
 

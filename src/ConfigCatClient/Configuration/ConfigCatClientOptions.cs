@@ -134,6 +134,30 @@ public class ConfigCatClientOptions : IProvidesHooks
         return new Uri(baseUri, "configuration-files/" + sdkKey + "/" + ConfigFileName);
     }
 
+    internal static bool IsCdnUri(Uri uri)
+    {
+        if (!uri.IsAbsoluteUri || uri.Scheme is not ("http" or "https"))
+        {
+            return false;
+        }
+
+        var host = uri.Host.AsSpan();
+        var endIndex = host.Length - 1;
+        // NOTE: No need to check for empty string as Uri doesn't allow that for HTTP(S).
+        if (host[endIndex] == '.')
+        {
+            host = host.Slice(0, endIndex);
+        }
+
+        if (!host.EndsWith(".configcat.com".AsSpan(), StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var unescapedPath = Uri.UnescapeDataString(uri.AbsolutePath);
+        return !unescapedPath.Contains("/" + ProxyPrefix);
+    }
+
     /// <inheritdoc/>
     public event EventHandler<ClientReadyEventArgs>? ClientReady
     {

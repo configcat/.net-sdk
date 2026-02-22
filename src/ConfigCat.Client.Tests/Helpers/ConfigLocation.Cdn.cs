@@ -34,6 +34,7 @@ public partial record class ConfigLocation
                 ConfigCatClient.GetProductVersion(options.PollingMode),
                 options.Logger!.AsWrapper(),
                 options.HttpClientHandler is null ? new HttpClientConfigFetcher() : new HttpClientConfigFetcher(options.HttpClientHandler),
+                ownsConfigFetcher: true,
                 options.IsCustomBaseUrl,
                 options.HttpTimeout);
 

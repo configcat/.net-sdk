@@ -127,20 +127,23 @@ public sealed class ConfigCatClient : IConfigCatClient
 
         var pollingMode = options.PollingMode ?? ConfigCatClientOptions.CreateDefaultPollingMode();
 
-        var configFetcher = options.ConfigFetcher
-            ?? PlatformCompatibilityOptions.configFetcherFactory?.Invoke()
-            ?? ConfigCatClientOptions.CreateDefaultConfigFetcher(options.HttpClientHandler, options.Proxy, logger);
-
         // At this point the client instance must be fully initialized (apart from the configService field) because it
         // may be accessed from a handler of an event that is raised during the initialization of the config service.
         // (At the same time, the config service must initialize the configService field before raising any events.)
+
         var configService = this.overrideBehaviour != OverrideBehaviour.LocalOnly
             ? pollingMode.CreateConfigService(
                 new DefaultConfigFetcher(sdkKey,
                     options.GetBaseUri(),
                     GetProductVersion(pollingMode),
                     logger,
-                    configFetcher,
+                    options.ConfigFetcher
+                        ?? PlatformCompatibilityOptions.configFetcherFactory?.Invoke()
+                        ?? ConfigCatClientOptions.CreateDefaultConfigFetcher(
+#pragma warning disable CS0618 // Type or member is obsolete
+                            options.HttpClientHandler),
+#pragma warning restore CS0618 // Type or member is obsolete
+                    ownsConfigFetcher: options.ConfigFetcher is null,
                     options.IsCustomBaseUrl,
                     options.HttpTimeout),
                 cacheParameters,

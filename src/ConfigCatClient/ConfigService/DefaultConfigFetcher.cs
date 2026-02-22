@@ -16,11 +16,12 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
     private readonly IReadOnlyList<KeyValuePair<string, string>> requestHeaders;
     private readonly LoggerWrapper logger;
     private readonly IConfigCatConfigFetcher configFetcher;
+    private readonly bool ownsConfigFetcher;
     private readonly bool isCustomUri;
     private readonly TimeSpan timeout;
 
     public DefaultConfigFetcher(string sdkKey, Uri baseUri, string productVersion, LoggerWrapper logger,
-        IConfigCatConfigFetcher configFetcher, bool isCustomUri, TimeSpan timeout)
+        IConfigCatConfigFetcher configFetcher, bool ownsConfigFetcher, bool isCustomUri, TimeSpan timeout)
     {
         this.sdkKey = sdkKey;
         this.baseUri = baseUri;
@@ -30,6 +31,7 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
         };
         this.logger = logger;
         this.configFetcher = configFetcher;
+        this.ownsConfigFetcher = ownsConfigFetcher;
         this.isCustomUri = isCustomUri;
         this.timeout = timeout;
     }
@@ -131,7 +133,10 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
 
             var request = new FetchRequest(requestUri, httpETag, this.requestHeaders, this.timeout);
 
-            var response = await this.configFetcher.FetchAsync(request, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+            var response = await (this.configFetcher is HttpClientConfigFetcher httpClientConfigFetcher
+                ? httpClientConfigFetcher.FetchAsync(request, this.logger, cancellationToken)
+                : this.configFetcher.FetchAsync(request, cancellationToken))
+                .ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 
             if (response.StatusCode != HttpStatusCode.OK)
             {
@@ -194,7 +199,10 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
 
     public void Dispose()
     {
-        this.configFetcher.Dispose();
+        if (this.ownsConfigFetcher)
+        {
+            this.configFetcher.Dispose();
+        }
     }
 
     private readonly struct DeserializedResponse

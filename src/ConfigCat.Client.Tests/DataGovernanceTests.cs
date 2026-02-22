@@ -62,6 +62,7 @@ public class DataGovernanceTests
             "DEMO",
             Mock.Of<IConfigCatLogger>().AsWrapper(),
             new HttpClientConfigFetcher(handlerMock.Object),
+            ownsConfigFetcher: true,
             configuration.IsCustomBaseUrl,
             TimeSpan.FromSeconds(30));
 
@@ -385,6 +386,7 @@ public class DataGovernanceTests
             "DEMO",
             Mock.Of<IConfigCatLogger>().AsWrapper(),
             new HttpClientConfigFetcher(handlerMock.Object),
+            ownsConfigFetcher: true,
             fetchConfig.IsCustomBaseUrl,
             TimeSpan.FromSeconds(30));
 

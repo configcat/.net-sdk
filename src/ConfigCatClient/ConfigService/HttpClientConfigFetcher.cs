@@ -18,29 +18,20 @@ public sealed class HttpClientConfigFetcher : IConfigCatConfigFetcher
 
     private static readonly TimeSpan RequestRetryDelay = TimeSpan.FromMilliseconds(50);
 
-    private readonly LoggerWrapper? logger;
-
     // either null (indicating disposed state)
     // or a HandlerState (internally managed handler)
     // or a HttpClientHandler (externally created handler)
     // or a HttpClientProvider (callback for full external control over HttpClient management, e.g. integration with IHttpClientFactory)
     private volatile object? handlerState;
 
-    internal HttpClientConfigFetcher(IWebProxy? proxy = null, LoggerWrapper? logger = null)
+    public HttpClientConfigFetcher(IWebProxy? proxy = null)
     {
         this.handlerState = new HandlerState(proxy);
-        this.logger = logger;
     }
 
-    internal HttpClientConfigFetcher(HttpClientHandler httpClientHandler, LoggerWrapper? logger = null)
+    internal HttpClientConfigFetcher(HttpClientHandler httpClientHandler)
     {
-        if (httpClientHandler is null)
-        {
-            throw new ArgumentNullException(nameof(httpClientHandler));
-        }
-
-        this.handlerState = httpClientHandler;
-        this.logger = logger;
+        this.handlerState = httpClientHandler ?? throw new ArgumentNullException(nameof(httpClientHandler));
     }
 
     public HttpClientConfigFetcher(HttpClientProvider httpClientProvider)
@@ -51,7 +42,10 @@ public sealed class HttpClientConfigFetcher : IConfigCatConfigFetcher
     /// <inheritdoc />
     public void Dispose()
     {
+        // Release whatever reference the handlerState field holds.
         var handlerState = Interlocked.Exchange(ref this.handlerState, null);
+
+        // If using internal handler management, the handler needs to be disposed too.
         (handlerState as HandlerState)?.Handler.Dispose();
     }
 
@@ -61,9 +55,11 @@ public sealed class HttpClientConfigFetcher : IConfigCatConfigFetcher
     }
 
     /// <inheritdoc />
-    public async Task<FetchResponse> FetchAsync(FetchRequest request, CancellationToken cancellationToken)
+    public Task<FetchResponse> FetchAsync(FetchRequest request, CancellationToken cancellationToken) =>
+        FetchAsync(request, logger: null, cancellationToken);
+
+    internal async Task<FetchResponse> FetchAsync(FetchRequest request, LoggerWrapper? logger, CancellationToken cancellationToken)
     {
-        var logger = this.logger;
         var isDebugLoggingEnabled = logger is not null && logger.IsEnabled(LogLevel.Debug);
 
 #if NET45
@@ -275,7 +271,7 @@ public sealed class HttpClientConfigFetcher : IConfigCatConfigFetcher
                     // See also: https://learn.microsoft.com/en-us/dotnet/fundamentals/networking/http/httpclient-guidelines#pooled-connections
 
                     handlerStateObj = this.handlerState;
-                    CheckDisposed(handlerStateObj, throwIfDisposed: canRetry);
+                    CheckNotDisposed(handlerStateObj, throwIfDisposed: canRetry);
                     return;
                 }
 
@@ -283,10 +279,9 @@ public sealed class HttpClientConfigFetcher : IConfigCatConfigFetcher
                 handlerStateObj = Interlocked.CompareExchange(ref this.handlerState, value: renewedHandlerState, comparand: handlerState);
                 if (ReferenceEquals(handlerStateObj, handlerState))
                 {
-                    // NOTE: We deliberately don't dispose the original handler as that would make potential
-                    // pending requests running concurrently on other threads fail. Instead, we leave it up to
-                    // the handler's finalizer to clean up unmanaged resources when requests are completed and
-                    // the handler is collected by GC.
+                    // NOTE: We deliberately don't dispose the original handler as that would make potential pending requests
+                    // running concurrently fail. Instead, we leave it up to the handler's finalizer to clean up unmanaged
+                    // resources when requests are completed and the handler is collected by GC.
 
                     handlerState = renewedHandlerState;
                 }
@@ -294,7 +289,7 @@ public sealed class HttpClientConfigFetcher : IConfigCatConfigFetcher
                 {
                     renewedHandlerState.Handler.Dispose(); // just in case, although this instance wasn't used at all
 
-                    if (CheckDisposed(handlerStateObj, throwIfDisposed: canRetry))
+                    if (CheckNotDisposed(handlerStateObj, throwIfDisposed: canRetry))
                     {
                         handlerState = (HandlerState)handlerStateObj!;
                     }
@@ -304,6 +299,11 @@ public sealed class HttpClientConfigFetcher : IConfigCatConfigFetcher
                     }
                 }
 
+                if (!canRetry)
+                {
+                    return;
+                }
+
                 newHttpClient = CreateHttpClient(handlerState.Handler, request.Timeout);
             }
             else
@@ -311,6 +311,11 @@ public sealed class HttpClientConfigFetcher : IConfigCatConfigFetcher
                 handlerStateObj = this.handlerState;
                 if (handlerStateObj is HttpClientProvider httpClientProvider)
                 {
+                    if (!canRetry)
+                    {
+                        return;
+                    }
+
                     // If client is provided externally, give consumer the opportunity to provide another instance for retrying.
 
                     newHttpClient = httpClientProvider(request, httpClient);
@@ -321,7 +326,7 @@ public sealed class HttpClientConfigFetcher : IConfigCatConfigFetcher
                 }
                 else
                 {
-                    CheckDisposed(handlerStateObj, throwIfDisposed: canRetry);
+                    CheckNotDisposed(handlerStateObj, throwIfDisposed: canRetry);
                     return;
                 }
             }
@@ -337,20 +342,12 @@ public sealed class HttpClientConfigFetcher : IConfigCatConfigFetcher
             }
         }
 
-        static bool CheckDisposed(object? handlerStateObj, bool throwIfDisposed)
+        static bool CheckNotDisposed(object? handlerStateObj, bool throwIfDisposed)
         {
-            if (handlerStateObj is not null)
-            {
-                return true;
-            }
-            else if (!throwIfDisposed)
-            {
-                return false;
-            }
-            else
-            {
-                throw WrapObjectDisposedException(new ObjectDisposedException(nameof(HttpClientConfigFetcher)));
-            }
+            return
+                handlerStateObj is not null ? true
+                : !throwIfDisposed ? false
+                : throw WrapObjectDisposedException(new ObjectDisposedException(nameof(HttpClientConfigFetcher)));
         }
 
         static OperationCanceledException WrapObjectDisposedException(ObjectDisposedException ex)

@@ -11,6 +11,9 @@ namespace ConfigCat.Client;
 
 internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
 {
+    public const string UserAgentHeaderName = "User-Agent";
+    public const string ConfigCatUserAgentHeaderName = "X-ConfigCat-UserAgent";
+
     private readonly string sdkKey;
     private volatile Uri baseUri;
     private readonly IReadOnlyList<KeyValuePair<string, string>> requestHeaders;
@@ -25,9 +28,11 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
     {
         this.sdkKey = sdkKey;
         this.baseUri = baseUri;
-        this.requestHeaders = new[]
+        var userAgentHeaderValue = new ProductInfoHeaderValue("ConfigCat-Dotnet", productVersion).ToString();
+        this.requestHeaders = new KeyValuePair<string, string>[]
         {
-            new KeyValuePair<string, string>("X-ConfigCat-UserAgent", new ProductInfoHeaderValue("ConfigCat-Dotnet", productVersion).ToString())
+            new(UserAgentHeaderName, userAgentHeaderValue),
+            new(ConfigCatUserAgentHeaderName, userAgentHeaderValue),
         };
         this.logger = logger;
         this.configFetcher = configFetcher;

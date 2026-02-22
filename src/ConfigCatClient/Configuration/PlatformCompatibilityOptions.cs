@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using ConfigCat.Client.Shims;
 
@@ -13,6 +14,16 @@ public sealed class PlatformCompatibilityOptions
 internal sealed class PlatformCompatibilityOptions
 #endif
 {
+    internal static readonly bool IsRunningInBrowser =
+#if NET5_0_OR_GREATER
+        OperatingSystem.IsBrowser();
+#elif !NETFRAMEWORK
+        // See also: https://github.com/dotnet/aspnetcore/issues/18268
+        RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")) || RuntimeInformation.IsOSPlatform(OSPlatform.Create("WEBASSEMBLY"));
+#else
+        false;
+#endif
+
     internal bool continueOnCapturedContext;
 
     internal Func<IConfigCatConfigFetcher>? configFetcherFactory;

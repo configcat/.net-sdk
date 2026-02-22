@@ -13,6 +13,8 @@ public class ConfigCatClientOptions : IProvidesHooks
 {
     internal const string ConfigFileName = "config_v6.json";
 
+    internal const string ProxyPrefix = "configcat-proxy/";
+
     internal static readonly Uri BaseUrlGlobal = new("https://cdn-global.configcat.com");
 
     internal static readonly Uri BaseUrlEu = new("https://cdn-eu.configcat.com");

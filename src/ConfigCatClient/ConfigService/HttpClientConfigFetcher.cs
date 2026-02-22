@@ -1,10 +1,13 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using ConfigCat.Client.Configuration;
 using ConfigCat.Client.Shims;
 using ConfigCat.Client.Utils;
 
@@ -77,6 +80,14 @@ public sealed class HttpClientConfigFetcher : IConfigCatConfigFetcher
                 new[] { "REQUEST_ID" });
         }
 
+        var uri = request.Uri;
+        var isRunningInBrowser = PlatformCompatibilityOptions.IsRunningInBrowser;
+
+        if (isRunningInBrowser)
+        {
+            AdjustUriForBrowser(request, ref uri);
+        }
+
         HttpClient httpClient;
 
         var handlerStateObj = this.handlerState;
@@ -109,18 +120,17 @@ public sealed class HttpClientConfigFetcher : IConfigCatConfigFetcher
                 var httpRequest = new HttpRequestMessage
                 {
                     Method = HttpMethod.Get,
-                    RequestUri = request.Uri,
+                    RequestUri = uri,
                 };
 
-                for (int i = 0, n = request.Headers.Count; i < n; i++)
+                if (!isRunningInBrowser)
                 {
-                    var header = request.Headers[i];
-                    httpRequest.Headers.Add(header.Key, header.Value);
-                }
+                    SetRequestHeadersDefault(httpRequest.Headers, request.Headers);
 
-                if (request.LastETag is not null)
-                {
-                    httpRequest.Headers.IfNoneMatch.Add(EntityTagHeaderValue.Parse(request.LastETag));
+                    if (request.LastETag is not null)
+                    {
+                        httpRequest.Headers.IfNoneMatch.Add(EntityTagHeaderValue.Parse(request.LastETag));
+                    }
                 }
 
                 try
@@ -251,7 +261,7 @@ public sealed class HttpClientConfigFetcher : IConfigCatConfigFetcher
         }
         finally { httpClient.Dispose(); }
 
-        void RenewClient(in Guid requestId, FetchRequest request, ref object? handlerStateObj, ref HandlerState? handlerState,
+        void RenewClient(in Guid requestId, in FetchRequest request, ref object? handlerStateObj, ref HandlerState? handlerState,
             ref HttpClient httpClient, bool canRetry)
         {
             // Attempt to renew the client so it can pick up potentially changed DNS entries.
@@ -353,6 +363,44 @@ public sealed class HttpClientConfigFetcher : IConfigCatConfigFetcher
         static OperationCanceledException WrapObjectDisposedException(ObjectDisposedException ex)
         {
             return new OperationCanceledException(message: null, ex);
+        }
+    }
+
+    private static void AdjustUriForBrowser(in FetchRequest request, ref Uri uri)
+    {
+        var userAgentHeader = request.Headers.FirstOrDefault(static kvp =>
+            DefaultConfigFetcher.UserAgentHeaderName.Equals(kvp.Key, StringComparison.OrdinalIgnoreCase)
+            || DefaultConfigFetcher.ConfigCatUserAgentHeaderName.Equals(kvp.Key, StringComparison.OrdinalIgnoreCase));
+
+        var uriBuilder = new UriBuilder(uri);
+
+        var separator = uriBuilder.Query.Length == 0 ? "?" : "&";
+
+        const string sdkQueryParamName = "sdk=";
+        var sdkQueryParamValue = Uri.EscapeDataString(userAgentHeader.Value ?? string.Empty);
+
+        if (request.LastETag is not null)
+        {
+            // We are sending the etag as a query parameter so if the browser doesn't automatically adds the If-None-Match header,
+            // we can transform this query param to the header in our CDN provider.
+            // (Explicitly specifying the If-None-Match header would cause an unnecessary CORS OPTIONS request.)
+            uriBuilder.Query += separator + sdkQueryParamName + sdkQueryParamValue
+                + "&ccetag=" + Uri.EscapeDataString(request.LastETag);
+        }
+        else
+        {
+            uriBuilder.Query += separator + sdkQueryParamName + sdkQueryParamValue;
+        }
+
+        uri = uriBuilder.Uri;
+    }
+
+    private static void SetRequestHeadersDefault(HttpRequestHeaders httpRequestHeaders, IReadOnlyList<KeyValuePair<string, string>> headers)
+    {
+        for (int i = 0, n = headers.Count; i < n; i++)
+        {
+            var header = headers[i];
+            httpRequestHeaders.Add(header.Key, header.Value);
         }
     }
 

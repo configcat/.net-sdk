@@ -53,8 +53,7 @@ public sealed class ConfigCatClient : IConfigCatClient
 
     private static bool IsValidSdkKey(string sdkKey, bool customBaseUrl)
     {
-        const string proxyPrefix = "configcat-proxy/";
-
+        const string proxyPrefix = ConfigCatClientOptions.ProxyPrefix;
         if (customBaseUrl && sdkKey.Length > proxyPrefix.Length && sdkKey.StartsWith(proxyPrefix, StringComparison.Ordinal))
         {
             return true;

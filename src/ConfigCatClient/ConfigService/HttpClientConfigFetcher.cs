@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Configuration;
@@ -27,9 +28,17 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
     // or a HttpClientProvider (callback for full external control over HttpClient management, e.g. integration with IHttpClientFactory)
     private volatile object? handlerState;
 
-    protected internal HttpClientConfigFetcher(IWebProxy? proxy = null)
+    protected internal HttpClientConfigFetcher()
     {
-        this.handlerState = new HandlerState(proxy);
+        this.handlerState = new HandlerState();
+    }
+
+#if NET6_0_OR_GREATER
+    [UnsupportedOSPlatform("browser")]
+#endif
+    protected internal HttpClientConfigFetcher(IWebProxy proxy)
+    {
+        this.handlerState = new HandlerState(proxy ?? throw new ArgumentNullException(nameof(proxy)));
     }
 
     internal HttpClientConfigFetcher(HttpClientHandler httpClientHandler)
@@ -149,7 +158,7 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                 {
                     if (isDebugLoggingEnabled)
                     {
-                        var proxy = handlerState is not null ? handlerState.Handler.Proxy : (handlerStateObj as HttpClientHandler)?.Proxy;
+                        var proxy = handlerState is not null ? handlerState.Proxy : (handlerStateObj as HttpClientHandler)?.Proxy;
                         if (proxy is null || proxy.IsBypassed(request.Uri))
                         {
                             logger!.LogInterpolated(LogLevel.Debug, 0,
@@ -427,6 +436,7 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
     private sealed class HandlerState
     {
         public readonly HttpClientHandler Handler;
+        public readonly IWebProxy? Proxy;
         private readonly TimeSpan updateTime;
 
         public HandlerState(IWebProxy? proxy = null)
@@ -447,6 +457,9 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
             }
 
             this.Handler = handler;
+            // NOTE: We can't safely access the proxy instance via this.Handler.Proxy as the seter of that property may
+            // throw on some platforms (e.g. in browser).
+            this.Proxy = proxy;
             this.updateTime = updateTime;
         }
 
@@ -454,6 +467,6 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
             ? DateTimeUtils.GetMonotonicTime() - this.updateTime
             : TimeSpan.MaxValue;
 
-        public HandlerState Renew() => new(this.Handler.Proxy, DateTimeUtils.GetMonotonicTime());
+        public HandlerState Renew() => new(this.Proxy, DateTimeUtils.GetMonotonicTime());
     }
 }

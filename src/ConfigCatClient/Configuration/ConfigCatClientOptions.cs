@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http;
+using System.Runtime.Versioning;
 using ConfigCat.Client.Cache;
 
 namespace ConfigCat.Client.Configuration;
@@ -44,7 +45,9 @@ public class ConfigCatClientOptions : IProvidesHooks
     public IConfigCatConfigFetcher? ConfigFetcher { get; set; }
 
     internal static IConfigCatConfigFetcher CreateDefaultConfigFetcher(IWebProxy? proxy, HttpClientHandler? httpClientHandler) =>
-        httpClientHandler is null ? new HttpClientConfigFetcher(proxy) : new HttpClientConfigFetcher(httpClientHandler);
+        httpClientHandler is null
+        ? (proxy is null ? new HttpClientConfigFetcher() : new HttpClientConfigFetcher(proxy))
+        : new HttpClientConfigFetcher(httpClientHandler);
 
     /// <summary>
     /// The cache implementation to use for storing and retrieving downloaded config data.
@@ -69,6 +72,9 @@ public class ConfigCatClientOptions : IProvidesHooks
     [Obsolete($"This option is deprecated, thus it will be removed from the public API in a future major version. Please use the {nameof(Proxy)} option instead, or set the {nameof(ConfigFetcher)} option (e.g., to an instance of {nameof(HttpClientConfigFetcher)}) if you need more control over HTTP communication.")]
     public HttpClientHandler? HttpClientHandler { get; set; }
 
+#if NET6_0_OR_GREATER
+    [UnsupportedOSPlatform("browser")]
+#endif
     public IWebProxy? Proxy { get; set; }
 
     /// <summary>

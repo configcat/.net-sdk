@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Net;
 using System.Net.Http;
 using ConfigCat.Client.Cache;
 
@@ -40,8 +41,8 @@ public class ConfigCatClientOptions : IProvidesHooks
     /// </summary>
     public IConfigCatConfigFetcher? ConfigFetcher { get; set; }
 
-    internal static IConfigCatConfigFetcher CreateDefaultConfigFetcher(HttpClientHandler? httpClientHandler) =>
-        httpClientHandler is null ? new HttpClientConfigFetcher() : new HttpClientConfigFetcher(httpClientHandler);
+    internal static IConfigCatConfigFetcher CreateDefaultConfigFetcher(IWebProxy? proxy, HttpClientHandler? httpClientHandler) =>
+        httpClientHandler is null ? new HttpClientConfigFetcher(proxy) : new HttpClientConfigFetcher(httpClientHandler);
 
     /// <summary>
     /// The cache implementation to use for storing and retrieving downloaded config data.
@@ -63,8 +64,10 @@ public class ConfigCatClientOptions : IProvidesHooks
     /// <summary>
     /// An optional <see cref="System.Net.Http.HttpClientHandler"/> for providing network credentials and proxy settings.
     /// </summary>
-    [Obsolete($"This option is deprecated, thus it will be removed from the public API in a future major version. Please set the {nameof(ConfigFetcher)} option to an instance of {nameof(HttpClientConfigFetcher)}.")]
+    [Obsolete($"This option is deprecated, thus it will be removed from the public API in a future major version. Please use the {nameof(Proxy)} option instead, or set the {nameof(ConfigFetcher)} option (e.g., to an instance of {nameof(HttpClientConfigFetcher)}) if you need more control over HTTP communication.")]
     public HttpClientHandler? HttpClientHandler { get; set; }
+
+    public IWebProxy? Proxy { get; set; }
 
     /// <summary>
     /// The base URL of the remote server providing the latest version of the config.

@@ -24,7 +24,7 @@ public sealed class HttpClientConfigFetcher : IConfigCatConfigFetcher
     // or a HttpClientProvider (callback for full external control over HttpClient management, e.g. integration with IHttpClientFactory)
     private volatile object? handlerState;
 
-    public HttpClientConfigFetcher(IWebProxy? proxy = null)
+    protected internal HttpClientConfigFetcher(IWebProxy? proxy = null)
     {
         this.handlerState = new HandlerState(proxy);
     }

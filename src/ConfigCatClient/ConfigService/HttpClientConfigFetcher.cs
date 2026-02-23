@@ -188,7 +188,7 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
 #if NET5_0_OR_GREATER
                         var httpResponseBody = await httpResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 #else
-                        var httpResponseBody = await httpResponse.Content.ReadAsStringAsync().ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+                        var httpResponseBody = await httpResponse.Content.ReadAsStringAsync().WaitAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 #endif
 
                         if (isDebugLoggingEnabled)

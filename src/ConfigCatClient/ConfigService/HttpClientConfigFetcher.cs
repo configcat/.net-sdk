@@ -95,7 +95,7 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
 
         if (isRunningInBrowser)
         {
-            AdjustUriForBrowser(request, ref uri);
+            AdjustUriForBrowser(ref uri, request);
         }
 
         HttpClient httpClient;
@@ -216,7 +216,7 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                         }
 
                         canRetry = retryCount < retryLimit;
-                        RenewClient(requestId, request, ref handlerStateObj, ref handlerState, ref httpClient, canRetry);
+                        RenewClient(ref httpClient, ref handlerState, ref handlerStateObj, requestId, request, canRetry);
                         if (!canRetry)
                         {
                             return response;
@@ -240,7 +240,7 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                     }
 
                     canRetry = retryCount < retryLimit;
-                    RenewClient(requestId, request, ref handlerStateObj, ref handlerState, ref httpClient, canRetry);
+                    RenewClient(ref httpClient, ref handlerState, ref handlerStateObj, requestId, request, canRetry);
                     if (!canRetry)
                     {
                         throw FetchErrorException.Timeout(httpClient.Timeout, ex);
@@ -261,7 +261,7 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                     }
 
                     canRetry = retryCount < retryLimit;
-                    RenewClient(requestId, request, ref handlerStateObj, ref handlerState, ref httpClient, canRetry);
+                    RenewClient(ref httpClient, ref handlerState, ref handlerStateObj, requestId, request, canRetry);
                     if (!canRetry)
                     {
                         throw FetchErrorException.Failure((ex.InnerException as WebException)?.Status, ex);
@@ -282,8 +282,8 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
         }
         finally { httpClient.Dispose(); }
 
-        void RenewClient(in Guid requestId, in FetchRequest request, ref object? handlerStateObj, ref HandlerState? handlerState,
-            ref HttpClient httpClient, bool canRetry)
+        void RenewClient(ref HttpClient httpClient, ref HandlerState? handlerState, ref object? handlerStateObj, in Guid requestId,
+            in FetchRequest request, bool canRetry)
         {
             // Attempt to renew the client so it can pick up potentially changed DNS entries.
             // See also: https://learn.microsoft.com/en-us/dotnet/fundamentals/networking/http/httpclient-guidelines#dns-behavior
@@ -387,7 +387,7 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
         }
     }
 
-    private static void AdjustUriForBrowser(in FetchRequest request, ref Uri uri)
+    private static void AdjustUriForBrowser(ref Uri uri, in FetchRequest request)
     {
         var userAgentHeader = request.Headers.FirstOrDefault(static kvp =>
             DefaultConfigFetcher.UserAgentHeaderName.Equals(kvp.Key, StringComparison.OrdinalIgnoreCase)

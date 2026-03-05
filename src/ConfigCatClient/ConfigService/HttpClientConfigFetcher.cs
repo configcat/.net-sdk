@@ -16,17 +16,26 @@ namespace ConfigCat.Client;
 
 public class HttpClientConfigFetcher : IConfigCatConfigFetcher
 {
+    // NOTE: There's an edge case that's currently not handled by the default operation mode (internal handler management, see below):
+    // The connection pool is reset only when some abnormal response is received (unexpected status code, timeout or network error).
+    // However, when a DNS change occurs, it's possible that the original server continues normal operation without reporting any errors.
+    // In that case the SDK may not detect the DNS change. This is because HttpClientHandler keeps using non-idle connections forever by default.
+    // However, since this is an highly unlikely scenario, we decided to ignore it for keeping the implementation as simple as possible.
+    // See also:
+    // * https://www.stevejgordon.co.uk/httpclient-connection-pooling-in-dotnet-core
+    // * https://makolyte.com/csharp-configuring-how-long-an-httpclient-connection-will-stay-open/
+
     public delegate HttpClient HttpClientProvider(FetchRequest request, HttpClient? failedHttpClient = null);
-
-    private static readonly TimeSpan HandlerRenewalThreshold = TimeSpan.FromSeconds(30);
-
-    private static readonly TimeSpan RequestRetryDelay = TimeSpan.FromMilliseconds(50);
 
     // either null (indicating disposed state)
     // or a HandlerState (internally managed handler)
-    // or a HttpClientHandler (externally created handler)
+    // or a HttpMessageHandler (externally created handler)
     // or a HttpClientProvider (callback for full external control over HttpClient management, e.g. integration with IHttpClientFactory)
     private volatile object? handlerState;
+
+    private protected bool isRunningInBrowser = PlatformCompatibilityOptions.IsRunningInBrowser;
+    private protected TimeSpan handlerRenewalThreshold = TimeSpan.FromSeconds(30);
+    private protected TimeSpan requestRetryDelay = TimeSpan.FromMilliseconds(50);
 
     protected internal HttpClientConfigFetcher()
     {
@@ -41,9 +50,9 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
         this.handlerState = new HandlerState(proxy ?? throw new ArgumentNullException(nameof(proxy)));
     }
 
-    internal HttpClientConfigFetcher(HttpClientHandler httpClientHandler)
+    internal HttpClientConfigFetcher(HttpMessageHandler externalHandler)
     {
-        this.handlerState = httpClientHandler ?? throw new ArgumentNullException(nameof(httpClientHandler));
+        this.handlerState = externalHandler ?? throw new ArgumentNullException(nameof(externalHandler));
     }
 
     public HttpClientConfigFetcher(HttpClientProvider httpClientProvider)
@@ -59,9 +68,17 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
 
         // If using internal handler management, the handler needs to be disposed too.
         (handlerState as HandlerState)?.Handler.Dispose();
+
+        Dispose(true);
     }
 
-    private static HttpClient CreateHttpClient(HttpMessageHandler handler, TimeSpan timeout)
+    protected virtual void Dispose(bool disposing) { }
+
+    // For testing purposes.
+    internal HttpMessageHandler? CurrentHandler => (this.handlerState as HandlerState)?.Handler;
+
+    // This method is virtual for testing purposes.
+    internal virtual HttpClient CreateHttpClient(HttpMessageHandler handler, TimeSpan timeout)
     {
         return new HttpClient(handler, disposeHandler: false) { Timeout = timeout };
     }
@@ -91,9 +108,8 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
 
         var uri = request.Uri;
         var isCustomUri = !ConfigCatClientOptions.IsCdnUri(request.Uri);
-        var isRunningInBrowser = PlatformCompatibilityOptions.IsRunningInBrowser;
 
-        if (isRunningInBrowser)
+        if (this.isRunningInBrowser)
         {
             AdjustUriForBrowser(ref uri, request);
         }
@@ -107,7 +123,7 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
         {
             httpClient = CreateHttpClient(handlerState.Handler, request.Timeout);
         }
-        else if (handlerStateObj is HttpClientHandler externalHandler)
+        else if (handlerStateObj is HttpMessageHandler externalHandler)
         {
             httpClient = CreateHttpClient(externalHandler, request.Timeout);
         }
@@ -127,13 +143,13 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
 
             for (var retryCount = 0; ; retryCount++)
             {
-                var httpRequest = new HttpRequestMessage
+                using var httpRequest = new HttpRequestMessage
                 {
                     Method = HttpMethod.Get,
                     RequestUri = uri,
                 };
 
-                if (!isRunningInBrowser)
+                if (!this.isRunningInBrowser)
                 {
                     if (isCustomUri)
                     {
@@ -266,11 +282,10 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                     {
                         throw FetchErrorException.Failure((ex.InnerException as WebException)?.Status, ex);
                     }
-
                 }
 
                 // Wait a little before trying again.
-                await TaskShim.Current.Delay(RequestRetryDelay, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+                await TaskShim.Current.Delay(this.requestRetryDelay, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 
                 if (isDebugLoggingEnabled)
                 {
@@ -293,7 +308,7 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
             {
                 // If handler is managed internally, try to renew the handler, i.e. create another connection pool.
 
-                if (handlerState.TimeElapsedSinceLastRenew < HandlerRenewalThreshold)
+                if (handlerState.TimeElapsedSinceLastRenew < this.handlerRenewalThreshold)
                 {
                     // NOTE: The new handler implementation (SocketsHttpHandler) doesn't immediately close the connections in
                     // the pool on dispose but keeps them around for some time in the TIME_WAIT state, according to RFC 9293.
@@ -387,33 +402,37 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
         }
     }
 
-    private static void AdjustUriForBrowser(ref Uri uri, in FetchRequest request)
+    internal static void AdjustUriForBrowser(ref Uri uri, in FetchRequest request)
     {
         var userAgentHeader = request.Headers.FirstOrDefault(static kvp =>
             DefaultConfigFetcher.UserAgentHeaderName.Equals(kvp.Key, StringComparison.OrdinalIgnoreCase)
             || DefaultConfigFetcher.ConfigCatUserAgentHeaderName.Equals(kvp.Key, StringComparison.OrdinalIgnoreCase));
 
-        var uriBuilder = new UriBuilder(uri);
-
-        var separator = uriBuilder.Query.Length == 0 ? "?" : "&";
-
-        const string sdkQueryParamName = "sdk=";
         var sdkQueryParamValue = Uri.EscapeDataString(userAgentHeader.Value ?? string.Empty);
 
-        if (request.LastETag is not null)
+        var absoluteUri = uri.IsAbsoluteUri ? uri : new Uri(new Uri("https://x"), uri);
+
+        // NOTE: We are sending the etag as a query parameter so if the browser doesn't automatically adds
+        // the If-None-Match header, we can transform this query param to the header in our CDN provider.
+        // (Explicitly specifying the If-None-Match header would cause an unnecessary CORS OPTIONS request.)
+
+        var adjustedUri = absoluteUri.GetComponents(UriComponents.HttpRequestUrl & ~UriComponents.Query, UriFormat.UriEscaped);
+        var query = absoluteUri.GetComponents(UriComponents.Query, UriFormat.UriEscaped);
+
+        if (query.Length == 0)
         {
-            // We are sending the etag as a query parameter so if the browser doesn't automatically adds the If-None-Match header,
-            // we can transform this query param to the header in our CDN provider.
-            // (Explicitly specifying the If-None-Match header would cause an unnecessary CORS OPTIONS request.)
-            uriBuilder.Query += separator + sdkQueryParamName + sdkQueryParamValue
-                + "&ccetag=" + Uri.EscapeDataString(request.LastETag);
+            adjustedUri = request.LastETag is not null
+                ? $"{adjustedUri}?{DefaultConfigFetcher.SdkQueryParamName}={sdkQueryParamValue}&{DefaultConfigFetcher.ETagQueryParamName}={Uri.EscapeDataString(request.LastETag)}"
+                : string.Concat(adjustedUri, "?" + DefaultConfigFetcher.SdkQueryParamName + "=", sdkQueryParamValue);
         }
         else
         {
-            uriBuilder.Query += separator + sdkQueryParamName + sdkQueryParamValue;
+            adjustedUri =
+                $"{adjustedUri}?{DefaultConfigFetcher.SdkQueryParamName}={sdkQueryParamValue}&{DefaultConfigFetcher.ETagQueryParamName}={Uri.EscapeDataString(request.LastETag ?? string.Empty)}&{query}";
         }
 
-        uri = uriBuilder.Uri;
+        absoluteUri = new Uri(adjustedUri, UriKind.Absolute);
+        uri = uri.IsAbsoluteUri ? absoluteUri : new Uri(absoluteUri.PathAndQuery, UriKind.Relative);
     }
 
     private static void SetRequestHeadersDefault(HttpRequestHeaders httpRequestHeaders, IReadOnlyList<KeyValuePair<string, string>> headers)
@@ -427,7 +446,7 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
 
     protected virtual void SetRequestHeaders(HttpRequestHeaders httpRequestHeaders, IReadOnlyList<KeyValuePair<string, string>> headers)
     {
-        if (!PlatformCompatibilityOptions.IsRunningInBrowser)
+        if (!this.isRunningInBrowser)
         {
             SetRequestHeadersDefault(httpRequestHeaders, headers);
         }
@@ -457,7 +476,7 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
             }
 
             this.Handler = handler;
-            // NOTE: We can't safely access the proxy instance via this.Handler.Proxy as the seter of that property may
+            // NOTE: We can't safely access the proxy instance via this.Handler.Proxy as the getter of that property may
             // throw on some platforms (e.g. in browser).
             this.Proxy = proxy;
             this.updateTime = updateTime;

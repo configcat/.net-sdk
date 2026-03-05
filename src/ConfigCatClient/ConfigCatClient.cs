@@ -162,7 +162,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         this.configService = instance;
     }
 
-    // For test purposes only
+    // For testing purposes only.
     internal ConfigCatClient(IConfigService configService, IConfigCatLogger logger, IRolloutEvaluator evaluator,
         OverrideBehaviour? overrideBehaviour = null, IOverrideDataSource? overrideDataSource = null,
         LogFilterCallback? logFilter = null, Hooks? hooks = null)

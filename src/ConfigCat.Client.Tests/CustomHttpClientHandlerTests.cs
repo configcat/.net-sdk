@@ -35,7 +35,7 @@ public class CustomHttpClientHandlerTests
         // Assert
 
         Assert.AreEqual("Cat", actual);
-        Assert.IsTrue(this.httpClientHandler.SendAsyncInvokeCount > 0);
+        Assert.IsTrue(this.httpClientHandler.SendInvokeCount > 0);
     }
 
     [TestMethod]
@@ -58,7 +58,7 @@ public class CustomHttpClientHandlerTests
         // Assert
 
         Assert.AreEqual("Cat", actual);
-        Assert.AreEqual(1, this.httpClientHandler.SendAsyncInvokeCount);
+        Assert.AreEqual(1, this.httpClientHandler.SendInvokeCount);
     }
 
     [TestMethod]
@@ -80,6 +80,6 @@ public class CustomHttpClientHandlerTests
         // Assert
 
         Assert.AreEqual("Cat", actual);
-        Assert.AreEqual(1, this.httpClientHandler.SendAsyncInvokeCount);
+        Assert.AreEqual(1, this.httpClientHandler.SendInvokeCount);
     }
 }

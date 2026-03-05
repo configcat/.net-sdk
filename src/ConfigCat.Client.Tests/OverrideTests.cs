@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using ConfigCat.Client.Evaluation;
+using ConfigCat.Client.Tests.Helpers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 #if USE_NEWTONSOFT_JSON
@@ -348,12 +349,12 @@ public class OverrideTests
             {"nonexisting", true},
         };
 
-        var fakeHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK);
+        var fakeHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, GetJsonContent("false"));
 
         using var client = ConfigCatClient.Get("localhost-123456789012/1234567890123456789012", options =>
         {
             options.FlagOverrides = FlagOverrides.LocalDictionary(dict, OverrideBehaviour.LocalOverRemote);
-            options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, GetJsonContent("false"));
+            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithCustomHandler(fakeHandler);
             options.PollingMode = PollingModes.ManualPoll;
         });
 
@@ -372,12 +373,12 @@ public class OverrideTests
             {"nonexisting", true},
         };
 
-        var fakeHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK);
+        var fakeHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, GetJsonContent("false"));
 
         using var client = ConfigCatClient.Get("localhost-123456789012/1234567890123456789012", options =>
         {
             options.FlagOverrides = FlagOverrides.LocalDictionary(dict, OverrideBehaviour.LocalOverRemote);
-            options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, GetJsonContent("false"));
+            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithCustomHandler(fakeHandler);
             options.PollingMode = PollingModes.ManualPoll;
         });
 
@@ -396,12 +397,12 @@ public class OverrideTests
             {"nonexisting", true},
         };
 
-        var fakeHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK);
+        var fakeHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, GetJsonContent("false"));
 
         using var client = ConfigCatClient.Get("localhost-123456789012/1234567890123456789012", options =>
         {
             options.FlagOverrides = FlagOverrides.LocalDictionary(dict, OverrideBehaviour.RemoteOverLocal);
-            options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, GetJsonContent("false"));
+            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithCustomHandler(fakeHandler);
             options.PollingMode = PollingModes.ManualPoll;
         });
 
@@ -420,12 +421,12 @@ public class OverrideTests
             {"nonexisting", true},
         };
 
-        var fakeHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK);
+        var fakeHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, GetJsonContent("false"));
 
         using var client = ConfigCatClient.Get("localhost-123456789012/1234567890123456789012", options =>
         {
             options.FlagOverrides = FlagOverrides.LocalDictionary(dict, OverrideBehaviour.RemoteOverLocal);
-            options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, GetJsonContent("false"));
+            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithCustomHandler(fakeHandler);
             options.PollingMode = PollingModes.ManualPoll;
         });
 

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ConfigCat.Client.Tests;
 
-internal class FakeHttpClientHandler : HttpClientHandler
+internal class FakeHttpClientHandler : HttpMessageHandler
 {
     private readonly HttpStatusCode httpStatusCode;
     private readonly string? responseContent;
@@ -33,12 +33,12 @@ internal class FakeHttpClientHandler : HttpClientHandler
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
+        var sendInvokeCount = Interlocked.Increment(ref this.sendInvokeCount);
+
         if (this.delay is not null)
             await Task.Delay(this.delay.Value, cancellationToken);
 
-        var sendInvokeCount = Interlocked.Increment(ref this.sendInvokeCount);
-
-        this.Requests.Add((byte)sendInvokeCount, request);
+        this.Requests.Add((byte)(sendInvokeCount - 1), request);
 
         var response = new HttpResponseMessage
         {
@@ -57,12 +57,12 @@ internal class FakeHttpClientHandler : HttpClientHandler
 #if NET5_0_OR_GREATER
     protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        if (this.delay is not null)
-            Task.Delay(this.delay.Value, cancellationToken).Wait(cancellationToken);
-
         var sendInvokeCount = Interlocked.Increment(ref this.sendInvokeCount);
 
-        this.Requests.Add((byte)sendInvokeCount, request);
+        if (this.delay is not null)
+            Task.Delay(this.delay.Value, cancellationToken).Wait();
+
+        this.Requests.Add((byte)(sendInvokeCount - 1), request);
 
         var response = new HttpResponseMessage
         {

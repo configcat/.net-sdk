@@ -11,8 +11,21 @@ namespace ConfigCat.Client;
 
 internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
 {
-    public const string UserAgentHeaderName = "User-Agent";
-    public const string ConfigCatUserAgentHeaderName = "X-ConfigCat-UserAgent";
+    internal const string UserAgentHeaderName = "User-Agent";
+    internal const string ConfigCatUserAgentHeaderName = "X-ConfigCat-UserAgent";
+
+    internal const string SdkQueryParamName = "sdk";
+    internal const string ETagQueryParamName = "ccetag";
+
+    internal static KeyValuePair<string, string>[] GetRequestHeaders(string productVersion)
+    {
+        var userAgentHeaderValue = new ProductInfoHeaderValue("ConfigCat-Dotnet", productVersion).ToString();
+        return new KeyValuePair<string, string>[]
+        {
+            new(UserAgentHeaderName, userAgentHeaderValue),
+            new(ConfigCatUserAgentHeaderName, userAgentHeaderValue),
+        };
+    }
 
     private readonly string sdkKey;
     private volatile Uri baseUri;
@@ -28,12 +41,7 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
     {
         this.sdkKey = sdkKey;
         this.baseUri = baseUri;
-        var userAgentHeaderValue = new ProductInfoHeaderValue("ConfigCat-Dotnet", productVersion).ToString();
-        this.requestHeaders = new KeyValuePair<string, string>[]
-        {
-            new(UserAgentHeaderName, userAgentHeaderValue),
-            new(ConfigCatUserAgentHeaderName, userAgentHeaderValue),
-        };
+        this.requestHeaders = GetRequestHeaders(productVersion);
         this.logger = logger;
         this.configFetcher = configFetcher;
         this.ownsConfigFetcher = ownsConfigFetcher;

@@ -214,24 +214,15 @@ public class SingletonServices : MonoBehaviour
                 "User-Agent".Equals(kvp.Key, StringComparison.OrdinalIgnoreCase)
                 || "X-ConfigCat-UserAgent".Equals(kvp.Key, StringComparison.OrdinalIgnoreCase));
 
-            var uriBuilder = new UriBuilder(request.Uri);
-
-            var separator = uriBuilder.Query.Length == 0 ? "?" : "&";
-
-            const string sdkQueryParamName = "sdk=";
             var sdkQueryParamValue = Uri.EscapeDataString(userAgentHeader.Value ?? string.Empty);
 
-            if (request.LastETag is not null)
-            {
-                uriBuilder.Query += separator + sdkQueryParamName + sdkQueryParamValue
-                    + "&ccetag=" + Uri.EscapeDataString(request.LastETag);
-            }
-            else
-            {
-                uriBuilder.Query += separator + sdkQueryParamName + sdkQueryParamValue;
-            }
+            var adjustedUri = request.Uri.GetComponents(UriComponents.HttpRequestUrl & ~UriComponents.Query, UriFormat.UriEscaped);
 
-            return uriBuilder.Uri;
+            adjustedUri = request.LastETag is not null
+                ? $"{adjustedUri}?sdk={sdkQueryParamValue}&ccetag={Uri.EscapeDataString(request.LastETag)}"
+                : $"{adjustedUri}?sdk={sdkQueryParamValue}";
+
+            return new Uri(adjustedUri, UriKind.Absolute);
         }
 
         public void Dispose() { }

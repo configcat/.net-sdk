@@ -320,7 +320,7 @@ public class HttpConfigFetcherTests
     }
 
     [TestMethod]
-    public async Task HttpClientConfigFetcher_ExternalClient_ShouldUseExternallyProvidedClient()
+    public async Task HttpClientConfigFetcher_ExternalClient_ShouldUseExternallyCreatedClient()
     {
         // Arrange
 
@@ -329,15 +329,15 @@ public class HttpConfigFetcherTests
         var logEvents = new List<LogEvent>();
         var fakeLogger = LoggingHelper.CreateCapturingLogger(logEvents, LogLevel.Debug).AsWrapper();
 
-        var capturedParams = new List<(FetchRequest Request, HttpClient? FailedClient, HttpClient CreatedClient)>();
+        var capturedParams = new List<(FetchRequest Request, bool IsRetry, HttpClient CreatedClient)>();
 
         var fakeHandler = new FakeHttpClientHandler();
 
-        using var configFetcher = new TestHttpClientConfigFetcher((request, failedHttpClient) =>
+        using var configFetcher = new TestHttpClientConfigFetcher((request, isRetry) =>
         {
-            var createdClient = new HttpClient(fakeHandler, disposeHandler: false);
-            lock (capturedParams) capturedParams.Add((request, failedHttpClient, createdClient));
-            return createdClient;
+            var client = new HttpClient(fakeHandler, disposeHandler: false);
+            lock (capturedParams) capturedParams.Add((request, isRetry, client));
+            return client;
         });
 
         var requestUri = ConfigCatClientOptions.GetConfigUri(ConfigCatClientOptions.BaseUrlGlobal, TestSdkKey);
@@ -358,18 +358,18 @@ public class HttpConfigFetcherTests
         HttpClient? createdClient1 = capturedParams[0].CreatedClient, createdClient2 = capturedParams[1].CreatedClient;
         Assert.AreNotSame(createdClient1, createdClient2);
 
-        HttpClient? failedClient1 = capturedParams[0].FailedClient, failedClient2 = capturedParams[1].FailedClient;
-        Assert.IsNull(failedClient1);
-        Assert.IsNull(failedClient2);
+        bool isRetry1 = capturedParams[0].IsRetry, isRetry2 = capturedParams[1].IsRetry;
+        Assert.IsFalse(isRetry1);
+        Assert.IsFalse(isRetry2);
 
         Assert.AreEqual(2, fakeHandler.SendInvokeCount);
     }
 
     [DataTestMethod]
-    [DataRow("408", false)]
-    [DataRow("timeout", false)]
-    [DataRow("error", true)]
-    public async Task HttpClientConfigFetcher_ExternalClient_ShouldObtainNewClientOnUnexpectedResponseOrFailure(string @case, bool reuseFailedClient)
+    [DataRow("408")]
+    [DataRow("timeout")]
+    [DataRow("error")]
+    public async Task HttpClientConfigFetcher_ExternalClient_ShouldObtainNewClientOnUnexpectedResponseOrFailure(string @case)
     {
         // Arrange
 
@@ -378,7 +378,7 @@ public class HttpConfigFetcherTests
         var logEvents = new List<LogEvent>();
         var fakeLogger = LoggingHelper.CreateCapturingLogger(logEvents, LogLevel.Debug).AsWrapper();
 
-        var capturedParams = new List<(FetchRequest Request, HttpClient? FailedClient, HttpClient CreatedClient)>();
+        var capturedParams = new List<(FetchRequest Request, bool IsRetry, HttpClient CreatedClient)>();
 
         HttpMessageHandler fakeHandler = @case switch
         {
@@ -388,13 +388,11 @@ public class HttpConfigFetcherTests
             _ => throw new NotImplementedException()
         };
 
-        using var configFetcher = new TestHttpClientConfigFetcher((request, failedHttpClient) =>
+        using var configFetcher = new TestHttpClientConfigFetcher((request, isRetry) =>
         {
-            var createdClient = failedHttpClient is not null && reuseFailedClient
-                ? failedHttpClient
-                : new HttpClient(fakeHandler, disposeHandler: false) { Timeout = request.Timeout };
-            lock (capturedParams) capturedParams.Add((request, failedHttpClient, createdClient));
-            return createdClient;
+            var client = new HttpClient(fakeHandler, disposeHandler: false) { Timeout = request.Timeout };
+            lock (capturedParams) capturedParams.Add((request, isRetry, client));
+            return client;
         });
 
         var requestUri = ConfigCatClientOptions.GetConfigUri(ConfigCatClientOptions.BaseUrlGlobal, TestSdkKey);
@@ -428,18 +426,11 @@ public class HttpConfigFetcherTests
         Assert.AreEqual(request1, request2);
 
         HttpClient? createdClient1 = capturedParams[0].CreatedClient, createdClient2 = capturedParams[1].CreatedClient;
-        if (reuseFailedClient)
-        {
-            Assert.AreSame(createdClient1, createdClient2);
-        }
-        else
-        {
-            Assert.AreNotSame(createdClient1, createdClient2);
-        }
+        Assert.AreNotSame(createdClient1, createdClient2);
 
-        HttpClient? failedClient1 = capturedParams[0].FailedClient, failedClient2 = capturedParams[1].FailedClient;
-        Assert.IsNull(failedClient1);
-        Assert.AreSame(createdClient1, failedClient2);
+        bool isRetry1 = capturedParams[0].IsRetry, isRetry2 = capturedParams[1].IsRetry;
+        Assert.IsFalse(isRetry1);
+        Assert.IsTrue(isRetry2);
 
         var sendInvokeCount = fakeHandler is ExceptionThrowerHttpClientHandler exceptionThrowerHandler
             ? exceptionThrowerHandler.SendInvokeCount
@@ -915,8 +906,8 @@ public class HttpConfigFetcherTests
 
     private sealed class TestHttpClientConfigFetcher : HttpClientConfigFetcher
     {
-        public TestHttpClientConfigFetcher(HttpClientProvider httpClientProvider)
-            : base(httpClientProvider) { }
+        public TestHttpClientConfigFetcher(HttpClientFactory httpClientFactory)
+            : base(httpClientFactory) { }
 
         public TestHttpClientConfigFetcher()
             : base() { }

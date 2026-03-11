@@ -25,12 +25,12 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
     // * https://www.stevejgordon.co.uk/httpclient-connection-pooling-in-dotnet-core
     // * https://makolyte.com/csharp-configuring-how-long-an-httpclient-connection-will-stay-open/
 
-    public delegate HttpClient HttpClientProvider(FetchRequest request, HttpClient? failedHttpClient = null);
+    public delegate HttpClient HttpClientFactory(FetchRequest request, bool isRetry);
 
     // either null (indicating disposed state)
     // or a HandlerState (internally managed handler)
     // or a HttpMessageHandler (externally created handler)
-    // or a HttpClientProvider (callback for full external control over HttpClient management, e.g. integration with IHttpClientFactory)
+    // or a HttpClientFactory (callback for full external control over HttpClient management, e.g. integration with IHttpClientFactory)
     private volatile object? handlerState;
 
     private protected bool isRunningInBrowser = PlatformCompatibilityOptions.IsRunningInBrowser;
@@ -55,9 +55,9 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
         this.handlerState = externalHandler ?? throw new ArgumentNullException(nameof(externalHandler));
     }
 
-    public HttpClientConfigFetcher(HttpClientProvider httpClientProvider)
+    public HttpClientConfigFetcher(HttpClientFactory httpClientFactory)
     {
-        this.handlerState = httpClientProvider ?? throw new ArgumentNullException(nameof(httpClientProvider));
+        this.handlerState = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
     }
 
     /// <inheritdoc />
@@ -127,9 +127,9 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
         {
             httpClient = CreateHttpClient(externalHandler, request.Timeout);
         }
-        else if (handlerStateObj is HttpClientProvider httpClientProvider)
+        else if (handlerStateObj is HttpClientFactory httpClientFactory)
         {
-            httpClient = httpClientProvider(request);
+            httpClient = httpClientFactory(request, isRetry: false);
         }
         else
         {
@@ -306,7 +306,6 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
             // Attempt to renew the client so it can pick up potentially changed DNS entries.
             // See also: https://learn.microsoft.com/en-us/dotnet/fundamentals/networking/http/httpclient-guidelines#dns-behavior
 
-            HttpClient newHttpClient;
             if (handlerState is not null)
             {
                 // If handler is managed internally, try to renew the handler, i.e. create another connection pool.
@@ -353,25 +352,23 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                     return;
                 }
 
-                newHttpClient = CreateHttpClient(handlerState.Handler, request.Timeout);
+                httpClient.Dispose();
+                httpClient = CreateHttpClient(handlerState.Handler, request.Timeout);
             }
             else
             {
                 handlerStateObj = this.handlerState;
-                if (handlerStateObj is HttpClientProvider httpClientProvider)
+                if (handlerStateObj is HttpClientFactory httpClientFactory)
                 {
                     if (!canRetry)
                     {
                         return;
                     }
 
-                    // If client is provided externally, give consumer the opportunity to provide another instance for retrying.
+                    // If client is created externally, give consumer the opportunity to create another instance for retrying.
 
-                    newHttpClient = httpClientProvider(request, httpClient);
-                    if (ReferenceEquals(newHttpClient, httpClient))
-                    {
-                        return;
-                    }
+                    httpClient.Dispose();
+                    httpClient = httpClientFactory(request, isRetry: true);
                 }
                 else
                 {
@@ -379,9 +376,6 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                     return;
                 }
             }
-
-            httpClient.Dispose();
-            httpClient = newHttpClient;
 
             if (isDebugLoggingEnabled)
             {

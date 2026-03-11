@@ -170,6 +170,7 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                     SetRequestHeaders(httpRequest.Headers, request.Headers);
                 }
 
+                string? rayId = null;
                 try
                 {
                     if (isDebugLoggingEnabled)
@@ -199,6 +200,8 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                             new[] { "REQUEST_ID", "STATUS_CODE", "REASON_PHRASE", "ETAG" });
                     }
 
+                    rayId = FetchResponse.GetRayId(httpResponse.Headers);
+
                     if (httpResponse.StatusCode == HttpStatusCode.OK)
                     {
 #if NET5_0_OR_GREATER
@@ -214,11 +217,11 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                                 new[] { "REQUEST_ID", "LENGTH" });
                         }
 
-                        return new FetchResponse(httpResponse, httpResponseBody);
+                        return new FetchResponse(httpResponse, rayId, httpResponseBody);
                     }
                     else
                     {
-                        var response = new FetchResponse(httpResponse);
+                        var response = new FetchResponse(httpResponse, rayId);
                         if (response.IsExpected)
                         {
                             return response;
@@ -259,7 +262,7 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                     RenewClient(ref httpClient, ref handlerState, ref handlerStateObj, requestId, request, canRetry);
                     if (!canRetry)
                     {
-                        throw FetchErrorException.Timeout(httpClient.Timeout, ex);
+                        throw new FetchErrorException.Timeout_(httpClient.Timeout, ex, rayId);
                     }
                 }
                 catch (OperationCanceledException)
@@ -280,7 +283,7 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                     RenewClient(ref httpClient, ref handlerState, ref handlerStateObj, requestId, request, canRetry);
                     if (!canRetry)
                     {
-                        throw FetchErrorException.Failure((ex.InnerException as WebException)?.Status, ex);
+                        throw new FetchErrorException.Failure_((ex.InnerException as WebException)?.Status, ex, rayId);
                     }
                 }
 

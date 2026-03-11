@@ -118,19 +118,21 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
         }
         catch (FetchErrorException.Timeout_ ex)
         {
-            logMessage = this.logger.FetchFailedDueToRequestTimeout(ex.Timeout, ex);
+            logMessage = this.logger.FetchFailedDueToRequestTimeout(ex.Timeout, ex, ex.RayId);
             errorCode = RefreshErrorCode.HttpRequestTimeout;
             errorException = ex;
         }
-        catch (FetchErrorException.Failure_ ex) when (ex.Status == WebExceptionStatus.SecureChannelFailure)
+        catch (FetchErrorException.Failure_ ex)
         {
-            logMessage = this.logger.EstablishingSecureConnectionFailed(ex);
+            logMessage = ex.Status == WebExceptionStatus.SecureChannelFailure
+                ? this.logger.EstablishingSecureConnectionFailed(ex)
+                : this.logger.FetchFailedDueToUnexpectedError(ex, ex.RayId);
             errorCode = RefreshErrorCode.HttpRequestFailure;
             errorException = ex;
         }
         catch (Exception ex)
         {
-            logMessage = this.logger.FetchFailedDueToUnexpectedError(ex);
+            logMessage = this.logger.FetchFailedDueToUnexpectedError(ex, rayId: null);
             errorCode = RefreshErrorCode.HttpRequestFailure;
             errorException = ex;
         }

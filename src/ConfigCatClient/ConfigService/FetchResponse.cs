@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 
 namespace ConfigCat.Client;
 
@@ -11,6 +12,9 @@ namespace ConfigCat.Client;
 /// </summary>
 public readonly struct FetchResponse
 {
+    internal static string? GetRayId(HttpResponseHeaders headers) =>
+        headers.TryGetValues("CF-RAY", out var values) ? values.FirstOrDefault() : null;
+
     private FetchResponse(HttpStatusCode statusCode, string? reasonPhrase, string? body)
     {
         StatusCode = statusCode;
@@ -18,11 +22,11 @@ public readonly struct FetchResponse
         Body = body;
     }
 
-    internal FetchResponse(HttpResponseMessage httpResponse, string? httpResponseBody = null)
+    internal FetchResponse(HttpResponseMessage httpResponse, string? rayId, string? httpResponseBody = null)
         : this(httpResponse.StatusCode, httpResponse.ReasonPhrase, httpResponseBody)
     {
         ETag = httpResponse.Headers.ETag?.ToString(); // NOTE: ToString() is necessary because the "W/" prefix must be included!
-        RayId = httpResponse.Headers.TryGetValues("CF-RAY", out var values) ? values.FirstOrDefault() : null;
+        RayId = rayId;
     }
 
     /// <summary>

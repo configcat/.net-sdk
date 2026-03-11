@@ -345,12 +345,12 @@ public class BasicConfigCatClientIntegrationTests
         {
             options.PollingMode = PollingModes.ManualPoll;
             options.Logger = ConsoleLogger;
-            options.HttpTimeout = TimeSpan.FromSeconds(0.5);
-            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithCustomHandler(fakeHandler);
+            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithCustomHandler(fakeHandler, TimeSpan.FromSeconds(0.5));
         });
 
-        await manualPollClient.ForceRefreshAsync();
+        var refreshResult = await manualPollClient.ForceRefreshAsync();
 
+        Assert.AreEqual(RefreshErrorCode.HttpRequestTimeout, refreshResult.ErrorCode);
         Assert.AreEqual(string.Empty, await manualPollClient.GetValueAsync("fakeKey", string.Empty));
     }
 
@@ -363,11 +363,12 @@ public class BasicConfigCatClientIntegrationTests
         {
             options.PollingMode = PollingModes.ManualPoll;
             options.Logger = ConsoleLogger;
-            options.HttpTimeout = TimeSpan.FromSeconds(0.5);
-            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithCustomHandler(fakeHandler);
+            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithCustomHandler(fakeHandler, TimeSpan.FromSeconds(0.5));
         });
 
-        manualPollClient.ForceRefresh();
+        var refreshResult = manualPollClient.ForceRefresh();
+
+        Assert.AreEqual(RefreshErrorCode.HttpRequestTimeout, refreshResult.ErrorCode);
         Assert.AreEqual(string.Empty, manualPollClient.GetValue("fakeKey", string.Empty));
     }
 

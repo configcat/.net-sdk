@@ -335,9 +335,9 @@ public class HttpConfigFetcherTests
 
         using var configFetcher = new TestHttpClientConfigFetcher((request, isRetry) =>
         {
-            var client = new HttpClient(fakeHandler, disposeHandler: false);
-            lock (capturedParams) capturedParams.Add((request, isRetry, client));
-            return client;
+            var httpClient = new HttpClient(fakeHandler, disposeHandler: false);
+            lock (capturedParams) capturedParams.Add((request, isRetry, httpClient));
+            return httpClient;
         });
 
         var requestUri = ConfigCatClientOptions.GetConfigUri(ConfigCatClientOptions.BaseUrlGlobal, TestSdkKey);
@@ -390,9 +390,9 @@ public class HttpConfigFetcherTests
 
         using var configFetcher = new TestHttpClientConfigFetcher((request, isRetry) =>
         {
-            var client = new HttpClient(fakeHandler, disposeHandler: false) { Timeout = request.Timeout };
-            lock (capturedParams) capturedParams.Add((request, isRetry, client));
-            return client;
+            var httpClient = new HttpClient(fakeHandler, disposeHandler: false) { Timeout = request.Timeout };
+            lock (capturedParams) capturedParams.Add((request, isRetry, httpClient));
+            return httpClient;
         });
 
         var requestUri = ConfigCatClientOptions.GetConfigUri(ConfigCatClientOptions.BaseUrlGlobal, TestSdkKey);
@@ -586,12 +586,16 @@ public class HttpConfigFetcherTests
         Assert.AreEqual(1, fakeHandler.SendInvokeCount);
     }
 
-    [TestMethod]
-    public async Task HttpClientConfigFetcher_ResponseHttpCodeIsUnexpected_ShouldReturnPassedConfig()
+    [DataTestMethod]
+    [DataRow(HttpStatusCode.Forbidden, RefreshErrorCode.InvalidSdkKey)]
+    [DataRow(HttpStatusCode.NotFound, RefreshErrorCode.InvalidSdkKey)]
+    [DataRow(HttpStatusCode.Unauthorized, RefreshErrorCode.UnexpectedHttpResponse)]
+    [DataRow(HttpStatusCode.BadGateway, RefreshErrorCode.UnexpectedHttpResponse)]
+    public async Task HttpClientConfigFetcher_NonSuccessStatusCode_ShouldReturnPassedConfig(HttpStatusCode statusCode, RefreshErrorCode expectedErrorCode)
     {
         // Arrange
 
-        var myHandler = new FakeHttpClientHandler(HttpStatusCode.Forbidden);
+        var myHandler = new FakeHttpClientHandler(statusCode);
 
         using var instance = new DefaultConfigFetcher("x", new Uri("http://example.com"), "1.0",
             new CounterLogger().AsWrapper(), ConfigFetcherHelper.CreateFetcherWithCustomHandler(myHandler), true, false,
@@ -606,21 +610,32 @@ public class HttpConfigFetcherTests
         // Assert
 
         Assert.IsTrue(actual.IsFailure);
-        Assert.AreEqual(RefreshErrorCode.InvalidSdkKey, actual.ErrorCode);
+        Assert.AreEqual(expectedErrorCode, actual.ErrorCode);
         Assert.IsNotNull(actual.ErrorMessage);
         Assert.IsNull(actual.ErrorException);
-        Assert.AreNotSame(lastConfig, actual.Config);
+        if (expectedErrorCode == RefreshErrorCode.InvalidSdkKey)
+        {
+            Assert.AreNotSame(lastConfig, actual.Config);
+        }
+        else
+        {
+            Assert.AreSame(lastConfig, actual.Config);
+        }
         Assert.AreSame(lastConfig.Config, actual.Config.Config);
         Assert.AreSame(lastConfig.HttpETag, actual.Config.HttpETag);
         Assert.IsTrue(lastConfig.TimeStamp <= actual.Config.TimeStamp);
     }
 
-    [TestMethod]
-    public async Task HttpClientConfigFetcher_ThrowAnException_ShouldReturnPassedConfig()
+    [DataTestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task HttpClientConfigFetcher_ThrowAnException_ShouldReturnPassedConfig(bool throwHttpRequestException)
     {
         // Arrange
 
-        var exception = new WebException();
+        Exception exception = throwHttpRequestException
+            ? new HttpRequestException("Connection reset by peer")
+            : new Exception();
         var myHandler = new ExceptionThrowerHttpClientHandler(exception);
 
         var instance = new DefaultConfigFetcher("x", new Uri("http://example.com"), "1.0",
@@ -638,7 +653,15 @@ public class HttpConfigFetcherTests
         Assert.IsTrue(actual.IsFailure);
         Assert.AreEqual(RefreshErrorCode.HttpRequestFailure, actual.ErrorCode);
         Assert.IsNotNull(actual.ErrorMessage);
-        Assert.AreSame(exception, actual.ErrorException);
+        if (throwHttpRequestException)
+        {
+            Assert.IsInstanceOfType(actual.ErrorException, typeof(FetchErrorException.Failure_));
+            Assert.AreSame(exception, ((FetchErrorException.Failure_)actual.ErrorException!).InnerException);
+        }
+        else
+        {
+            Assert.AreSame(exception, actual.ErrorException);
+        }
         Assert.AreEqual(lastConfig, actual.Config);
     }
 
@@ -661,13 +684,52 @@ public class HttpConfigFetcherTests
 
         using (client)
         {
-            var configFetcher = (HttpClientConfigFetcher)GetConfigFetcherFrom(client);
+            var configFetcher = (HttpClientConfigFetcher)GetConfigFetcherFrom(client, out _);
             actualProxy = (configFetcher.CurrentHandler as HttpClientHandler)?.Proxy;
         }
 
         // Assert
 
         Assert.AreEqual(proxy, actualProxy);
+    }
+
+    [TestMethod]
+    public async Task HttpClientConfigFetcher_ShouldUseHttpTimeoutSpecifiedViaOptions()
+    {
+        // Arrange
+
+        var timeout = Timeout.InfiniteTimeSpan;
+
+        var capturedParams = new List<(HttpClient Client, HttpMessageHandler Handler)>();
+
+        using var testConfigFetcher = new TestHttpClientConfigFetcher();
+
+        testConfigFetcher.OnCreateHttpClient = (handler, timeout, createHttpClient) =>
+        {
+            var httpClient = createHttpClient(handler, timeout);
+            lock (capturedParams) { capturedParams.Add((httpClient, handler)); }
+            return httpClient;
+        };
+
+        // Act
+
+        var client = new ConfigCatClient("test-67890123456789012/1234567890123456789012", new ConfigCatClientOptions
+        {
+            PollingMode = PollingModes.ManualPoll,
+            HttpTimeout = timeout
+        });
+
+        using (client)
+        {
+            GetConfigFetcherFrom(client, out var configFetcher);
+            configFetcher.GetType().GetField("configFetcher", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(configFetcher, testConfigFetcher);
+            await client.ForceRefreshAsync();
+        }
+
+        // Assert
+
+        Assert.AreEqual(1, capturedParams.Count);
+        Assert.AreEqual(timeout, capturedParams[0].Client.Timeout);
     }
 
     [DataTestMethod]
@@ -695,7 +757,7 @@ public class HttpConfigFetcherTests
         IConfigCatConfigFetcher actualConfigFetcher;
         using (client)
         {
-            actualConfigFetcher = GetConfigFetcherFrom(client);
+            actualConfigFetcher = GetConfigFetcherFrom(client, out _);
         }
 
         // Assert
@@ -897,10 +959,10 @@ public class HttpConfigFetcherTests
         Assert.AreEqual(expectedResult, actualResult);
     }
 
-    private static IConfigCatConfigFetcher GetConfigFetcherFrom(ConfigCatClient client)
+    private static IConfigCatConfigFetcher GetConfigFetcherFrom(ConfigCatClient client, out DefaultConfigFetcher configFetcher)
     {
         var configService = client.GetType().GetField("configService", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(client)!;
-        var configFetcher = configService.GetType().GetField("ConfigFetcher", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(configService)!;
+        configFetcher = (DefaultConfigFetcher)configService.GetType().GetField("ConfigFetcher", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(configService)!;
         return (IConfigCatConfigFetcher)configFetcher.GetType().GetField("configFetcher", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(configFetcher)!;
     }
 

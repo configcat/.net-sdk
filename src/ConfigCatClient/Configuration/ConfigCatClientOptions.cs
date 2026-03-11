@@ -39,9 +39,12 @@ public class ConfigCatClientOptions : IProvidesHooks
 
     /// <summary>
     /// The config fetcher implementation to use for performing ConfigCat config fetch operations.
-    /// If not set, <see cref="DefaultConfigFetcher"/> will be used by default, which is based on <see cref="HttpClient"/>.<br/>
-    /// If you want to use custom a config fetcher, you can provide an implementation of <see cref="IConfigCatConfigFetcher"/>.
+    /// If not set, <see cref="HttpClientConfigFetcher"/> will be used by default, which is based on <see cref="HttpClient"/>.<br/>
+    /// If you want to use a custom config fetcher, you can provide an implementation of <see cref="IConfigCatConfigFetcher"/>.
     /// </summary>
+    /// <remarks>
+    /// Please note that the SDK does not dispose externally created config fetcher instances.
+    /// </remarks>
     public IConfigCatConfigFetcher? ConfigFetcher { get; set; }
 
     internal static IConfigCatConfigFetcher CreateDefaultConfigFetcher(IWebProxy? proxy, HttpClientHandler? httpClientHandler) =>
@@ -72,6 +75,10 @@ public class ConfigCatClientOptions : IProvidesHooks
     [Obsolete($"This option is deprecated, thus it will be removed from the public API in a future major version. Please use the {nameof(Proxy)} option instead, or set the {nameof(ConfigFetcher)} option (e.g., to an instance of {nameof(HttpClientConfigFetcher)}) if you need more control over HTTP communication.")]
     public HttpClientHandler? HttpClientHandler { get; set; }
 
+    /// <summary>
+    /// Optional proxy settings to route HTTP requests through a HTTP, HTTPS, SOCKS, etc. proxy.<br/>
+    /// Applies only if the <see cref="ConfigFetcher"/> option is not set.
+    /// </summary>
 #if NET6_0_OR_GREATER
     [UnsupportedOSPlatform("browser")]
 #endif
@@ -95,7 +102,8 @@ public class ConfigCatClientOptions : IProvidesHooks
     public DataGovernance DataGovernance { get; set; } = DataGovernance.Global;
 
     /// <summary>
-    /// Timeout for underlying HTTP calls. Defaults to 30 seconds.
+    /// Timeout for underlying HTTP calls. Defaults to 30 seconds.<br/>
+    /// Applies only if the <see cref="ConfigFetcher"/> option is not set.
     /// </summary>
     public TimeSpan HttpTimeout { get; set; } = TimeSpan.FromSeconds(30);
 

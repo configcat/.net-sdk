@@ -14,6 +14,9 @@ using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client;
 
+/// <summary>
+/// An implementation of <see cref="IConfigCatConfigFetcher"/> which uses <see cref="HttpClient"/> to perform ConfigCat config fetch operations.
+/// </summary>
 public class HttpClientConfigFetcher : IConfigCatConfigFetcher
 {
     // NOTE: There's an edge case that's currently not handled by the default operation mode (internal handler management, see below):
@@ -25,6 +28,13 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
     // * https://www.stevejgordon.co.uk/httpclient-connection-pooling-in-dotnet-core
     // * https://makolyte.com/csharp-configuring-how-long-an-httpclient-connection-will-stay-open/
 
+    /// <summary>
+    /// Represents a method that is called by <see cref="HttpClientConfigFetcher"/> when it makes an HTTP request, if it is configured to use
+    /// externally created <see cref="HttpClient"/> instances.
+    /// </summary>
+    /// <param name="request">The request for which a new <see cref="HttpClient"/> instance needs to be provided.</param>
+    /// <param name="isRetry">Indicates whether it is a retried request.</param>
+    /// <returns>The <see cref="HttpClient"/> instance to use for making the request.</returns>
     public delegate HttpClient HttpClientFactory(FetchRequest request, bool isRetry);
 
     // either null (indicating disposed state)
@@ -37,11 +47,19 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
     private protected TimeSpan handlerRenewalThreshold = TimeSpan.FromSeconds(30);
     private protected TimeSpan requestRetryDelay = TimeSpan.FromMilliseconds(50);
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="HttpClientConfigFetcher"/> class that uses the default built-in HTTP connection management.
+    /// </summary>
     protected internal HttpClientConfigFetcher()
     {
         this.handlerState = new HandlerState();
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="HttpClientConfigFetcher"/> class that uses the default built-in HTTP connection management
+    /// and routes requests through a HTTP, HTTPS, SOCKS, etc. proxy.
+    /// </summary>
+    /// <param name="proxy">The proxy settings.</param>
 #if NET6_0_OR_GREATER
     [UnsupportedOSPlatform("browser")]
 #endif
@@ -55,24 +73,43 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
         this.handlerState = externalHandler ?? throw new ArgumentNullException(nameof(externalHandler));
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="HttpClientConfigFetcher"/> class that allows full external control over HTTP connection management.
+    /// </summary>
+    /// <param name="httpClientFactory">A callback that creates <see cref="HttpClient"/> instances for making ConfigCat config download requests over HTTP.</param>
+    /// <remarks>
+    /// Use this only if you have a good understanding of <see href="https://learn.microsoft.com/en-us/dotnet/fundamentals/networking/http/httpclient-guidelines">the pitfalls of HttpClient</see>.
+    /// <para>
+    /// Also, please note that <see cref="HttpClientConfigFetcher"/> calls the <paramref name="httpClientFactory"/> callback to obtain a new <see cref="HttpClient"/> instance for each HTTP request,
+    /// then disposes the provided <see cref="HttpClient"/> instance after finishing the request. Therefore, you usually want to create it
+    /// with the <see href="https://learn.microsoft.com/en-us/dotnet/api/system.net.http.httpclient.-ctor?#system-net-http-httpclient-ctor(system-net-http-httpmessagehandler-system-boolean)">disposeHandler</see>
+    /// parameter set to <see langword="false"/>.
+    /// </para>
+    /// </remarks>
     public HttpClientConfigFetcher(HttpClientFactory httpClientFactory)
     {
         this.handlerState = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
     }
 
     /// <inheritdoc />
-    public void Dispose()
+    public void Dispose() => Dispose(true);
+
+    /// <summary>
+    /// Releases the unmanaged resources used by the <see cref="HttpClientConfigFetcher"/> and optionally
+    /// disposes of the managed resources.
+    /// </summary>
+    /// <param name="disposing">
+    /// <see langword="true"/> to release both managed and unmanaged resources;
+    /// <see langword="false"/> to releases only unmanaged resources.
+    /// </param>
+    protected virtual void Dispose(bool disposing)
     {
         // Release whatever reference the handlerState field holds.
         var handlerState = Interlocked.Exchange(ref this.handlerState, null);
 
         // If using internal handler management, the handler needs to be disposed too.
         (handlerState as HandlerState)?.Handler.Dispose();
-
-        Dispose(true);
     }
-
-    protected virtual void Dispose(bool disposing) { }
 
     // For testing purposes.
     internal HttpMessageHandler? CurrentHandler => (this.handlerState as HandlerState)?.Handler;
@@ -441,6 +478,12 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
         }
     }
 
+    /// <summary>
+    /// Provides an opportunity to customize the HTTP headers for the request.
+    /// Called only if the SDK is configured to use a custom (non-ConfigCat CDN) server.
+    /// </summary>
+    /// <param name="httpRequestHeaders">The headers to send with the request.</param>
+    /// <param name="headers">A set of default headers. Make sure that these are sent if you use ConfigCat Proxy.</param>
     protected virtual void SetRequestHeaders(HttpRequestHeaders httpRequestHeaders, IReadOnlyList<KeyValuePair<string, string>> headers)
     {
         if (!this.isRunningInBrowser)

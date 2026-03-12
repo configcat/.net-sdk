@@ -92,7 +92,11 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
     }
 
     /// <inheritdoc />
-    public void Dispose() => Dispose(true);
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
     /// <summary>
     /// Releases the unmanaged resources used by the <see cref="HttpClientConfigFetcher"/> and optionally
@@ -140,7 +144,7 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
 
             logger!.LogInterpolated(LogLevel.Debug, 0,
                 $"[{requestId}] Preparing request...",
-                new[] { "REQUEST_ID" });
+                "REQUEST_ID");
         }
 
         var uri = request.Uri;
@@ -217,13 +221,13 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                         {
                             logger!.LogInterpolated(LogLevel.Debug, 0,
                                 $"[{requestId}] Sending request... (Uri: '{httpRequest.RequestUri}', IfNoneMatch: '{httpRequest.Headers.IfNoneMatch?.ToString()}')",
-                                new[] { "REQUEST_ID", "URI", "IF_NONE_MATCH" });
+                                "REQUEST_ID", "URI", "IF_NONE_MATCH");
                         }
                         else
                         {
                             logger!.LogInterpolated(LogLevel.Debug, 0,
                                 $"[{requestId}] Sending request via proxy '{proxy.GetProxy(request.Uri)}'... (Uri: '{httpRequest.RequestUri}', IfNoneMatch: '{httpRequest.Headers.IfNoneMatch?.ToString()}')",
-                                new[] { "REQUEST_ID", "PROXY_URI", "URI", "IF_NONE_MATCH" });
+                                "REQUEST_ID", "PROXY_URI", "URI", "IF_NONE_MATCH");
                         }
                     }
 
@@ -234,7 +238,7 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                     {
                         logger!.LogInterpolated(LogLevel.Debug, 0,
                             $"[{requestId}] Received headers. (StatusCode: {(int)httpResponse.StatusCode}, ReasonPhrase: '{httpResponse.ReasonPhrase}', ETag: '{httpResponse.Headers.ETag?.ToString()}')",
-                            new[] { "REQUEST_ID", "STATUS_CODE", "REASON_PHRASE", "ETAG" });
+                            "REQUEST_ID", "STATUS_CODE", "REASON_PHRASE", "ETAG");
                     }
 
                     rayId = FetchResponse.GetRayId(httpResponse.Headers);
@@ -251,7 +255,7 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                         {
                             logger!.LogInterpolated(LogLevel.Debug, 0,
                                 $"[{requestId}] Received body. (Length: {httpResponseBody.Length})",
-                                new[] { "REQUEST_ID", "LENGTH" });
+                                "REQUEST_ID", "LENGTH");
                         }
 
                         return new FetchResponse(httpResponse, rayId, httpResponseBody);
@@ -268,7 +272,7 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                         {
                             logger!.LogInterpolated(LogLevel.Debug, 0,
                                 $"[{requestId}] Received unexpected status code.",
-                                new[] { "REQUEST_ID" });
+                                "REQUEST_ID");
                         }
 
                         canRetry = retryCount < retryLimit;
@@ -292,7 +296,7 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                     {
                         logger!.LogInterpolated(LogLevel.Debug, 0, ex,
                             $"[{requestId}] Request timed out.",
-                            new[] { "REQUEST_ID" });
+                            "REQUEST_ID");
                     }
 
                     canRetry = retryCount < retryLimit;
@@ -313,7 +317,7 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                     {
                         logger!.LogInterpolated(LogLevel.Debug, 0, ex,
                             $"[{requestId}] Request failed.",
-                            new[] { "REQUEST_ID" });
+                            "REQUEST_ID");
                     }
 
                     canRetry = retryCount < retryLimit;
@@ -331,7 +335,7 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                 {
                     logger!.LogInterpolated(LogLevel.Debug, 0,
                         $"[{requestId}] Trying request again...",
-                        new[] { "REQUEST_ID" });
+                        "REQUEST_ID");
                 }
             }
         }
@@ -418,7 +422,7 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
             {
                 logger!.LogInterpolated(LogLevel.Debug, 0,
                     $"[{requestId}] Renewed HttpClient.",
-                    new[] { "REQUEST_ID" });
+                    "REQUEST_ID");
             }
         }
 

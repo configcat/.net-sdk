@@ -81,7 +81,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         return key.Sha1().ToHexString();
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public LogLevel LogLevel
     {
         get => Logger.LogLevel;
@@ -226,7 +226,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         return instance;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     ~ConfigCatClient()
     {
         // Safeguard against situations where user forgets to dispose the client instance.
@@ -268,7 +268,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public void Dispose()
     {
         if (this.sdkKey is not null)
@@ -309,7 +309,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
     public T GetValue<T>(string key, T defaultValue, User? user = null)
     {
@@ -347,7 +347,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         return value;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public async Task<T> GetValueAsync<T>(string key, T defaultValue, User? user = null, CancellationToken cancellationToken = default)
     {
         if (key is null)
@@ -388,7 +388,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         return value;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
     public EvaluationDetails<T> GetValueDetails<T>(string key, T defaultValue, User? user = null)
     {
@@ -423,7 +423,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         return evaluationDetails;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public async Task<EvaluationDetails<T>> GetValueDetailsAsync<T>(string key, T defaultValue, User? user = null, CancellationToken cancellationToken = default)
     {
         if (key is null)
@@ -461,7 +461,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         return evaluationDetails;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
     public IReadOnlyCollection<string> GetAllKeys()
     {
@@ -482,7 +482,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public async Task<IReadOnlyCollection<string>> GetAllKeysAsync(CancellationToken cancellationToken = default)
     {
         const string defaultReturnValue = "empty collection";
@@ -506,7 +506,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
     public IReadOnlyDictionary<string, object?> GetAllValues(User? user = null)
     {
@@ -540,7 +540,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         return result;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public async Task<IReadOnlyDictionary<string, object?>> GetAllValuesAsync(User? user = null, CancellationToken cancellationToken = default)
     {
         const string defaultReturnValue = "empty dictionary";
@@ -577,7 +577,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         return result;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
     public IReadOnlyList<EvaluationDetails> GetAllValueDetails(User? user = null)
     {
@@ -609,7 +609,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         return evaluationDetailsArray;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public async Task<IReadOnlyList<EvaluationDetails>> GetAllValueDetailsAsync(User? user = null, CancellationToken cancellationToken = default)
     {
         const string defaultReturnValue = "empty list";
@@ -644,7 +644,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         return evaluationDetailsArray;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
     public KeyValuePair<string, T>? GetKeyAndValue<T>(string variationId)
     {
@@ -673,7 +673,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public async Task<KeyValuePair<string, T>?> GetKeyAndValueAsync<T>(string variationId, CancellationToken cancellationToken = default)
     {
         if (variationId is null)
@@ -705,7 +705,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     [Obsolete("This method may lead to an unresponsive application (see remarks), thus it will be removed from the public API in a future major version. Please use either the async version of the method or snaphots.")]
     public RefreshResult ForceRefresh()
     {
@@ -720,7 +720,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public async Task<RefreshResult> ForceRefreshAsync(CancellationToken cancellationToken = default)
     {
         try
@@ -802,19 +802,19 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public void SetDefaultUser(User user)
     {
         this.defaultUser = user ?? throw new ArgumentNullException(nameof(user));
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public Task<ClientCacheState> WaitForReadyAsync(CancellationToken cancellationToken = default)
     {
         return this.configService.ReadyTask.WaitAsync(cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public ConfigCatClientSnapshot Snapshot()
     {
         SettingsWithRemoteConfig settings;
@@ -832,22 +832,22 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public void ClearDefaultUser()
     {
         this.defaultUser = null;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public bool IsOffline => this.configService.IsOffline;
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public void SetOnline()
     {
         this.configService.SetOnline();
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public void SetOffline()
     {
         this.configService.SetOffline();

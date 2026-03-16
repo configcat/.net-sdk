@@ -26,7 +26,7 @@ internal sealed class LoggerWrapper : IConfigCatLogger
         return (byte)level <= (byte)LogLevel;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public void Log(LogLevel level, LogEventId eventId, ref FormattableLogMessage message, Exception? exception = null)
     {
         if (IsEnabled(level) && (this.filter is null || this.filter(level, eventId, ref message, exception)))

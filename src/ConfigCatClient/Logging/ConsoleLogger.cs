@@ -10,7 +10,7 @@ public class ConsoleLogger : IConfigCatLogger
 {
     private volatile LogLevel logLevel;
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public LogLevel LogLevel
     {
         get => this.logLevel;
@@ -31,7 +31,7 @@ public class ConsoleLogger : IConfigCatLogger
         LogLevel = logLevel;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public void Log(LogLevel level, LogEventId eventId, ref FormattableLogMessage message, Exception? exception = null)
     {
         var levelString = level switch

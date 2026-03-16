@@ -91,7 +91,7 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
         this.handlerState = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public void Dispose()
     {
         Dispose(true);
@@ -124,7 +124,7 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
         return new HttpClient(handler, disposeHandler: false) { Timeout = timeout };
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public Task<FetchResponse> FetchAsync(FetchRequest request, CancellationToken cancellationToken) =>
         FetchAsync(request, logger: null, cancellationToken);
 

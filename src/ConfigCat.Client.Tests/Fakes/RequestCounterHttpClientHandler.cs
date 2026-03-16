@@ -6,11 +6,12 @@ namespace ConfigCat.Client.Tests;
 
 internal sealed class RequestCounterHttpClientHandler : HttpClientHandler
 {
-    public byte SendAsyncInvokeCount { get; private set; } = 0;
+    private int sendInvokeCount = 0;
+    public byte SendInvokeCount => (byte)this.sendInvokeCount;
 
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        SendAsyncInvokeCount++;
+        Interlocked.Increment(ref this.sendInvokeCount);
 
         return base.SendAsync(request, cancellationToken);
     }
@@ -18,7 +19,7 @@ internal sealed class RequestCounterHttpClientHandler : HttpClientHandler
 #if NET5_0_OR_GREATER
     protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        SendAsyncInvokeCount++;
+        Interlocked.Increment(ref this.sendInvokeCount);
 
         return base.Send(request, cancellationToken);
     }
@@ -26,6 +27,6 @@ internal sealed class RequestCounterHttpClientHandler : HttpClientHandler
 
     public void Reset()
     {
-        SendAsyncInvokeCount = 0;
+        Volatile.Write(ref this.sendInvokeCount, 0);
     }
 }

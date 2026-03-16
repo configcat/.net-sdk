@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>net45;net461;netcoreapp3.1;net5.0;net6.0;net8.0;net9.0;net10.0</TargetFrameworks>
@@ -10,6 +10,7 @@
     <WarningsAsErrors>nullable</WarningsAsErrors>
     <NoWarn>CS0618;CS1685</NoWarn>
     <AssemblyOriginatorKeyFile>..\ConfigCatClient.snk</AssemblyOriginatorKeyFile>
+    <MSTestVersion>2.2.10</MSTestVersion>
   </PropertyGroup>
 
   <Choose>
@@ -19,30 +20,27 @@
       </PropertyGroup>
 
       <ItemGroup>
-        <PackageReference Include="MSTest.TestAdapter" Version="2.2.10" />
-        <PackageReference Include="MSTest.TestFramework" Version="2.2.10" />
+        <Reference Include="System.Web" />
         <PackageReference Include="System.ValueTuple" Version="4.5.0" />
       </ItemGroup>
     </When>
 
-    <When Condition="'$(TargetFramework)' == 'net10.0'">
+    <When Condition="'$(TargetFramework)' == 'net461'">
       <ItemGroup>
-        <!-- DynamicData matrix tests won't show up in VS 2022 using MSTest.TestAdapter v2.2.10.
-         It seems we'd need v3.x to make that work. But v3.x supports .NET 4.6.2+ only...
-         However, as test discovery may be pretty slow because of the large number of test cases,
-         it's usually sufficient to see separate test results for only one of the target frameworks,
-         so we enable v3.x on the latest LTS version (.NET 10) only. -->
-        <PackageReference Include="MSTest.TestAdapter" Version="3.1.1" />
-        <PackageReference Include="MSTest.TestFramework" Version="3.1.1" />
+        <Reference Include="System.Web" />
       </ItemGroup>
     </When>
 
-    <Otherwise>
-      <ItemGroup>
-        <PackageReference Include="MSTest.TestAdapter" Version="2.2.10" />
-        <PackageReference Include="MSTest.TestFramework" Version="2.2.10" />
-      </ItemGroup>
-    </Otherwise>
+    <When Condition="'$(TargetFramework)' == 'net10.0'">
+      <PropertyGroup>
+        <!-- DynamicData matrix tests won't show up in VS 2022+ using MSTest.TestAdapter v2.2.10.
+        It seems we'd need v3.x to make that work. But v3.x supports .NET 4.6.2+ only...
+        However, as test discovery may be pretty slow because of the large number of test cases,
+        it's usually sufficient to see separate test results for only one of the target frameworks,
+        so we enable v3.x on the latest .NET LTS version only. -->
+        <MSTestVersion>3.1.1</MSTestVersion>
+      </PropertyGroup>
+    </When>
   </Choose>
 
   <ItemGroup>
@@ -51,6 +49,8 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.2.0" />
+    <PackageReference Include="MSTest.TestAdapter" Version="$(MSTestVersion)" />
+    <PackageReference Include="MSTest.TestFramework" Version="$(MSTestVersion)" />
     <PackageReference Include="Moq" Version="4.16.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />

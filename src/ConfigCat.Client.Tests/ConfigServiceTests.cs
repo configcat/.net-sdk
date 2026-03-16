@@ -1378,7 +1378,7 @@ public class ConfigServiceTests
         var myHandler = new FakeHttpClientHandler(HttpStatusCode.OK, "{ \"p\": { \"s\": \"0\" } }", TimeSpan.FromSeconds(1));
 
         var fakeFetcher = new DefaultConfigFetcher("x", new Uri("http://example.com"), "1.0",
-            loggerWrapper, new HttpClientConfigFetcher(myHandler), false, TimeSpan.FromSeconds(30));
+            loggerWrapper, ConfigFetcherHelper.CreateFetcherWithCustomHandler(myHandler), true, false, TimeSpan.FromSeconds(30));
 
         var lastConfig = ConfigHelper.FromString("{}", timeStamp: ProjectConfig.GenerateTimeStamp(), httpETag: "\"ETAG\"");
 
@@ -1458,7 +1458,7 @@ public class ConfigServiceTests
         var myHandler = new ExceptionThrowerHttpClientHandler(exception, TimeSpan.FromSeconds(1));
 
         var fakeFetcher = new DefaultConfigFetcher("x", new Uri("http://example.com"), "1.0",
-            loggerWrapper, new HttpClientConfigFetcher(myHandler), false, TimeSpan.FromSeconds(30));
+            loggerWrapper, ConfigFetcherHelper.CreateFetcherWithCustomHandler(myHandler), true, false, TimeSpan.FromSeconds(30));
 
         var lastConfig = ConfigHelper.FromString("{}", timeStamp: ProjectConfig.GenerateTimeStamp(), httpETag: "\"ETAG\"");
 
@@ -1537,7 +1537,7 @@ public class ConfigServiceTests
         var myHandler = new FakeHttpClientHandler(HttpStatusCode.OK, "{ \"p\": { \"s\": \"0\" } }", TimeSpan.FromMilliseconds(delayMs));
 
         var fakeFetcher = new DefaultConfigFetcher("x", new Uri("http://example.com"), "1.0",
-            loggerWrapper, new HttpClientConfigFetcher(myHandler), false, TimeSpan.FromSeconds(30));
+            loggerWrapper, ConfigFetcherHelper.CreateFetcherWithCustomHandler(myHandler), true, false, TimeSpan.FromSeconds(30));
 
         var lastConfig = ConfigHelper.FromString("{}", timeStamp: ProjectConfig.GenerateTimeStamp(), httpETag: "\"ETAG\"");
 

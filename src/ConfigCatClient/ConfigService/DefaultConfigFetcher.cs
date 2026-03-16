@@ -11,25 +11,40 @@ namespace ConfigCat.Client;
 
 internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
 {
+    internal const string UserAgentHeaderName = "User-Agent";
+    internal const string ConfigCatUserAgentHeaderName = "X-ConfigCat-UserAgent";
+
+    internal const string SdkQueryParamName = "sdk";
+    internal const string ETagQueryParamName = "ccetag";
+
+    internal static KeyValuePair<string, string>[] GetRequestHeaders(string productVersion)
+    {
+        var userAgentHeaderValue = new ProductInfoHeaderValue("ConfigCat-Dotnet", productVersion).ToString();
+        return new KeyValuePair<string, string>[]
+        {
+            new(UserAgentHeaderName, userAgentHeaderValue),
+            new(ConfigCatUserAgentHeaderName, userAgentHeaderValue),
+        };
+    }
+
     private readonly string sdkKey;
     private volatile Uri baseUri;
     private readonly IReadOnlyList<KeyValuePair<string, string>> requestHeaders;
     private readonly LoggerWrapper logger;
     private readonly IConfigCatConfigFetcher configFetcher;
+    private readonly bool ownsConfigFetcher;
     private readonly bool isCustomUri;
     private readonly TimeSpan timeout;
 
     public DefaultConfigFetcher(string sdkKey, Uri baseUri, string productVersion, LoggerWrapper logger,
-        IConfigCatConfigFetcher configFetcher, bool isCustomUri, TimeSpan timeout)
+        IConfigCatConfigFetcher configFetcher, bool ownsConfigFetcher, bool isCustomUri, TimeSpan timeout)
     {
         this.sdkKey = sdkKey;
         this.baseUri = baseUri;
-        this.requestHeaders = new[]
-        {
-            new KeyValuePair<string, string>("X-ConfigCat-UserAgent", new ProductInfoHeaderValue("ConfigCat-Dotnet", productVersion).ToString())
-        };
+        this.requestHeaders = GetRequestHeaders(productVersion);
         this.logger = logger;
         this.configFetcher = configFetcher;
+        this.ownsConfigFetcher = ownsConfigFetcher;
         this.isCustomUri = isCustomUri;
         this.timeout = timeout;
     }
@@ -103,19 +118,21 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
         }
         catch (FetchErrorException.Timeout_ ex)
         {
-            logMessage = this.logger.FetchFailedDueToRequestTimeout(ex.Timeout, ex);
+            logMessage = this.logger.FetchFailedDueToRequestTimeout(ex.Timeout, ex, ex.RayId);
             errorCode = RefreshErrorCode.HttpRequestTimeout;
             errorException = ex;
         }
-        catch (FetchErrorException.Failure_ ex) when (ex.Status == WebExceptionStatus.SecureChannelFailure)
+        catch (FetchErrorException.Failure_ ex)
         {
-            logMessage = this.logger.EstablishingSecureConnectionFailed(ex);
+            logMessage = ex.Status == WebExceptionStatus.SecureChannelFailure
+                ? this.logger.EstablishingSecureConnectionFailed(ex)
+                : this.logger.FetchFailedDueToUnexpectedError(ex, ex.RayId);
             errorCode = RefreshErrorCode.HttpRequestFailure;
             errorException = ex;
         }
         catch (Exception ex)
         {
-            logMessage = this.logger.FetchFailedDueToUnexpectedError(ex);
+            logMessage = this.logger.FetchFailedDueToUnexpectedError(ex, rayId: null);
             errorCode = RefreshErrorCode.HttpRequestFailure;
             errorException = ex;
         }
@@ -131,7 +148,10 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
 
             var request = new FetchRequest(requestUri, httpETag, this.requestHeaders, this.timeout);
 
-            var response = await this.configFetcher.FetchAsync(request, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+            var response = await (this.configFetcher is HttpClientConfigFetcher httpClientConfigFetcher
+                ? httpClientConfigFetcher.FetchAsync(request, this.logger, cancellationToken)
+                : this.configFetcher.FetchAsync(request, cancellationToken))
+                .ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 
             if (response.StatusCode != HttpStatusCode.OK)
             {
@@ -194,7 +214,10 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
 
     public void Dispose()
     {
-        this.configFetcher.Dispose();
+        if (this.ownsConfigFetcher)
+        {
+            this.configFetcher.Dispose();
+        }
     }
 
     private readonly struct DeserializedResponse

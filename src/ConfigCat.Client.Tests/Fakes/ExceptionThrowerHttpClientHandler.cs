@@ -5,12 +5,13 @@ using System.Threading.Tasks;
 
 namespace ConfigCat.Client.Tests;
 
-internal sealed class ExceptionThrowerHttpClientHandler : HttpClientHandler
+internal sealed class ExceptionThrowerHttpClientHandler : HttpMessageHandler
 {
     private readonly Exception exception;
     private readonly TimeSpan? delay;
 
-    public byte SendInvokeCount { get; private set; } = 0;
+    private int sendInvokeCount = 0;
+    public byte SendInvokeCount => (byte)this.sendInvokeCount;
 
     public ExceptionThrowerHttpClientHandler(Exception? ex = null, TimeSpan? delay = null)
     {
@@ -20,11 +21,23 @@ internal sealed class ExceptionThrowerHttpClientHandler : HttpClientHandler
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
+        Interlocked.Increment(ref this.sendInvokeCount);
+
         if (this.delay is not null)
             await Task.Delay(this.delay.Value, cancellationToken);
 
-        SendInvokeCount++;
+        throw this.exception;
+    }
+
+#if NET5_0_OR_GREATER
+    protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        Interlocked.Increment(ref this.sendInvokeCount);
+
+        if (this.delay is not null)
+            Task.Delay(this.delay.Value, cancellationToken).Wait();
 
         throw this.exception;
     }
+#endif
 }

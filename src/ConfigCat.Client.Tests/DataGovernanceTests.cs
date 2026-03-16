@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Configuration;
+using ConfigCat.Client.Tests.Helpers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Moq.Protected;
@@ -37,7 +38,7 @@ public class DataGovernanceTests
         byte requestCount = 0;
         var requests = new SortedList<byte, HttpRequestMessage>();
 
-        var handlerMock = new Mock<HttpClientHandler>(MockBehavior.Strict);
+        var handlerMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
         handlerMock
             .Protected()
             .Setup<Task<HttpResponseMessage>>(
@@ -61,7 +62,8 @@ public class DataGovernanceTests
             configuration.GetBaseUri(),
             "DEMO",
             Mock.Of<IConfigCatLogger>().AsWrapper(),
-            new HttpClientConfigFetcher(handlerMock.Object),
+            ConfigFetcherHelper.CreateFetcherWithCustomHandler(handlerMock.Object),
+            ownsConfigFetcher: true,
             configuration.IsCustomBaseUrl,
             TimeSpan.FromSeconds(30));
 
@@ -360,7 +362,7 @@ public class DataGovernanceTests
         byte requestCount = 1;
         var requests = new SortedList<byte, HttpRequestMessage>();
 
-        var handlerMock = new Mock<HttpClientHandler>(MockBehavior.Strict);
+        var handlerMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
         handlerMock
             .Protected()
             .Setup<Task<HttpResponseMessage>>(
@@ -384,7 +386,8 @@ public class DataGovernanceTests
             fetchConfig.GetBaseUri(),
             "DEMO",
             Mock.Of<IConfigCatLogger>().AsWrapper(),
-            new HttpClientConfigFetcher(handlerMock.Object),
+            ConfigFetcherHelper.CreateFetcherWithCustomHandler(handlerMock.Object),
+            ownsConfigFetcher: true,
             fetchConfig.IsCustomBaseUrl,
             TimeSpan.FromSeconds(30));
 

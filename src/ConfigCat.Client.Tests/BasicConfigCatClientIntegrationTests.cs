@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Configuration;
+using ConfigCat.Client.Tests.Helpers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ConfigCat.Client.Tests;
@@ -17,7 +18,6 @@ public class BasicConfigCatClientIntegrationTests
     internal const string SDKKEY = "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A";
 
     private static readonly IConfigCatLogger ConsoleLogger = new ConsoleLogger(LogLevel.Debug);
-    private static readonly HttpClientHandler SharedHandler = new();
 
     [TestMethod]
     public void ManualPollGetValue()
@@ -26,7 +26,7 @@ public class BasicConfigCatClientIntegrationTests
         {
             options.PollingMode = PollingModes.ManualPoll;
             options.Logger = ConsoleLogger;
-            options.HttpClientHandler = SharedHandler;
+            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithSharedHandler();
         }
 
         using IConfigCatClient client = ConfigCatClient.Get(SDKKEY, Configure);
@@ -43,7 +43,7 @@ public class BasicConfigCatClientIntegrationTests
         {
             options.PollingMode = PollingModes.AutoPoll(TimeSpan.FromSeconds(600), TimeSpan.FromSeconds(30));
             options.Logger = ConsoleLogger;
-            options.HttpClientHandler = SharedHandler;
+            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithSharedHandler();
         }
 
         using IConfigCatClient client = ConfigCatClient.Get(SDKKEY, Configure);
@@ -58,7 +58,7 @@ public class BasicConfigCatClientIntegrationTests
         {
             options.PollingMode = PollingModes.LazyLoad(TimeSpan.FromSeconds(30));
             options.Logger = ConsoleLogger;
-            options.HttpClientHandler = SharedHandler;
+            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithSharedHandler();
         }
 
         using IConfigCatClient client = ConfigCatClient.Get(SDKKEY, Configure);
@@ -73,7 +73,7 @@ public class BasicConfigCatClientIntegrationTests
         {
             options.PollingMode = PollingModes.ManualPoll;
             options.Logger = ConsoleLogger;
-            options.HttpClientHandler = SharedHandler;
+            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithSharedHandler();
         }
 
         using IConfigCatClient client = ConfigCatClient.Get(SDKKEY, Configure);
@@ -90,7 +90,7 @@ public class BasicConfigCatClientIntegrationTests
         {
             options.PollingMode = PollingModes.AutoPoll(TimeSpan.FromSeconds(600), TimeSpan.FromSeconds(30));
             options.Logger = ConsoleLogger;
-            options.HttpClientHandler = SharedHandler;
+            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithSharedHandler();
         }
 
         using IConfigCatClient client = ConfigCatClient.Get(SDKKEY, Configure);
@@ -105,7 +105,7 @@ public class BasicConfigCatClientIntegrationTests
         {
             options.PollingMode = PollingModes.LazyLoad(TimeSpan.FromSeconds(30));
             options.Logger = ConsoleLogger;
-            options.HttpClientHandler = SharedHandler;
+            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithSharedHandler();
         }
 
         using IConfigCatClient client = ConfigCatClient.Get(SDKKEY, Configure);
@@ -120,7 +120,7 @@ public class BasicConfigCatClientIntegrationTests
         {
             options.PollingMode = PollingModes.ManualPoll;
             options.Logger = ConsoleLogger;
-            options.HttpClientHandler = SharedHandler;
+            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithSharedHandler();
         }
 
         using IConfigCatClient client = ConfigCatClient.Get(SDKKEY, Configure);
@@ -139,7 +139,7 @@ public class BasicConfigCatClientIntegrationTests
         {
             options.PollingMode = PollingModes.ManualPoll;
             options.Logger = ConsoleLogger;
-            options.HttpClientHandler = SharedHandler;
+            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithSharedHandler();
         }
 
         using IConfigCatClient client = ConfigCatClient.Get(SDKKEY, Configure);
@@ -171,7 +171,7 @@ public class BasicConfigCatClientIntegrationTests
         {
             options.PollingMode = PollingModes.ManualPoll;
             options.Logger = ConsoleLogger;
-            options.HttpClientHandler = SharedHandler;
+            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithSharedHandler();
         }
 
         using IConfigCatClient client = ConfigCatClient.Get(SDKKEY, Configure);
@@ -202,7 +202,7 @@ public class BasicConfigCatClientIntegrationTests
         {
             options.PollingMode = PollingModes.ManualPoll;
             options.Logger = ConsoleLogger;
-            options.HttpClientHandler = SharedHandler;
+            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithSharedHandler();
         }
 
         using IConfigCatClient client = ConfigCatClient.Get(SDKKEY, Configure);
@@ -231,7 +231,7 @@ public class BasicConfigCatClientIntegrationTests
         {
             options.PollingMode = PollingModes.ManualPoll;
             options.Logger = ConsoleLogger;
-            options.HttpClientHandler = SharedHandler;
+            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithSharedHandler();
         }
 
         using IConfigCatClient client = ConfigCatClient.Get(SDKKEY, Configure);
@@ -289,7 +289,7 @@ public class BasicConfigCatClientIntegrationTests
         {
             options.PollingMode = PollingModes.ManualPoll;
             options.Logger = ConsoleLogger;
-            options.HttpClientHandler = SharedHandler;
+            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithSharedHandler();
         }
 
         using IConfigCatClient client = ConfigCatClient.Get(SDKKEY, Configure);
@@ -316,7 +316,7 @@ public class BasicConfigCatClientIntegrationTests
         {
             options.PollingMode = PollingModes.ManualPoll;
             options.Logger = ConsoleLogger;
-            options.HttpClientHandler = SharedHandler;
+            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithSharedHandler();
         }
 
         using IConfigCatClient client = ConfigCatClient.Get(SDKKEY, Configure);
@@ -340,16 +340,17 @@ public class BasicConfigCatClientIntegrationTests
     public async Task Http_Timeout_Test_Async()
     {
         var response = $"{{ \"f\": {{ \"fakeKey\": {{ \"v\": \"fakeValue\", \"p\": [] ,\"r\": [] }} }} }}";
+        using var fakeHandler = new FakeHttpClientHandler(HttpStatusCode.OK, response, TimeSpan.FromSeconds(5));
         using IConfigCatClient manualPollClient = ConfigCatClient.Get("fake-67890123456789012/1234567890123456789012", options =>
         {
             options.PollingMode = PollingModes.ManualPoll;
             options.Logger = ConsoleLogger;
-            options.HttpTimeout = TimeSpan.FromSeconds(0.5);
-            options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, response, TimeSpan.FromSeconds(5));
+            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithCustomHandler(fakeHandler, TimeSpan.FromSeconds(0.5));
         });
 
-        await manualPollClient.ForceRefreshAsync();
+        var refreshResult = await manualPollClient.ForceRefreshAsync();
 
+        Assert.AreEqual(RefreshErrorCode.HttpRequestTimeout, refreshResult.ErrorCode);
         Assert.AreEqual(string.Empty, await manualPollClient.GetValueAsync("fakeKey", string.Empty));
     }
 
@@ -357,15 +358,17 @@ public class BasicConfigCatClientIntegrationTests
     public void Http_Timeout_Test_Sync()
     {
         var response = $"{{ \"f\": {{ \"fakeKey\": {{ \"v\": \"fakeValue\", \"p\": [] ,\"r\": [] }} }} }}";
+        using var fakeHandler = new FakeHttpClientHandler(HttpStatusCode.OK, response, TimeSpan.FromSeconds(5));
         using IConfigCatClient manualPollClient = ConfigCatClient.Get("fake-67890123456789012/1234567890123456789012", options =>
         {
             options.PollingMode = PollingModes.ManualPoll;
             options.Logger = ConsoleLogger;
-            options.HttpTimeout = TimeSpan.FromSeconds(0.5);
-            options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, response, TimeSpan.FromSeconds(5));
+            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithCustomHandler(fakeHandler, TimeSpan.FromSeconds(0.5));
         });
 
-        manualPollClient.ForceRefresh();
+        var refreshResult = manualPollClient.ForceRefresh();
+
+        Assert.AreEqual(RefreshErrorCode.HttpRequestTimeout, refreshResult.ErrorCode);
         Assert.AreEqual(string.Empty, manualPollClient.GetValue("fakeKey", string.Empty));
     }
 
@@ -374,11 +377,12 @@ public class BasicConfigCatClientIntegrationTests
     {
         var now = DateTimeOffset.UtcNow;
         var response = $"{{ \"f\": {{ \"fakeKey\": {{ \"v\": \"fakeValue\", \"p\": [] ,\"r\": [] }} }} }}";
+        using var fakeHandler = new FakeHttpClientHandler(HttpStatusCode.OK, response, TimeSpan.FromSeconds(5));
         using IConfigCatClient manualPollClient = ConfigCatClient.Get("fake-67890123456789012/1234567890123456789012", options =>
         {
             options.PollingMode = PollingModes.AutoPoll(maxInitWaitTime: TimeSpan.FromSeconds(1));
             options.Logger = ConsoleLogger;
-            options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, response, TimeSpan.FromSeconds(5));
+            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithCustomHandler(fakeHandler);
         });
 
         Assert.AreEqual(string.Empty, await manualPollClient.GetValueAsync("fakeKey", string.Empty));
@@ -390,11 +394,12 @@ public class BasicConfigCatClientIntegrationTests
     {
         var now = DateTimeOffset.UtcNow;
         var response = $"{{ \"f\": {{ \"fakeKey\": {{ \"v\": \"fakeValue\", \"p\": [] ,\"r\": [] }} }} }}";
+        using var fakeHandler = new FakeHttpClientHandler(HttpStatusCode.OK, response, TimeSpan.FromSeconds(5));
         using IConfigCatClient manualPollClient = ConfigCatClient.Get("fake-67890123456789012/1234567890123456789012", options =>
         {
             options.PollingMode = PollingModes.AutoPoll(maxInitWaitTime: TimeSpan.FromSeconds(1));
             options.Logger = ConsoleLogger;
-            options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, response, TimeSpan.FromSeconds(5));
+            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithCustomHandler(fakeHandler);
         });
 
         Assert.AreEqual(string.Empty, manualPollClient.GetValue("fakeKey", string.Empty));
@@ -407,10 +412,11 @@ public class BasicConfigCatClientIntegrationTests
         var defer = new ManualResetEvent(false);
         var now = DateTimeOffset.UtcNow;
         var response = $"{{ \"f\": {{ \"fakeKey\": {{ \"v\": \"fakeValue\", \"p\": [] ,\"r\": [] }} }} }}";
+        using var fakeHandler = new FakeHttpClientHandler(HttpStatusCode.OK, response, TimeSpan.FromSeconds(5));
         using IConfigCatClient manualPollClient = ConfigCatClient.Get("fake-67890123456789012/1234567890123456789012", options =>
         {
             options.Logger = ConsoleLogger;
-            options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, response, TimeSpan.FromSeconds(5));
+            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithCustomHandler(fakeHandler);
         });
 
         manualPollClient.ForceRefreshAsync().ContinueWith(_ => defer.Set());
@@ -426,10 +432,11 @@ public class BasicConfigCatClientIntegrationTests
         var defer = new ManualResetEvent(false);
         var now = DateTimeOffset.UtcNow;
         var response = $"{{ \"f\": {{ \"fakeKey\": {{ \"v\": \"fakeValue\", \"p\": [] ,\"r\": [] }} }} }}";
+        using var fakeHandler = new FakeHttpClientHandler(HttpStatusCode.OK, response, TimeSpan.FromSeconds(5));
         using IConfigCatClient manualPollClient = ConfigCatClient.Get("fake-67890123456789012/1234567890123456789012", options =>
         {
             options.Logger = ConsoleLogger;
-            options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, response, TimeSpan.FromSeconds(5));
+            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithCustomHandler(fakeHandler);
         });
 
         Task.Run(() =>
@@ -447,11 +454,12 @@ public class BasicConfigCatClientIntegrationTests
     public void Ensure_Multiple_Requests_Doesnt_Interfere_In_ValueTasks()
     {
         var response = $"{{ \"f\": {{ \"fakeKey\": {{ \"v\": \"fakeValue\", \"p\": [] ,\"r\": [] }} }} }}";
+        using var fakeHandler = new FakeHttpClientHandler(HttpStatusCode.OK, response);
         using IConfigCatClient manualPollClient = ConfigCatClient.Get("fake-67890123456789012/1234567890123456789012", options =>
         {
             options.Logger = ConsoleLogger;
             options.PollingMode = PollingModes.ManualPoll;
-            options.HttpClientHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, response);
+            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithCustomHandler(fakeHandler);
         });
 
         // an exception should be thrown when the value task's result is fetched without completion.

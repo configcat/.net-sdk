@@ -53,8 +53,7 @@ public sealed class ConfigCatClient : IConfigCatClient
 
     private static bool IsValidSdkKey(string sdkKey, bool customBaseUrl)
     {
-        const string proxyPrefix = "configcat-proxy/";
-
+        const string proxyPrefix = ConfigCatClientOptions.ProxyPrefix;
         if (customBaseUrl && sdkKey.Length > proxyPrefix.Length && sdkKey.StartsWith(proxyPrefix, StringComparison.Ordinal))
         {
             return true;
@@ -130,6 +129,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         // At this point the client instance must be fully initialized (apart from the configService field) because it
         // may be accessed from a handler of an event that is raised during the initialization of the config service.
         // (At the same time, the config service must initialize the configService field before raising any events.)
+
         var configService = this.overrideBehaviour != OverrideBehaviour.LocalOnly
             ? pollingMode.CreateConfigService(
                 new DefaultConfigFetcher(sdkKey,
@@ -137,8 +137,12 @@ public sealed class ConfigCatClient : IConfigCatClient
                     GetProductVersion(pollingMode),
                     logger,
                     options.ConfigFetcher
-                        ?? PlatformCompatibilityOptions.configFetcherFactory?.Invoke(options.HttpClientHandler)
-                        ?? ConfigCatClientOptions.CreateDefaultConfigFetcher(options.HttpClientHandler),
+                        ?? PlatformCompatibilityOptions.configFetcherFactory?.Invoke()
+                        ?? ConfigCatClientOptions.CreateDefaultConfigFetcher(options.Proxy,
+#pragma warning disable CS0618 // Type or member is obsolete
+                            options.HttpClientHandler),
+#pragma warning restore CS0618 // Type or member is obsolete
+                    ownsConfigFetcher: options.ConfigFetcher is null,
                     options.IsCustomBaseUrl,
                     options.HttpTimeout),
                 cacheParameters,
@@ -158,7 +162,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         this.configService = instance;
     }
 
-    // For test purposes only
+    // For testing purposes only.
     internal ConfigCatClient(IConfigService configService, IConfigCatLogger logger, IRolloutEvaluator evaluator,
         OverrideBehaviour? overrideBehaviour = null, IOverrideDataSource? overrideDataSource = null,
         LogFilterCallback? logFilter = null, Hooks? hooks = null)

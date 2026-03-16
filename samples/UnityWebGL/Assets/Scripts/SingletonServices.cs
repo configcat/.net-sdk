@@ -1,11 +1,10 @@
 using System;
 using System.Collections;
-using System.Collections.Specialized;
 using System.Globalization;
+using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Web;
 using ConfigCat.Client;
 using ConfigCat.Client.Shims;
 using UnityEngine;
@@ -32,12 +31,14 @@ public class SingletonServices : MonoBehaviour
             return;
         }
 
-        ConfigCat.Client.ConfigCatClient.PlatformCompatibilityOptions.EnableUnityWebGLCompatibility(new UnityTaskShim(this), () => new UnityWebRequestConfigFetcher(this));
+        var logger = new ConfigCatToUnityDebugLogAdapter(LogLevel.Debug);
+        var taskShim = new UnityTaskShim(this);
+        ConfigCat.Client.ConfigCatClient.PlatformCompatibilityOptions.EnableUnityWebGLCompatibility(taskShim, () => new UnityWebRequestConfigFetcher(taskShim, logger));
 
         ConfigCatClient = ConfigCat.Client.ConfigCatClient.Get("PKDVCLf-Hq-h-kCzMp-L7Q/HhOWfwVtZ0mb30i9wi17GQ", options =>
         {
             options.PollingMode = PollingModes.AutoPoll(pollInterval: TimeSpan.FromSeconds(10));
-            options.Logger = new ConfigCatToUnityDebugLogAdapter(LogLevel.Debug);
+            options.Logger = logger;
         });
 
         DontDestroyOnLoad(this.gameObject);
@@ -124,90 +125,104 @@ public class SingletonServices : MonoBehaviour
 
     private sealed class UnityWebRequestConfigFetcher : IConfigCatConfigFetcher
     {
-        private readonly SingletonServices singletonServices;
+        private readonly TaskShim taskShim;
+        private readonly ConfigCatToUnityDebugLogAdapter logger;
 
-        public UnityWebRequestConfigFetcher(SingletonServices singletonServices)
+        public UnityWebRequestConfigFetcher(TaskShim taskShim, ConfigCatToUnityDebugLogAdapter logger)
         {
-            this.singletonServices = singletonServices;
+            this.taskShim = taskShim;
+            this.logger = logger;
         }
 
         public async Task<FetchResponse> FetchAsync(FetchRequest request, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var uri = request.Uri;
-            NameValueCollection query = null;
-
             // NOTE: We shouldn't specify additional request headers in Unity WebGL because
             // that would cause an unnecessary CORS OPTIONS request in browsers.
             // We send the necessary information in the query string instead.
 
-            for (int i = 0, n = request.Headers.Count; i < n; i++)
+            var uri = GetAdjustedUri(request);
+
+            logger.LogDebug($"Fetching config at '{uri}'...");
+
+            const int retryLimit = 1;
+
+            for (var retryCount = 0; ; retryCount++)
             {
-                var header = request.Headers[i];
-                if ("X-ConfigCat-UserAgent".Equals(header.Key, StringComparison.OrdinalIgnoreCase))
+                using var webRequest = UnityWebRequest.Get(uri);
+
+                webRequest.timeout = (int)request.Timeout.TotalSeconds;
+
+                var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+                var ctr = cancellationToken.CanBeCanceled
+                    ? cancellationToken.Register(() =>
+                    {
+                        try { webRequest.Abort(); }
+                        catch { /* there's nothing to do if Abort fails */ }
+                        finally { tcs.TrySetCanceled(cancellationToken); }
+                    }, useSynchronizationContext: true)
+                    : default;
+
+                webRequest.SendWebRequest().completed += (_) =>
                 {
-                    query ??= HttpUtility.ParseQueryString(uri.Query);
-                    query["sdk"] = header.Value;
-                    break;
+                    try { ctr.Dispose(); }
+                    catch { /* there's nothing to do if Dispose fails */ }
+                    finally { tcs.TrySetResult(null); }
+                };
+
+                await tcs.Task;
+
+                if (webRequest.result is UnityWebRequest.Result.Success or UnityWebRequest.Result.ProtocolError)
+                {
+                    var statusCode = (HttpStatusCode)webRequest.responseCode;
+                    logger.LogDebug($"Fetching config finished with status code {(int)statusCode} {statusCode}.");
+                    var response = new FetchResponse(statusCode, reasonPhrase: null, webRequest.GetResponseHeaders(), statusCode == HttpStatusCode.OK ? webRequest.downloadHandler.text : null);
+                    if (response.IsExpected || retryCount >= retryLimit)
+                    {
+                        return response;
+                    }
                 }
-            }
-
-            if (request.LastETag is not null)
-            {
-                query ??= HttpUtility.ParseQueryString(uri.Query);
-                query["ccetag"] = request.LastETag;
-            }
-
-            if (query is not null)
-            {
-                var uriBuilder = new UriBuilder(uri);
-                uriBuilder.Query = query.ToString();
-                uri = uriBuilder.Uri;
-            }
-
-            Debug.Log($"Fetching config at {uri}...");
-
-            using var webRequest = UnityWebRequest.Get(uri);
-
-            webRequest.timeout = (int)request.Timeout.TotalSeconds;
-
-            var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-            var ctr = cancellationToken.CanBeCanceled
-                ? cancellationToken.Register(() =>
+                else if (webRequest.result == UnityWebRequest.Result.ConnectionError && webRequest.error == "Request timeout")
                 {
-                    try { webRequest.Abort(); }
-                    catch { /* there's nothing to do if Abort fails */ }
-                    finally { tcs.TrySetCanceled(cancellationToken); }
-                }, useSynchronizationContext: true)
-                : default;
+                    logger.LogDebug($"Fetching config timed out.");
+                    if (retryCount >= retryLimit)
+                    {
+                        throw FetchErrorException.Timeout(TimeSpan.FromSeconds(webRequest.timeout));
+                    }
+                }
+                else
+                {
+                    logger.LogDebug($"Fetching config failed due to {webRequest.result}: {webRequest.error}");
+                    if (retryCount >= retryLimit)
+                    {
+                        throw FetchErrorException.Failure(null, new Exception($"Web request failed due to {webRequest.result}: {webRequest.error}"));
+                    }
+                }
 
-            webRequest.SendWebRequest().completed += (_) =>
-            {
-                try { ctr.Dispose(); }
-                catch { /* there's nothing to do if Dispose fails */ }
-                finally { tcs.TrySetResult(null); }
-            };
+                // Wait a little before trying again.
+                await TaskShim.Current.Delay(TimeSpan.FromMilliseconds(50), cancellationToken).ConfigureAwait(true);
 
-            await tcs.Task;
+                logger.LogDebug($"Trying again to fetch config at '{uri}'...");
+            }
+        }
 
-            if (webRequest.result is UnityWebRequest.Result.Success or UnityWebRequest.Result.ProtocolError)
-            {
-                var statusCode = (HttpStatusCode)webRequest.responseCode;
-                Debug.Log($"Fetching config finished with status code {statusCode}.");
-                return new FetchResponse(statusCode, reasonPhrase: null, webRequest.GetResponseHeaders(), statusCode == HttpStatusCode.OK ? webRequest.downloadHandler.text : null);
-            }
-            else if (webRequest.result == UnityWebRequest.Result.ConnectionError && webRequest.error == "Request timeout")
-            {
-                Debug.Log($"Fetching config timed out.");
-                throw FetchErrorException.Timeout(TimeSpan.FromSeconds(webRequest.timeout));
-            }
-            else
-            {
-                Debug.Log($"Fetching config failed due to {webRequest.result}: {webRequest.error}");
-                throw FetchErrorException.Failure(null, new Exception($"Web request failed due to {webRequest.result}: {webRequest.error}"));
-            }
+        private static Uri GetAdjustedUri(in FetchRequest request)
+        {
+            var userAgentHeader = request.Headers.FirstOrDefault(kvp =>
+                "User-Agent".Equals(kvp.Key, StringComparison.OrdinalIgnoreCase)
+                || "X-ConfigCat-UserAgent".Equals(kvp.Key, StringComparison.OrdinalIgnoreCase));
+
+            var sdkQueryParamValue = Uri.EscapeDataString(userAgentHeader.Value ?? string.Empty);
+
+            var adjustedUri = request.Uri.GetComponents(UriComponents.HttpRequestUrl & ~UriComponents.Query, UriFormat.UriEscaped);
+
+            adjustedUri = request.LastETag is not null
+                ? $"{adjustedUri}?sdk={sdkQueryParamValue}&ccetag={Uri.EscapeDataString(request.LastETag)}"
+                : $"{adjustedUri}?sdk={sdkQueryParamValue}";
+
+            return new Uri(adjustedUri, UriKind.Absolute);
         }
 
         public void Dispose() { }
@@ -228,7 +243,12 @@ public class SingletonServices : MonoBehaviour
             set { throw new NotSupportedException(); }
         }
 
-        public void Log(LogLevel level, LogEventId eventId, ref FormattableLogMessage message, Exception exception = null)
+        public bool IsEnabled(LogLevel level)
+        {
+            return (byte)level <= (byte)LogLevel;
+        }
+
+        void IConfigCatLogger.Log(LogLevel level, LogEventId eventId, ref FormattableLogMessage message, Exception exception)
         {
             var eventIdString = eventId.Id.ToString(CultureInfo.InvariantCulture);
             var exceptionString = exception is null ? string.Empty : Environment.NewLine + exception;
@@ -247,6 +267,15 @@ public class SingletonServices : MonoBehaviour
                 case LogLevel.Debug:
                     Debug.Log(logMessage);
                     break;
+            }
+        }
+
+        public void LogDebug(string message, Exception exception = null)
+        {
+            if (IsEnabled(LogLevel.Debug))
+            {
+                var formattableMessage = new FormattableLogMessage(message);
+                ((IConfigCatLogger)this).Log(LogLevel.Debug, 0, ref formattableMessage, exception);
             }
         }
     }

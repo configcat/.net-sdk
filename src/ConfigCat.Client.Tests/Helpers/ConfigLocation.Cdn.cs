@@ -26,6 +26,7 @@ public partial record class ConfigLocation
             {
                 PollingMode = PollingModes.ManualPoll,
                 Logger = new ConsoleLogger(),
+                ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithSharedHandler()
             };
             ConfigureBaseUrl(options);
 
@@ -34,7 +35,8 @@ public partial record class ConfigLocation
                 options.GetBaseUri(),
                 ConfigCatClient.GetProductVersion(options.PollingMode),
                 options.Logger!.AsWrapper(),
-                new HttpClientConfigFetcher(options.HttpClientHandler),
+                options.ConfigFetcher!,
+                ownsConfigFetcher: true,
                 options.IsCustomBaseUrl,
                 options.HttpTimeout);
 

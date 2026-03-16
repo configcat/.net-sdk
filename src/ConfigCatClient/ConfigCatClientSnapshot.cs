@@ -36,17 +36,17 @@ public readonly struct ConfigCatClientSnapshot : IConfigCatClientSnapshot
         this.cacheState = default;
     }
 
-    /// <inheritdoc/>>
+    /// <inheritdoc/>
     public ClientCacheState CacheState => this.evaluationServicesOrFakeImpl is EvaluationServices
         ? this.cacheState
         : ((IConfigCatClientSnapshot?)this.evaluationServicesOrFakeImpl)?.CacheState ?? ClientCacheState.NoFlagData;
 
-    /// <inheritdoc/>>
+    /// <inheritdoc/>
     public Config? FetchedConfig => this.evaluationServicesOrFakeImpl is EvaluationServices
         ? this.settings.RemoteConfig?.Config
         : ((IConfigCatClientSnapshot?)this.evaluationServicesOrFakeImpl)?.FetchedConfig ?? null;
 
-    /// <inheritdoc/>>
+    /// <inheritdoc/>
     public IReadOnlyCollection<string> GetAllKeys()
     {
         if (this.evaluationServicesOrFakeImpl is not EvaluationServices)
@@ -59,7 +59,7 @@ public readonly struct ConfigCatClientSnapshot : IConfigCatClientSnapshot
         return this.settings.Value is { } settings ? settings.KeyCollection() : Array.Empty<string>();
     }
 
-    /// <inheritdoc/>>
+    /// <inheritdoc/>
     public T GetValue<T>(string key, T defaultValue, User? user = null)
     {
         if (this.evaluationServicesOrFakeImpl is not EvaluationServices evaluationServices)
@@ -103,7 +103,7 @@ public readonly struct ConfigCatClientSnapshot : IConfigCatClientSnapshot
         return value;
     }
 
-    /// <inheritdoc/>>
+    /// <inheritdoc/>
     public EvaluationDetails<T> GetValueDetails<T>(string key, T defaultValue, User? user = null)
     {
         if (this.evaluationServicesOrFakeImpl is not EvaluationServices evaluationServices)
@@ -144,7 +144,7 @@ public readonly struct ConfigCatClientSnapshot : IConfigCatClientSnapshot
         return evaluationDetails;
     }
 
-    /// <inheritdoc/>>
+    /// <inheritdoc/>
     public KeyValuePair<string, T>? GetKeyAndValue<T>(string variationId)
     {
         if (this.evaluationServicesOrFakeImpl is not EvaluationServices evaluationServices)

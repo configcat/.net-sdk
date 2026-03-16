@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
@@ -17,7 +16,6 @@ namespace ConfigCat.Client.Tests;
 public class ConfigCacheTests
 {
     private const string SDKKEY = "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A";
-    private static readonly HttpClientHandler SharedHandler = new();
 
     [TestMethod]
     [DoNotParallelize]
@@ -38,7 +36,7 @@ public class ConfigCacheTests
             options.Logger = new ConsoleLogger(LogLevel.Debug);
             options.PollingMode = PollingModes.AutoPoll();
             options.ConfigCache = configCacheMock.Object;
-            options.HttpClientHandler = SharedHandler;
+            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithSharedHandler();
         });
 
         var actual = await client.GetValueAsync("stringDefaultCat", "N/A");
@@ -67,7 +65,7 @@ public class ConfigCacheTests
             options.Logger = new ConsoleLogger(LogLevel.Debug);
             options.PollingMode = PollingModes.ManualPoll;
             options.ConfigCache = configCacheMock.Object;
-            options.HttpClientHandler = SharedHandler;
+            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithSharedHandler();
         });
 
         configCacheMock.Verify(c => c.SetAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -105,7 +103,7 @@ public class ConfigCacheTests
             options.Logger = new ConsoleLogger(LogLevel.Debug);
             options.PollingMode = PollingModes.LazyLoad();
             options.ConfigCache = configCacheMock.Object;
-            options.HttpClientHandler = SharedHandler;
+            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithSharedHandler();
         });
 
         var actual = await client.GetValueAsync("stringDefaultCat", "N/A");

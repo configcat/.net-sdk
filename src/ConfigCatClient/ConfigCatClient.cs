@@ -53,8 +53,7 @@ public sealed class ConfigCatClient : IConfigCatClient
 
     private static bool IsValidSdkKey(string sdkKey, bool customBaseUrl)
     {
-        const string proxyPrefix = "configcat-proxy/";
-
+        const string proxyPrefix = ConfigCatClientOptions.ProxyPrefix;
         if (customBaseUrl && sdkKey.Length > proxyPrefix.Length && sdkKey.StartsWith(proxyPrefix, StringComparison.Ordinal))
         {
             return true;
@@ -82,7 +81,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         return key.Sha1().ToHexString();
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public LogLevel LogLevel
     {
         get => Logger.LogLevel;
@@ -130,6 +129,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         // At this point the client instance must be fully initialized (apart from the configService field) because it
         // may be accessed from a handler of an event that is raised during the initialization of the config service.
         // (At the same time, the config service must initialize the configService field before raising any events.)
+
         var configService = this.overrideBehaviour != OverrideBehaviour.LocalOnly
             ? pollingMode.CreateConfigService(
                 new DefaultConfigFetcher(sdkKey,
@@ -137,8 +137,12 @@ public sealed class ConfigCatClient : IConfigCatClient
                     GetProductVersion(pollingMode),
                     logger,
                     options.ConfigFetcher
-                        ?? PlatformCompatibilityOptions.configFetcherFactory?.Invoke(options.HttpClientHandler)
-                        ?? ConfigCatClientOptions.CreateDefaultConfigFetcher(options.HttpClientHandler),
+                        ?? PlatformCompatibilityOptions.configFetcherFactory?.Invoke()
+                        ?? ConfigCatClientOptions.CreateDefaultConfigFetcher(options.Proxy,
+#pragma warning disable CS0618 // Type or member is obsolete
+                            options.HttpClientHandler),
+#pragma warning restore CS0618 // Type or member is obsolete
+                    ownsConfigFetcher: options.ConfigFetcher is null,
                     options.IsCustomBaseUrl,
                     options.HttpTimeout),
                 cacheParameters,
@@ -158,7 +162,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         this.configService = instance;
     }
 
-    // For test purposes only
+    // For testing purposes only.
     internal ConfigCatClient(IConfigService configService, IConfigCatLogger logger, IRolloutEvaluator evaluator,
         OverrideBehaviour? overrideBehaviour = null, IOverrideDataSource? overrideDataSource = null,
         LogFilterCallback? logFilter = null, Hooks? hooks = null)
@@ -222,7 +226,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         return instance;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     ~ConfigCatClient()
     {
         // Safeguard against situations where user forgets to dispose the client instance.
@@ -264,7 +268,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public void Dispose()
     {
         if (this.sdkKey is not null)
@@ -305,7 +309,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public async ValueTask<T> GetValueAsync<T>(string key, T defaultValue, User? user = null, CancellationToken cancellationToken = default)
     {
         if (key is null)
@@ -346,7 +350,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         return value;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public async ValueTask<EvaluationDetails<T>> GetValueDetailsAsync<T>(string key, T defaultValue, User? user = null, CancellationToken cancellationToken = default)
     {
         if (key is null)
@@ -384,7 +388,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         return evaluationDetails;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public async ValueTask<IReadOnlyCollection<string>> GetAllKeysAsync(CancellationToken cancellationToken = default)
     {
         const string defaultReturnValue = "empty collection";
@@ -408,7 +412,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public async ValueTask<IReadOnlyDictionary<string, object?>> GetAllValuesAsync(User? user = null, CancellationToken cancellationToken = default)
     {
         const string defaultReturnValue = "empty dictionary";
@@ -445,7 +449,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         return result;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public async ValueTask<IReadOnlyList<EvaluationDetails>> GetAllValueDetailsAsync(User? user = null, CancellationToken cancellationToken = default)
     {
         const string defaultReturnValue = "empty list";
@@ -480,7 +484,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         return evaluationDetailsArray;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public async ValueTask<KeyValuePair<string, T>?> GetKeyAndValueAsync<T>(string variationId, CancellationToken cancellationToken = default)
     {
         if (variationId is null)
@@ -512,7 +516,7 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public async Task<RefreshResult> ForceRefreshAsync(CancellationToken cancellationToken = default)
     {
         try
@@ -594,19 +598,19 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public void SetDefaultUser(User user)
     {
         this.defaultUser = user ?? throw new ArgumentNullException(nameof(user));
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public Task<ClientCacheState> WaitForReadyAsync(CancellationToken cancellationToken = default)
     {
         return this.configService.ReadyTask.WaitAsync(cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public ConfigCatClientSnapshot Snapshot()
     {
         SettingsWithRemoteConfig settings;
@@ -624,22 +628,22 @@ public sealed class ConfigCatClient : IConfigCatClient
         }
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public void ClearDefaultUser()
     {
         this.defaultUser = null;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public bool IsOffline => this.configService.IsOffline;
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public void SetOnline()
     {
         this.configService.SetOnline();
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public void SetOffline()
     {
         this.configService.SetOffline();

@@ -88,14 +88,7 @@ jobs:
 
     - uses: actions/setup-dotnet@v5
       with:
-        # The .NET Core 3.1 SDK needs to be present for InheritDocTool.
-        dotnet-version: |
-          3.1.x
-          10.0.x
-
-    - name: Install InheritDocTool
-      run: |
-        dotnet tool install InheritDocTool -g
+        dotnet-version: 10.0.x
 
     - name: Determine version
       run: |
@@ -109,16 +102,12 @@ jobs:
       run: |
         dotnet build src/ConfigCatClient.sln -c Release /p:ContinuousIntegrationBuild=true /p:Version=$VERSION
 
-    - name: Run InheritDocTool
-      run: |
-        InheritDoc -o
-
     - name: Pack
       run: |
         dotnet pack src/ConfigCatClient/ConfigCatClient.csproj -c Release --no-build /p:PackageOutputPath=../../artifacts /p:Version=$VERSION
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v7
       with:
         name: packages
         path: artifacts

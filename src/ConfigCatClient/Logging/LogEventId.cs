@@ -46,7 +46,7 @@ public readonly struct LogEventId : IEquatable<LogEventId>
     /// </summary>
     public int Id { get; }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public override string ToString()
     {
         return Id.ToString();

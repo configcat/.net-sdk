@@ -28,7 +28,7 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
         SafeHooksWrapper hooks = default) : this(options, configFetcher, cacheParameters, logger, startTimer: true, isOffline, hooks)
     { }
 
-    // For test purposes only
+    // For testing purposes only.
     internal AutoPollConfigService(
         AutoPoll options,
         IConfigFetcher configFetcher,

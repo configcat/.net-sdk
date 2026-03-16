@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -15,7 +14,6 @@ using ConfigCat.Client.ConfigService;
 using ConfigCat.Client.Configuration;
 using ConfigCat.Client.Evaluation;
 using ConfigCat.Client.Override;
-using ConfigCat.Client.Shims;
 using ConfigCat.Client.Tests.Fakes;
 using ConfigCat.Client.Tests.Helpers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -537,7 +535,8 @@ public class ConfigCatClientTests
         var cacheParams = new CacheParameters(new InMemoryConfigCache(), cacheKey);
 
         var fakeHandler = new FakeHttpClientHandler(HttpStatusCode.OK, "{}", TimeSpan.FromMilliseconds(delayMs));
-        var configFetcher = new DefaultConfigFetcher("x", new Uri("http://example.com"), "1.0", loggerWrapper, new HttpClientConfigFetcher(fakeHandler), false, TimeSpan.FromMilliseconds(delayMs * 2));
+        var configFetcher = new DefaultConfigFetcher("x", new Uri("http://example.com"), "1.0",
+            loggerWrapper, ConfigFetcherHelper.CreateFetcherWithCustomHandler(fakeHandler), true, false, TimeSpan.FromMilliseconds(delayMs * 2));
         var configService = new AutoPollConfigService(PollingModes.AutoPoll(), configFetcher, cacheParams, loggerWrapper);
         var client = new ConfigCatClient(configService, this.loggerMock.Object, new RolloutEvaluator(loggerWrapper));
 
@@ -1180,7 +1179,8 @@ public class ConfigCatClientTests
 
         var loggerWrapper = this.loggerMock.Object.AsWrapper();
         var fakeHandler = new FakeHttpClientHandler(HttpStatusCode.OK, "{ }", TimeSpan.FromMilliseconds(delayMs));
-        var configFetcher = new DefaultConfigFetcher("x", new Uri("http://example.com"), "1.0", loggerWrapper, new HttpClientConfigFetcher(fakeHandler), false, TimeSpan.FromMilliseconds(delayMs * 2));
+        var configFetcher = new DefaultConfigFetcher("x", new Uri("http://example.com"), "1.0",
+            loggerWrapper, ConfigFetcherHelper.CreateFetcherWithCustomHandler(fakeHandler), true, false, TimeSpan.FromMilliseconds(delayMs * 2));
         var configCache = new InMemoryConfigCache();
         var cacheParams = new CacheParameters(configCache, cacheKey: null!);
         var configService = new LazyLoadConfigService(configFetcher, cacheParams, loggerWrapper, TimeSpan.FromSeconds(1));
@@ -1291,7 +1291,8 @@ public class ConfigCatClientTests
 
         var loggerWrapper = this.loggerMock.Object.AsWrapper();
         var fakeHandler = new FakeHttpClientHandler(HttpStatusCode.OK, "{ }", TimeSpan.FromMilliseconds(delayMs));
-        var configFetcher = new DefaultConfigFetcher("x", new Uri("http://example.com"), "1.0", loggerWrapper, new HttpClientConfigFetcher(fakeHandler), false, TimeSpan.FromMilliseconds(delayMs * 2));
+        var configFetcher = new DefaultConfigFetcher("x", new Uri("http://example.com"), "1.0",
+            loggerWrapper, ConfigFetcherHelper.CreateFetcherWithCustomHandler(fakeHandler), true, false, TimeSpan.FromMilliseconds(delayMs * 2));
         var configCache = new InMemoryConfigCache();
         var cacheParams = new CacheParameters(configCache, cacheKey: null!);
         var configService = new ManualPollConfigService(configFetcher, cacheParams, loggerWrapper);
@@ -1847,7 +1848,7 @@ public class ConfigCatClientTests
 
         var onFetch = (ProjectConfig latestConfig, CancellationToken _) =>
         {
-            var logMessage = loggerWrapper.FetchFailedDueToUnexpectedError(errorException);
+            var logMessage = loggerWrapper.FetchFailedDueToUnexpectedError(errorException, rayId: null);
             return FetchResult.Failure(latestConfig, RefreshErrorCode.HttpRequestFailure, errorMessage: logMessage.ToLazyString(), errorException: errorException);
         };
         this.fetcherMock.Setup(m => m.FetchAsync(It.IsAny<ProjectConfig>(), It.IsAny<CancellationToken>())).ReturnsAsync(onFetch);

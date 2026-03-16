@@ -58,14 +58,24 @@ internal static partial class LoggerExtensions
             $"Unexpected HTTP response was received while trying to fetch config JSON: {statusCode} {reasonPhrase}",
             "STATUS_CODE", "REASON_PHRASE");
 
-    public static FormattableLogMessage FetchFailedDueToRequestTimeout(this LoggerWrapper logger, TimeSpan timeout, Exception ex) => logger.LogInterpolated(
-        LogLevel.Error, 1102, ex,
-         $"Request timed out while trying to fetch config JSON. Timeout value: {timeout}",
-        "TIMEOUT");
+    public static FormattableLogMessage FetchFailedDueToRequestTimeout(this LoggerWrapper logger, TimeSpan timeout, Exception ex, string? rayId) => rayId is not null
+        ? logger.LogInterpolated(
+            LogLevel.Error, 1102, ex,
+             $"Request timed out while trying to fetch config JSON. Timeout value: {timeout} (Ray ID: {rayId})",
+            "TIMEOUT", "RAY_ID")
+        : logger.LogInterpolated(
+            LogLevel.Error, 1102, ex,
+             $"Request timed out while trying to fetch config JSON. Timeout value: {timeout}",
+            "TIMEOUT");
 
-    public static FormattableLogMessage FetchFailedDueToUnexpectedError(this LoggerWrapper logger, Exception ex) => logger.Log(
-        LogLevel.Error, 1103, ex,
-        "Unexpected error occurred while trying to fetch config JSON. It is most likely due to a local network issue. Please make sure your application can reach the ConfigCat CDN servers (or your proxy server) over HTTP.");
+    public static FormattableLogMessage FetchFailedDueToUnexpectedError(this LoggerWrapper logger, Exception ex, string? rayId) => rayId is not null
+        ? logger.LogInterpolated(
+            LogLevel.Error, 1103, ex,
+            $"Unexpected error occurred while trying to fetch config JSON. It is most likely due to a local network issue. Please make sure your application can reach the ConfigCat CDN servers (or your proxy server) over HTTP. (Ray ID: {rayId})",
+            "RAY_ID")
+        : logger.Log(
+            LogLevel.Error, 1103, ex,
+            "Unexpected error occurred while trying to fetch config JSON. It is most likely due to a local network issue. Please make sure your application can reach the ConfigCat CDN servers (or your proxy server) over HTTP.");
 
     public static FormattableLogMessage FetchFailedDueToRedirectLoop(this LoggerWrapper logger, string? rayId) => rayId is not null
         ? logger.LogInterpolated(

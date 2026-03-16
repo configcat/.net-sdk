@@ -1,6 +1,8 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Net;
 using System.Net.Http;
+using System.Runtime.Versioning;
 using ConfigCat.Client.Cache;
 
 namespace ConfigCat.Client.Configuration;
@@ -11,6 +13,8 @@ namespace ConfigCat.Client.Configuration;
 public class ConfigCatClientOptions : IProvidesHooks
 {
     internal const string ConfigFileName = "config_v6.json";
+
+    internal const string ProxyPrefix = "configcat-proxy/";
 
     internal static readonly Uri BaseUrlGlobal = new("https://cdn-global.configcat.com");
 
@@ -35,12 +39,18 @@ public class ConfigCatClientOptions : IProvidesHooks
 
     /// <summary>
     /// The config fetcher implementation to use for performing ConfigCat config fetch operations.
-    /// If not set, <see cref="DefaultConfigFetcher"/> will be used by default, which is based on <see cref="HttpClient"/>.<br/>
-    /// If you want to use custom a config fetcher, you can provide an implementation of <see cref="IConfigCatConfigFetcher"/>.
+    /// If not set, <see cref="HttpClientConfigFetcher"/> will be used by default, which is based on <see cref="HttpClient"/>.<br/>
+    /// If you want to use a custom config fetcher, you can provide an implementation of <see cref="IConfigCatConfigFetcher"/>.
     /// </summary>
+    /// <remarks>
+    /// Please note that the SDK does not dispose externally created config fetcher instances.
+    /// </remarks>
     public IConfigCatConfigFetcher? ConfigFetcher { get; set; }
 
-    internal static IConfigCatConfigFetcher CreateDefaultConfigFetcher(HttpClientHandler? httpClientHandler) => new HttpClientConfigFetcher(httpClientHandler);
+    internal static IConfigCatConfigFetcher CreateDefaultConfigFetcher(IWebProxy? proxy, HttpClientHandler? httpClientHandler) =>
+        httpClientHandler is null
+        ? (proxy is null ? new HttpClientConfigFetcher() : new HttpClientConfigFetcher(proxy))
+        : new HttpClientConfigFetcher(httpClientHandler);
 
     /// <summary>
     /// The cache implementation to use for storing and retrieving downloaded config data.
@@ -62,7 +72,17 @@ public class ConfigCatClientOptions : IProvidesHooks
     /// <summary>
     /// An optional <see cref="System.Net.Http.HttpClientHandler"/> for providing network credentials and proxy settings.
     /// </summary>
+    [Obsolete($"This option is deprecated, thus it will be removed from the public API in a future major version. Please use the {nameof(Proxy)} option instead, or set the {nameof(ConfigFetcher)} option (e.g., to an instance of {nameof(HttpClientConfigFetcher)}) if you need more control over HTTP communication.")]
     public HttpClientHandler? HttpClientHandler { get; set; }
+
+    /// <summary>
+    /// Optional proxy settings to route HTTP requests through a HTTP, HTTPS, SOCKS, etc. proxy.<br/>
+    /// Applies only if the <see cref="ConfigFetcher"/> option is not set.
+    /// </summary>
+#if NET6_0_OR_GREATER
+    [UnsupportedOSPlatform("browser")]
+#endif
+    public IWebProxy? Proxy { get; set; }
 
     /// <summary>
     /// The base URL of the remote server providing the latest version of the config.
@@ -82,7 +102,8 @@ public class ConfigCatClientOptions : IProvidesHooks
     public DataGovernance DataGovernance { get; set; } = DataGovernance.Global;
 
     /// <summary>
-    /// Timeout for underlying HTTP calls. Defaults to 30 seconds.
+    /// Timeout for underlying HTTP calls. Defaults to 30 seconds.<br/>
+    /// Applies only if the <see cref="ConfigFetcher"/> option is not set.
     /// </summary>
     public TimeSpan HttpTimeout { get; set; } = TimeSpan.FromSeconds(30);
 
@@ -125,6 +146,30 @@ public class ConfigCatClientOptions : IProvidesHooks
     internal static Uri GetConfigUri(Uri baseUri, string sdkKey)
     {
         return new Uri(baseUri, "configuration-files/" + sdkKey + "/" + ConfigFileName);
+    }
+
+    internal static bool IsCdnUri(Uri uri)
+    {
+        if (!uri.IsAbsoluteUri || uri.Scheme is not ("http" or "https"))
+        {
+            return false;
+        }
+
+        var host = uri.Host.AsSpan();
+        var endIndex = host.Length - 1;
+        // NOTE: No need to check for empty string as Uri doesn't allow that for HTTP(S).
+        if (host[endIndex] == '.')
+        {
+            host = host.Slice(0, endIndex);
+        }
+
+        if (!host.EndsWith(".configcat.com".AsSpan(), StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var unescapedPath = Uri.UnescapeDataString(uri.AbsolutePath);
+        return !unescapedPath.Contains("/" + ProxyPrefix);
     }
 
     /// <inheritdoc/>

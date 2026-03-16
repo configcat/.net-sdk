@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.Versioning;
 using ConfigCat.Client.Override;
 
 namespace ConfigCat.Client;
@@ -63,6 +64,9 @@ public class FlagOverrides
     /// or local values should only be used when a remote value doesn't exist or the local values should be used only.</param>
     /// <returns>The new <see cref="FlagOverrides"/> instance.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="filePath"/> is <see langword="null"/>.</exception>
+#if NET6_0_OR_GREATER
+    [UnsupportedOSPlatform("browser")]
+#endif
     public static FlagOverrides LocalFile(string filePath, bool autoReload, OverrideBehaviour overrideBehaviour) =>
         new(filePath ?? throw new ArgumentNullException(nameof(filePath)), autoReload, overrideBehaviour);
 

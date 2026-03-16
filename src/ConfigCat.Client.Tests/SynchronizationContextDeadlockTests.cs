@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using ConfigCat.Client.Tests.Helpers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 
@@ -15,8 +15,6 @@ namespace ConfigCat.Client.Tests;
 public class SynchronizationContextDeadlockTests
 {
     private const string SDKKEY = "PKDVCLf-Hq-h-kCzMp-L7Q/psuH7BGHoUmdONrzzUOY7A";
-
-    private static readonly HttpClientHandler SharedHandler = new();
 
     private static SynchronizationContext? SynchronizationContextBackup;
     private readonly Mock<SynchronizationContext> syncContextMock;
@@ -51,7 +49,7 @@ public class SynchronizationContextDeadlockTests
         using var client = ConfigCatClient.Get(SDKKEY, options =>
         {
             options.Logger = new ConsoleLogger(LogLevel.Off);
-            options.HttpClientHandler = SharedHandler;
+            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithSharedHandler();
         });
 
         ClientDeadlockCheck(client);
@@ -63,7 +61,7 @@ public class SynchronizationContextDeadlockTests
         using var client = ConfigCatClient.Get(SDKKEY, options =>
         {
             options.Logger = new ConsoleLogger(LogLevel.Off);
-            options.HttpClientHandler = SharedHandler;
+            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithSharedHandler();
         });
 
         ClientDeadlockCheck(client);
@@ -75,7 +73,7 @@ public class SynchronizationContextDeadlockTests
         using var client = ConfigCatClient.Get(SDKKEY, options =>
         {
             options.Logger = new ConsoleLogger(LogLevel.Off);
-            options.HttpClientHandler = SharedHandler;
+            options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithSharedHandler();
         });
 
         ClientDeadlockCheck(client);
@@ -83,10 +81,10 @@ public class SynchronizationContextDeadlockTests
 
     private static readonly Dictionary<string, object?[]> SpecificMethodParams = new()
     {
-        ["GetValueAsync"] = new object?[] { "x", null, null, CancellationToken.None },
-        ["GetValueDetailsAsync"] = new object?[] { "x", null, null, CancellationToken.None },
-        ["GetKeyAndValueAsync"] = new object?[] { "x", CancellationToken.None },
-        ["SetDefaultUser"] = new object?[] { new User("id") },
+        [nameof(ConfigCatClient.GetValueAsync)] = new object?[] { "x", null, null, CancellationToken.None },
+        [nameof(ConfigCatClient.GetValueDetailsAsync)] = new object?[] { "x", null, null, CancellationToken.None },
+        [nameof(ConfigCatClient.GetKeyAndValueAsync)] = new object?[] { "x", CancellationToken.None },
+        [nameof(ConfigCatClient.SetDefaultUser)] = new object?[] { new User("id") },
     };
 
     private void ClientDeadlockCheck(IConfigCatClient client)

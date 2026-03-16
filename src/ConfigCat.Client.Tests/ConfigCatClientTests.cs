@@ -534,7 +534,7 @@ public class ConfigCatClientTests
         var loggerWrapper = this.loggerMock.Object.AsWrapper();
         var cacheParams = new CacheParameters(new InMemoryConfigCache(), cacheKey);
 
-        var fakeHandler = new FakeHttpClientHandler(HttpStatusCode.OK, "{}", TimeSpan.FromMilliseconds(delayMs));
+        var fakeHandler = new FakeHttpMessageHandler(HttpStatusCode.OK, "{}", TimeSpan.FromMilliseconds(delayMs));
         var configFetcher = new DefaultConfigFetcher("x", new Uri("http://example.com"), "1.0",
             loggerWrapper, ConfigFetcherHelper.CreateFetcherWithCustomHandler(fakeHandler), true, false, TimeSpan.FromMilliseconds(delayMs * 2));
         var configService = new AutoPollConfigService(PollingModes.AutoPoll(), configFetcher, cacheParams, loggerWrapper);
@@ -1178,7 +1178,7 @@ public class ConfigCatClientTests
         const int delayMs = 2000;
 
         var loggerWrapper = this.loggerMock.Object.AsWrapper();
-        var fakeHandler = new FakeHttpClientHandler(HttpStatusCode.OK, "{ }", TimeSpan.FromMilliseconds(delayMs));
+        var fakeHandler = new FakeHttpMessageHandler(HttpStatusCode.OK, "{ }", TimeSpan.FromMilliseconds(delayMs));
         var configFetcher = new DefaultConfigFetcher("x", new Uri("http://example.com"), "1.0",
             loggerWrapper, ConfigFetcherHelper.CreateFetcherWithCustomHandler(fakeHandler), true, false, TimeSpan.FromMilliseconds(delayMs * 2));
         var configCache = new InMemoryConfigCache();
@@ -1290,7 +1290,7 @@ public class ConfigCatClientTests
         const int delayMs = 2000;
 
         var loggerWrapper = this.loggerMock.Object.AsWrapper();
-        var fakeHandler = new FakeHttpClientHandler(HttpStatusCode.OK, "{ }", TimeSpan.FromMilliseconds(delayMs));
+        var fakeHandler = new FakeHttpMessageHandler(HttpStatusCode.OK, "{ }", TimeSpan.FromMilliseconds(delayMs));
         var configFetcher = new DefaultConfigFetcher("x", new Uri("http://example.com"), "1.0",
             loggerWrapper, ConfigFetcherHelper.CreateFetcherWithCustomHandler(fakeHandler), true, false, TimeSpan.FromMilliseconds(delayMs * 2));
         var configCache = new InMemoryConfigCache();

@@ -138,10 +138,7 @@ public sealed class ConfigCatClient : IConfigCatClient
                     logger,
                     options.ConfigFetcher
                         ?? PlatformCompatibilityOptions.configFetcherFactory?.Invoke()
-                        ?? ConfigCatClientOptions.CreateDefaultConfigFetcher(options.Proxy,
-#pragma warning disable CS0618 // Type or member is obsolete
-                            options.HttpClientHandler),
-#pragma warning restore CS0618 // Type or member is obsolete
+                        ?? ConfigCatClientOptions.CreateDefaultConfigFetcher(options.Proxy),
                     ownsConfigFetcher: options.ConfigFetcher is null,
                     options.IsCustomBaseUrl,
                     options.HttpTimeout),

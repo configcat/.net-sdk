@@ -39,7 +39,6 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
 
     // either null (indicating disposed state)
     // or a HandlerState (internally managed handler)
-    // or a HttpMessageHandler (externally created handler)
     // or a HttpClientFactory (callback for full external control over HttpClient management, e.g. integration with IHttpClientFactory)
     private volatile object? handlerState;
 
@@ -66,11 +65,6 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
     protected internal HttpClientConfigFetcher(IWebProxy proxy)
     {
         this.handlerState = new HandlerState(proxy ?? throw new ArgumentNullException(nameof(proxy)));
-    }
-
-    internal HttpClientConfigFetcher(HttpMessageHandler externalHandler)
-    {
-        this.handlerState = externalHandler ?? throw new ArgumentNullException(nameof(externalHandler));
     }
 
     /// <summary>
@@ -164,10 +158,6 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
         {
             httpClient = CreateHttpClient(handlerState.Handler, request.Timeout);
         }
-        else if (handlerStateObj is HttpMessageHandler externalHandler)
-        {
-            httpClient = CreateHttpClient(externalHandler, request.Timeout);
-        }
         else if (handlerStateObj is HttpClientFactory httpClientFactory)
         {
             httpClient = httpClientFactory(request, isRetry: false);
@@ -216,7 +206,7 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                 {
                     if (isDebugLoggingEnabled)
                     {
-                        var proxy = handlerState is not null ? handlerState.Proxy : (handlerStateObj as HttpClientHandler)?.Proxy;
+                        var proxy = handlerState?.Proxy;
                         if (proxy is null || proxy.IsBypassed(request.Uri))
                         {
                             logger!.LogInterpolated(LogLevel.Debug, 0,
@@ -378,14 +368,12 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                 {
                     renewedHandlerState.Handler.Dispose(); // just in case, although this instance wasn't used at all
 
-                    if (CheckNotDisposed(handlerStateObj, throwIfDisposed: canRetry))
-                    {
-                        handlerState = (HandlerState)handlerStateObj!;
-                    }
-                    else
+                    if (!CheckNotDisposed(handlerStateObj, throwIfDisposed: canRetry))
                     {
                         return;
                     }
+
+                    handlerState = (HandlerState)handlerStateObj!;
                 }
 
                 if (!canRetry)
@@ -399,23 +387,23 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
             else
             {
                 handlerStateObj = this.handlerState;
-                if (handlerStateObj is HttpClientFactory httpClientFactory)
-                {
-                    if (!canRetry)
-                    {
-                        return;
-                    }
 
-                    // If client is created externally, give consumer the opportunity to create another instance for retrying.
-
-                    httpClient.Dispose();
-                    httpClient = httpClientFactory(request, isRetry: true);
-                }
-                else
+                if (!CheckNotDisposed(handlerStateObj, throwIfDisposed: canRetry))
                 {
-                    CheckNotDisposed(handlerStateObj, throwIfDisposed: canRetry);
                     return;
                 }
+
+                var httpClientFactory = (HttpClientFactory)handlerStateObj!;
+
+                if (!canRetry)
+                {
+                    return;
+                }
+
+                // If client is created externally, give consumer the opportunity to create another instance for retrying.
+
+                httpClient.Dispose();
+                httpClient = httpClientFactory(request, isRetry: true);
             }
 
             if (isDebugLoggingEnabled)

@@ -275,7 +275,7 @@ public class BasicConfigCatClientIntegrationTests
     public async Task Http_Timeout_Test_Async()
     {
         var response = $"{{ \"f\": {{ \"fakeKey\": {{ \"v\": \"fakeValue\", \"p\": [] ,\"r\": [] }} }} }}";
-        using var fakeHandler = new FakeHttpClientHandler(HttpStatusCode.OK, response, TimeSpan.FromSeconds(5));
+        using var fakeHandler = new FakeHttpMessageHandler(HttpStatusCode.OK, response, TimeSpan.FromSeconds(5));
         using IConfigCatClient manualPollClient = ConfigCatClient.Get("fake-67890123456789012/1234567890123456789012", options =>
         {
             options.PollingMode = PollingModes.ManualPoll;
@@ -294,7 +294,7 @@ public class BasicConfigCatClientIntegrationTests
     {
         var now = DateTimeOffset.UtcNow;
         var response = $"{{ \"f\": {{ \"fakeKey\": {{ \"v\": \"fakeValue\", \"p\": [] ,\"r\": [] }} }} }}";
-        using var fakeHandler = new FakeHttpClientHandler(HttpStatusCode.OK, response, TimeSpan.FromSeconds(5));
+        using var fakeHandler = new FakeHttpMessageHandler(HttpStatusCode.OK, response, TimeSpan.FromSeconds(5));
         using IConfigCatClient manualPollClient = ConfigCatClient.Get("fake-67890123456789012/1234567890123456789012", options =>
         {
             options.PollingMode = PollingModes.AutoPoll(maxInitWaitTime: TimeSpan.FromSeconds(1));
@@ -312,7 +312,7 @@ public class BasicConfigCatClientIntegrationTests
         var defer = new ManualResetEvent(false);
         var now = DateTimeOffset.UtcNow;
         var response = $"{{ \"f\": {{ \"fakeKey\": {{ \"v\": \"fakeValue\", \"p\": [] ,\"r\": [] }} }} }}";
-        using var fakeHandler = new FakeHttpClientHandler(HttpStatusCode.OK, response, TimeSpan.FromSeconds(5));
+        using var fakeHandler = new FakeHttpMessageHandler(HttpStatusCode.OK, response, TimeSpan.FromSeconds(5));
         using IConfigCatClient manualPollClient = ConfigCatClient.Get("fake-67890123456789012/1234567890123456789012", options =>
         {
             options.Logger = ConsoleLogger;
@@ -330,7 +330,7 @@ public class BasicConfigCatClientIntegrationTests
     public async Task Ensure_Multiple_Requests_Doesnt_Interfere_In_ValueTasks()
     {
         var response = $"{{ \"f\": {{ \"fakeKey\": {{ \"v\": \"fakeValue\", \"p\": [] ,\"r\": [] }} }} }}";
-        using var fakeHandler = new FakeHttpClientHandler(HttpStatusCode.OK, response);
+        using var fakeHandler = new FakeHttpMessageHandler(HttpStatusCode.OK, response);
         using IConfigCatClient manualPollClient = ConfigCatClient.Get("fake-67890123456789012/1234567890123456789012", options =>
         {
             options.Logger = ConsoleLogger;

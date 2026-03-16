@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ConfigCat.Client.Tests;
 
-internal class FakeHttpClientHandler : HttpMessageHandler
+internal class FakeHttpMessageHandler : HttpMessageHandler
 {
     private readonly HttpStatusCode httpStatusCode;
     private readonly string? responseContent;
@@ -22,7 +22,7 @@ internal class FakeHttpClientHandler : HttpMessageHandler
 
     public SortedList<byte, HttpRequestMessage> Requests = new();
 
-    public FakeHttpClientHandler(HttpStatusCode httpStatusCode = HttpStatusCode.NotModified, string? responseContent = null, TimeSpan? delay = null,
+    public FakeHttpMessageHandler(HttpStatusCode httpStatusCode = HttpStatusCode.NotModified, string? responseContent = null, TimeSpan? delay = null,
         EntityTagHeaderValue? httpETag = null)
     {
         this.httpStatusCode = httpStatusCode;

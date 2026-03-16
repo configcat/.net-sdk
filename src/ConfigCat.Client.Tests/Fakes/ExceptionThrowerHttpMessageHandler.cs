@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace ConfigCat.Client.Tests;
 
-internal sealed class ExceptionThrowerHttpClientHandler : HttpMessageHandler
+internal sealed class ExceptionThrowerHttpMessageHandler : HttpMessageHandler
 {
     private readonly Exception exception;
     private readonly TimeSpan? delay;
@@ -13,7 +13,7 @@ internal sealed class ExceptionThrowerHttpClientHandler : HttpMessageHandler
     private int sendInvokeCount = 0;
     public byte SendInvokeCount => (byte)this.sendInvokeCount;
 
-    public ExceptionThrowerHttpClientHandler(Exception? ex = null, TimeSpan? delay = null)
+    public ExceptionThrowerHttpMessageHandler(Exception? ex = null, TimeSpan? delay = null)
     {
         this.exception = ex ?? new NotImplementedException();
         this.delay = delay;

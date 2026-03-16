@@ -47,10 +47,8 @@ public class ConfigCatClientOptions : IProvidesHooks
     /// </remarks>
     public IConfigCatConfigFetcher? ConfigFetcher { get; set; }
 
-    internal static IConfigCatConfigFetcher CreateDefaultConfigFetcher(IWebProxy? proxy, HttpClientHandler? httpClientHandler) =>
-        httpClientHandler is null
-        ? (proxy is null ? new HttpClientConfigFetcher() : new HttpClientConfigFetcher(proxy))
-        : new HttpClientConfigFetcher(httpClientHandler);
+    internal static IConfigCatConfigFetcher CreateDefaultConfigFetcher(IWebProxy? proxy) =>
+        proxy is null ? new HttpClientConfigFetcher() : new HttpClientConfigFetcher(proxy);
 
     /// <summary>
     /// The cache implementation to use for storing and retrieving downloaded config data.
@@ -68,12 +66,6 @@ public class ConfigCatClientOptions : IProvidesHooks
     public PollingMode? PollingMode { get; set; }
 
     internal static PollingMode CreateDefaultPollingMode() => PollingModes.AutoPoll();
-
-    /// <summary>
-    /// An optional <see cref="System.Net.Http.HttpClientHandler"/> for providing network credentials and proxy settings.
-    /// </summary>
-    [Obsolete($"This option is deprecated, thus it will be removed from the public API in a future major version. Please use the {nameof(Proxy)} option instead, or set the {nameof(ConfigFetcher)} option (e.g., to an instance of {nameof(HttpClientConfigFetcher)}) if you need more control over HTTP communication.")]
-    public HttpClientHandler? HttpClientHandler { get; set; }
 
     /// <summary>
     /// Optional proxy settings to route HTTP requests through a HTTP, HTTPS, SOCKS, etc. proxy.<br/>

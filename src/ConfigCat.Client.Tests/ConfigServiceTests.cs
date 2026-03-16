@@ -1344,7 +1344,7 @@ public class ConfigServiceTests
 
         var loggerWrapper = this.loggerMock.Object.AsWrapper();
 
-        var myHandler = new FakeHttpClientHandler(HttpStatusCode.OK, "{ \"p\": { \"s\": \"0\" } }", TimeSpan.FromSeconds(1));
+        var myHandler = new FakeHttpMessageHandler(HttpStatusCode.OK, "{ \"p\": { \"s\": \"0\" } }", TimeSpan.FromSeconds(1));
 
         var fakeFetcher = new DefaultConfigFetcher("x", new Uri("http://example.com"), "1.0",
             loggerWrapper, ConfigFetcherHelper.CreateFetcherWithCustomHandler(myHandler), true, false, TimeSpan.FromSeconds(30));
@@ -1406,7 +1406,7 @@ public class ConfigServiceTests
         var loggerWrapper = this.loggerMock.Object.AsWrapper();
 
         var exception = new WebException();
-        var myHandler = new ExceptionThrowerHttpClientHandler(exception, TimeSpan.FromSeconds(1));
+        var myHandler = new ExceptionThrowerHttpMessageHandler(exception, TimeSpan.FromSeconds(1));
 
         var fakeFetcher = new DefaultConfigFetcher("x", new Uri("http://example.com"), "1.0",
             loggerWrapper, ConfigFetcherHelper.CreateFetcherWithCustomHandler(myHandler), true, false, TimeSpan.FromSeconds(30));
@@ -1469,7 +1469,7 @@ public class ConfigServiceTests
         var loggerWrapper = this.loggerMock.Object.AsWrapper();
 
         var delayMs = 1000;
-        var myHandler = new FakeHttpClientHandler(HttpStatusCode.OK, "{ \"p\": { \"s\": \"0\" } }", TimeSpan.FromMilliseconds(delayMs));
+        var myHandler = new FakeHttpMessageHandler(HttpStatusCode.OK, "{ \"p\": { \"s\": \"0\" } }", TimeSpan.FromMilliseconds(delayMs));
 
         var fakeFetcher = new DefaultConfigFetcher("x", new Uri("http://example.com"), "1.0",
             loggerWrapper, ConfigFetcherHelper.CreateFetcherWithCustomHandler(myHandler), true, false, TimeSpan.FromSeconds(30));

@@ -18,7 +18,7 @@ using Moq;
 namespace ConfigCat.Client.Tests;
 
 [TestClass]
-public class HttpConfigFetcherTests
+public class ConfigFetcherTests
 {
     private const string TestSdkKey = "configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/u28_1qNyZ0Wz-ldYHIU7-g";
     private const string TestETag = "W/\"123\"";
@@ -40,7 +40,7 @@ public class HttpConfigFetcherTests
 
         var capturedParams = new List<(HttpClient Client, HttpMessageHandler Handler)>();
 
-        var fakeHandler = new FakeHttpClientHandler();
+        var fakeHandler = new FakeHttpMessageHandler();
 
         using var configFetcher = useProxy
             ? new TestHttpClientConfigFetcher(proxy)
@@ -105,9 +105,9 @@ public class HttpConfigFetcherTests
 
         HttpMessageHandler fakeHandler = @case switch
         {
-            "408" => new FakeHttpClientHandler(HttpStatusCode.RequestTimeout),
-            "timeout" => new FakeHttpClientHandler(HttpStatusCode.OK, delay: timeout + timeout),
-            "error" => new ExceptionThrowerHttpClientHandler(new HttpRequestException("Connection reset by peer")),
+            "408" => new FakeHttpMessageHandler(HttpStatusCode.RequestTimeout),
+            "timeout" => new FakeHttpMessageHandler(HttpStatusCode.OK, delay: timeout + timeout),
+            "error" => new ExceptionThrowerHttpMessageHandler(new HttpRequestException("Connection reset by peer")),
             _ => throw new NotImplementedException()
         };
 
@@ -161,9 +161,9 @@ public class HttpConfigFetcherTests
         Assert.AreSame(useProxy ? proxy : null, ((HttpClientHandler)handler1).Proxy);
         Assert.AreSame(useProxy ? proxy : null, ((HttpClientHandler)handler2).Proxy);
 
-        var sendInvokeCount = fakeHandler is ExceptionThrowerHttpClientHandler exceptionThrowerHandler
+        var sendInvokeCount = fakeHandler is ExceptionThrowerHttpMessageHandler exceptionThrowerHandler
             ? exceptionThrowerHandler.SendInvokeCount
-            : ((FakeHttpClientHandler)fakeHandler).SendInvokeCount;
+            : ((FakeHttpMessageHandler)fakeHandler).SendInvokeCount;
         Assert.AreEqual(2, sendInvokeCount);
     }
 
@@ -181,7 +181,7 @@ public class HttpConfigFetcherTests
 
         var capturedParams = new List<(HttpClient Client, HttpMessageHandler Handler)>();
 
-        var fakeHandler = new ExceptionThrowerHttpClientHandler(new HttpRequestException("Connection reset by peer"));
+        var fakeHandler = new ExceptionThrowerHttpMessageHandler(new HttpRequestException("Connection reset by peer"));
 
         using var configFetcher = new TestHttpClientConfigFetcher();
 
@@ -231,94 +231,6 @@ public class HttpConfigFetcherTests
     }
 
     [TestMethod]
-    public async Task HttpClientConfigFetcher_ExternalHandler_ShouldUsePassedHandler()
-    {
-        // Arrange
-
-        var myHandler = new FakeHttpClientHandler();
-
-        var instance = new DefaultConfigFetcher("x", new Uri("http://example.com"), "1.0",
-            new CounterLogger().AsWrapper(), new HttpClientConfigFetcher(myHandler), true, false,
-            TimeSpan.FromSeconds(30));
-
-        // Act
-
-        await instance.FetchAsync(ProjectConfig.Empty);
-
-        // Assert
-
-        Assert.AreEqual(1, myHandler.SendInvokeCount);
-    }
-
-    [TestMethod]
-    public async Task HttpClientConfigFetcher_ExternalHandler_ShouldContinueUsingHandlerOnFailure()
-    {
-        // Arrange
-
-        var timeout = TimeSpan.FromSeconds(1);
-
-        var logEvents = new List<LogEvent>();
-        var fakeLogger = LoggingHelper.CreateCapturingLogger(logEvents, LogLevel.Debug).AsWrapper();
-
-        var capturedParams = new List<(HttpClient Client, HttpMessageHandler Handler)>();
-
-        var fakeHandler = new ExceptionThrowerHttpClientHandler(new HttpRequestException("Connection reset by peer"));
-
-        using var configFetcher = new TestHttpClientConfigFetcher(fakeHandler);
-
-        configFetcher.OnCreateHttpClient = (handler, timeout, createHttpClient) =>
-        {
-            var httpClient = createHttpClient(handler, timeout);
-            lock (capturedParams) { capturedParams.Add((httpClient, handler)); }
-            return httpClient;
-        };
-
-        var requestUri = ConfigCatClientOptions.GetConfigUri(ConfigCatClientOptions.BaseUrlGlobal, TestSdkKey);
-        var fetchRequest = new FetchRequest(requestUri, TestETag, Array.Empty<KeyValuePair<string, string>>(), timeout);
-
-        // Act
-
-        FetchErrorException? fetchErrorException = null;
-        try { await configFetcher.FetchAsync(fetchRequest, fakeLogger, cancellationToken: default); }
-        catch (FetchErrorException ex) { fetchErrorException = ex; }
-
-        Assert.IsInstanceOfType(fetchErrorException, typeof(FetchErrorException.Failure_));
-
-        // Assert
-
-        Assert.AreEqual(1, capturedParams.Count);
-
-        HttpClient client1 = capturedParams[0].Client;
-        Assert.AreEqual(timeout, client1.Timeout);
-
-        HttpMessageHandler handler1 = capturedParams[0].Handler;
-        Assert.AreSame(fakeHandler, handler1);
-        Assert.IsInstanceOfType(handler1, typeof(ExceptionThrowerHttpClientHandler));
-
-        Assert.AreEqual(2, fakeHandler.SendInvokeCount);
-    }
-
-    [TestMethod]
-    public void HttpClientConfigFetcher_ExternalHandler_HandlersDisposeShouldNotInvoke()
-    {
-        // Arrange
-
-        var myHandler = new FakeHttpClientHandler();
-
-        var instance = new DefaultConfigFetcher("x", new Uri("http://example.com"), "1.0",
-            new CounterLogger().AsWrapper(), new HttpClientConfigFetcher(myHandler), true, false,
-            TimeSpan.FromSeconds(30));
-
-        // Act
-
-        instance.Dispose();
-
-        // Assert
-
-        Assert.IsFalse(myHandler.Disposed);
-    }
-
-    [TestMethod]
     public async Task HttpClientConfigFetcher_ExternalClient_ShouldUseExternallyCreatedClient()
     {
         // Arrange
@@ -330,7 +242,7 @@ public class HttpConfigFetcherTests
 
         var capturedParams = new List<(FetchRequest Request, bool IsRetry, HttpClient CreatedClient)>();
 
-        var fakeHandler = new FakeHttpClientHandler();
+        var fakeHandler = new FakeHttpMessageHandler();
 
         using var configFetcher = new TestHttpClientConfigFetcher((request, isRetry) =>
         {
@@ -381,9 +293,9 @@ public class HttpConfigFetcherTests
 
         HttpMessageHandler fakeHandler = @case switch
         {
-            "408" => new FakeHttpClientHandler(HttpStatusCode.RequestTimeout),
-            "timeout" => new FakeHttpClientHandler(HttpStatusCode.OK, delay: timeout + timeout),
-            "error" => new ExceptionThrowerHttpClientHandler(new HttpRequestException("Connection reset by peer")),
+            "408" => new FakeHttpMessageHandler(HttpStatusCode.RequestTimeout),
+            "timeout" => new FakeHttpMessageHandler(HttpStatusCode.OK, delay: timeout + timeout),
+            "error" => new ExceptionThrowerHttpMessageHandler(new HttpRequestException("Connection reset by peer")),
             _ => throw new NotImplementedException()
         };
 
@@ -431,9 +343,9 @@ public class HttpConfigFetcherTests
         Assert.IsFalse(isRetry1);
         Assert.IsTrue(isRetry2);
 
-        var sendInvokeCount = fakeHandler is ExceptionThrowerHttpClientHandler exceptionThrowerHandler
+        var sendInvokeCount = fakeHandler is ExceptionThrowerHttpMessageHandler exceptionThrowerHandler
             ? exceptionThrowerHandler.SendInvokeCount
-            : ((FakeHttpClientHandler)fakeHandler).SendInvokeCount;
+            : ((FakeHttpMessageHandler)fakeHandler).SendInvokeCount;
         Assert.AreEqual(2, sendInvokeCount);
     }
 
@@ -452,7 +364,7 @@ public class HttpConfigFetcherTests
 
         var timeout = TimeSpan.FromSeconds(15);
 
-        var fakeHandler = new FakeHttpClientHandler();
+        var fakeHandler = new FakeHttpMessageHandler();
 
         var extraHeaders = addCustomHeaders
             ? new KeyValuePair<string, string>[]
@@ -526,7 +438,7 @@ public class HttpConfigFetcherTests
 
         var timeout = TimeSpan.FromSeconds(15);
 
-        var fakeHandler = new FakeHttpClientHandler();
+        var fakeHandler = new FakeHttpMessageHandler();
 
         var extraHeaders = addCustomHeaders
             ? new KeyValuePair<string, string>[]
@@ -594,7 +506,7 @@ public class HttpConfigFetcherTests
     {
         // Arrange
 
-        var myHandler = new FakeHttpClientHandler(statusCode);
+        var myHandler = new FakeHttpMessageHandler(statusCode);
 
         using var instance = new DefaultConfigFetcher("x", new Uri("http://example.com"), "1.0",
             new CounterLogger().AsWrapper(), ConfigFetcherHelper.CreateFetcherWithCustomHandler(myHandler), true, false,
@@ -635,7 +547,7 @@ public class HttpConfigFetcherTests
         Exception exception = throwHttpRequestException
             ? new HttpRequestException("Connection reset by peer")
             : new Exception();
-        var myHandler = new ExceptionThrowerHttpClientHandler(exception);
+        var myHandler = new ExceptionThrowerHttpMessageHandler(exception);
 
         var instance = new DefaultConfigFetcher("x", new Uri("http://example.com"), "1.0",
             new CounterLogger().AsWrapper(), ConfigFetcherHelper.CreateFetcherWithCustomHandler(myHandler), true, false,
@@ -975,9 +887,6 @@ public class HttpConfigFetcherTests
 
         public TestHttpClientConfigFetcher(IWebProxy proxy)
             : base(proxy) { }
-
-        public TestHttpClientConfigFetcher(HttpMessageHandler externalHandler)
-            : base(externalHandler) { }
 
         protected override void Dispose(bool disposing)
         {

@@ -299,7 +299,7 @@ public class OverrideTests
             {"nonexisting", true},
         };
 
-        var fakeHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, GetJsonContent("false"));
+        var fakeHandler = new FakeHttpMessageHandler(System.Net.HttpStatusCode.OK, GetJsonContent("false"));
 
         using var client = ConfigCatClient.Get("localhost-123456789012/1234567890123456789012", options =>
         {
@@ -325,7 +325,7 @@ public class OverrideTests
             {"nonexisting", true},
         };
 
-        var fakeHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, GetJsonContent("false"));
+        var fakeHandler = new FakeHttpMessageHandler(System.Net.HttpStatusCode.OK, GetJsonContent("false"));
 
         using var client = ConfigCatClient.Get("localhost-123456789012/1234567890123456789012", options =>
         {
@@ -349,7 +349,7 @@ public class OverrideTests
             {"nonexisting", true},
         };
 
-        var fakeHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, GetJsonContent("false"));
+        var fakeHandler = new FakeHttpMessageHandler(System.Net.HttpStatusCode.OK, GetJsonContent("false"));
 
         using var client = ConfigCatClient.Get("localhost-123456789012/1234567890123456789012", options =>
         {
@@ -375,7 +375,7 @@ public class OverrideTests
             {"nonexisting", true},
         };
 
-        var fakeHandler = new FakeHttpClientHandler(System.Net.HttpStatusCode.OK, GetJsonContent("false"));
+        var fakeHandler = new FakeHttpMessageHandler(System.Net.HttpStatusCode.OK, GetJsonContent("false"));
 
         using var client = ConfigCatClient.Get("localhost-123456789012/1234567890123456789012", options =>
         {

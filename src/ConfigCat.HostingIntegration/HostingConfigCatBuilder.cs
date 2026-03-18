@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using ConfigCat.HostingIntegration.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 namespace ConfigCat.HostingIntegration;
 
@@ -10,7 +12,9 @@ using static ConfigCatBuilder;
 
 public sealed class HostingConfigCatBuilder : ConfigCatBuilder<HostingConfigCatBuilder>
 {
-    private ConfigCatInitStrategy initStrategy = ConfigCatInitArgs.UnsetInitStrategy;
+    private const ConfigCatInitStrategy UnsetInitStrategy = (ConfigCatInitStrategy)(-1);
+
+    private ConfigCatInitStrategy initStrategy = UnsetInitStrategy;
 
     internal HostingConfigCatBuilder() // for legacy hosting model
         : base() { }
@@ -20,20 +24,26 @@ public sealed class HostingConfigCatBuilder : ConfigCatBuilder<HostingConfigCatB
 
     public HostingConfigCatBuilder UseInitStrategy(ConfigCatInitStrategy initStrategy)
     {
-        if (!ConfigCatInitArgs.IsValidInitStrategy(initStrategy))
+        if (!ConfigCatInitializerOptions.IsValidInitStrategy(initStrategy))
         {
             throw new ArgumentOutOfRangeException(nameof(initStrategy), initStrategy, null!);
         }
 
         if (this.services is not null)
         {
-            var initServiceFactory = FindInitServiceFactory(this.services)!;
-            initServiceFactory.InitStrategy = initStrategy;
+            ConfigureInitStrategy(this.services, initStrategy);
+        }
+        else
+        {
+            this.initStrategy = initStrategy;
         }
 
-        this.initStrategy = initStrategy;
-
         return this;
+    }
+
+    private static void ConfigureInitStrategy(IServiceCollection services, ConfigCatInitStrategy initStrategy)
+    {
+        services.Configure<ConfigCatInitializerOptions>(options => options.InitStrategy = initStrategy);
     }
 
     internal IServiceCollection Build(IServiceCollection services, HostBuilderContext context)
@@ -41,52 +51,42 @@ public sealed class HostingConfigCatBuilder : ConfigCatBuilder<HostingConfigCatB
 
     private protected override void RegisterBaseServices(IServiceCollection services, IConfiguration? configuration)
     {
-        if (FindInitServiceFactory(services) is not { } initServiceFactory)
+        services.AddSingleton<IConfigureOptions<ConfigCatInitializerOptions>>(
+            new ConfigureInitializerOptions(services, GetConfigurationSection(configuration)));
+
+        if (this.services is null && this.initStrategy != UnsetInitStrategy)
         {
-            initServiceFactory = new InitServiceFactory(services) { InitStrategy = this.initStrategy };
-            services.AddHostedService(initServiceFactory.CreateInitService);
+            ConfigureInitStrategy(services, this.initStrategy);
         }
-        else if (this.initStrategy != ConfigCatInitArgs.UnsetInitStrategy)
-        {
-            initServiceFactory.InitStrategy = this.initStrategy;
-        }
+
+        // NOTE: Potential multiple registrations are not a problem as AddHostedService() ensures that a specific
+        // hosted service implementation is added only once.
+        services.AddHostedService<ConfigCatInitService>();
 
         base.RegisterBaseServices(services, configuration);
     }
 
-    private static InitServiceFactory? FindInitServiceFactory(IServiceCollection services)
-    {
-        var existingHostedService = FindLast(services,
-            descriptor =>
-                !descriptor.IsKeyedService
-                && descriptor.ServiceType == typeof(IHostedService)
-                && descriptor.ImplementationFactory?.Target is InitServiceFactory,
-            out _);
-
-        return (InitServiceFactory?)existingHostedService?.ImplementationFactory!.Target;
-    }
-
-    private sealed class InitServiceFactory(IServiceCollection services)
+    private sealed class ConfigureInitializerOptions(
+        IServiceCollection services,
+        IConfiguration? configuration)
+        : IConfigureOptions<ConfigCatInitializerOptions>
     {
         private object servicesOrClientNames = services; // either an IServiceCollection or IReadOnlyCollection<string>
 
-        public ConfigCatInitStrategy InitStrategy;
-
-        public ConfigCatInitService CreateInitService(IServiceProvider serviceProvider)
+        public void Configure(ConfigCatInitializerOptions options)
         {
+            if (configuration is not null)
+            {
+                configuration.Bind(options);
+            }
+
             if (this.servicesOrClientNames is not IReadOnlyCollection<string> clientNames)
             {
                 // NOTE: Overwriting this field unreferences the service collection so GC can clean it up.
                 this.servicesOrClientNames = clientNames = GetClientNamesFrom((IServiceCollection)this.servicesOrClientNames);
             }
 
-            var effectiveInitStrategy = this.InitStrategy != ConfigCatInitArgs.UnsetInitStrategy
-                ? this.InitStrategy
-                : ConfigCatInitArgs.DefaultInitStrategy;
-
-            var args = new ConfigCatInitArgs(clientNames, effectiveInitStrategy);
-
-            return new ConfigCatInitService(serviceProvider.GetRequiredService<IConfigCatInitializer>(), args);
+            options.SetClientNames(clientNames);
         }
     }
 }

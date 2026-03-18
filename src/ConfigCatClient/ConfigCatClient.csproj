@@ -14,7 +14,7 @@
     <PackageProjectUrl>https://configcat.com/docs/sdk-reference/dotnet</PackageProjectUrl>
     <RepositoryUrl>https://github.com/ConfigCat/.net-sdk</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <LangVersion>12.0</LangVersion>
+    <LangVersion>14</LangVersion>
     <Nullable>enable</Nullable>
     <WarningsAsErrors>nullable</WarningsAsErrors>
     <PackageReleaseNotes>https://github.com/configcat/.net-sdk/releases</PackageReleaseNotes>

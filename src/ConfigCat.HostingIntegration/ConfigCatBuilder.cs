@@ -89,7 +89,7 @@ public abstract class ConfigCatBuilder<TBuilder> where TBuilder : ConfigCatBuild
 
         services.AddSingleton<IConfigureOptions<ExtendedConfigCatClientOptions>, ConfigureCommonClientOptions>();
 
-        var section = configuration?.GetSection("ConfigCat");
+        var section = GetConfigurationSection(configuration);
         if (section.Exists())
         {
             var defaultClientSection = section.GetSection("DefaultClient");
@@ -106,6 +106,9 @@ public abstract class ConfigCatBuilder<TBuilder> where TBuilder : ConfigCatBuild
             }
         }
     }
+
+    private protected static IConfigurationSection? GetConfigurationSection(IConfiguration? configuration) =>
+        configuration?.GetSection("ConfigCat");
 }
 
 public sealed class ConfigCatBuilder : ConfigCatBuilder<ConfigCatBuilder>

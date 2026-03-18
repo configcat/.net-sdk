@@ -4,14 +4,9 @@ using Microsoft.Extensions.Hosting;
 
 namespace ConfigCat.HostingIntegration;
 
-internal sealed class ConfigCatInitService(IConfigCatInitializer initializer, ConfigCatInitArgs args) : IHostedLifecycleService
+internal sealed class ConfigCatInitService(IConfigCatInitializer initializer) : IHostedLifecycleService
 {
-    public Task StartingAsync(CancellationToken cancellationToken)
-    {
-        var argsLocal = args;
-        args = null!; // not needed any more, let GC clean it up
-        return initializer.InitializeAsync(argsLocal, cancellationToken);
-    }
+    public Task StartingAsync(CancellationToken cancellationToken) => initializer.InitializeAsync(cancellationToken);
 
     public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 

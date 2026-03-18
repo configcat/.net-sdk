@@ -137,23 +137,31 @@ public sealed class ConfigCatBuilder : ConfigCatBuilder<ConfigCatBuilder>
 
     internal static void RegisterDefaultClient(IServiceCollection services, IConfigureOptions<ExtendedConfigCatClientOptions> configureOptions)
     {
-        RemoveLast(services, descriptor =>
+        static bool IsExistingRegistration<TFactory>(ServiceDescriptor descriptor) where TFactory : ClientFactoryBase =>
             !descriptor.IsKeyedService
-            && descriptor.ImplementationFactory?.Target is ClientFactory);
+            && descriptor.ImplementationFactory?.Target is TFactory;
+
+        RemoveLast(services, IsExistingRegistration<ClientFactory>);
+        RemoveLast(services, IsExistingRegistration<ClientSnapshotFactory>);
 
         services.AddSingleton<IConfigCatClient>(new ClientFactory(clientName: Options.DefaultName).CreateDefault);
+        services.AddScoped<IConfigCatClientSnapshot>(new ClientSnapshotFactory(clientName: Options.DefaultName).CreateDefault);
 
         services.AddSingleton<IConfigureOptions<ExtendedConfigCatClientOptions>>(configureOptions);
     }
 
     internal static void RegisterNamedClient(IServiceCollection services, string clientName, IConfigureOptions<ExtendedConfigCatClientOptions> configureOptions)
     {
-        RemoveLast(services, descriptor =>
+        bool IsExistingRegistration<TFactory>(ServiceDescriptor descriptor) where TFactory : ClientFactoryBase =>
             descriptor.IsKeyedService
-            && descriptor.KeyedImplementationFactory?.Target is ClientFactory factory
-            && factory.ClientName == clientName);
+            && descriptor.KeyedImplementationFactory?.Target is TFactory factory
+            && factory.ClientName == clientName;
+
+        RemoveLast(services, IsExistingRegistration<ClientFactory>);
+        RemoveLast(services, IsExistingRegistration<ClientSnapshotFactory>);
 
         services.AddKeyedSingleton<IConfigCatClient>(clientName, new ClientFactory(clientName).CreateNamed);
+        services.AddKeyedScoped<IConfigCatClientSnapshot>(clientName, new ClientSnapshotFactory(clientName).CreateNamed);
 
         services.AddSingleton<IConfigureOptions<ExtendedConfigCatClientOptions>>(configureOptions);
     }
@@ -191,36 +199,27 @@ public sealed class ConfigCatBuilder : ConfigCatBuilder<ConfigCatBuilder>
             .ToArray()!;
     }
 
-    internal static ServiceDescriptor? FindLast(IServiceCollection services, Func<ServiceDescriptor, bool> match, out int index)
+    internal static void RemoveLast(IServiceCollection services, Func<ServiceDescriptor, bool> match)
     {
         for (var i = services.Count - 1; i >= 0; i--)
         {
             var service = services[i];
             if (match(service))
             {
-                index = i;
-                return service;
+                services.RemoveAt(i);
             }
         }
-
-        index = -1;
-        return null;
     }
 
-    internal static void RemoveLast(IServiceCollection services, Func<ServiceDescriptor, bool> match)
-    {
-        FindLast(services, match, out var index);
-        if (index >= 0)
-        {
-            services.RemoveAt(index);
-        }
-    }
+#pragma warning disable CA1822 // Member '{0}' does not access instance data and can be marked as static
 
-    private sealed class ClientFactory(string clientName)
+    private abstract class ClientFactoryBase(string clientName)
     {
         public readonly string ClientName = clientName;
+    }
 
-#pragma warning disable CA1822 // Member 'CreateDefault' does not access instance data and can be marked as static
+    private sealed class ClientFactory(string clientName) : ClientFactoryBase(clientName)
+    {
         public IConfigCatClient CreateDefault(IServiceProvider serviceProvider)
         {
             var options = serviceProvider.GetRequiredService<IOptions<ExtendedConfigCatClientOptions>>().Value;
@@ -237,8 +236,23 @@ public sealed class ConfigCatBuilder : ConfigCatBuilder<ConfigCatBuilder>
             }
             return ConfigCatClient.Get(options.SdkKey!, options);
         }
-#pragma warning restore CA1822
     }
+
+    private sealed class ClientSnapshotFactory(string clientName) : ClientFactoryBase(clientName)
+    {
+        public IConfigCatClientSnapshot CreateDefault(IServiceProvider serviceProvider)
+        {
+            return serviceProvider.GetRequiredService<IConfigCatClient>().Snapshot();
+        }
+
+        public IConfigCatClientSnapshot CreateNamed(IServiceProvider serviceProvider, object? name)
+        {
+            Debug.Assert(Equals(name, this.ClientName));
+            return serviceProvider.GetRequiredKeyedService<IConfigCatClient>(this.ClientName).Snapshot();
+        }
+    }
+
+#pragma warning restore CA1822
 
     internal sealed class ConfigureClientOptions(string name, IConfiguration configuration)
         : ConfigureNamedOptions<ExtendedConfigCatClientOptions, IConfiguration>(

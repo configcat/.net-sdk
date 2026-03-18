@@ -27,7 +27,8 @@ builder.UseConfigCat()
     //{
     //    options.SdkKey = "PKDVCLf-Hq-h-kCzMp-L7Q/HhOWfwVtZ0mb30i9wi17GQ";
     //})
-    .UseInitStrategy(ConfigCatInitStrategy.WaitForClientReadyAndLogOnFailure);
+    //.UseInitStrategy(ConfigCatInitStrategy.WaitForClientReadyAndLogOnFailure)
+    ;
 
 var app = builder.Build();
 

@@ -5,5 +5,5 @@ namespace ConfigCat.HostingIntegration;
 
 public interface IConfigCatInitializer
 {
-    Task InitializeAsync(ConfigCatInitArgs args, CancellationToken cancellationToken = default);
+    Task InitializeAsync(CancellationToken cancellationToken = default);
 }

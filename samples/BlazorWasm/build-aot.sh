@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-dotnet publish -c Release -f net8.0
+dotnet publish BlazorWasm.csproj -c Release -f net10.0-browser

@@ -1,6 +1,6 @@
 using System;
 using ConfigCat.Client;
-using ConfigCat.Client.Extensions.Adapters;
+using ConfigCat.HostingIntegration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,19 +15,20 @@ var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
-var configCatSdkKey = builder.Configuration["ConfigCatSdkKey"];
-
-// Register ConfigCatClient as a singleton service so you can inject it in your controllers, actions, etc.
-builder.Services.AddSingleton<IConfigCatClient>(sp =>
-{
-    var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<ConfigCatClient>>();
-
-    return ConfigCatClient.Get(configCatSdkKey!, options =>
-    {
-        options.PollingMode = PollingModes.LazyLoad(cacheTimeToLive: TimeSpan.FromSeconds(120));
-        options.Logger = new ConfigCatToMSLoggerAdapter(logger);
-    });
-});
+builder.UseConfigCat()
+    // Uncomment the following lines if you want to configure ConfigCat clients by code. Please note that
+    // if you add a client here that is already defined in the configuration (e.g. appsettings.json), the settings
+    // from the configuration and the settings made by code will be merged, with the latter taking precedence.
+    //.AddDefaultClient(options =>
+    //{
+    //    options.PollingMode = PollingModes.AutoPoll(maxInitWaitTime: TimeSpan.FromSeconds(10));
+    //})
+    //.AddNamedClient("secondary", options =>
+    //{
+    //    options.SdkKey = "PKDVCLf-Hq-h-kCzMp-L7Q/HhOWfwVtZ0mb30i9wi17GQ";
+    //})
+    //.UseInitStrategy(ConfigCatInitStrategy.WaitForClientReadyAndLogOnFailure)
+    ;
 
 var app = builder.Build();
 

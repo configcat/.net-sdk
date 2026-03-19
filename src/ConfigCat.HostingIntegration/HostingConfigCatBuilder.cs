@@ -12,7 +12,7 @@ using static ConfigCatBuilder;
 
 public sealed class HostingConfigCatBuilder : ConfigCatBuilder<HostingConfigCatBuilder>
 {
-    private const ConfigCatInitStrategy UnsetInitStrategy = (ConfigCatInitStrategy)(-1);
+    private const ConfigCatInitStrategy UnsetInitStrategy = (ConfigCatInitStrategy)int.MinValue;
 
     private ConfigCatInitStrategy initStrategy = UnsetInitStrategy;
 

@@ -1,13 +1,12 @@
 using System;
 using System.Collections.Generic;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace ConfigCat.HostingIntegration.Configuration;
 
 public sealed class ConfigCatInitializerOptions
 {
     internal static bool IsValidInitStrategy(ConfigCatInitStrategy initStrategy) =>
-        initStrategy is >= ConfigCatInitStrategy.DoNotInitializeClients and <= ConfigCatInitStrategy.WaitForClientReadyAndThrowOnFailure;
+        initStrategy is >= ConfigCatInitStrategy.DoNotCreateClients and <= ConfigCatInitStrategy.WaitForClientReadyAndThrowOnFailure;
 
     public ConfigCatInitStrategy InitStrategy
     {

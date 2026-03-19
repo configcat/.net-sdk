@@ -2,7 +2,7 @@ namespace ConfigCat.HostingIntegration;
 
 public enum ConfigCatInitStrategy
 {
-    DoNotInitializeClients,
+    DoNotCreateClients = -1,
     DoNotWaitForClientReady,
     WaitForClientReadyAndLogOnFailure,
     WaitForClientReadyAndThrowOnFailure,

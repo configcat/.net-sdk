@@ -11,7 +11,7 @@ public abstract class EvaluationTestsBase
     private protected readonly LoggerWrapper logger;
     private protected readonly IRolloutEvaluator configEvaluator;
 
-    public EvaluationTestsBase()
+    protected EvaluationTestsBase()
     {
         this.logger = new ConsoleLogger(LogLevel.Debug).AsWrapper();
         this.configEvaluator = new RolloutEvaluator(this.logger);

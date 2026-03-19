@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client;
 using ConfigCat.Client.ConfigService;
+using ConfigCat.Client.Shims;
 using ConfigCat.HostingIntegration.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -71,7 +72,8 @@ internal sealed class ConfigCatInitializer : IConfigCatInitializer
 
         logger?.LogInformation($"Waiting for {{CLIENT_COUNT}} {nameof(ConfigCatClient)} instance(s) to initalize...", clients.Count);
 
-        var cacheStates = await Task.WhenAll(clients.Keys.Select(client => client.WaitForReadyAsync(cancellationToken)));
+        var cacheStates = await Task.WhenAll(clients.Keys.Select(client => client.WaitForReadyAsync(cancellationToken)))
+            .ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 
         // Log or throw on failure
 

@@ -562,7 +562,6 @@ public class OverrideTests
             options.PollingMode = PollingModes.ManualPoll;
         });
 
-
         var keys = client.Snapshot().GetAllKeys();
         CollectionAssert.AreEquivalent(new string[] { "isInSegment", "isNotInSegment" }, keys.ToArray());
 

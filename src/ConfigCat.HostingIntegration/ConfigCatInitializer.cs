@@ -30,7 +30,7 @@ internal sealed class ConfigCatInitializer : IConfigCatInitializer
 
     public async Task InitializeAsync(CancellationToken cancellationToken)
     {
-        if (this.initStrategy == ConfigCatInitStrategy.DoNotInitializeClients)
+        if (this.initStrategy == ConfigCatInitStrategy.DoNotCreateClients)
         {
             return;
         }

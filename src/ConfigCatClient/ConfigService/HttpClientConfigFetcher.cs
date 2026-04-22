@@ -130,7 +130,7 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
 
     internal async Task<FetchResponse> FetchAsync(FetchRequest request, LoggerWrapper? logger, CancellationToken cancellationToken)
     {
-        var isDebugLoggingEnabled = logger is not null && logger.IsEnabled(LogLevel.Debug);
+        var debugLogger = logger is not null && logger.IsEnabled(LogLevel.Debug) ? logger : null;
 
 #if NET45
         Guid requestId = default;
@@ -138,11 +138,11 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
         Unsafe.SkipInit(out Guid requestId);
 #endif
 
-        if (isDebugLoggingEnabled)
+        if (debugLogger is not null)
         {
             requestId = Guid.NewGuid();
 
-            logger!.LogInterpolated(LogLevel.Debug, 0,
+            debugLogger.LogInterpolated(LogLevel.Debug, 0,
                 $"[{requestId}] Preparing request...",
                 "REQUEST_ID");
         }
@@ -180,7 +180,6 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
         try
         {
             const int retryLimit = 1;
-            bool canRetry;
 
             for (var retryCount = 0; ; retryCount++)
             {
@@ -212,20 +211,27 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                 }
 
                 string? rayId = null;
+                var shouldRenewHandler = false;
+
+                if (handlerState is not null)
+                {
+                    StartRequestWithInternalHandler(ref handlerState, ref handlerStateObj, ref httpClient, request);
+                }
+
                 try
                 {
-                    if (isDebugLoggingEnabled)
+                    if (debugLogger is not null)
                     {
                         var proxy = handlerState is not null ? handlerState.Proxy : (handlerStateObj as HttpClientHandler)?.Proxy;
                         if (proxy is null || proxy.IsBypassed(request.Uri))
                         {
-                            logger!.LogInterpolated(LogLevel.Debug, 0,
+                            debugLogger.LogInterpolated(LogLevel.Debug, 0,
                                 $"[{requestId}] Sending request... (Uri: '{httpRequest.RequestUri}', IfNoneMatch: '{httpRequest.Headers.IfNoneMatch?.ToString()}')",
                                 "REQUEST_ID", "URI", "IF_NONE_MATCH");
                         }
                         else
                         {
-                            logger!.LogInterpolated(LogLevel.Debug, 0,
+                            debugLogger.LogInterpolated(LogLevel.Debug, 0,
                                 $"[{requestId}] Sending request via proxy '{proxy.GetProxy(request.Uri)}'... (Uri: '{httpRequest.RequestUri}', IfNoneMatch: '{httpRequest.Headers.IfNoneMatch?.ToString()}')",
                                 "REQUEST_ID", "PROXY_URI", "URI", "IF_NONE_MATCH");
                         }
@@ -234,12 +240,9 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                     using var httpResponse = await httpClient.SendAsync(httpRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
                         .ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 
-                    if (isDebugLoggingEnabled)
-                    {
-                        logger!.LogInterpolated(LogLevel.Debug, 0,
-                            $"[{requestId}] Received headers. (StatusCode: {(int)httpResponse.StatusCode}, ReasonPhrase: '{httpResponse.ReasonPhrase}', ETag: '{httpResponse.Headers.ETag?.ToString()}')",
-                            "REQUEST_ID", "STATUS_CODE", "REASON_PHRASE", "ETAG");
-                    }
+                    debugLogger?.LogInterpolated(LogLevel.Debug, 0,
+                        $"[{requestId}] Received headers. (StatusCode: {(int)httpResponse.StatusCode}, ReasonPhrase: '{httpResponse.ReasonPhrase}', ETag: '{httpResponse.Headers.ETag?.ToString()}')",
+                        "REQUEST_ID", "STATUS_CODE", "REASON_PHRASE", "ETAG");
 
                     rayId = FetchResponse.GetRayId(httpResponse.Headers);
 
@@ -251,12 +254,9 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                         var httpResponseBody = await httpResponse.Content.ReadAsStringAsync().WaitAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 #endif
 
-                        if (isDebugLoggingEnabled)
-                        {
-                            logger!.LogInterpolated(LogLevel.Debug, 0,
-                                $"[{requestId}] Received body. (Length: {httpResponseBody.Length})",
-                                "REQUEST_ID", "LENGTH");
-                        }
+                        debugLogger?.LogInterpolated(LogLevel.Debug, 0,
+                            $"[{requestId}] Received body. (Length: {httpResponseBody.Length})",
+                            "REQUEST_ID", "LENGTH");
 
                         return new FetchResponse(httpResponse, rayId, httpResponseBody);
                     }
@@ -268,16 +268,13 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                             return response;
                         }
 
-                        if (isDebugLoggingEnabled)
-                        {
-                            logger!.LogInterpolated(LogLevel.Debug, 0,
-                                $"[{requestId}] Received unexpected status code.",
-                                "REQUEST_ID");
-                        }
+                        shouldRenewHandler = true;
 
-                        canRetry = retryCount < retryLimit;
-                        RenewClient(ref httpClient, ref handlerState, ref handlerStateObj, requestId, request, canRetry);
-                        if (!canRetry)
+                        debugLogger?.LogInterpolated(LogLevel.Debug, 0,
+                            $"[{requestId}] Received unexpected status code.",
+                            "REQUEST_ID");
+
+                        if (retryCount >= retryLimit)
                         {
                             return response;
                         }
@@ -292,16 +289,13 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                 }
                 catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
                 {
-                    if (isDebugLoggingEnabled)
-                    {
-                        logger!.LogInterpolated(LogLevel.Debug, 0, ex,
-                            $"[{requestId}] Request timed out.",
-                            "REQUEST_ID");
-                    }
+                    shouldRenewHandler = true;
 
-                    canRetry = retryCount < retryLimit;
-                    RenewClient(ref httpClient, ref handlerState, ref handlerStateObj, requestId, request, canRetry);
-                    if (!canRetry)
+                    debugLogger?.LogInterpolated(LogLevel.Debug, 0, ex,
+                        $"[{requestId}] Request timed out.",
+                        "REQUEST_ID");
+
+                    if (retryCount >= retryLimit)
                     {
                         throw new FetchErrorException.Timeout_(httpClient.Timeout, ex, rayId);
                     }
@@ -313,125 +307,156 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                 }
                 catch (HttpRequestException ex)
                 {
-                    if (isDebugLoggingEnabled)
-                    {
-                        logger!.LogInterpolated(LogLevel.Debug, 0, ex,
-                            $"[{requestId}] Request failed.",
-                            "REQUEST_ID");
-                    }
+                    shouldRenewHandler = true;
 
-                    canRetry = retryCount < retryLimit;
-                    RenewClient(ref httpClient, ref handlerState, ref handlerStateObj, requestId, request, canRetry);
-                    if (!canRetry)
+                    debugLogger?.LogInterpolated(LogLevel.Debug, 0, ex,
+                        $"[{requestId}] Request failed.",
+                        "REQUEST_ID");
+
+                    if (retryCount >= retryLimit)
                     {
                         throw new FetchErrorException.Failure_((ex.InnerException as WebException)?.Status, ex, rayId);
+                    }
+                }
+                finally
+                {
+                    if (handlerState is not null)
+                    {
+                        FinishRequestWithInternalHandler(handlerState, shouldRenewHandler, requestId, debugLogger);
                     }
                 }
 
                 // Wait a little before trying again.
                 await TaskShim.Current.Delay(this.requestRetryDelay, cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 
-                if (isDebugLoggingEnabled)
+                debugLogger?.LogInterpolated(LogLevel.Debug, 0,
+                    $"[{requestId}] Trying request again...",
+                    "REQUEST_ID");
+
+                handlerStateObj = this.handlerState;
+                if (handlerStateObj is null)
                 {
-                    logger!.LogInterpolated(LogLevel.Debug, 0,
-                        $"[{requestId}] Trying request again...",
-                        "REQUEST_ID");
+                    throw WrapObjectDisposedException(new ObjectDisposedException(nameof(HttpClientConfigFetcher)));
+                }
+                else if (handlerState is not null)
+                {
+                    if (!ReferenceEquals(handlerState, handlerStateObj))
+                    {
+                        // If the handler has changed, create a new client so it can pick up potentially changed DNS entries.
+                        // See also: https://learn.microsoft.com/en-us/dotnet/fundamentals/networking/http/httpclient-guidelines#dns-behavior
+
+                        handlerState = (HandlerState)handlerStateObj;
+                        httpClient.Dispose();
+                        httpClient = CreateHttpClient(handlerState.Handler, request.Timeout);
+                    }
+                }
+                else if (handlerStateObj is HttpClientFactory httpClientFactory)
+                {
+                    // If the client is created externally, give consumer the opportunity to create another instance for the retry.
+
+                    httpClient.Dispose();
+                    httpClient = httpClientFactory(request, isRetry: true);
                 }
             }
         }
-        finally { httpClient.Dispose(); }
+        finally { httpClient?.Dispose(); }
 
-        void RenewClient(ref HttpClient httpClient, ref HandlerState? handlerState, ref object? handlerStateObj, in Guid requestId,
-            in FetchRequest request, bool canRetry)
+        void StartRequestWithInternalHandler(ref HandlerState handlerState, ref object? handlerStateObj, ref HttpClient httpClient, FetchRequest request)
         {
-            // Attempt to renew the client so it can pick up potentially changed DNS entries.
-            // See also: https://learn.microsoft.com/en-us/dotnet/fundamentals/networking/http/httpclient-guidelines#dns-behavior
+            // Increase the NumRequestsInProgress counter by one atomically.
+            // NOTE: We can't simply use Interlocked.Increment as we need to check for negative values.
 
-            if (handlerState is not null)
+            for (; ; )
             {
-                // If handler is managed internally, try to renew the handler, i.e. create another connection pool.
+                var initialNumRequests = Volatile.Read(ref handlerState.NumRequestsInProgress);
 
-                if (handlerState.TimeElapsedSinceLastRenew < this.handlerRenewalThreshold)
+                for (; ; )
                 {
+                    if (initialNumRequests < 0)
+                    {
+                        break; // disposed handler detected
+                    }
+
+                    var currentNumRequests = Interlocked.CompareExchange(ref handlerState.NumRequestsInProgress, value: initialNumRequests + 1, comparand: initialNumRequests);
+                    if (currentNumRequests >= 0 && currentNumRequests == initialNumRequests)
+                    {
+                        return; // counter incremented successfully
+                    }
+
+                    // a concurrent modification to the counter detected, try again
+                    initialNumRequests = currentNumRequests;
+                }
+
+                // Handle edge case caused by the following race condition:
+                // 1. The current operation reads this.handlerState before starting the request in FetchAsync.
+                // 2. Afterwards, another operation renews the handler and replaces this.handlerState in FinishRequestWithInternalHandler.
+                // 3. That or another operation brings the NumRequestsInProgress counter below zero in FinishRequestWithInternalHandler,
+                //    indicating that the handler shouldn't be used anymore.
+                // 4. The current operation now wants to increase the counter and start a request.
+                // To resolve the situation, get the new handler and try again.
+
+                handlerStateObj = this.handlerState;
+                if (handlerStateObj is null)
+                {
+                    throw WrapObjectDisposedException(new ObjectDisposedException(nameof(HttpClientConfigFetcher)));
+                }
+                else if (ReferenceEquals(handlerStateObj, handlerState))
+                {
+                    // Execution should never get here. If it does, there's a bug in FinishRequestWithInternalHandler.
+                    // Just to be sure, throw an exception to avoid getting stuck in a potential infinite loop.
+                    throw new InvalidOperationException();
+                }
+
+                handlerState = (HandlerState)handlerStateObj;
+                httpClient.Dispose();
+                httpClient = CreateHttpClient(handlerState.Handler, request.Timeout);
+            }
+        }
+
+        void FinishRequestWithInternalHandler(HandlerState handlerState, bool shouldRenewHandler, in Guid requestId, LoggerWrapper? debugLogger)
+        {
+            var numRequestsToAdd = -1;
+            try
+            {
+                if (shouldRenewHandler && handlerState.CanRenew(this.handlerRenewalThreshold))
+                {
+                    // Try to renew the handler, i.e. create another connection pool.
+
                     // NOTE: The new handler implementation (SocketsHttpHandler) doesn't immediately close the connections in
                     // the pool on dispose but keeps them around for some time in the TIME_WAIT state, according to RFC 9293.
                     // The exact length of this period depends on OS settings but usually it's 1-4 min. A reasonable threshold
                     // for recreating handlers should be enough to avoid socket exhaustion, even in extreme cases.
                     // See also: https://learn.microsoft.com/en-us/dotnet/fundamentals/networking/http/httpclient-guidelines#pooled-connections
 
-                    handlerStateObj = this.handlerState;
-                    CheckNotDisposed(handlerStateObj, throwIfDisposed: canRetry);
-                    return;
-                }
-
-                var renewedHandlerState = handlerState.Renew();
-                handlerStateObj = Interlocked.CompareExchange(ref this.handlerState, value: renewedHandlerState, comparand: handlerState);
-                if (ReferenceEquals(handlerStateObj, handlerState))
-                {
-                    // NOTE: We deliberately don't dispose the original handler as that would make potential pending requests
-                    // running concurrently fail. Instead, we leave it up to the handler's finalizer to clean up unmanaged
-                    // resources when requests are completed and the handler is collected by GC.
-
-                    handlerState = renewedHandlerState;
-                }
-                else
-                {
-                    renewedHandlerState.Handler.Dispose(); // just in case, although this instance wasn't used at all
-
-                    if (CheckNotDisposed(handlerStateObj, throwIfDisposed: canRetry))
+                    var renewedHandlerState = handlerState.Renew();
+                    var currentHandlerState = Interlocked.CompareExchange(ref this.handlerState, value: renewedHandlerState, comparand: handlerState);
+                    if (ReferenceEquals(currentHandlerState, handlerState))
                     {
-                        handlerState = (HandlerState)handlerStateObj!;
+                        // This will cause the NumRequestsInProgress counter to go below zero eventually, indicating that a new
+                        // handler has been created and the original one is not to be used anymore as it will be disposed (see below).
+                        numRequestsToAdd = -2;
+
+                        debugLogger?.LogInterpolated(LogLevel.Debug, 0,
+                            $"[{requestId}] Renewed internal handler.",
+                            "REQUEST_ID");
                     }
                     else
                     {
-                        return;
+                        renewedHandlerState.Handler.Dispose(); // just in case, although this instance wasn't used at all
                     }
                 }
-
-                if (!canRetry)
-                {
-                    return;
-                }
-
-                httpClient.Dispose();
-                httpClient = CreateHttpClient(handlerState.Handler, request.Timeout);
             }
-            else
+            finally
             {
-                handlerStateObj = this.handlerState;
-                if (handlerStateObj is HttpClientFactory httpClientFactory)
+                if (Interlocked.Add(ref handlerState.NumRequestsInProgress, numRequestsToAdd) < 0)
                 {
-                    if (!canRetry)
-                    {
-                        return;
-                    }
+                    handlerState.Handler.Dispose();
 
-                    // If client is created externally, give consumer the opportunity to create another instance for retrying.
-
-                    httpClient.Dispose();
-                    httpClient = httpClientFactory(request, isRetry: true);
-                }
-                else
-                {
-                    CheckNotDisposed(handlerStateObj, throwIfDisposed: canRetry);
-                    return;
+                    debugLogger?.LogInterpolated(LogLevel.Debug, 0,
+                        $"[{requestId}] Disposed out-of-use internal handler.",
+                        "REQUEST_ID");
                 }
             }
-
-            if (isDebugLoggingEnabled)
-            {
-                logger!.LogInterpolated(LogLevel.Debug, 0,
-                    $"[{requestId}] Renewed HttpClient.",
-                    "REQUEST_ID");
-            }
-        }
-
-        static bool CheckNotDisposed(object? handlerStateObj, bool throwIfDisposed)
-        {
-            return
-                handlerStateObj is not null ? true
-                : !throwIfDisposed ? false
-                : throw WrapObjectDisposedException(new ObjectDisposedException(nameof(HttpClientConfigFetcher)));
         }
 
         static OperationCanceledException WrapObjectDisposedException(ObjectDisposedException ex)
@@ -499,13 +524,14 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
     private sealed class HandlerState
     {
         public readonly HttpClientHandler Handler;
+        public int NumRequestsInProgress; // a negative value indicates that the handler shouldn't be used anymore
         public readonly IWebProxy? Proxy;
-        private readonly TimeSpan updateTime;
+        private readonly TimeSpan renewalTime;
 
         public HandlerState(IWebProxy? proxy = null)
             : this(proxy, TimeSpan.MinValue) { }
 
-        private HandlerState(IWebProxy? proxy, TimeSpan updateTime)
+        private HandlerState(IWebProxy? proxy, TimeSpan renewalTime)
         {
             var handler = new HttpClientHandler();
 
@@ -523,12 +549,14 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
             // NOTE: We can't safely access the proxy instance via this.Handler.Proxy as the getter of that property may
             // throw on some platforms (e.g. in browser).
             this.Proxy = proxy;
-            this.updateTime = updateTime;
+            this.renewalTime = renewalTime;
         }
 
-        public TimeSpan TimeElapsedSinceLastRenew => this.updateTime > TimeSpan.MinValue
-            ? DateTimeUtils.GetMonotonicTime() - this.updateTime
-            : TimeSpan.MaxValue;
+        public bool CanRenew(TimeSpan threshold)
+        {
+            return this.renewalTime == TimeSpan.MinValue
+                || DateTimeUtils.GetMonotonicTime() - this.renewalTime >= threshold;
+        }
 
         public HandlerState Renew() => new(this.Proxy, DateTimeUtils.GetMonotonicTime());
     }

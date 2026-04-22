@@ -202,7 +202,7 @@ public class SingletonServices : MonoBehaviour
                 }
 
                 // Wait a little before trying again.
-                await TaskShim.Current.Delay(TimeSpan.FromMilliseconds(50), cancellationToken).ConfigureAwait(true);
+                await TaskShim.Current.Delay(TimeSpan.FromMilliseconds(50), cancellationToken);
 
                 logger.LogDebug($"Trying again to fetch config at '{uri}'...");
             }

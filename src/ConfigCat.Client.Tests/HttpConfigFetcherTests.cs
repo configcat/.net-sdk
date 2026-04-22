@@ -203,11 +203,7 @@ public class HttpConfigFetcherTests
 
         await Assert.ThrowsExceptionAsync<FetchErrorException.Failure_>(() => configFetcher.FetchAsync(fetchRequest, fakeLogger, cancellationToken: default));
 
-        Debug.WriteLine(capturedParams.Count);
-
         await Assert.ThrowsExceptionAsync<FetchErrorException.Failure_>(() => configFetcher.FetchAsync(fetchRequest, fakeLogger, cancellationToken: default));
-
-        Debug.WriteLine(capturedParams.Count);
 
         await Task.Delay(new TimeSpan(handlerRenewalThreshold.Ticks * 3 / 2));
 

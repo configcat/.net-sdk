@@ -226,13 +226,13 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                         if (proxy is null || proxy.IsBypassed(request.Uri))
                         {
                             debugLogger.LogInterpolated(LogLevel.Debug, 0,
-                                $"[{requestId}] Sending request... (Url: '{httpRequest.RequestUri}', IfNoneMatch: '{httpRequest.Headers.IfNoneMatch?.ToString()}')",
+                                $"[{requestId}] Sending request... (Url: '{httpRequest.RequestUri}', If-None-Match: '{httpRequest.Headers.IfNoneMatch?.ToString()}')",
                                 "REQUEST_ID", "URL", "IF_NONE_MATCH");
                         }
                         else
                         {
                             debugLogger.LogInterpolated(LogLevel.Debug, 0,
-                                $"[{requestId}] Sending request via proxy '{proxy.GetProxy(request.Uri)}'... (Url: '{httpRequest.RequestUri}', IfNoneMatch: '{httpRequest.Headers.IfNoneMatch?.ToString()}')",
+                                $"[{requestId}] Sending request via proxy '{proxy.GetProxy(request.Uri)}'... (Url: '{httpRequest.RequestUri}', If-None-Match: '{httpRequest.Headers.IfNoneMatch?.ToString()}')",
                                 "REQUEST_ID", "PROXY_URL", "URL", "IF_NONE_MATCH");
                         }
                     }
@@ -363,7 +363,7 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                 }
             }
         }
-        finally { httpClient?.Dispose(); }
+        finally { httpClient.Dispose(); }
 
         void StartRequestWithInternalHandler(ref HandlerState handlerState, ref object? handlerStateObj, ref HttpClient httpClient, FetchRequest request)
         {
@@ -372,7 +372,7 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
 
             for (; ; )
             {
-                var initialNumRequests = Volatile.Read(ref handlerState.NumRequestsInProgress);
+                var initialNumRequests = handlerState.NumRequestsInProgress;
 
                 for (; ; )
                 {
@@ -535,7 +535,7 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
     private sealed class HandlerState
     {
         public readonly HttpClientHandler Handler;
-        public int NumRequestsInProgress; // a negative value indicates that the handler shouldn't be used anymore
+        public volatile int NumRequestsInProgress; // a negative value indicates that the handler shouldn't be used anymore
         public readonly IWebProxy? Proxy;
         private readonly TimeSpan renewalTime;
 

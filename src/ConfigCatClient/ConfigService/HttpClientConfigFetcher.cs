@@ -226,14 +226,14 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                         if (proxy is null || proxy.IsBypassed(request.Uri))
                         {
                             debugLogger.LogInterpolated(LogLevel.Debug, 0,
-                                $"[{requestId}] Sending request... (Uri: '{httpRequest.RequestUri}', IfNoneMatch: '{httpRequest.Headers.IfNoneMatch?.ToString()}')",
-                                "REQUEST_ID", "URI", "IF_NONE_MATCH");
+                                $"[{requestId}] Sending request... (Url: '{httpRequest.RequestUri}', IfNoneMatch: '{httpRequest.Headers.IfNoneMatch?.ToString()}')",
+                                "REQUEST_ID", "URL", "IF_NONE_MATCH");
                         }
                         else
                         {
                             debugLogger.LogInterpolated(LogLevel.Debug, 0,
-                                $"[{requestId}] Sending request via proxy '{proxy.GetProxy(request.Uri)}'... (Uri: '{httpRequest.RequestUri}', IfNoneMatch: '{httpRequest.Headers.IfNoneMatch?.ToString()}')",
-                                "REQUEST_ID", "PROXY_URI", "URI", "IF_NONE_MATCH");
+                                $"[{requestId}] Sending request via proxy '{proxy.GetProxy(request.Uri)}'... (Url: '{httpRequest.RequestUri}', IfNoneMatch: '{httpRequest.Headers.IfNoneMatch?.ToString()}')",
+                                "REQUEST_ID", "PROXY_URL", "URL", "IF_NONE_MATCH");
                         }
                     }
 

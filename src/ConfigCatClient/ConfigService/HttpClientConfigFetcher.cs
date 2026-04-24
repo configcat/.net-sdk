@@ -282,6 +282,8 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                 }
                 catch (ObjectDisposedException ex)
                 {
+                    LogRequestAborted(debugLogger, requestId, ex);
+
                     // It is possible that the handler is disposed between obtaining the reference and the call to SendAsync.
                     // In such cases SendAsync will throw an ObjectDisposedException. Wrap it in an OperationCanceledException
                     // and let callers deal with it.
@@ -300,8 +302,10 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                         throw new FetchErrorException.Timeout_(httpClient.Timeout, ex, rayId);
                     }
                 }
-                catch (OperationCanceledException)
+                catch (OperationCanceledException ex)
                 {
+                    LogRequestAborted(debugLogger, requestId, ex);
+
                     // If the cancellation has been requested externally, let the exception bubble up.
                     throw;
                 }
@@ -457,6 +461,13 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                         "REQUEST_ID");
                 }
             }
+        }
+
+        static void LogRequestAborted(LoggerWrapper? debugLogger, in Guid requestId, Exception ex)
+        {
+            debugLogger?.LogInterpolated(LogLevel.Debug, 0, ex,
+                $"[{requestId}] Request aborted.",
+                "REQUEST_ID");
         }
 
         static OperationCanceledException WrapObjectDisposedException(ObjectDisposedException ex)

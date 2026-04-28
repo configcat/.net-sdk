@@ -938,10 +938,15 @@ public class HttpConfigFetcherTests
     [DataRow("file:///configuration-files/configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/u28_1qNyZ0Wz-ldYHIU7-g/config_v6.json", false)]
     [DataRow("http://cdn-global.configcat.com/configuration-files/configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/u28_1qNyZ0Wz-ldYHIU7-g/config_v6.json", true)]
     [DataRow("https://cdn-global.configcat.com/configuration-files/configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/u28_1qNyZ0Wz-ldYHIU7-g/config_v6.json", true)]
+    [DataRow("https://cdn-global.configcat.com/configuration-files/configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/u28_1qNyZ0Wz-ldYHIU7-g/config_v6.json?x=/configcat-proxy/", true)]
+    [DataRow("https://cdn-global.configcat.com/configuration-files/configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/u28_1qNyZ0Wz-ldYHIU7-g/config_v6.json?x#/configcat-proxy/", true)]
+    [DataRow("https://cdn-global.configcat.com/configuration-files/configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/u28_1qNyZ0Wz-ldYHIU7-g/config_v6.json#/configcat-proxy/", true)]
     [DataRow("https://cdn-global.configcat.com/configuration%2dfiles/configcat%2dsdk%2d1/PKDVCLf%2dHq%2dh%2dkCzMp%2dL7Q/u28_1qNyZ0Wz%2dldYHIU7%2dg/config_v6.json", true)]
     [DataRow("https://cdn-global.configcat.com./configuration-files/configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/u28_1qNyZ0Wz-ldYHIU7-g/config_v6.json", true)]
     [DataRow("https://cdn-global.configcat.com/configcat-proxy/configuration-files/configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/u28_1qNyZ0Wz-ldYHIU7-g/config_v6.json", false)]
+    [DataRow("https://cdn-global.configcat.com/configcat%2dproxy/configuration-files/configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/u28_1qNyZ0Wz-ldYHIU7-g/config_v6.json", false)]
     [DataRow("https://cdn-global.configcat.com/configuration-files/configcat-proxy/configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/u28_1qNyZ0Wz-ldYHIU7-g/config_v6.json", false)]
+    [DataRow("https://cdn-global.configcat.com/configuration-files/configcat%2Dproxy/configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/u28_1qNyZ0Wz-ldYHIU7-g/config_v6.json?x", false)]
     public void IsCdnUri_Works(string uri, bool expectedResult)
     {
         // Arrange

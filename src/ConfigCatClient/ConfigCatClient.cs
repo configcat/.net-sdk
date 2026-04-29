@@ -545,7 +545,7 @@ public sealed class ConfigCatClient : IConfigCatClient
             case OverrideBehaviour.LocalOverRemote:
                 local = this.overrideDataSource!.GetOverrides();
                 remote = GetRemoteConfig();
-                return new SettingsWithRemoteConfig(remote.Value is { Count: > 0 } ? remote.Value.MergeOverwriteWith(local) : local, remoteConfig: null);
+                return new SettingsWithRemoteConfig(remote.Value is { Count: > 0 } ? remote.Value.MergeOverwriteWith(local) : local, remote.RemoteConfig);
             case OverrideBehaviour.RemoteOverLocal:
                 local = this.overrideDataSource!.GetOverrides();
                 remote = GetRemoteConfig();
@@ -578,7 +578,7 @@ public sealed class ConfigCatClient : IConfigCatClient
             case OverrideBehaviour.LocalOverRemote:
                 local = this.overrideDataSource!.GetOverrides();
                 remote = await GetRemoteConfigAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
-                return new SettingsWithRemoteConfig(remote.Value is { Count: > 0 } ? remote.Value.MergeOverwriteWith(local) : local, remoteConfig: null);
+                return new SettingsWithRemoteConfig(remote.Value is { Count: > 0 } ? remote.Value.MergeOverwriteWith(local) : local, remote.RemoteConfig);
             case OverrideBehaviour.RemoteOverLocal:
                 local = this.overrideDataSource!.GetOverrides();
                 remote = await GetRemoteConfigAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);

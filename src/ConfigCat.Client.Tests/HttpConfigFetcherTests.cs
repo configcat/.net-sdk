@@ -133,6 +133,8 @@ public class HttpConfigFetcherTests
         try { fetchResponse = await configFetcher.FetchAsync(fetchRequest, fakeLogger, cancellationToken: default); }
         catch (FetchErrorException ex) { fetchErrorException = ex; }
 
+        // Assert
+
         switch (@case)
         {
             case "408":
@@ -145,8 +147,6 @@ public class HttpConfigFetcherTests
                 Assert.IsInstanceOfType(fetchErrorException, typeof(FetchErrorException.Failure_));
                 break;
         }
-
-        // Assert
 
         Assert.AreEqual(2, capturedParams.Count);
 
@@ -401,6 +401,8 @@ public class HttpConfigFetcherTests
         try { fetchResponse = await configFetcher.FetchAsync(fetchRequest, fakeLogger, cancellationToken: default); }
         catch (FetchErrorException ex) { fetchErrorException = ex; }
 
+        // Assert
+
         switch (@case)
         {
             case "408":
@@ -413,8 +415,6 @@ public class HttpConfigFetcherTests
                 Assert.IsInstanceOfType(fetchErrorException, typeof(FetchErrorException.Failure_));
                 break;
         }
-
-        // Assert
 
         Assert.AreEqual(2, capturedParams.Count);
 
@@ -731,7 +731,7 @@ public class HttpConfigFetcherTests
     [DataTestMethod]
     [DataRow(false)]
     [DataRow(true)]
-    public async Task HttpClientConfigFetcher_ShouldBeDisposedWhenNotOwned(bool ownConfigFetcher)
+    public async Task HttpClientConfigFetcher_ShouldBeDisposedOnlyWhenOwned(bool ownConfigFetcher)
     {
         // Arrange
 

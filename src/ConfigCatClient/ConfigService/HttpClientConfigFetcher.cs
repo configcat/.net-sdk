@@ -237,6 +237,8 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                         }
                     }
 
+                    var requestStartTime = DateTimeUtils.GetMonotonicTime();
+
                     using var httpResponse = await httpClient.SendAsync(httpRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
                         .ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 
@@ -248,10 +250,19 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
 
                     if (httpResponse.StatusCode == HttpStatusCode.OK)
                     {
+                        var remainingTimeout = httpClient.Timeout - (DateTimeUtils.GetMonotonicTime() - requestStartTime);
+                        if (remainingTimeout <= TimeSpan.Zero)
+                        {
+                            new CancellationToken(canceled: true).ThrowIfCancellationRequested();
+                        }
+
+                        using var timeoutCts = new CancellationTokenSource(remainingTimeout);
+                        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(timeoutCts.Token, cancellationToken);
+
 #if NET5_0_OR_GREATER
-                        var httpResponseBody = await httpResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+                        var httpResponseBody = await httpResponse.Content.ReadAsStringAsync(linkedCts.Token).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 #else
-                        var httpResponseBody = await httpResponse.Content.ReadAsStringAsync().WaitAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+                        var httpResponseBody = await httpResponse.Content.ReadAsStringAsync().WaitAsync(linkedCts.Token).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 #endif
 
                         debugLogger?.LogInterpolated(LogLevel.Debug, 0,

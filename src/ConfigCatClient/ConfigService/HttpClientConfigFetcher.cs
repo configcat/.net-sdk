@@ -393,7 +393,7 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                     }
 
                     var currentNumRequests = Interlocked.CompareExchange(ref handlerState.NumRequestsInProgress, value: initialNumRequests + 1, comparand: initialNumRequests);
-                    if (currentNumRequests >= 0 && currentNumRequests == initialNumRequests)
+                    if (currentNumRequests == initialNumRequests)
                     {
                         return; // counter incremented successfully
                     }

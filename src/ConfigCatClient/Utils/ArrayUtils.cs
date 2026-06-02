@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 
 namespace ConfigCat.Client.Utils;
 
@@ -21,25 +22,29 @@ internal static class ArrayUtils
     public static string ToHexString(this byte[] bytes)
     {
         const string hexDigits = "0123456789abcdef";
+        var length = bytes.Length * 2;
 
 #if !(NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER)
-        var chars = new char[bytes.Length * 2];
+        var charArray = ArrayPool<char>.Shared.Rent(length);
+        try
+        {
+            var chars = charArray.AsSpan(0, length);
 #else
-        return string.Create(bytes.Length * 2, bytes, static (chars, bytes) =>
+        return string.Create(length, bytes, static (chars, bytes) =>
         {
 #endif
-#pragma warning disable IDE0055 // Fix formatting
             var i = 0;
             foreach (var b in bytes)
             {
                 chars[i++] = hexDigits[b >> 4];
                 chars[i++] = hexDigits[b & 0xF];
             }
-#pragma warning restore IDE0055 // Fix formatting
 #if (NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER)
         });
 #else
-        return new string(chars);
+            return new string(charArray, 0, length);
+        }
+        finally { ArrayPool<char>.Shared.Return(charArray); }
 #endif
     }
 

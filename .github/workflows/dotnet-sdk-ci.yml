@@ -46,10 +46,12 @@ jobs:
           {rt: "9.0.x", sdk: "9.0.100", tfm: net9.0},
           {rt: "10.0.x", sdk: "10.0.100", tfm: net10.0}
         ]
-        os: [ubuntu-latest, windows-latest, macOS-latest]
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, macOS-latest]
         exclude:
           - dotnet-version: {rt: "3.1.x", sdk: "3.1.100", tfm: netcoreapp3.1}
             os: ubuntu-latest
+          - dotnet-version: {rt: "3.1.x", sdk: "3.1.100", tfm: netcoreapp3.1}
+            os: ubuntu-24.04-arm
           - dotnet-version: {rt: "3.1.x", sdk: "3.1.100", tfm: netcoreapp3.1}
             os: macOS-latest
     name: Build & test on .NET ${{ matrix.dotnet-version.rt }} (${{ matrix.os }})

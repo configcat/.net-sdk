@@ -133,6 +133,8 @@ public class HttpConfigFetcherTests
         try { fetchResponse = await configFetcher.FetchAsync(fetchRequest, fakeLogger, cancellationToken: default); }
         catch (FetchErrorException ex) { fetchErrorException = ex; }
 
+        // Assert
+
         switch (@case)
         {
             case "408":
@@ -145,8 +147,6 @@ public class HttpConfigFetcherTests
                 Assert.IsInstanceOfType(fetchErrorException, typeof(FetchErrorException.Failure_));
                 break;
         }
-
-        // Assert
 
         Assert.AreEqual(2, capturedParams.Count);
 
@@ -203,11 +203,7 @@ public class HttpConfigFetcherTests
 
         await Assert.ThrowsExceptionAsync<FetchErrorException.Failure_>(() => configFetcher.FetchAsync(fetchRequest, fakeLogger, cancellationToken: default));
 
-        Debug.WriteLine(capturedParams.Count);
-
         await Assert.ThrowsExceptionAsync<FetchErrorException.Failure_>(() => configFetcher.FetchAsync(fetchRequest, fakeLogger, cancellationToken: default));
-
-        Debug.WriteLine(capturedParams.Count);
 
         await Task.Delay(new TimeSpan(handlerRenewalThreshold.Ticks * 3 / 2));
 
@@ -405,6 +401,8 @@ public class HttpConfigFetcherTests
         try { fetchResponse = await configFetcher.FetchAsync(fetchRequest, fakeLogger, cancellationToken: default); }
         catch (FetchErrorException ex) { fetchErrorException = ex; }
 
+        // Assert
+
         switch (@case)
         {
             case "408":
@@ -417,8 +415,6 @@ public class HttpConfigFetcherTests
                 Assert.IsInstanceOfType(fetchErrorException, typeof(FetchErrorException.Failure_));
                 break;
         }
-
-        // Assert
 
         Assert.AreEqual(2, capturedParams.Count);
 
@@ -735,7 +731,7 @@ public class HttpConfigFetcherTests
     [DataTestMethod]
     [DataRow(false)]
     [DataRow(true)]
-    public async Task HttpClientConfigFetcher_ShouldBeDisposedWhenNotOwned(bool ownConfigFetcher)
+    public async Task HttpClientConfigFetcher_ShouldBeDisposedOnlyWhenOwned(bool ownConfigFetcher)
     {
         // Arrange
 
@@ -942,10 +938,15 @@ public class HttpConfigFetcherTests
     [DataRow("file:///configuration-files/configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/u28_1qNyZ0Wz-ldYHIU7-g/config_v6.json", false)]
     [DataRow("http://cdn-global.configcat.com/configuration-files/configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/u28_1qNyZ0Wz-ldYHIU7-g/config_v6.json", true)]
     [DataRow("https://cdn-global.configcat.com/configuration-files/configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/u28_1qNyZ0Wz-ldYHIU7-g/config_v6.json", true)]
+    [DataRow("https://cdn-global.configcat.com/configuration-files/configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/u28_1qNyZ0Wz-ldYHIU7-g/config_v6.json?x=/configcat-proxy/", true)]
+    [DataRow("https://cdn-global.configcat.com/configuration-files/configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/u28_1qNyZ0Wz-ldYHIU7-g/config_v6.json?x#/configcat-proxy/", true)]
+    [DataRow("https://cdn-global.configcat.com/configuration-files/configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/u28_1qNyZ0Wz-ldYHIU7-g/config_v6.json#/configcat-proxy/", true)]
     [DataRow("https://cdn-global.configcat.com/configuration%2dfiles/configcat%2dsdk%2d1/PKDVCLf%2dHq%2dh%2dkCzMp%2dL7Q/u28_1qNyZ0Wz%2dldYHIU7%2dg/config_v6.json", true)]
     [DataRow("https://cdn-global.configcat.com./configuration-files/configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/u28_1qNyZ0Wz-ldYHIU7-g/config_v6.json", true)]
     [DataRow("https://cdn-global.configcat.com/configcat-proxy/configuration-files/configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/u28_1qNyZ0Wz-ldYHIU7-g/config_v6.json", false)]
+    [DataRow("https://cdn-global.configcat.com/configcat%2dproxy/configuration-files/configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/u28_1qNyZ0Wz-ldYHIU7-g/config_v6.json", false)]
     [DataRow("https://cdn-global.configcat.com/configuration-files/configcat-proxy/configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/u28_1qNyZ0Wz-ldYHIU7-g/config_v6.json", false)]
+    [DataRow("https://cdn-global.configcat.com/configuration-files/configcat%2Dproxy/configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/u28_1qNyZ0Wz-ldYHIU7-g/config_v6.json?x", false)]
     public void IsCdnUri_Works(string uri, bool expectedResult)
     {
         // Arrange

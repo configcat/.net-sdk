@@ -5,6 +5,8 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Configuration;
+using ConfigCat.Client.Shims;
+using ConfigCat.Client.Tests.Fakes;
 using ConfigCat.Client.Tests.Helpers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -484,33 +486,82 @@ public class BasicConfigCatClientIntegrationTests
         Assert.AreEqual(expectedValue, actual);
     }
 
-    [TestMethod]
-    public async Task ShouldIncludeRayIdInLogMessagesWhenHttpResponseIsNotSuccessful()
+    [DataTestMethod]
+    [DataRow("404")]
+    [DataRow("408")]
+    [DataRow("timeout")]
+    [DataRow("error")]
+    public async Task ShouldIncludeRayIdInLogMessagesWhenHttpResponseIsNotSuccessful(string testCase)
     {
+        const string rayId = "CF-RAY-123";
+
         var logEvents = new List<LogEvent>();
         var logger = LoggingHelper.CreateCapturingLogger(logEvents, LogLevel.Info);
+
+        Func<FetchRequest, Task<FetchResponse>> fetchCallback;
+        LogEventId expectedEventId;
+
+        switch (testCase)
+        {
+            case "404":
+                fetchCallback = (_) => Task.FromResult(
+                    new FetchResponse(HttpStatusCode.NotFound, "Not Found", new KeyValuePair<string, string>[] { new("CF-RAY", rayId) }));
+                expectedEventId = 1100;
+                break;
+            case "408":
+                fetchCallback = (_) => Task.FromResult(
+                    new FetchResponse(HttpStatusCode.RequestTimeout, "Request Timeout", new KeyValuePair<string, string>[] { new("CF-RAY", rayId) }));
+                expectedEventId = 1101;
+                break;
+            case "timeout":
+                fetchCallback = (_) =>
+                {
+                    var tcs = TaskShim.CreateSafeCompletionSource<FetchResponse>(out var task);
+                    tcs.SetException(new FetchErrorException.Timeout_(default, null, rayId));
+                    return task;
+                };
+                expectedEventId = 1102;
+                break;
+            case "error":
+                fetchCallback = (_) =>
+                {
+                    var tcs = TaskShim.CreateSafeCompletionSource<FetchResponse>(out var task);
+                    tcs.SetException(new FetchErrorException.Failure_(WebExceptionStatus.ConnectFailure, null, rayId));
+                    return task;
+                };
+                expectedEventId = 1103;
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(testCase), testCase, null);
+        }
+
+        var fakeConfigFetcher = new FakeConfigFetcher(fetchCallback);
 
         using IConfigCatClient client = ConfigCatClient.Get("configcat-sdk-1/~~~~~~~~~~~~~~~~~~~~~~/~~~~~~~~~~~~~~~~~~~~~~", options =>
         {
             options.PollingMode = PollingModes.ManualPoll;
             options.Logger = logger;
+            options.ConfigFetcher = fakeConfigFetcher;
         });
 
         await client.ForceRefreshAsync();
 
-        var errors = logEvents.Where(evt => evt.EventId == 1100).ToArray();
-        Assert.AreEqual(1, errors.Length);
+        var events = logEvents.Where(evt => evt.EventId == expectedEventId).ToArray();
+        Assert.AreEqual(1, events.Length);
 
-        var error = errors[0].Message;
-        Assert.AreEqual(2, error.ArgNames.Length);
-        Assert.AreEqual(2, error.ArgValues.Length);
-        Assert.IsTrue(error.ArgValues[0] is string);
-        Assert.IsTrue(error.ArgValues[1] is string);
+        var error = events[0].Message;
+        var message = error.InvariantFormattedMessage;
 
-        var message = errors[0].Message.InvariantFormattedMessage;
-        StringAssert.StartsWith(message, "Your SDK Key seems to be wrong: '***************/**********************/****************~~~~~~'.");
+        if (testCase == "404")
+        {
+            Assert.AreEqual(2, error.ArgNames.Length);
+            Assert.AreEqual(2, error.ArgValues.Length);
+            Assert.IsTrue(error.ArgValues[0] is string);
+            Assert.IsTrue(error.ArgValues[1] is string);
 
-        var rayId = (string)error.ArgValues[0]!;
+            StringAssert.StartsWith(message, "Your SDK Key seems to be wrong: '***************/**********************/****************~~~~~~'.");
+        }
+
         StringAssert.Contains(message, rayId);
     }
 }

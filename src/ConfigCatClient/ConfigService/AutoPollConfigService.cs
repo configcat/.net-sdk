@@ -206,10 +206,10 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
                         this.Logger.AutoPollConfigServiceErrorDuringPolling(ex);
                     }
 
-                    var realNextTime = scheduledNextTime - DateTimeUtils.GetMonotonicTime();
-                    if (realNextTime > TimeSpan.Zero)
+                    var timeToWait = scheduledNextTime - DateTimeUtils.GetMonotonicTime();
+                    if (timeToWait > TimeSpan.Zero)
                     {
-                        await TaskShim.Current.Delay(realNextTime, stopToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+                        await TaskShim.Current.Delay(timeToWait, stopToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
                     }
                 }
                 catch (OperationCanceledException)

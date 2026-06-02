@@ -6,10 +6,11 @@ public partial class MainPage : ContentPage
 {
     private readonly IConfigCatClient configCatClient;
 
-    public MainPage()
+    public MainPage(IConfigCatClient configCatClient)
     {
+        this.configCatClient = configCatClient;
+
         InitializeComponent();
-        this.configCatClient = Application.Current!.Handler.MauiContext!.Services.GetRequiredService<IConfigCatClient>();
     }
 
     private async void OnEvaluateBtnClicked(object sender, EventArgs e)

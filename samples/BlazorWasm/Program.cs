@@ -21,7 +21,7 @@ builder.Services.AddConfigCat(builder.Configuration, configCatBuilder => configC
         options.SdkKey = "PKDVCLf-Hq-h-kCzMp-L7Q/HhOWfwVtZ0mb30i9wi17GQ";
         options.PollingMode = PollingModes.AutoPoll(pollInterval: TimeSpan.FromSeconds(5));
     })
-    .UseInitStrategy(ConfigCatInitStrategy.WaitForClientReadyAndLogOnFailure));
+    .WaitForClientReady(throwOnFailure: false));
 
 var host = builder.Build();
 

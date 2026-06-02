@@ -19,11 +19,12 @@ public class Program
                 // Uncomment the following lines if you want to configure ConfigCat clients by code. Please note that
                 // if you add a client here that is already defined in the configuration (e.g. appsettings.json), the settings
                 // from the configuration and the settings made by code will be merged, with the latter taking precedence.
-                //builder.AddDefaultClient(options =>
-                //{
-                //    options.PollingMode = PollingModes.AutoPoll(maxInitWaitTime: TimeSpan.FromSeconds(10));
-                //})
-                //.UseInitStrategy(ConfigCatInitStrategy.WaitForClientReadyAndThrowOnFailure);
+                builder
+                //    .AddDefaultClient(options =>
+                //    {
+                //        options.PollingMode = PollingModes.AutoPoll(maxInitWaitTime: TimeSpan.FromSeconds(10));
+                //    })
+                //    .WaitForClientReady(throwOnFailure: false);
             })
             .ConfigureLogging((context, builder) =>
             {

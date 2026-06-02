@@ -17,23 +17,20 @@ internal sealed class ConfigCatInitializer : IConfigCatInitializer
 {
     private readonly IServiceProvider serviceProvider;
 
-    private readonly ConfigCatInitStrategy initStrategy;
+    private readonly ConfigCatInitMode initMode;
+    private readonly bool throwOnInitFailure;
 
     public ConfigCatInitializer(IOptions<ConfigCatInitializerOptions> options, IServiceProvider serviceProvider)
     {
         this.serviceProvider = serviceProvider;
 
         var opts = options.Value;
-        this.initStrategy = opts.InitStrategy;
+        this.initMode = opts.Mode;
+        this.throwOnInitFailure = opts.ThrowOnFailure;
     }
 
     public async Task InitializeAsync(CancellationToken cancellationToken)
     {
-        if (this.initStrategy == ConfigCatInitStrategy.DoNotCreateClients)
-        {
-            return;
-        }
-
         var logger = this.serviceProvider.GetService<ILogger<ConfigCatInitializer>>();
 
         var keyedServiceProvider = this.serviceProvider as IKeyedServiceProvider;
@@ -63,7 +60,7 @@ internal sealed class ConfigCatInitializer : IConfigCatInitializer
 
         // If requested, wait for clients to reach the ready state 
 
-        if (this.initStrategy == ConfigCatInitStrategy.DoNotWaitForClientReady)
+        if (this.initMode == ConfigCatInitMode.DoNotWaitForClientReady)
         {
             return;
         }
@@ -75,7 +72,7 @@ internal sealed class ConfigCatInitializer : IConfigCatInitializer
 
         // Log or throw on failure
 
-        if (logger is not null || this.initStrategy == ConfigCatInitStrategy.WaitForClientReadyAndThrowOnFailure)
+        if (logger is not null || this.throwOnInitFailure)
         {
             var uninitalizedClients = clients.Keys
                 .Zip(cacheStates, (client, cacheState) => (client, cacheState))
@@ -97,7 +94,7 @@ internal sealed class ConfigCatInitializer : IConfigCatInitializer
                     .SelectMany(client => clients[client])
                     .Select(clientName => clientName == Options.DefaultName ? "(default)" : "'" + clientName + "'"));
 
-                if (this.initStrategy == ConfigCatInitStrategy.WaitForClientReadyAndThrowOnFailure)
+                if (this.throwOnInitFailure)
                 {
                     throw new TimeoutException(string.Format(messageFormat, clientNames));
                 }

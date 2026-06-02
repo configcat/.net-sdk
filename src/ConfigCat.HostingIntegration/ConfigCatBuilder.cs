@@ -15,12 +15,13 @@ namespace ConfigCat.HostingIntegration;
 
 public sealed class ConfigCatBuilder
 {
-    private const ConfigCatInitStrategy UnsetInitStrategy = (ConfigCatInitStrategy)int.MinValue;
+    private const ConfigCatInitMode UnsetInitMode = (ConfigCatInitMode)int.MinValue;
 
     private readonly IServiceCollection? services; // set for minimal hosting model only
 
     private Action<IServiceCollection>? pendingRegistrations;
-    private ConfigCatInitStrategy initStrategy = UnsetInitStrategy;
+    private ConfigCatInitMode initMode = UnsetInitMode;
+    private bool throwOnInitFailure;
 
     internal ConfigCatBuilder() { } // for legacy hosting model and plain DI setup
 
@@ -73,21 +74,31 @@ public sealed class ConfigCatBuilder
         return this;
     }
 
-    // TODO: separate methods?
-    public ConfigCatBuilder UseInitStrategy(ConfigCatInitStrategy initStrategy)
+    public ConfigCatBuilder DoNotWaitForClientReady()
     {
-        if (!ConfigCatInitializerOptions.IsValidInitStrategy(initStrategy))
-        {
-            throw new ArgumentOutOfRangeException(nameof(initStrategy), initStrategy, null!);
-        }
-
         if (this.services is not null)
         {
-            ConfigureInitStrategy(this.services, initStrategy);
+            ConfigureInitializerOptions(this.services, ConfigCatInitMode.DoNotWaitForClientReady, throwOnInitFailure: false);
         }
         else
         {
-            this.initStrategy = initStrategy;
+            this.initMode = ConfigCatInitMode.DoNotWaitForClientReady;
+            this.throwOnInitFailure = false;
+        }
+
+        return this;
+    }
+
+    public ConfigCatBuilder WaitForClientReady(bool throwOnFailure = false)
+    {
+        if (this.services is not null)
+        {
+            ConfigureInitializerOptions(this.services, ConfigCatInitMode.WaitForClientReady, throwOnFailure);
+        }
+        else
+        {
+            this.initMode = ConfigCatInitMode.WaitForClientReady;
+            this.throwOnInitFailure = throwOnFailure;
         }
 
         return this;
@@ -122,12 +133,23 @@ public sealed class ConfigCatBuilder
                 RegisterNamedClient(services, clientName, new ConfigureClientOptions(clientName, namedClientSection));
             }
 
-            services.Configure<ConfigCatInitializerOptions>(options => section.Bind(options));
+            var initSection = section.GetSection("Init");
+            if (initSection.Exists())
+            {
+                var configureOptions = new ConfigureNamedOptions<ConfigCatInitializerOptions, IConfiguration>(
+                    Options.DefaultName, initSection, (options, configuration) =>
+                    {
+                        // In .NET 8+ builds, configuration binding is source generated (see also csproj).
+                        configuration.Bind(options);
+                    });
+
+                services.AddSingleton<IConfigureOptions<ConfigCatInitializerOptions>>(configureOptions);
+            }
         }
 
-        if (this.services is null && this.initStrategy != UnsetInitStrategy)
+        if (this.services is null && this.initMode != UnsetInitMode)
         {
-            ConfigureInitStrategy(services, this.initStrategy);
+            ConfigureInitializerOptions(services, this.initMode, this.throwOnInitFailure);
         }
 
         services.TryAddSingleton<IConfigCatInitializer, ConfigCatInitializer>();
@@ -181,9 +203,13 @@ public sealed class ConfigCatBuilder
 #pragma warning restore IDE0001 // Simplify Names
     }
 
-    private static void ConfigureInitStrategy(IServiceCollection services, ConfigCatInitStrategy initStrategy)
+    private static void ConfigureInitializerOptions(IServiceCollection services, ConfigCatInitMode initMode, bool throwOnInitFailure)
     {
-        services.Configure<ConfigCatInitializerOptions>(options => options.InitStrategy = initStrategy);
+        services.Configure<ConfigCatInitializerOptions>(options =>
+        {
+            options.Mode = initMode;
+            options.ThrowOnFailure = throwOnInitFailure;
+        });
     }
 
     private static void RemoveLast(IServiceCollection services, Func<ServiceDescriptor, bool> match)

@@ -52,6 +52,8 @@ public struct FormattableLogMessage : IFormattable
         this.invariantFormattedMessage = null;
     }
 
+    internal readonly bool IsFormat => this.format is not null;
+
     /// <summary>
     /// Log message format.
     /// </summary>

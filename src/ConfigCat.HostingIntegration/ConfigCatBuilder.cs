@@ -115,7 +115,8 @@ public sealed class ConfigCatBuilder
 
     private void RegisterBaseServices(IServiceCollection services, IConfiguration? configuration)
     {
-        services.AddSingleton<IConfigureOptions<ExtendedConfigCatClientOptions>, ConfigureCommonClientOptions>();
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<IConfigureOptions<ExtendedConfigCatClientOptions>, ConfigureCommonClientOptions>());
 
         IConfigurationSection section;
         if (configuration is not null && (section = configuration.GetSection("ConfigCat")).Exists())
@@ -312,18 +313,31 @@ public sealed class ConfigCatBuilder
         }
     }
 
-    private sealed class ConfigureCommonClientOptions(ILogger<ConfigCatClient> logger)
-        : ConfigureNamedOptions<ExtendedConfigCatClientOptions, ILogger<ConfigCatClient>>(
-            name: null, // null means configuring all options (named or unnamed)
-            logger,
-            (options, logger) =>
-            {
-                if (logger is not null)
-                {
-                    options.Logger = new ConfigCatToMSLoggerAdapter(logger);
-                }
-            })
+    private sealed class ConfigureCommonClientOptions : ConfigureNamedOptions<ExtendedConfigCatClientOptions>
     {
-        public ConfigureCommonClientOptions() : this(null!) { }
+        private readonly ILoggerFactory? loggerFactory;
+
+        public ConfigureCommonClientOptions()
+            : base(name: null, action: null) { }
+
+        public ConfigureCommonClientOptions(ILoggerFactory loggerFactory)
+            : this()
+        {
+            this.loggerFactory = loggerFactory;
+        }
+
+        public override void Configure(string? name, ExtendedConfigCatClientOptions options)
+        {
+            if (options is null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            if (name is not null && this.loggerFactory is not null)
+            {
+                var categoryName = typeof(ConfigCatClient).FullName + (name == Options.DefaultName ? "^" : $"[{name}]");
+                options.Logger = new ConfigCatToMSLoggerAdapter(this.loggerFactory.CreateLogger(categoryName));
+            }
+        }
     }
 }

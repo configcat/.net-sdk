@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace ConfigCat.HostingIntegration.Adapters;
 
-public class ConfigCatToMSLoggerAdapter(ILogger<ConfigCatClient> logger) : IConfigCatLogger
+public class ConfigCatToMSLoggerAdapter(ILogger logger) : IConfigCatLogger
 {
     private readonly ILogger logger = logger;
     private readonly ConcurrentDictionary<OriginalFormatCacheKey, string> originalFormatCache = new();
@@ -68,7 +68,7 @@ public class ConfigCatToMSLoggerAdapter(ILogger<ConfigCatClient> logger) : IConf
 
         private readonly string GetOriginalFormat()
         {
-            if (this.message.ArgNames is not { Length: > 0 })
+            if (!this.message.IsFormat)
             {
                 return this.message.Format;
             }

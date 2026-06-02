@@ -18,7 +18,6 @@ internal sealed class ConfigCatInitializer : IConfigCatInitializer
     private readonly IServiceProvider serviceProvider;
 
     private readonly ConfigCatInitStrategy initStrategy;
-    private readonly IReadOnlyCollection<string> clientNames;
 
     public ConfigCatInitializer(IOptions<ConfigCatInitializerOptions> options, IServiceProvider serviceProvider)
     {
@@ -26,7 +25,6 @@ internal sealed class ConfigCatInitializer : IConfigCatInitializer
 
         var opts = options.Value;
         this.initStrategy = opts.InitStrategy;
-        this.clientNames = opts.GetClientNames() ?? Array.Empty<string>();
     }
 
     public async Task InitializeAsync(CancellationToken cancellationToken)
@@ -49,7 +47,7 @@ internal sealed class ConfigCatInitializer : IConfigCatInitializer
         // Resolve clients
 
         var clients = new Dictionary<IConfigCatClient, List<string>>();
-        foreach (var clientName in this.clientNames)
+        foreach (var clientName in ConfigCatBuilder.GetClientNamesFrom(this.serviceProvider))
         {
             var client = clientName == Options.DefaultName
                 ? this.serviceProvider.GetRequiredService<IConfigCatClient>()

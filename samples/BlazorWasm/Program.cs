@@ -20,13 +20,13 @@ builder.Services.AddConfigCat(builder.Configuration, configCatBuilder => configC
     {
         options.SdkKey = "PKDVCLf-Hq-h-kCzMp-L7Q/HhOWfwVtZ0mb30i9wi17GQ";
         options.PollingMode = PollingModes.AutoPoll(pollInterval: TimeSpan.FromSeconds(5));
-    }));
+    })
+    .UseInitStrategy(ConfigCatInitStrategy.WaitForClientReadyAndLogOnFailure));
 
 var host = builder.Build();
 
 // Usually, it's a good idea to ensure that the ConfigCat client is initialized before
 // the application starts, especially if you want to use synchronous feature flag evaluation.
-await host.Services.GetRequiredService<IConfigCatInitializer>()
-    .InitializeAsync(ConfigCatInitArgs.From(builder.Services, ConfigCatInitStrategy.WaitForClientReadyAndLogOnFailure));
+await host.Services.GetRequiredService<IConfigCatInitializer>().InitializeAsync();
 
 await host.RunAsync();

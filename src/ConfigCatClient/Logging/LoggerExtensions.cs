@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 
 namespace ConfigCat.Client;
 
@@ -74,12 +75,14 @@ internal static partial class LoggerExtensions
         const int numCharsToKeep = 6;
 
 #if !(NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER)
-        var chars = new char[sdkKey.Length];
+        var charArray = ArrayPool<char>.Shared.Rent(sdkKey.Length);
+        try
+        {
+            var chars = charArray.AsSpan(0, sdkKey.Length);
 #else
         return string.Create(sdkKey.Length, sdkKey, static (chars, sdkKey) =>
         {
 #endif
-#pragma warning disable IDE0055 // Fix formatting
             int i, n;
             for (i = 0, n = sdkKey.Length - numCharsToKeep; i < n; i++)
             {
@@ -89,11 +92,12 @@ internal static partial class LoggerExtensions
             {
                 chars[i] = sdkKey[i];
             }
-#pragma warning restore IDE0055 // Fix formatting
 #if (NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER)
         });
 #else
-        return new string(chars);
+            return new string(charArray, 0, sdkKey.Length);
+        }
+        finally { ArrayPool<char>.Shared.Return(charArray); }
 #endif
     }
 }

@@ -6,12 +6,12 @@ using System.Threading.Tasks;
 using ConfigCat.Client;
 using ConfigCat.Client.ConfigService;
 using ConfigCat.Client.Shims;
-using ConfigCat.HostingIntegration.Configuration;
+using ConfigCat.Extensions.Hosting.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace ConfigCat.HostingIntegration;
+namespace ConfigCat.Extensions.Hosting;
 
 internal sealed class ConfigCatInitializer : IConfigCatInitializer
 {

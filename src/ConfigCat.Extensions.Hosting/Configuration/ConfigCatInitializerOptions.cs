@@ -1,6 +1,6 @@
 using System;
 
-namespace ConfigCat.HostingIntegration.Configuration;
+namespace ConfigCat.Extensions.Hosting.Configuration;
 
 public sealed class ConfigCatInitializerOptions
 {

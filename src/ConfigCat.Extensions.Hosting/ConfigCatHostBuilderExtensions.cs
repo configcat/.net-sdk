@@ -1,5 +1,5 @@
 using System;
-using ConfigCat.HostingIntegration;
+using ConfigCat.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Extensions.Hosting;

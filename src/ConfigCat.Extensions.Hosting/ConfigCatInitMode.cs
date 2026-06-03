@@ -1,4 +1,4 @@
-namespace ConfigCat.HostingIntegration;
+namespace ConfigCat.Extensions.Hosting;
 
 public enum ConfigCatInitMode
 {

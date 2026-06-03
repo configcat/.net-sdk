@@ -1,7 +1,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ConfigCat.HostingIntegration;
+namespace ConfigCat.Extensions.Hosting;
 
 public interface IConfigCatInitializer
 {

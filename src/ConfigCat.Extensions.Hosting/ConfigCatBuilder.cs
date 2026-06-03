@@ -4,15 +4,15 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using ConfigCat.Client;
-using ConfigCat.HostingIntegration.Adapters;
-using ConfigCat.HostingIntegration.Configuration;
+using ConfigCat.Extensions.Hosting.Adapters;
+using ConfigCat.Extensions.Hosting.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace ConfigCat.HostingIntegration;
+namespace ConfigCat.Extensions.Hosting;
 
 public delegate HttpClient HttpClientFactory<TService>(TService service, FetchRequest request, bool isRetry)
     where TService : class;

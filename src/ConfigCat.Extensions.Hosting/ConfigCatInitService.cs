@@ -2,7 +2,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 
-namespace ConfigCat.HostingIntegration;
+namespace ConfigCat.Extensions.Hosting;
 
 internal sealed class ConfigCatInitService(IConfigCatInitializer initializer) : IHostedLifecycleService
 {

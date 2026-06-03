@@ -4,7 +4,7 @@ using System.Net;
 using ConfigCat.Client;
 using ConfigCat.Client.Configuration;
 
-namespace ConfigCat.HostingIntegration.Configuration;
+namespace ConfigCat.Extensions.Hosting.Configuration;
 
 public sealed class ExtendedConfigCatClientOptions : ConfigCatClientOptions
 {

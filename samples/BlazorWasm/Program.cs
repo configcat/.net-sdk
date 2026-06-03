@@ -1,6 +1,6 @@
 using BlazorWasm;
 using ConfigCat.Client;
-using ConfigCat.HostingIntegration;
+using ConfigCat.Extensions.Hosting;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 

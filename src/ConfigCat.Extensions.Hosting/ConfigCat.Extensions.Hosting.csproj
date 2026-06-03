@@ -5,7 +5,7 @@
     <DelaySign>false</DelaySign>
     <AssemblyOriginatorKeyFile>..\ConfigCatClient.snk</AssemblyOriginatorKeyFile>
     <Version Condition="$(Version) == ''">0.1.0</Version>
-    <Copyright>Copyright © ConfigCat 2025</Copyright>
+    <Copyright>Copyright © ConfigCat 2026</Copyright>
     <Company>ConfigCat</Company>
     <Authors>ConfigCat</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -16,9 +16,9 @@
     <Nullable>enable</Nullable>
     <WarningsAsErrors>nullable</WarningsAsErrors>
     <PackageReleaseNotes>https://github.com/configcat/.net-sdk/releases</PackageReleaseNotes>
-    <PackageTags>feature flag toggle feature-flag feature-flags featureflag featureflags feature-toggle  feature-toggles featuretoggle featuretoggles canary release remote config remoteconfig remote-config configcat configcatclient</PackageTags>
+    <PackageTags>feature flag toggle feature-flag feature-flags featureflag featureflags feature-toggle feature-toggles featuretoggle featuretoggles canary release remote config remoteconfig remote-config configcat configcatclient</PackageTags>
     <Description>
-      TODO
+      An official package that provides a streamlined way to integrate the ConfigCat SDK into ASP.NET Core applications and other modern .NET applications built on .NET Generic Host (Microsoft.Extensions.Hosting).
     </Description>
     <PackageIcon>icon.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -33,9 +33,7 @@
     <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">true</IsAotCompatible>
     <EnableConfigurationBindingGenerator Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">true</EnableConfigurationBindingGenerator>
 
-    <NoWarn>CS1591;$(NoWarn)</NoWarn>
-    <!-- TODO: remove -->
-    <NoWarn>CS1685;$(NoWarn)</NoWarn>
+    <NoWarn>CS1591;CS1685;$(NoWarn)</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

@@ -18,8 +18,6 @@ public sealed class ExtendedConfigCatClientOptions : ConfigCatClientOptions
         public BindingWrapper()
             : this(new ExtendedConfigCatClientOptions()) { }
 
-        public ExtendedConfigCatClientOptions GetOptions() => options;
-
         [DisallowNull]
         public string? SdkKey
         {

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.Http;
 using ConfigCat.Client;
 using ConfigCat.HostingIntegration.Adapters;
 using ConfigCat.HostingIntegration.Configuration;
@@ -12,6 +13,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace ConfigCat.HostingIntegration;
+
+public delegate HttpClient HttpClientFactory<TService>(TService service, FetchRequest request, bool isRetry)
+    where TService : class;
 
 public sealed class ConfigCatBuilder
 {
@@ -99,6 +103,22 @@ public sealed class ConfigCatBuilder
         {
             this.initMode = ConfigCatInitMode.WaitForClientReady;
             this.throwOnInitFailure = throwOnFailure;
+        }
+
+        return this;
+    }
+
+    public ConfigCatBuilder UseHttpClientFactory<TService>(HttpClientFactory<TService> httpClientFactory, Func<string, bool>? appliesToClient = null)
+        where TService : class
+    {
+        if (this.services is not null)
+        {
+            ConfigureHttpClientFactory(this.services, httpClientFactory, appliesToClient);
+        }
+        else
+        {
+            this.pendingRegistrations += services =>
+                ConfigureHttpClientFactory(services, httpClientFactory, appliesToClient);
         }
 
         return this;
@@ -211,6 +231,14 @@ public sealed class ConfigCatBuilder
             options.Mode = initMode;
             options.ThrowOnFailure = throwOnInitFailure;
         });
+    }
+
+    private static void ConfigureHttpClientFactory<TService>(
+        IServiceCollection services, HttpClientFactory<TService> httpClientFactory, Func<string, bool>? appliesToClient)
+        where TService : class
+    {
+        services.AddSingleton<IConfigureOptions<ExtendedConfigCatClientOptions>>(sp =>
+            new ConfigureConfigFetcher<TService>(sp.GetRequiredService<TService>(), httpClientFactory, appliesToClient));
     }
 
     private static void RemoveLast(IServiceCollection services, Func<ServiceDescriptor, bool> match)
@@ -336,7 +364,46 @@ public sealed class ConfigCatBuilder
             if (name is not null && this.loggerFactory is not null)
             {
                 var categoryName = typeof(ConfigCatClient).FullName + (name == Options.DefaultName ? "^" : $"[{name}]");
-                options.Logger = new ConfigCatToMSLoggerAdapter(this.loggerFactory.CreateLogger(categoryName));
+                var logger = this.loggerFactory.CreateLogger(categoryName);
+                options.Logger ??= new ConfigCatToMSLoggerAdapter(logger);
+            }
+        }
+    }
+
+    private sealed class ConfigureConfigFetcher<TService> : ConfigureNamedOptions<ExtendedConfigCatClientOptions>, IDisposable
+        where TService : class
+    {
+        private readonly TService service;
+        private readonly HttpClientFactory<TService> httpClientFactory;
+        private readonly Func<string, bool>? appliesToClient;
+        private readonly HttpClientConfigFetcher configFetcher;
+
+        public ConfigureConfigFetcher(TService service, HttpClientFactory<TService> httpClientFactory, Func<string, bool>? appliesToClient)
+            : base(name: null, action: null)
+        {
+            this.service = service;
+            this.httpClientFactory = httpClientFactory;
+            this.appliesToClient = appliesToClient;
+            this.configFetcher = new HttpClientConfigFetcher((request, isRetry) => this.httpClientFactory(this.service, request, isRetry));
+        }
+
+        public void Dispose()
+        {
+            // NOTE: The SDK doesn't dispose externally created config fetcher instances, so we need to take care of this manually:
+            // disposing it along with the options configurer service makes sure that it will be disposed with the DI container.
+            this.configFetcher.Dispose();
+        }
+
+        public override void Configure(string? name, ExtendedConfigCatClientOptions options)
+        {
+            if (options is null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            if (this.appliesToClient is null || name is not null && this.appliesToClient(name))
+            {
+                options.ConfigFetcher ??= this.configFetcher;
             }
         }
     }

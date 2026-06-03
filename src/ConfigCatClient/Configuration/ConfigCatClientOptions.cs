@@ -7,6 +7,8 @@ using ConfigCat.Client.Cache;
 
 namespace ConfigCat.Client.Configuration;
 
+// Note for maintainers. If you change the options, update ExtendedConfigCatClientOptions.BindingWrapper as well.
+
 /// <summary>
 /// Options used to configure the ConfigCat SDK.
 /// </summary>

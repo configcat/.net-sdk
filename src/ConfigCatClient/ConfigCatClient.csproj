@@ -46,10 +46,15 @@
     <Optimize>true</Optimize>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Reference Include="System.Net.Http" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="all" />
+    <PackageReference Include="SauceControl.InheritDoc" Version="2.0.2" PrivateAssets="all" />
+  </ItemGroup>
+  
   <Choose>
     <When Condition="'$(TargetFramework)' == 'net462'">
       <ItemGroup>
-        <Reference Include="System.Net.Http" />
         <!--Do not remove this reference, it was added due to a SNYK security report-->
         <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
         <PackageReference Include="System.Text.Json" Version="8.0.5" />
@@ -80,8 +85,6 @@
   </Choose>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="all" />
-    <PackageReference Include="SauceControl.InheritDoc" Version="2.0.2" PrivateAssets="all" />
     <None Include="icon.png" Pack="true" Visible="false" PackagePath="" />
     <None Include="..\..\README.md" Pack="true" PackagePath="" />
   </ItemGroup>

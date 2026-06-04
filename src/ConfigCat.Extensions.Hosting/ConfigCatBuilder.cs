@@ -33,13 +33,10 @@ public delegate HttpClient HttpClientFactory<TService>(TService service, FetchRe
 /// </summary>
 public sealed class ConfigCatBuilder
 {
-    private const ConfigCatInitMode UnsetInitMode = (ConfigCatInitMode)int.MinValue;
-
     private readonly IServiceCollection? services; // set for minimal hosting model only
 
     private Action<IServiceCollection>? pendingRegistrations;
-    private ConfigCatInitMode initMode = UnsetInitMode;
-    private bool throwOnInitFailure;
+    private ConfigCatInitMode initMode;
 
     internal ConfigCatBuilder() { } // for legacy hosting model and plain DI setup
 
@@ -108,60 +105,26 @@ public sealed class ConfigCatBuilder
     }
 
     /// <summary>
-    /// Configures the initializer service to create client instances at application startup by resolving the <see cref="IConfigCatClient"/>
-    /// services from the DI container but not to wait for the clients to reach the ready state (see also <seealso cref="IConfigCatClient.WaitForReadyAsync"/>).
-    /// This is the default initialization mode.
+    /// Configures how to initialize the registered <see cref="IConfigCatClient"/> services at application startup.
     /// </summary>
+    /// <param name="initMode">The initialization mode to use.</param>
     /// <remarks>
     /// Initialization is performed only when your application's host supports and automatically starts
     /// <see href="https://learn.microsoft.com/en-us/aspnet/core/fundamentals/host/hosted-services">hosted services</see>.
-    /// Otherwise, you need to explicitly trigger initialization by executing
+    /// Otherwise, you need to manually trigger initialization by executing
     /// <code>await host.Services.GetRequiredService&lt;IConfigCatInitializer&gt;().InitializeAsync();</code>
     /// in the startup phase of your application.
     /// </remarks>
     /// <returns>The current <see cref="ConfigCatBuilder"/> instance.</returns>
-    public ConfigCatBuilder DoNotWaitForClientReady()
+    public ConfigCatBuilder UseInitMode(ConfigCatInitMode initMode)
     {
         if (this.services is not null)
         {
-            ConfigureInitializerOptions(this.services, ConfigCatInitMode.DoNotWaitForClientReady, throwOnInitFailure: false);
+            ConfigureInitializerOptions(this.services, initMode);
         }
         else
         {
-            this.initMode = ConfigCatInitMode.DoNotWaitForClientReady;
-            this.throwOnInitFailure = false;
-        }
-
-        return this;
-    }
-
-    /// <summary>
-    /// Configures the initializer service to create client instances at application startup by resolving the <see cref="IConfigCatClient"/>
-    /// services from the DI container and wait for all clients to reach the ready state (see also <seealso cref="IConfigCatClient.WaitForReadyAsync"/>).
-    /// </summary>
-    /// <remarks>
-    /// Initialization is performed only when your application's host supports and automatically starts
-    /// <see href="https://learn.microsoft.com/en-us/aspnet/core/fundamentals/host/hosted-services">hosted services</see>.
-    /// Otherwise, you need to explicitly trigger initialization by executing
-    /// <code>await host.Services.GetRequiredService&lt;IConfigCatInitializer&gt;().InitializeAsync();</code>
-    /// in the startup phase of your application.
-    /// </remarks>
-    /// <param name="throwOnFailure">
-    /// Controls whether to throw a <see cref="TimeoutException"/> during initialization, thus, to terminate the application
-    /// if one or more clients using Auto Polling mode fail to obtain config data within the configured <c>maxInitWaitTime</c>.
-    /// Defaults to <see langword="false"/>.
-    /// </param>
-    /// <returns>The current <see cref="ConfigCatBuilder"/> instance.</returns>
-    public ConfigCatBuilder WaitForClientReady(bool throwOnFailure = false)
-    {
-        if (this.services is not null)
-        {
-            ConfigureInitializerOptions(this.services, ConfigCatInitMode.WaitForClientReady, throwOnFailure);
-        }
-        else
-        {
-            this.initMode = ConfigCatInitMode.WaitForClientReady;
-            this.throwOnInitFailure = throwOnFailure;
+            this.initMode = initMode;
         }
 
         return this;
@@ -189,7 +152,7 @@ public sealed class ConfigCatBuilder
     /// <typeparam name="TService">The type of the DI service used to create the <see cref="HttpClient"/>.</typeparam>
     /// <param name="httpClientFactory">The factory delegate to use for creating <see cref="HttpClient"/> instances.</param>
     /// <param name="appliesToClient">
-    /// An optional predicate that controls which clients this setting applies to.
+    /// An optional predicate that specifies which clients this setting applies to.
     /// The predicate receives the client name. (Use <see cref="Options.DefaultName"/> to match the default client.)<br/>
     /// If the predicate is not specified, the setting applies to all registered clients.
     /// </param>
@@ -240,23 +203,19 @@ public sealed class ConfigCatBuilder
                 RegisterNamedClient(services, clientName, new ConfigureClientOptions(clientName, namedClientSection));
             }
 
-            var initSection = section.GetSection("Init");
-            if (initSection.Exists())
-            {
-                var configureOptions = new ConfigureNamedOptions<ConfigCatInitializerOptions, IConfiguration>(
-                    Options.DefaultName, initSection, (options, configuration) =>
-                    {
-                        // In .NET 8+ builds, configuration binding is source generated (see also csproj).
-                        configuration.Bind(options);
-                    });
+            var configureOptions = new ConfigureNamedOptions<ConfigCatInitializerOptions, IConfiguration>(
+                Options.DefaultName, section, (options, configuration) =>
+                {
+                    // In .NET 8+ builds, configuration binding is source generated (see also csproj).
+                    configuration.Bind(new ConfigCatInitializerOptions.BindingWrapper(options));
+                });
 
-                services.AddSingleton<IConfigureOptions<ConfigCatInitializerOptions>>(configureOptions);
-            }
+            services.AddSingleton<IConfigureOptions<ConfigCatInitializerOptions>>(configureOptions);
         }
 
-        if (this.services is null && this.initMode != UnsetInitMode)
+        if (this.services is null && this.initMode.Value is not null)
         {
-            ConfigureInitializerOptions(services, this.initMode, this.throwOnInitFailure);
+            ConfigureInitializerOptions(services, this.initMode);
         }
 
         services.TryAddSingleton<IConfigCatInitializer, ConfigCatInitializer>();
@@ -310,12 +269,11 @@ public sealed class ConfigCatBuilder
 #pragma warning restore IDE0001 // Simplify Names
     }
 
-    private static void ConfigureInitializerOptions(IServiceCollection services, ConfigCatInitMode initMode, bool throwOnInitFailure)
+    private static void ConfigureInitializerOptions(IServiceCollection services, ConfigCatInitMode initMode)
     {
         services.Configure<ConfigCatInitializerOptions>(options =>
         {
-            options.Mode = initMode;
-            options.ThrowOnFailure = throwOnInitFailure;
+            options.InitMode = initMode;
         });
     }
 

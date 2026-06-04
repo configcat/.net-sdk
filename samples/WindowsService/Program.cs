@@ -20,11 +20,11 @@ public class Program
                 // if you add a client here that is already defined in the configuration (e.g. appsettings.json), the settings
                 // from the configuration and the settings made by code will be merged, with the latter taking precedence.
                 builder
-                //    .AddDefaultClient(options =>
-                //    {
-                //        options.PollingMode = PollingModes.AutoPoll(maxInitWaitTime: TimeSpan.FromSeconds(10));
-                //    })
-                //    .WaitForClientReady(throwOnFailure: false);
+                    .AddDefaultClient(options =>
+                    {
+                        options.PollingMode = PollingModes.AutoPoll(maxInitWaitTime: TimeSpan.FromSeconds(10));
+                    })
+                    .UseInitMode(new ConfigCatInitMode.WaitForClientReady(throwOnFailure: false));
             })
             .ConfigureLogging((context, builder) =>
             {

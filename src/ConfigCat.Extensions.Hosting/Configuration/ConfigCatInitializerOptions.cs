@@ -10,20 +10,43 @@ public sealed class ConfigCatInitializerOptions
     /// <summary>
     /// Gets or sets the initialization mode.
     /// </summary>
-    public ConfigCatInitMode Mode
+    public ConfigCatInitMode InitMode { get; set; }
+
+    // NOTE: ConfigCatInitializerOptions is not configuration binding-friendly (especially problematic in the case of
+    // source generated configuration binding), but we can work this around using a wrapper class.
+    internal sealed class BindingWrapper(ConfigCatInitializerOptions options)
     {
-        get => field;
-        set => field = value is >= ConfigCatInitMode.DoNotWaitForClientReady and <= ConfigCatInitMode.WaitForClientReady
-            ? value
-            : throw new ArgumentOutOfRangeException(nameof(value), value, null!);
+        public BindingWrapper()
+            : this(new ConfigCatInitializerOptions()) { }
+
+        public InitModeOptions? Init
+        {
+            get => null; // getter is necessary for the source generated configuration binder, but no need to implement it
+            set
+            {
+                if (value is not null)
+                {
+                    options.InitMode = value.Mode switch
+                    {
+                        InitModeEnum.DoNotWaitForClientReady => new ConfigCatInitMode.DoNotWaitForClientReady(),
+                        InitModeEnum.WaitForClientReady => new ConfigCatInitMode.WaitForClientReady(value.ThrowOnFailure ?? false),
+                        _ => throw new ArgumentOutOfRangeException(nameof(value), value, null),
+                    };
+                }
+            }
+        }
     }
 
-    /// <summary>
-    /// Gets or sets whether to throw a <see cref="TimeoutException"/> during initialization, thus, to terminate the application
-    /// if one or more clients using Auto Polling mode fail to obtain config data within the configured <c>maxInitWaitTime</c>.
-    /// </summary>
-    /// <remarks>
-    /// Applies only when <see cref="Mode"/> is set to <see cref="ConfigCatInitMode.WaitForClientReady"/>.
-    /// </remarks>
-    public bool ThrowOnFailure { get; set; }
+    internal enum InitModeEnum
+    {
+        DoNotWaitForClientReady,
+        WaitForClientReady,
+    }
+
+    internal sealed class InitModeOptions
+    {
+        public InitModeEnum Mode { get; set; }
+
+        public bool? ThrowOnFailure { get; set; }
+    }
 }

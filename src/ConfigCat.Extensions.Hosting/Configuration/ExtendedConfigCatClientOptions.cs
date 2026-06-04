@@ -36,7 +36,7 @@ public sealed class ExtendedConfigCatClientOptions : ConfigCatClientOptions
 
         public PollingOptions? Polling
         {
-            get => null; // getter is necessary for source generator, but no need to implement it
+            get => null; // getter is necessary for the source generated configuration binder, but no need to implement it
             set
             {
                 if (value is not null)

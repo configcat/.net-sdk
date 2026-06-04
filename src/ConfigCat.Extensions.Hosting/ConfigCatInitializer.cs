@@ -18,15 +18,13 @@ internal sealed class ConfigCatInitializer : IConfigCatInitializer
     private readonly IServiceProvider serviceProvider;
 
     private readonly ConfigCatInitMode initMode;
-    private readonly bool throwOnInitFailure;
 
     public ConfigCatInitializer(IOptions<ConfigCatInitializerOptions> options, IServiceProvider serviceProvider)
     {
         this.serviceProvider = serviceProvider;
 
         var opts = options.Value;
-        this.initMode = opts.Mode;
-        this.throwOnInitFailure = opts.ThrowOnFailure;
+        this.initMode = opts.InitMode;
     }
 
     public async Task InitializeAsync(CancellationToken cancellationToken)
@@ -60,10 +58,12 @@ internal sealed class ConfigCatInitializer : IConfigCatInitializer
 
         // If requested, wait for clients to reach the ready state 
 
-        if (this.initMode == ConfigCatInitMode.DoNotWaitForClientReady)
+        if (this.initMode.Value is null or ConfigCatInitMode.DoNotWaitForClientReady)
         {
             return;
         }
+
+        var throwOnInitFailure = ((ConfigCatInitMode.WaitForClientReady)this.initMode.Value).ThrowOnFailure;
 
         logger?.LogInformation($"Waiting for {{CLIENT_COUNT}} {nameof(ConfigCatClient)} instance(s) to initalize...", clients.Count);
 
@@ -72,7 +72,7 @@ internal sealed class ConfigCatInitializer : IConfigCatInitializer
 
         // Log or throw on failure
 
-        if (logger is not null || this.throwOnInitFailure)
+        if (logger is not null || throwOnInitFailure)
         {
             var uninitalizedClients = clients.Keys
                 .Zip(cacheStates, (client, cacheState) => (client, cacheState))
@@ -94,7 +94,7 @@ internal sealed class ConfigCatInitializer : IConfigCatInitializer
                     .SelectMany(client => clients[client])
                     .Select(clientName => clientName == Options.DefaultName ? "(default)" : "'" + clientName + "'"));
 
-                if (this.throwOnInitFailure)
+                if (throwOnInitFailure)
                 {
                     throw new TimeoutException(string.Format(messageFormat, clientNames));
                 }

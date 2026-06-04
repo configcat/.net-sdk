@@ -1,20 +1,68 @@
+using System;
+using System.Runtime.CompilerServices;
 using ConfigCat.Client;
 
 namespace ConfigCat.Extensions.Hosting;
 
 /// <summary>
-/// Specifies how to initialize the ConfigCat services at application startup.
+/// Defines the union of initialization modes.
 /// </summary>
-public enum ConfigCatInitMode
+[Union]
+public readonly struct ConfigCatInitMode : IUnion
 {
+    // TODO: Simplify this struct to
+    // `public union ConfigCatInitMode(ConfigCatInitMode.DoNotWaitForClientReady, ConfigCatInitMode.WaitForClientReady) { /* ... */ }`
+    // as soon as we upgrade to C# 15.
+
     /// <summary>
-    /// The initializer service should create client instances at application startup by resolving the <see cref="IConfigCatClient"/>
-    /// services from the DI container but should not wait for the clients to reach the ready state.
+    /// Initializes a new instance of the <see cref="ConfigCatInitMode"/> struct for the <see cref="DoNotWaitForClientReady"/> case.
     /// </summary>
-    DoNotWaitForClientReady,
+    public ConfigCatInitMode(DoNotWaitForClientReady value) => Value = value;
+
     /// <summary>
-    /// The initializer service should create client instances at application startup by resolving the <see cref="IConfigCatClient"/>
-    /// services from the DI container and should wait for all clients to reach the ready state.
+    /// Initializes a new instance of the <see cref="ConfigCatInitMode"/> struct for the <see cref="WaitForClientReady"/> case.
     /// </summary>
-    WaitForClientReady,
+    public ConfigCatInitMode(WaitForClientReady value) => Value = value;
+
+    /// <inheritdoc/>
+    public object? Value { get; }
+
+    /// <summary>
+    /// Represents an initialization mode where the initializer service creates client instances at application startup by resolving the <see cref="IConfigCatClient"/>
+    /// services from the DI container but does not wait for the clients to reach the ready state (see also <seealso cref="IConfigCatClient.WaitForReadyAsync"/>).
+    /// </summary>
+    public sealed class DoNotWaitForClientReady()
+    {
+        // The explicit conversion is provided for projects using an earlier language version than C# 15.
+
+        /// <summary>
+        /// Converts the instance to a <see cref="ConfigCatInitMode"/> union.
+        /// </summary>
+        public static implicit operator ConfigCatInitMode(DoNotWaitForClientReady value) => new ConfigCatInitMode(value);
+    }
+
+    /// <summary>
+    /// Represents an initialization mode where the initializer service creates client instances at application startup by resolving the <see cref="IConfigCatClient"/>
+    /// services from the DI container and waits for all clients to reach the ready state (see also <seealso cref="IConfigCatClient.WaitForReadyAsync"/>).
+    /// </summary>
+    /// <param name="throwOnFailure">
+    /// Specifies whether to throw a <see cref="TimeoutException"/> during initialization, thus, to terminate the application
+    /// if one or more clients using Auto Polling mode fail to obtain config data within the configured <c>maxInitWaitTime</c>.
+    /// Defaults to <see langword="false"/>.
+    /// </param>
+    public sealed class WaitForClientReady(bool throwOnFailure = false)
+    {
+        /// <summary>
+        /// Indicates whether to throw a <see cref="TimeoutException"/> during initialization, thus, to terminate the application
+        /// if one or more clients using Auto Polling mode fail to obtain config data within the configured <c>maxInitWaitTime</c>.
+        /// </summary>
+        public bool ThrowOnFailure { get; } = throwOnFailure;
+
+        // The explicit conversion is provided for projects using an earlier language version than C# 15.
+
+        /// <summary>
+        /// Converts the instance to a <see cref="ConfigCatInitMode"/> union.
+        /// </summary>
+        public static implicit operator ConfigCatInitMode(WaitForClientReady value) => new ConfigCatInitMode(value);
+    }
 }

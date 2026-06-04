@@ -52,7 +52,7 @@ public sealed class ConfigCatClient : IConfigCatClient
     private LoggerWrapper Logger => this.evaluationServices.Logger;
     private IRolloutEvaluator ConfigEvaluator => this.evaluationServices.Evaluator;
 
-    private static string EnsureNonEmptySdkKey(string? sdkKey)
+    private static void EnsureNonEmptySdkKey(string? sdkKey)
     {
         if (sdkKey is null)
         {
@@ -63,8 +63,6 @@ public sealed class ConfigCatClient : IConfigCatClient
         {
             throw new ArgumentException("SDK Key cannot be empty.", nameof(sdkKey));
         }
-
-        return sdkKey;
     }
 
     private static bool IsValidSdkKey(string sdkKey, bool customBaseUrl)

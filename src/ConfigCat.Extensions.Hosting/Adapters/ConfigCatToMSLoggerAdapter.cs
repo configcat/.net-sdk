@@ -9,18 +9,22 @@ using Microsoft.Extensions.Logging;
 
 namespace ConfigCat.Extensions.Hosting.Adapters;
 
+/// <summary>
+/// An <see cref="IConfigCatLogger"/> implementation that forwards log events to a <see cref="ILogger"/> instance.
+/// </summary>
+/// <param name="logger">The <see cref="ILogger"/> to forward log events to.</param>
 public class ConfigCatToMSLoggerAdapter(ILogger logger) : IConfigCatLogger
 {
     private readonly ILogger logger = logger;
     private readonly ConcurrentDictionary<OriginalFormatCacheKey, string> originalFormatCache = new();
 
-    // Allow all log levels here and let MS logger do log level filtering.
-    public Client.LogLevel LogLevel
+    Client.LogLevel IConfigCatLogger.LogLevel
     {
         get => Client.LogLevel.Debug;
         set { throw new NotSupportedException(); }
     }
 
+    /// <inheritdoc/>
     public void Log(Client.LogLevel level, LogEventId eventId, ref FormattableLogMessage message, Exception? exception = null)
     {
         var logLevel = level switch

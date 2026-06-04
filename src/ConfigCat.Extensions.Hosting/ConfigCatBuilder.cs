@@ -14,9 +14,23 @@ using Microsoft.Extensions.Options;
 
 namespace ConfigCat.Extensions.Hosting;
 
+/// <summary>
+/// Represents a method that creates an <see cref="HttpClient"/> instance to perform ConfigCat config fetch operations.
+/// </summary>
+/// <typeparam name="TService">The type of the DI service used to create the <see cref="HttpClient"/>.</typeparam>
+/// <param name="service">The DI service used to create the <see cref="HttpClient"/>.</param>
+/// <param name="request">An object that describes the config fetch request to be made.</param>
+/// <param name="isRetry">Indicates whether the request is a retry of a previously failed request.</param>
+/// <returns>
+/// The <see cref="HttpClient"/> instance to use for the config fetch request.
+/// Note that the returned instance will be disposed after the request completes.
+/// </returns>
 public delegate HttpClient HttpClientFactory<TService>(TService service, FetchRequest request, bool isRetry)
     where TService : class;
 
+/// <summary>
+/// Provides methods for configuring the ConfigCat SDK services.
+/// </summary>
 public sealed class ConfigCatBuilder
 {
     private const ConfigCatInitMode UnsetInitMode = (ConfigCatInitMode)int.MinValue;
@@ -36,6 +50,13 @@ public sealed class ConfigCatBuilder
         RegisterBaseServices(services, configuration);
     }
 
+    /// <summary>
+    /// Registers <see cref="IConfigCatClient"/> as a singleton service and <see cref="IConfigCatClientSnapshot"/>
+    /// as a scoped service in the DI container so they can be injected in constructors or resolved using
+    /// <see cref="IServiceProvider.GetService(Type)"/>.
+    /// </summary>
+    /// <param name="configureOptions">A callback for configuring the client options.</param>
+    /// <returns>The current <see cref="ConfigCatBuilder"/> instance.</returns>
     public ConfigCatBuilder AddDefaultClient(Action<ExtendedConfigCatClientOptions> configureOptions)
     {
         if (configureOptions is null)
@@ -56,6 +77,14 @@ public sealed class ConfigCatBuilder
         return this;
     }
 
+    /// <summary>
+    /// Registers <see cref="IConfigCatClient"/> as a singleton keyed service and <see cref="IConfigCatClientSnapshot"/>
+    /// as a scoped keyed service in the DI container so they can be injected in constructors using <see cref="FromKeyedServicesAttribute"/>
+    /// or resolved using <see cref="IKeyedServiceProvider.GetKeyedService(Type, object?)"/>.
+    /// </summary>
+    /// <param name="clientName">The name of the client, used as service key.</param>
+    /// <param name="configureOptions">A callback for configuring the client options.</param>
+    /// <returns>The current <see cref="ConfigCatBuilder"/> instance.</returns>
     public ConfigCatBuilder AddNamedClient(string clientName, Action<ExtendedConfigCatClientOptions> configureOptions)
     {
         ValidateClientName(clientName);
@@ -78,6 +107,19 @@ public sealed class ConfigCatBuilder
         return this;
     }
 
+    /// <summary>
+    /// Configures the initializer service to create client instances at application startup by resolving the <see cref="IConfigCatClient"/>
+    /// services from the DI container but not to wait for the clients to reach the ready state (see also <seealso cref="IConfigCatClient.WaitForReadyAsync"/>).
+    /// This is the default initialization mode.
+    /// </summary>
+    /// <remarks>
+    /// Initialization is performed only when your application's host supports and automatically starts
+    /// <see href="https://learn.microsoft.com/en-us/aspnet/core/fundamentals/host/hosted-services">hosted services</see>.
+    /// Otherwise, you need to explicitly trigger initialization by executing
+    /// <code>await host.Services.GetRequiredService&lt;IConfigCatInitializer&gt;().InitializeAsync();</code>
+    /// in the startup phase of your application.
+    /// </remarks>
+    /// <returns>The current <see cref="ConfigCatBuilder"/> instance.</returns>
     public ConfigCatBuilder DoNotWaitForClientReady()
     {
         if (this.services is not null)
@@ -93,6 +135,23 @@ public sealed class ConfigCatBuilder
         return this;
     }
 
+    /// <summary>
+    /// Configures the initializer service to create client instances at application startup by resolving the <see cref="IConfigCatClient"/>
+    /// services from the DI container and wait for all clients to reach the ready state (see also <seealso cref="IConfigCatClient.WaitForReadyAsync"/>).
+    /// </summary>
+    /// <remarks>
+    /// Initialization is performed only when your application's host supports and automatically starts
+    /// <see href="https://learn.microsoft.com/en-us/aspnet/core/fundamentals/host/hosted-services">hosted services</see>.
+    /// Otherwise, you need to explicitly trigger initialization by executing
+    /// <code>await host.Services.GetRequiredService&lt;IConfigCatInitializer&gt;().InitializeAsync();</code>
+    /// in the startup phase of your application.
+    /// </remarks>
+    /// <param name="throwOnFailure">
+    /// Controls whether to throw a <see cref="TimeoutException"/> during initialization, thus, to terminate the application
+    /// if one or more clients using Auto Polling mode fail to obtain config data within the configured <c>maxInitWaitTime</c>.
+    /// Defaults to <see langword="false"/>.
+    /// </param>
+    /// <returns>The current <see cref="ConfigCatBuilder"/> instance.</returns>
     public ConfigCatBuilder WaitForClientReady(bool throwOnFailure = false)
     {
         if (this.services is not null)
@@ -108,6 +167,33 @@ public sealed class ConfigCatBuilder
         return this;
     }
 
+    /// <summary>
+    /// Configures the SDK to obtain <see cref="HttpClient"/> instances for performing ConfigCat config fetch operations
+    /// by calling the specified factory delegate.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This option is primarily for configuring the SDK to use
+    /// <see href="https://learn.microsoft.com/en-us/dotnet/core/extensions/httpclient-factory">IHttpClientFactory</see>
+    /// instead of its built-in HTTP connection management.<br/>
+    /// Beyond that, it also allows you to provide custom logic, however do this only if you have a good understanding of
+    /// <see href="https://learn.microsoft.com/en-us/dotnet/fundamentals/networking/http/httpclient-guidelines">the pitfalls of HttpClient</see>.
+    /// </para>
+    /// <para>
+    /// Also, please note that the factory delegate is called once per HTTP request, and the returned <see cref="HttpClient"/> instance
+    /// is disposed after the request completes. Therefore, you usually want to create it
+    /// with the <see href="https://learn.microsoft.com/en-us/dotnet/api/system.net.http.httpclient.-ctor?#system-net-http-httpclient-ctor(system-net-http-httpmessagehandler-system-boolean)">disposeHandler</see>
+    /// parameter set to <see langword="false"/>.
+    /// </para>
+    /// </remarks>
+    /// <typeparam name="TService">The type of the DI service used to create the <see cref="HttpClient"/>.</typeparam>
+    /// <param name="httpClientFactory">The factory delegate to use for creating <see cref="HttpClient"/> instances.</param>
+    /// <param name="appliesToClient">
+    /// An optional predicate that controls which clients this setting applies to.
+    /// The predicate receives the client name. (Use <see cref="Options.DefaultName"/> to match the default client.)<br/>
+    /// If the predicate is not specified, the setting applies to all registered clients.
+    /// </param>
+    /// <returns>The current <see cref="ConfigCatBuilder"/> instance.</returns>
     public ConfigCatBuilder UseHttpClientFactory<TService>(HttpClientFactory<TService> httpClientFactory, Func<string, bool>? appliesToClient = null)
         where TService : class
     {

@@ -32,8 +32,8 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
     /// Represents a method that is called by <see cref="HttpClientConfigFetcher"/> when it makes an HTTP request, if it is configured to use
     /// externally created <see cref="HttpClient"/> instances.
     /// </summary>
-    /// <param name="request">The request for which a new <see cref="HttpClient"/> instance needs to be provided.</param>
-    /// <param name="isRetry">Indicates whether it is a retried request.</param>
+    /// <param name="request">An object that describes the config fetch request to be made.</param>
+    /// <param name="isRetry">Indicates whether the request is a retry of a previously failed request.</param>
     /// <returns>The <see cref="HttpClient"/> instance to use for making the request.</returns>
     public delegate HttpClient HttpClientFactory(FetchRequest request, bool isRetry);
 

@@ -4,6 +4,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Extensions.Hosting;
 
+/// <summary>
+/// Extension methods for adding ConfigCat SDK services to an <see cref="IHostBuilder"/> or <see cref="IHostApplicationBuilder"/>.
+/// </summary>
 public static class ConfigCatHostBuilderExtensions
 {
     private static IServiceCollection AddHostingSpecificConfigCatServices(this IServiceCollection services)
@@ -21,6 +24,11 @@ public static class ConfigCatHostBuilderExtensions
         return builder.Build(services, context.Configuration);
     }
 
+    /// <summary>
+    /// Adds the ConfigCat SDK services to the host based on the <c>ConfigCat</c> section of the application's configuration.
+    /// </summary>
+    /// <param name="builder">The <see cref="IHostBuilder"/> to configure.</param>
+    /// <returns>The <see cref="IHostBuilder"/> so that additional calls can be chained.</returns>
     public static IHostBuilder ConfigureConfigCat(this IHostBuilder builder)
     {
         if (builder is null)
@@ -31,6 +39,15 @@ public static class ConfigCatHostBuilderExtensions
         return builder.ConfigureServices((context, services) => services.AddConfigCat(context, configureConfigCat: null));
     }
 
+    /// <summary>
+    /// Adds the ConfigCat SDK services to the host based on the <c>ConfigCat</c> section of the application's configuration
+    /// and applies the specified callback.
+    /// </summary>
+    /// <param name="builder">The <see cref="IHostBuilder"/> to configure.</param>
+    /// <param name="configureConfigCat">
+    /// A callback for further configuring the ConfigCat SDK services. Settings applied here override those read from configuration.
+    /// </param>
+    /// <returns>The <see cref="IHostBuilder"/> so that additional calls can be chained.</returns>
     public static IHostBuilder ConfigureConfigCat(this IHostBuilder builder, Action<ConfigCatBuilder> configureConfigCat)
     {
         if (builder is null)
@@ -46,6 +63,16 @@ public static class ConfigCatHostBuilderExtensions
         return builder.ConfigureServices((context, services) => services.AddConfigCat(context, configureConfigCat));
     }
 
+    /// <summary>
+    /// Adds the ConfigCat SDK services to the host based on the <c>ConfigCat</c> section of the application's configuration
+    /// and applies the specified callback.
+    /// </summary>
+    /// <param name="builder">The <see cref="IHostBuilder"/> to configure.</param>
+    /// <param name="configureConfigCat">
+    /// A callback for further configuring the ConfigCat SDK services. The <see cref="HostBuilderContext"/> parameter provides access
+    /// to the application's configuration and environment. Settings applied here override those read from configuration.
+    /// </param>
+    /// <returns>The <see cref="IHostBuilder"/> so that additional calls can be chained.</returns>
     public static IHostBuilder ConfigureConfigCat(this IHostBuilder builder, Action<HostBuilderContext, ConfigCatBuilder> configureConfigCat)
     {
         if (builder is null)
@@ -61,6 +88,12 @@ public static class ConfigCatHostBuilderExtensions
         return builder.ConfigureServices((context, services) => services.AddConfigCat(context, builder => configureConfigCat(context, builder)));
     }
 
+    /// <summary>
+    /// Adds the ConfigCat SDK services to the host based on the <c>ConfigCat</c> section of the application's configuration.
+    /// </summary>
+    /// <param name="builder">The <see cref="IHostApplicationBuilder"/> to configure.</param>
+    /// <returns>A <see cref="ConfigCatBuilder"/> that can be used to further configure the ConfigCat SDK services,
+    /// overriding the settings read from configuration.</returns>
     public static ConfigCatBuilder UseConfigCat(this IHostApplicationBuilder builder)
     {
         if (builder is null)

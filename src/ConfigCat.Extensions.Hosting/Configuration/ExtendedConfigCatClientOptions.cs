@@ -6,8 +6,17 @@ using ConfigCat.Client.Configuration;
 
 namespace ConfigCat.Extensions.Hosting.Configuration;
 
+/// <summary>
+/// Extended options used to configure the ConfigCat SDK via the <see href="https://learn.microsoft.com/en-us/dotnet/core/extensions/options">Options API</see>. 
+/// </summary>
 public sealed class ExtendedConfigCatClientOptions : ConfigCatClientOptions
 {
+    /// <summary>
+    /// The SDK Key to access the ConfigCat config.
+    /// </summary>
+    /// <remarks>
+    /// This property must be set before resolving the client from the DI container.
+    /// </remarks>
     [DisallowNull]
     public string? SdkKey { get; set; }
 

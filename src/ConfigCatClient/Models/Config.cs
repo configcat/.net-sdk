@@ -54,7 +54,7 @@ public sealed class Config : IJsonOnDeserialized
     /// The list of segments.
     /// </summary>
     [JsonIgnore]
-    public IReadOnlyList<Segment> Segments => this.segmentsReadOnly ??= this.segments.AsReadOnly();
+    public IReadOnlyList<Segment> Segments => this.segmentsReadOnly ??= this.segments.ToReadOnlyOrEmptyIfNull();
 
     [JsonInclude, JsonPropertyName("f")]
     internal Dictionary<string, Setting>? settings;

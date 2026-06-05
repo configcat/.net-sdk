@@ -5,9 +5,14 @@ namespace System.Collections.Generic;
 
 internal static class CollectionExtensions
 {
-    public static IReadOnlyList<T> AsReadOnly<T>(this T[]? source)
+    public static IReadOnlyList<T> ToReadOnly<T>(this IList<T> source)
     {
-        return source is { Length: > 0 } ? new ReadOnlyCollection<T>(source) : Array.Empty<T>();
+        return source.Count > 0 ? new ReadOnlyCollection<T>(source) : Array.Empty<T>();
+    }
+
+    public static IReadOnlyList<T> ToReadOnlyOrEmptyIfNull<T>(this IList<T>? source)
+    {
+        return source is not null ? source.ToReadOnly() : Array.Empty<T>();
     }
 
     public static IReadOnlyCollection<TKey> KeyCollection<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> source)

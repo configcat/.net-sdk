@@ -1,8 +1,10 @@
 using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 using ConfigCat.Client.Utils;
 using ConfigCat.Client.Versioning;
@@ -450,13 +452,13 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
             case UserComparator.ArrayContainsAnyOf:
             case UserComparator.ArrayNotContainsAnyOf:
-                var stringArray = GetUserAttributeValueAsStringArray(userAttributeName, userAttributeValue, condition, context.Key, out error);
-                return error is null && EvaluateArrayContainsAnyOf(stringArray!, condition.StringListValue, negate: comparator == UserComparator.ArrayNotContainsAnyOf);
+                var stringList = GetUserAttributeValueAsStringList(userAttributeName, userAttributeValue, condition, context.Key, out error);
+                return error is null && EvaluateArrayContainsAnyOf(stringList!, condition.StringListValue, negate: comparator == UserComparator.ArrayNotContainsAnyOf);
 
             case UserComparator.SensitiveArrayContainsAnyOf:
             case UserComparator.SensitiveArrayNotContainsAnyOf:
-                stringArray = GetUserAttributeValueAsStringArray(userAttributeName, userAttributeValue, condition, context.Key, out error);
-                return error is null && EvaluateSensitiveArrayContainsAnyOf(stringArray!, condition.StringListValue,
+                stringList = GetUserAttributeValueAsStringList(userAttributeName, userAttributeValue, condition, context.Key, out error);
+                return error is null && EvaluateSensitiveArrayContainsAnyOf(stringList!, condition.StringListValue,
                     EnsureConfigJsonSalt(context.Setting.configJsonSalt), contextSalt, negate: comparator == UserComparator.SensitiveArrayNotContainsAnyOf);
 
             default:
@@ -671,19 +673,39 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return before ? number < number2 : number > number2;
     }
 
-    private static bool EvaluateArrayContainsAnyOf(string[] array, string[]? comparisonValues, bool negate)
+    private static bool EvaluateArrayContainsAnyOf(IReadOnlyList<string> list, string[]? comparisonValues, bool negate)
     {
         EnsureComparisonValue(comparisonValues);
 
-        for (var i = 0; i < array.Length; i++)
+        // Enumerating an array directly is faster than enumerating through an interface,
+        // so we special-case it for better performance.
+        if (list is string[] array)
         {
-            var text = array[i];
-
-            for (var j = 0; j < comparisonValues.Length; j++)
+            for (var i = 0; i < array.Length; i++)
             {
-                if (text.Equals(EnsureComparisonValue(comparisonValues[j])))
+                var text = array[i];
+
+                for (var j = 0; j < comparisonValues.Length; j++)
                 {
-                    return !negate;
+                    if (text.Equals(EnsureComparisonValue(comparisonValues[j])))
+                    {
+                        return !negate;
+                    }
+                }
+            }
+        }
+        else
+        {
+            for (int i = 0, n = list.Count; i < n; i++)
+            {
+                var text = list[i];
+
+                for (var j = 0; j < comparisonValues.Length; j++)
+                {
+                    if (text.Equals(EnsureComparisonValue(comparisonValues[j])))
+                    {
+                        return !negate;
+                    }
                 }
             }
         }
@@ -691,19 +713,39 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return negate;
     }
 
-    private static bool EvaluateSensitiveArrayContainsAnyOf(string[] array, string[]? comparisonValues, string configJsonSalt, string contextSalt, bool negate)
+    private static bool EvaluateSensitiveArrayContainsAnyOf(IReadOnlyList<string> list, string[]? comparisonValues, string configJsonSalt, string contextSalt, bool negate)
     {
         EnsureComparisonValue(comparisonValues);
 
-        for (var i = 0; i < array.Length; i++)
+        // Enumerating an array directly is faster than enumerating through an interface,
+        // so we special-case it for better performance.
+        if (list is string[] array)
         {
-            var hash = HashComparisonValue(array[i], configJsonSalt, contextSalt);
-
-            for (var j = 0; j < comparisonValues.Length; j++)
+            for (var i = 0; i < array.Length; i++)
             {
-                if (hash.Equals(hexString: EnsureComparisonValue(comparisonValues[j]).AsSpan()))
+                var hash = HashComparisonValue(array[i], configJsonSalt, contextSalt);
+
+                for (var j = 0; j < comparisonValues.Length; j++)
                 {
-                    return !negate;
+                    if (hash.Equals(hexString: EnsureComparisonValue(comparisonValues[j]).AsSpan()))
+                    {
+                        return !negate;
+                    }
+                }
+            }
+        }
+        else
+        {
+            for (int i = 0, n = list.Count; i < n; i++)
+            {
+                var hash = HashComparisonValue(list[i], configJsonSalt, contextSalt);
+
+                for (var j = 0; j < comparisonValues.Length; j++)
+                {
+                    if (hash.Equals(hexString: EnsureComparisonValue(comparisonValues[j]).AsSpan()))
+                    {
+                        return !negate;
+                    }
                 }
             }
         }
@@ -914,6 +956,11 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         {
             return SerializationHelper.SerializeStringArray(stringArray, unescapeAstral: true);
         }
+        else if (attributeValue is IReadOnlyList<string> stringList
+            || attributeValue is IList<string> mutableStringList && (stringList = mutableStringList.ToReadOnly()) is not null)
+        {
+            return SerializationHelper.SerializeStringList(stringList, unescapeAstral: true);
+        }
         else if (attributeValue.TryConvertNumericToDouble(out var number))
         {
             var format = Math.Abs(number) is >= 1e-6 and < 1e21
@@ -995,7 +1042,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return default;
     }
 
-    private string[]? GetUserAttributeValueAsStringArray(string attributeName, object attributeValue, UserCondition condition, string key, out string? error)
+    private IReadOnlyList<string>? GetUserAttributeValueAsStringList(string attributeName, object attributeValue, UserCondition condition, string key, out string? error)
     {
         if (attributeValue is string[] stringArray
             || attributeValue is string json && (stringArray = SerializationHelper.DeserializeStringArray(json.AsSpan(), throwOnError: false)!) is not null)
@@ -1004,6 +1051,15 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             {
                 error = null;
                 return stringArray;
+            }
+        }
+        else if (attributeValue is IReadOnlyList<string> stringList
+            || attributeValue is IList<string> mutableStringList && (stringList = mutableStringList.ToReadOnly()) is not null)
+        {
+            if (!stringList.Any(item => item is null))
+            {
+                error = null;
+                return stringList;
             }
         }
 

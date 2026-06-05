@@ -48,7 +48,7 @@ public sealed class TargetingRule
     /// </summary>
     [JsonIgnore]
     public IReadOnlyList<PercentageOption>? PercentageOptions => this.percentageOptionsReadOnly ??= this.then is PercentageOption[] percentageOptions
-        ? percentageOptions.AsReadOnly()
+        ? percentageOptions.ToReadOnlyOrEmptyIfNull()
         : null;
 
     [JsonInclude, JsonPropertyName("s")]

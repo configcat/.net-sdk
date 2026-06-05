@@ -15,6 +15,7 @@ namespace ConfigCat.Client.Utils;
 [JsonSerializable(typeof(Config))]
 [JsonSerializable(typeof(LocalFileDataSource.SimplifiedConfig))]
 [JsonSerializable(typeof(string[]))]
+[JsonSerializable(typeof(IReadOnlyList<string>))]
 [JsonSerializable(typeof(Dictionary<string, JsonNode>))]
 internal partial class SourceGenSerializationContext : JsonSerializerContext
 {
@@ -72,6 +73,12 @@ internal static partial class SerializationHelper
     public static string SerializeStringArray(string[] obj, bool unescapeAstral = false)
     {
         var json = JsonSerializer.Serialize(obj, SourceGenSerializationContext.Tolerant.StringArray);
+        return unescapeAstral ? UnescapeAstralCodePoints(json) : json;
+    }
+
+    public static string SerializeStringList(IReadOnlyList<string> obj, bool unescapeAstral = false)
+    {
+        var json = JsonSerializer.Serialize(obj, SourceGenSerializationContext.Tolerant.IReadOnlyListString);
         return unescapeAstral ? UnescapeAstralCodePoints(json) : json;
     }
 

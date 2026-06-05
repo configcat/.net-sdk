@@ -1,3 +1,5 @@
+using ConfigCat.Client.Models;
+
 namespace ConfigCat.Client.Tests.Helpers;
 
 public abstract partial record class ConfigLocation

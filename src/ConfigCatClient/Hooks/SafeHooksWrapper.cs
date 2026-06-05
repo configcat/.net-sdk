@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.CompilerServices;
+using ConfigCat.Client.Models;
 
 namespace ConfigCat.Client;
 

@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using ConfigCat.Client.Models;
 using ConfigCat.Client.Override;
 
 namespace ConfigCat.Client.Utils;

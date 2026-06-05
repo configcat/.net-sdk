@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using ConfigCat.Client.Models;
 
 namespace ConfigCat.Client;
 

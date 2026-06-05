@@ -1,4 +1,4 @@
-namespace ConfigCat.Client;
+namespace ConfigCat.Client.Models;
 
 /// <summary>
 /// Segment comparison operator used during the evaluation process.

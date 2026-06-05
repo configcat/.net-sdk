@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using ConfigCat.Client.Models;
 using ConfigCat.Client.Utils;
 using ConfigCat.Client.Versioning;
 

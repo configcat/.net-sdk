@@ -6,7 +6,7 @@ using ConfigCat.Client.Evaluation;
 using ConfigCat.Client.Utils;
 using ConfigCat.Client.Versioning;
 
-namespace ConfigCat.Client;
+namespace ConfigCat.Client.Models;
 
 /// <summary>
 /// Describes a targeting rule.

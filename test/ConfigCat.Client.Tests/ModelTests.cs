@@ -1,5 +1,6 @@
 using System;
 using ConfigCat.Client.Evaluation;
+using ConfigCat.Client.Models;
 using ConfigCat.Client.Tests.Helpers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 

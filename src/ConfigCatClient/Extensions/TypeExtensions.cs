@@ -1,4 +1,4 @@
-using ConfigCat.Client;
+using ConfigCat.Client.Models;
 
 namespace System;
 

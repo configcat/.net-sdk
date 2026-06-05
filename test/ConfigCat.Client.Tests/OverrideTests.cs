@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Evaluation;
+using ConfigCat.Client.Models;
 using ConfigCat.Client.Override;
 using ConfigCat.Client.Tests.Helpers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;

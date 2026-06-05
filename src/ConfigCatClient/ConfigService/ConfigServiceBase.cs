@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Cache;
+using ConfigCat.Client.Models;
 using ConfigCat.Client.Shims;
 
 namespace ConfigCat.Client.ConfigService;

@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace ConfigCat.Client;
+namespace ConfigCat.Client.Models;
 
 /// <summary>
 /// A model object which contains a setting value along with related data.

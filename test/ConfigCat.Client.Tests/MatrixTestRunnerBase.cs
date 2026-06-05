@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using ConfigCat.Client.Evaluation;
+using ConfigCat.Client.Models;
 using ConfigCat.Client.Tests.Helpers;
 
 #if BENCHMARK_OLD
@@ -13,7 +14,7 @@ namespace ConfigCat.Client.Benchmarks.New;
 namespace ConfigCat.Client.Tests;
 #endif
 
-// NOTE: These types are intentionally placed into a separate source file because it's also used in the benchmark project.
+// NOTE: These types are intentionally placed into a separate source file because they are also used in the benchmark project.
 
 public interface IMatrixTestDescriptor
 {

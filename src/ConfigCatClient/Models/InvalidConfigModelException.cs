@@ -1,6 +1,6 @@
 using System;
 
-namespace ConfigCat.Client;
+namespace ConfigCat.Client.Models;
 
 internal sealed class InvalidConfigModelException : InvalidOperationException
 {

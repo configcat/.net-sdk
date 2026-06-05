@@ -1,5 +1,6 @@
 using System;
 using ConfigCat.Client.ConfigService;
+using ConfigCat.Client.Models;
 using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client;

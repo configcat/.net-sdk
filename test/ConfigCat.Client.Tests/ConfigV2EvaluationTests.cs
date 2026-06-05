@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ConfigCat.Client.Configuration;
 using ConfigCat.Client.Evaluation;
+using ConfigCat.Client.Models;
 using ConfigCat.Client.Tests.Helpers;
 using ConfigCat.Client.Utils;
 using ConfigCat.Client.Versioning;

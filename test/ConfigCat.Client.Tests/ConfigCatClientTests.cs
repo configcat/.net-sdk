@@ -13,6 +13,7 @@ using ConfigCat.Client.Cache;
 using ConfigCat.Client.ConfigService;
 using ConfigCat.Client.Configuration;
 using ConfigCat.Client.Evaluation;
+using ConfigCat.Client.Models;
 using ConfigCat.Client.Override;
 using ConfigCat.Client.Tests.Fakes;
 using ConfigCat.Client.Tests.Helpers;

@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 using ConfigCat.Client.Utils;
 using ConfigCat.Client.Versioning;
 
-namespace ConfigCat.Client;
+namespace ConfigCat.Client.Models;
 
 /// <summary>
 /// Describes a ConfigCat config's data model used for feature flag evaluation.

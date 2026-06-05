@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using ConfigCat.Client.Models;
 
 namespace ConfigCat.Client.Tests.Helpers;
 

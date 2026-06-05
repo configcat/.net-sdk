@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace ConfigCat.Client;
+namespace ConfigCat.Client.Models;
 
 internal sealed class Preferences
 {

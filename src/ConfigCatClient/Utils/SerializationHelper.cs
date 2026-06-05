@@ -18,6 +18,13 @@ namespace ConfigCat.Client.Utils;
 [JsonSerializable(typeof(Dictionary<string, JsonNode>))]
 internal partial class SourceGenSerializationContext : JsonSerializerContext
 {
+    public static readonly SourceGenSerializationContext Tolerant = new SourceGenSerializationContext(new JsonSerializerOptions
+    {
+        AllowTrailingCommas = true,
+        ReadCommentHandling = JsonCommentHandling.Skip,
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    });
+
     // Implemented by System.Text.Json source generator.
     // See also:
     // * https://devblogs.microsoft.com/dotnet/try-the-new-system-text-json-source-generator/
@@ -26,18 +33,11 @@ internal partial class SourceGenSerializationContext : JsonSerializerContext
 
 internal static partial class SerializationHelper
 {
-    private static readonly SourceGenSerializationContext TolerantSerializationContext = new SourceGenSerializationContext(new JsonSerializerOptions
-    {
-        AllowTrailingCommas = true,
-        ReadCommentHandling = JsonCommentHandling.Skip,
-        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-    });
-
     public static Config? DeserializeConfig(ReadOnlySpan<char> json, bool tolerant = false, bool throwOnError = true)
     {
         try
         {
-            return JsonSerializer.Deserialize(json, tolerant ? TolerantSerializationContext.Config : SourceGenSerializationContext.Default.Config);
+            return JsonSerializer.Deserialize(json, (tolerant ? SourceGenSerializationContext.Tolerant : SourceGenSerializationContext.Default).Config);
         }
         catch when (!throwOnError)
         {
@@ -49,7 +49,7 @@ internal static partial class SerializationHelper
     {
         try
         {
-            return JsonSerializer.Deserialize(json, tolerant ? TolerantSerializationContext.SimplifiedConfig : SourceGenSerializationContext.Default.SimplifiedConfig);
+            return JsonSerializer.Deserialize(json, (tolerant ? SourceGenSerializationContext.Tolerant : SourceGenSerializationContext.Default).SimplifiedConfig);
         }
         catch when (!throwOnError)
         {
@@ -61,7 +61,7 @@ internal static partial class SerializationHelper
     {
         try
         {
-            return JsonSerializer.Deserialize(json, tolerant ? TolerantSerializationContext.StringArray : SourceGenSerializationContext.Default.StringArray);
+            return JsonSerializer.Deserialize(json, (tolerant ? SourceGenSerializationContext.Tolerant : SourceGenSerializationContext.Default).StringArray);
         }
         catch when (!throwOnError)
         {
@@ -71,7 +71,7 @@ internal static partial class SerializationHelper
 
     public static string SerializeStringArray(string[] obj, bool unescapeAstral = false)
     {
-        var json = JsonSerializer.Serialize(obj, TolerantSerializationContext.StringArray);
+        var json = JsonSerializer.Serialize(obj, SourceGenSerializationContext.Tolerant.StringArray);
         return unescapeAstral ? UnescapeAstralCodePoints(json) : json;
     }
 
@@ -88,7 +88,7 @@ internal static partial class SerializationHelper
             return UnknownValueToJsonNode(value, ref visitedCollections);
         });
 
-        var json = JsonSerializer.Serialize(attributes!, TolerantSerializationContext.DictionaryStringJsonNode);
+        var json = JsonSerializer.Serialize(attributes!, SourceGenSerializationContext.Tolerant.DictionaryStringJsonNode);
         return unescapeAstral ? UnescapeAstralCodePoints(json) : json;
     }
 

@@ -29,7 +29,7 @@ public readonly struct ConfigCatInitMode : IUnion
 
     /// <summary>
     /// Represents an initialization mode where the initializer service creates client instances at application startup by resolving the <see cref="IConfigCatClient"/>
-    /// services from the DI container but does not wait for the clients to reach the ready state (see also <seealso cref="IConfigCatClient.WaitForReadyAsync"/>).
+    /// services from the DI container but does not wait for the clients to reach the ready state (see also <seealso cref="IProvidesHooks.ClientReady"/>).
     /// </summary>
     public sealed class DoNotWaitForClientReady()
     {
@@ -43,7 +43,7 @@ public readonly struct ConfigCatInitMode : IUnion
 
     /// <summary>
     /// Represents an initialization mode where the initializer service creates client instances at application startup by resolving the <see cref="IConfigCatClient"/>
-    /// services from the DI container and waits for all clients to reach the ready state (see also <seealso cref="IConfigCatClient.WaitForReadyAsync"/>).
+    /// services from the DI container and waits for all clients to reach the ready state (see also <seealso cref="IProvidesHooks.ClientReady"/>).
     /// </summary>
     /// <param name="throwOnFailure">
     /// Specifies whether to throw a <see cref="TimeoutException"/> during initialization, thus, to terminate the application

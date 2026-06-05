@@ -106,6 +106,7 @@ public sealed class ConfigCatBuilder
 
     /// <summary>
     /// Configures how to initialize the registered <see cref="IConfigCatClient"/> services at application startup.
+    /// The default initialization mode is <see cref="ConfigCatInitMode.DoNotWaitForClientReady"/>.
     /// </summary>
     /// <param name="initMode">The initialization mode to use.</param>
     /// <remarks>

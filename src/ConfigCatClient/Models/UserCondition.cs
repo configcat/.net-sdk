@@ -61,7 +61,7 @@ public sealed class UserCondition : Condition
 
     internal SemVersion?[]? SemVerListValue => this.comparisonValueReadOnly is SemVerList semVerList ? semVerList.Parsed : null;
 
-    private object? comparisonValueReadOnly; // also used for storing a preparsed value (StrongBox<SemVersion?> or SemVerList)
+    private object? comparisonValueReadOnly; // also used for storing a preparsed value (SemVersion or SemVerList)
 
     /// <summary>
     /// The value that the User Object attribute is compared to.

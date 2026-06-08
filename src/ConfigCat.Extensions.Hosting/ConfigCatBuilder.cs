@@ -406,7 +406,7 @@ public sealed class ConfigCatBuilder
                 throw new ArgumentNullException(nameof(options));
             }
 
-            if (name is not null && this.loggerFactory is not null)
+            if (this.loggerFactory is not null)
             {
                 var categoryName = typeof(ConfigCatClient).FullName + (name == Options.DefaultName ? "^" : $"[{name}]");
                 var logger = this.loggerFactory.CreateLogger(categoryName);

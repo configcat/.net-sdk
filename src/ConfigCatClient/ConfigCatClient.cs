@@ -122,6 +122,8 @@ public sealed class ConfigCatClient : IConfigCatClient
 
         this.evaluationServices = new EvaluationServices(evaluator, hooksWrapper, logger);
 
+        this.defaultUser = options.DefaultUser;
+
         var cacheParameters = new CacheParameters
         (
             configCache: options.ConfigCache is not null
@@ -136,16 +138,16 @@ public sealed class ConfigCatClient : IConfigCatClient
             this.overrideBehaviour = options.FlagOverrides.OverrideBehaviour;
         }
 
-        this.defaultUser = options.DefaultUser;
-
-        var pollingMode = options.PollingMode ?? ConfigCatClientOptions.CreateDefaultPollingMode();
-
         // At this point the client instance must be fully initialized (apart from the configService field) because it
         // may be accessed from a handler of an event that is raised during the initialization of the config service.
         // (At the same time, the config service must initialize the configService field before raising any events.)
 
-        var configService = this.overrideBehaviour != OverrideBehaviour.LocalOnly
-            ? pollingMode.CreateConfigService(
+        IConfigService? configService;
+        if (this.overrideBehaviour != OverrideBehaviour.LocalOnly)
+        {
+            var pollingMode = options.PollingMode ?? ConfigCatClientOptions.CreateDefaultPollingMode();
+
+            configService = pollingMode.CreateConfigService(
                 new DefaultConfigFetcher(sdkKey,
                     options.GetBaseUri(),
                     GetProductVersion(pollingMode),
@@ -159,8 +161,12 @@ public sealed class ConfigCatClient : IConfigCatClient
                 cacheParameters,
                 logger,
                 options.Offline,
-                hooksWrapper)
-            : new NullConfigService(logger, hooksWrapper);
+                hooksWrapper);
+        }
+        else
+        {
+            configService = new NullConfigService(logger, hooksWrapper);
+        }
 
         Debug.Assert(ReferenceEquals(this.configService, configService) || this.hooks.Sender is null, $"The {nameof(this.configService)} field was not initialized.");
 

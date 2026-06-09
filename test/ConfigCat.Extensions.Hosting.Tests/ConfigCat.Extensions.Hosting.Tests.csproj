@@ -51,4 +51,8 @@
     <ProjectReference Include="..\..\src\ConfigCat.Extensions.Hosting\ConfigCat.Extensions.Hosting.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\ConfigCat.Client.Tests\Fakes\FakeHttpMessageHandler.cs" LinkBase="Fakes" />
+  </ItemGroup>
+
 </Project>

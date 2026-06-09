@@ -60,6 +60,7 @@ internal sealed class ConfigCatInitializer : IConfigCatInitializer
 
         if (this.initMode.Value is null or ConfigCatInitMode.DoNotWaitForClientReady)
         {
+            logger?.LogInformation($"All registered {nameof(ConfigCatClient)} instances are created but may still be initializing.");
             return;
         }
 
@@ -84,7 +85,7 @@ internal sealed class ConfigCatInitializer : IConfigCatInitializer
 
             if (uninitalizedClients.Length == 0)
             {
-                logger?.LogInformation($"All {nameof(ConfigCatClient)} instances are initialized and ready to evaluate feature flags.");
+                logger?.LogInformation($"All registered {nameof(ConfigCatClient)} instances are initialized and ready to evaluate feature flags.");
             }
             else
             {

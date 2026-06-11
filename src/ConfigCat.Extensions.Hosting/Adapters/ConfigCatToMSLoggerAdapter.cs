@@ -12,11 +12,20 @@ namespace ConfigCat.Extensions.Hosting.Adapters;
 /// <summary>
 /// An <see cref="IConfigCatLogger"/> implementation that forwards log events to a <see cref="ILogger"/> instance.
 /// </summary>
-/// <param name="logger">The <see cref="ILogger"/> to forward log events to.</param>
-public class ConfigCatToMSLoggerAdapter(ILogger logger) : IConfigCatLogger
+public class ConfigCatToMSLoggerAdapter : IConfigCatLogger
 {
-    private readonly ILogger logger = logger;
-    private readonly ConcurrentDictionary<OriginalFormatCacheKey, string> originalFormatCache = new();
+    private readonly ILogger logger;
+    private readonly ConcurrentDictionary<OriginalFormatCacheKey, string> originalFormatCache;
+
+    /// <param name="logger">The <see cref="ILogger"/> to forward log events to.</param>
+    public ConfigCatToMSLoggerAdapter(ILogger logger)
+        : this(logger, originalFormatCache: new()) { }
+
+    internal ConfigCatToMSLoggerAdapter(ILogger logger, ConcurrentDictionary<OriginalFormatCacheKey, string> originalFormatCache)
+    {
+        this.logger = logger;
+        this.originalFormatCache = originalFormatCache;
+    }
 
     Client.LogLevel IConfigCatLogger.LogLevel
     {
@@ -97,7 +106,7 @@ public class ConfigCatToMSLoggerAdapter(ILogger logger) : IConfigCatLogger
         public override string ToString() => this.message.InvariantFormattedMessage;
     }
 
-    private readonly struct OriginalFormatCacheKey(in FormattableLogMessage message) : IEquatable<OriginalFormatCacheKey>
+    internal readonly struct OriginalFormatCacheKey(in FormattableLogMessage message) : IEquatable<OriginalFormatCacheKey>
     {
         public readonly string Format = message.Format;
         public readonly string[] ArgNames = message.ArgNames;

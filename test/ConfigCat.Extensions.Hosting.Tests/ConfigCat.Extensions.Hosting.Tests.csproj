@@ -52,6 +52,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\ConfigCat.Client.Tests\Fakes\FakeConfigFetcher.cs" LinkBase="Fakes" />
     <Compile Include="..\ConfigCat.Client.Tests\Fakes\FakeHttpMessageHandler.cs" LinkBase="Fakes" />
   </ItemGroup>
 

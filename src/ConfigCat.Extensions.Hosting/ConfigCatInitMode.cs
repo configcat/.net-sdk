@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using ConfigCat.Client;
+using ConfigCat.Client.Configuration;
 
 namespace ConfigCat.Extensions.Hosting;
 
@@ -47,14 +48,14 @@ public readonly struct ConfigCatInitMode : IUnion
     /// </summary>
     /// <param name="throwOnFailure">
     /// Specifies whether to throw a <see cref="TimeoutException"/> during initialization, thus, to terminate the application
-    /// if one or more clients using Auto Polling mode fail to obtain config data within the configured <c>maxInitWaitTime</c>.
+    /// if one or more clients using Auto Polling mode fail to obtain config data within the configured <see cref="AutoPoll.MaxInitWaitTime"/>.
     /// Defaults to <see langword="false"/>.
     /// </param>
     public sealed class WaitForClientReady(bool throwOnFailure = false)
     {
         /// <summary>
         /// Indicates whether to throw a <see cref="TimeoutException"/> during initialization, thus, to terminate the application
-        /// if one or more clients using Auto Polling mode fail to obtain config data within the configured <c>maxInitWaitTime</c>.
+        /// if one or more clients using Auto Polling mode fail to obtain config data within the configured <see cref="AutoPoll.MaxInitWaitTime"/>.
         /// </summary>
         public bool ThrowOnFailure { get; } = throwOnFailure;
 

@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client;
 using ConfigCat.Client.ConfigService;
+using ConfigCat.Client.Configuration;
 using ConfigCat.Client.Shims;
 using ConfigCat.Extensions.Hosting.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -89,7 +90,7 @@ internal sealed class ConfigCatInitializer : IConfigCatInitializer
             }
             else
             {
-                const string messageFormat = $"One or more {nameof(ConfigCatClient)} instances failed to initialize within maxInitWaitTime: {{0}}.";
+                const string messageFormat = $"One or more {nameof(ConfigCatClient)} instances failed to initialize within {nameof(AutoPoll.MaxInitWaitTime)}: {{0}}.";
 
                 var clientNames = string.Join(", ", uninitalizedClients
                     .SelectMany(client => clients[client])

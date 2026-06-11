@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -389,6 +390,7 @@ public sealed class ConfigCatBuilder
     private sealed class ConfigureCommonClientOptions : ConfigureNamedOptions<ExtendedConfigCatClientOptions>
     {
         private readonly ILoggerFactory? loggerFactory;
+        private ConcurrentDictionary<ConfigCatToMSLoggerAdapter.OriginalFormatCacheKey, string>? originalFormatCache;
 
         public ConfigureCommonClientOptions()
             : base(name: null, action: null) { }
@@ -408,9 +410,10 @@ public sealed class ConfigCatBuilder
 
             if (this.loggerFactory is not null)
             {
+                this.originalFormatCache ??= new();
                 var categoryName = typeof(ConfigCatClient).FullName + (name == Options.DefaultName ? "^" : $"[{name}]");
                 var logger = this.loggerFactory.CreateLogger(categoryName);
-                options.Logger ??= new ConfigCatToMSLoggerAdapter(logger);
+                options.Logger ??= new ConfigCatToMSLoggerAdapter(logger, this.originalFormatCache!);
             }
         }
     }

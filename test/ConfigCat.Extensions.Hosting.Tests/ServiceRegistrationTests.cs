@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using ConfigCat.Client;
+using ConfigCat.Client.Configuration;
 using ConfigCat.Client.Tests;
 using ConfigCat.Extensions.Hosting.Configuration;
 using ConfigCat.Extensions.Hosting.Tests.Fakes;
@@ -669,7 +670,7 @@ public class ServiceRegistrationTests
 
         var ex = await Assert.ThrowsExceptionAsync<TimeoutException>(async () => await host.StartAsync());
 
-        Assert.AreEqual($"One or more {nameof(ConfigCatClient)} instances failed to initialize within maxInitWaitTime: (default).", ex.Message);
+        Assert.AreEqual($"One or more {nameof(ConfigCatClient)} instances failed to initialize within {nameof(AutoPoll.MaxInitWaitTime)}: (default).", ex.Message);
 
         await host.StopAsync();
     }
@@ -729,7 +730,7 @@ public class ServiceRegistrationTests
 
         var ex = await Assert.ThrowsExceptionAsync<TimeoutException>(async () => await host.StartAsync());
 
-        Assert.AreEqual($"One or more {nameof(ConfigCatClient)} instances failed to initialize within maxInitWaitTime: (default).", ex.Message);
+        Assert.AreEqual($"One or more {nameof(ConfigCatClient)} instances failed to initialize within {nameof(AutoPoll.MaxInitWaitTime)}: (default).", ex.Message);
 
         await host.StopAsync();
     }
@@ -814,7 +815,7 @@ public class ServiceRegistrationTests
 
         Assert.AreEqual(1, fakeLogger.LogEvents.Count(item =>
             item.logLevel == Microsoft.Extensions.Logging.LogLevel.Warning
-            && item.message.ToString() == $"One or more {nameof(ConfigCatClient)} instances failed to initialize within maxInitWaitTime: '{clientName}'. They may still be able to initialize later."));
+            && item.message.ToString() == $"One or more {nameof(ConfigCatClient)} instances failed to initialize within {nameof(AutoPoll.MaxInitWaitTime)}: '{clientName}'. They may still be able to initialize later."));
 
         await host.StopAsync();
     }
@@ -964,19 +965,13 @@ public class ServiceRegistrationTests
         Assert.IsNull(await namedClient1.GetValueAsync("testFlag", (bool?)null));
         Assert.IsNull(await namedClient2.GetValueAsync("testFlag", (bool?)null));
 
-        var loggers = fakeLoggerProvider.Loggers.ToArray();
+        Assert.IsTrue(fakeLoggerProvider.Loggers.TryGetValue($"{typeof(ConfigCatClient).FullName}^", out var defaultClientLogger));
+        Assert.IsTrue(fakeLoggerProvider.Loggers.TryGetValue($"{typeof(ConfigCatClient).FullName}[{client1Name}]", out var namedClient1Logger));
+        Assert.IsTrue(fakeLoggerProvider.Loggers.TryGetValue($"{typeof(ConfigCatClient).FullName}[{client2Name}]", out var namedClient2Logger));
 
-        var defaultClientLogger = loggers.FirstOrDefault(kvp => kvp.Key == $"{typeof(ConfigCatClient).FullName}^");
-        var namedClient1Logger = loggers.FirstOrDefault(kvp => kvp.Key == $"{typeof(ConfigCatClient).FullName}[{client1Name}]");
-        var namedClient2Logger = loggers.FirstOrDefault(kvp => kvp.Key == $"{typeof(ConfigCatClient).FullName}[{client2Name}]");
-
-        Assert.IsNotNull(defaultClientLogger.Value);
-        Assert.IsNotNull(namedClient1Logger.Value);
-        Assert.IsNotNull(namedClient2Logger.Value);
-
-        Assert.IsTrue(defaultClientLogger.Value.LogEvents.Any(evt => evt.logLevel == Microsoft.Extensions.Logging.LogLevel.Error && evt.eventId == 1001));
-        Assert.IsTrue(namedClient1Logger.Value.LogEvents.Any(evt => evt.logLevel == Microsoft.Extensions.Logging.LogLevel.Error && evt.eventId == 1001));
-        Assert.IsTrue(namedClient2Logger.Value.LogEvents.Any(evt => evt.logLevel == Microsoft.Extensions.Logging.LogLevel.Error && evt.eventId == 1001));
+        Assert.IsTrue(defaultClientLogger.LogEvents.Any(evt => evt.logLevel == Microsoft.Extensions.Logging.LogLevel.Error && evt.eventId == 1001));
+        Assert.IsTrue(namedClient1Logger.LogEvents.Any(evt => evt.logLevel == Microsoft.Extensions.Logging.LogLevel.Error && evt.eventId == 1001));
+        Assert.IsTrue(namedClient2Logger.LogEvents.Any(evt => evt.logLevel == Microsoft.Extensions.Logging.LogLevel.Error && evt.eventId == 1001));
     }
 
     [DataTestMethod]
@@ -1061,16 +1056,11 @@ public class ServiceRegistrationTests
         Assert.IsNull(await defaultClient.GetValueAsync("testFlag", (bool?)null));
         Assert.IsNull(await namedClient1.GetValueAsync("testFlag", (bool?)null));
 
-        var loggers = fakeLoggerProvider.Loggers.ToArray();
+        Assert.IsTrue(fakeLoggerProvider.Loggers.TryGetValue($"{typeof(ConfigCatClient).FullName}^", out var defaultClientLogger));
+        Assert.IsTrue(fakeLoggerProvider.Loggers.TryGetValue($"{typeof(ConfigCatClient).FullName}[{clientName}]", out var namedClientLogger));
 
-        var defaultClientLogger = loggers.FirstOrDefault(kvp => kvp.Key == $"{typeof(ConfigCatClient).FullName}^");
-        var namedClientLogger = loggers.FirstOrDefault(kvp => kvp.Key == $"{typeof(ConfigCatClient).FullName}[{clientName}]");
-
-        Assert.IsNotNull(defaultClientLogger.Value);
-        Assert.IsNotNull(namedClientLogger.Value);
-
-        Assert.IsFalse(defaultClientLogger.Value.LogEvents.Any(evt => evt.logLevel == Microsoft.Extensions.Logging.LogLevel.Error && evt.eventId == 1001));
-        Assert.IsFalse(namedClientLogger.Value.LogEvents.Any(evt => evt.logLevel == Microsoft.Extensions.Logging.LogLevel.Error && evt.eventId == 1001));
+        Assert.IsFalse(defaultClientLogger.LogEvents.Any(evt => evt.logLevel == Microsoft.Extensions.Logging.LogLevel.Error && evt.eventId == 1001));
+        Assert.IsFalse(namedClientLogger.LogEvents.Any(evt => evt.logLevel == Microsoft.Extensions.Logging.LogLevel.Error && evt.eventId == 1001));
 
         Assert.IsTrue(fakeConfigCatLoggerDefault.LogEvents.Any(evt => evt.logLevel == Client.LogLevel.Error && evt.eventId == 1001));
         Assert.IsTrue(fakeConfigCatLoggerNamed.LogEvents.Any(evt => evt.logLevel == Client.LogLevel.Error && evt.eventId == 1001));

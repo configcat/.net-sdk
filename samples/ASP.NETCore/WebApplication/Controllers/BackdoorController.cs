@@ -13,6 +13,8 @@ public class BackdoorController : Controller
 
     public BackdoorController([FromKeyedServices("secondary")] IConfigCatClient configCatClient)
     {
+        // You can obtain named ConfigCat clients (and client snapshots) by injecting them using the FromKeyedServices attribute.
+
         this.configCatClient = configCatClient;
     }
 

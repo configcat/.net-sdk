@@ -14,17 +14,20 @@ public class Program
     public static void Main(string[] args)
     {
         var host = Host.CreateDefaultBuilder(args)
+            /* Calling `ConfigureConfigCat()` on the host builder is all you need to register ConfigCat clients
+               based on application configuration (see appsettings.json). */
             .ConfigureConfigCat(builder =>
             {
-                // Uncomment the following lines if you want to configure ConfigCat clients by code. Please note that
-                // if you add a client here that is already defined in the configuration (e.g. appsettings.json), the settings
-                // from the configuration and the settings made by code will be merged, with the latter taking precedence.
-                builder
-                    .AddDefaultClient(options =>
-                    {
-                        options.PollingMode = PollingModes.AutoPoll(maxInitWaitTime: TimeSpan.FromSeconds(10));
-                    })
-                    .UseInitMode(new ConfigCatInitMode.WaitForClientReady(throwOnFailure: false));
+                /* You can also configure ConfigCat clients by code. Please note that if you add a client here that
+                   is already defined in the configuration (e.g. appsettings.json), the settings from the configuration
+                   and the settings made by code will be merged, with the latter taking precedence. */
+
+                //builder
+                //    .AddDefaultClient(options =>
+                //    {
+                //        options.PollingMode = PollingModes.AutoPoll(maxInitWaitTime: TimeSpan.FromSeconds(10));
+                //    })
+                //    .UseInitMode(new ConfigCatInitMode.WaitForClientReady(throwOnFailure: true));
             })
             .ConfigureLogging((context, builder) =>
             {

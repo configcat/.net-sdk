@@ -1,4 +1,5 @@
 using System;
+using System.Net.Http;
 using ConfigCat.Client;
 using ConfigCat.Extensions.Hosting;
 using Microsoft.AspNetCore.Builder;
@@ -9,26 +10,37 @@ using Microsoft.Extensions.Logging;
 
 var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
 
-// Uncomment the following line for structured logging.
+/* Calling `UseConfigCat()` on the application builder is all you need to register ConfigCat clients
+   based on application configuration (see appsettings.json). */
+
+var configCatBuilder = builder.UseConfigCat();
+
+/* You can also configure ConfigCat clients by code. Please note that if you add a client here that
+   is already defined in the configuration (e.g. appsettings.json), the settings from the configuration
+   and the settings made by code will be merged, with the latter taking precedence. */
+
+//configCatBuilder
+//    .AddDefaultClient(options =>
+//    {
+//        options.PollingMode = PollingModes.AutoPoll(maxInitWaitTime: TimeSpan.FromSeconds(10));
+//    })
+//    .AddNamedClient("secondary", options =>
+//    {
+//        options.SdkKey = "PKDVCLf-Hq-h-kCzMp-L7Q/PaDVCFk9EpmD6s-invalid";
+//    })
+//    .UseInitMode(new ConfigCatInitMode.WaitForClientReady(throwOnFailure: true));
+
+/* Uncomment the following lines if you want to configure ConfigCat clients to use IHttpClientFactory
+   for fetching config data, instead of using the SDK's built-in HTTP connection management. */
+
+//configCatBuilder.UseHttpClientFactory<IHttpClientFactory>((factory, _, _) => factory.CreateClient());
+//builder.Services.AddHttpClient();
+
+/* Uncomment the following line to enable structured logging. */
 //builder.Logging.AddJsonConsole(options => options.JsonWriterOptions = new() { Indented = true });
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
-
-builder.UseConfigCat()
-    // Uncomment the following lines if you want to configure ConfigCat clients by code. Please note that
-    // if you add a client here that is already defined in the configuration (e.g. appsettings.json), the settings
-    // from the configuration and the settings made by code will be merged, with the latter taking precedence.
-    //.AddDefaultClient(options =>
-    //{
-    //    options.PollingMode = PollingModes.AutoPoll(maxInitWaitTime: TimeSpan.FromSeconds(10));
-    //})
-    //.AddNamedClient("secondary", options =>
-    //{
-    //    options.SdkKey = "PKDVCLf-Hq-h-kCzMp-L7Q/HhOWfwVtZ0mb30i9wi17GQ";
-    //})
-    //.UseInitMode(new ConfigCatInitMode.WaitForClientReady(throwOnFailure: false))
-    ;
 
 var app = builder.Build();
 

@@ -16,6 +16,9 @@ internal class Service : BackgroundService
 
     public Service(IConfigCatClient configCatClient, ILogger<Service> logger)
     {
+        // You can obtain the default ConfigCat client by simply injecting the singleton IConfigCatClient service.
+        // (To inject named clients, use the FromKeyedServices attribute.)
+
         this.configCatClient = configCatClient;
         this.logger = logger;
     }

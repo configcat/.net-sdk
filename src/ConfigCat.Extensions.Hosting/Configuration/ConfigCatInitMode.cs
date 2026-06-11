@@ -12,7 +12,7 @@ namespace ConfigCat.Extensions.Hosting;
 public readonly struct ConfigCatInitMode : IUnion
 {
     // TODO: Simplify this struct to
-    // `public union ConfigCatInitMode(ConfigCatInitMode.DoNotWaitForClientReady, ConfigCatInitMode.WaitForClientReady) { /* ... */ }`
+    // `public readonly union ConfigCatInitMode(ConfigCatInitMode.DoNotWaitForClientReady, ConfigCatInitMode.WaitForClientReady) { /* ... */ }`
     // as soon as we upgrade to C# 15.
 
     /// <summary>

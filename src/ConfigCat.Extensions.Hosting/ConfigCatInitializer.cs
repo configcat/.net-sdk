@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -28,7 +29,7 @@ internal sealed class ConfigCatInitializer : IConfigCatInitializer
         this.initMode = opts.InitMode;
     }
 
-    public async Task InitializeAsync(CancellationToken cancellationToken)
+    public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
         var logger = this.serviceProvider.GetService<ILogger<ConfigCatInitializer>>();
 
@@ -102,7 +103,7 @@ internal sealed class ConfigCatInitializer : IConfigCatInitializer
                 }
                 else
                 {
-                    var message = string.Format(messageFormat, "{CLIENT_KEYS}") + " They may still be able to initialize later.";
+                    var message = string.Format(CultureInfo.InvariantCulture, messageFormat, "{CLIENT_KEYS}") + " They may still be able to initialize later.";
                     logger?.LogWarning(message, clientNames);
                 }
             }

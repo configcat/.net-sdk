@@ -16,24 +16,24 @@ using Microsoft.Extensions.Options;
 namespace ConfigCat.Extensions.Hosting;
 
 /// <summary>
-/// Represents a method that creates an <see cref="HttpClient"/> instance to perform ConfigCat config fetch operations.
-/// </summary>
-/// <typeparam name="TService">The type of the DI service used to create the <see cref="HttpClient"/>.</typeparam>
-/// <param name="service">The DI service used to create the <see cref="HttpClient"/>.</param>
-/// <param name="request">An object that describes the config fetch request to be made.</param>
-/// <param name="isRetry">Indicates whether the request is a retry of a previously failed request.</param>
-/// <returns>
-/// The <see cref="HttpClient"/> instance to use for the config fetch request.
-/// Note that the returned instance will be disposed after the request completes.
-/// </returns>
-public delegate HttpClient HttpClientFactory<TService>(TService service, FetchRequest request, bool isRetry)
-    where TService : class;
-
-/// <summary>
 /// Provides methods for configuring the ConfigCat SDK services.
 /// </summary>
 public sealed class ConfigCatBuilder
 {
+    /// <summary>
+    /// Represents a method that creates an <see cref="HttpClient"/> instance to perform ConfigCat config fetch operations.
+    /// </summary>
+    /// <typeparam name="TService">The type of the DI service used to create the <see cref="HttpClient"/>.</typeparam>
+    /// <param name="service">The DI service used to create the <see cref="HttpClient"/>.</param>
+    /// <param name="request">An object that describes the config fetch request to be made.</param>
+    /// <param name="isRetry">Indicates whether the request is a retry of a previously failed request.</param>
+    /// <returns>
+    /// The <see cref="HttpClient"/> instance to use for the config fetch request.
+    /// Note that the returned instance will be disposed after the request completes.
+    /// </returns>
+    public delegate HttpClient HttpClientFactory<TService>(TService service, FetchRequest request, bool isRetry)
+        where TService : class;
+
     private readonly IServiceCollection? services; // set for minimal hosting model only
 
     private Action<IServiceCollection>? pendingRegistrations;

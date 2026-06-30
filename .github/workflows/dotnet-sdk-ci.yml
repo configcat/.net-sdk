@@ -108,7 +108,7 @@ jobs:
     # See also: https://andrewlock.net/version-vs-versionsuffix-vs-packageversion-what-do-they-all-mean/
     - name: Build
       run: |
-        dotnet build -c Release /p:ContinuousIntegrationBuild=true /p:Version=$VERSION
+        dotnet build ConfigCatSdk.sln -c Release /p:ContinuousIntegrationBuild=true /p:Version=$VERSION
 
     - name: Pack
       run: |

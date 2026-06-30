@@ -1,48 +1,20 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net462;netstandard2.0;netstandard2.1;net8.0;net9.0;net10.0</TargetFrameworks>
-    <SignAssembly>true</SignAssembly>
-    <DelaySign>false</DelaySign>
-    <AssemblyOriginatorKeyFile>..\ConfigCatClient.snk</AssemblyOriginatorKeyFile>
-    <Version Condition="$(Version) == ''">0.1.0</Version>
-    <Copyright>Copyright © ConfigCat 2026</Copyright>
-    <Company>ConfigCat</Company>
-    <Authors>ConfigCat</Authors>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://configcat.com/docs/sdk-reference/dotnet</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/ConfigCat/.net-sdk</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <LangVersion>14</LangVersion>
-    <Nullable>enable</Nullable>
-    <WarningsAsErrors>nullable</WarningsAsErrors>
-    <PackageReleaseNotes>https://github.com/configcat/.net-sdk/releases</PackageReleaseNotes>
+
+    <NoWarn>CS1591;CS1685;$(NoWarn)</NoWarn>
+
     <PackageTags>feature flag toggle feature-flag feature-flags featureflag featureflags feature-toggle feature-toggles featuretoggle featuretoggles canary release remote config remoteconfig remote-config configcat configcatclient</PackageTags>
-    <Description>
-      An official package that provides a streamlined way to integrate the ConfigCat SDK into ASP.NET Core applications and other modern .NET applications built on .NET Generic Host (Microsoft.Extensions.Hosting).
-    </Description>
-    <PackageIcon>icon.png</PackageIcon>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <!-- Enable Source Link (for details, see https://github.com/dotnet/sourcelink/#using-sourcelink) -->
-    <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <Description>An official package that provides a streamlined way to integrate the ConfigCat SDK into ASP.NET Core applications and other modern .NET applications built on .NET Generic Host (Microsoft.Extensions.Hosting) or .NET's standard dependency injection (Microsoft.Extensions.DependencyInjection).</Description>
+
     <!-- Ensure support for trimming and AOT compilation -->
     <IsTrimmable Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">true</IsTrimmable>
     <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">true</IsAotCompatible>
     <EnableConfigurationBindingGenerator Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">true</EnableConfigurationBindingGenerator>
-
-    <NoWarn>CS1591;CS1685;$(NoWarn)</NoWarn>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Net.Http" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="all" />
-    <PackageReference Include="SauceControl.InheritDoc" Version="2.0.2" PrivateAssets="all" />
   </ItemGroup>
 
   <Choose>
@@ -79,11 +51,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ConfigCatClient\ConfigCatClient.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="..\ConfigCatClient\icon.png" Pack="true" Visible="false" PackagePath="" LinkBase="" />
-    <None Include="..\..\README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
   <ItemGroup>

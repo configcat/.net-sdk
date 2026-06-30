@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using ConfigCat.Client.Models;
 using ConfigCat.Client.Tests.Helpers;
 
 namespace ConfigCat.Client.Benchmarks.New;

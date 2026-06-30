@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using ConfigCat.Client.Evaluation;
-using ConfigCat.Client.Models;
 using ConfigCat.Client.Tests.Helpers;
+
+#if !BENCHMARK_OLD
+using ConfigCat.Client.Models;
+#endif
 
 #if BENCHMARK_OLD
 namespace ConfigCat.Client.Benchmarks.Old;

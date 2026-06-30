@@ -49,8 +49,10 @@ internal abstract class TaskShim
 
             static async Task<TResult> Awaited(Task<TResult> tcsTask)
             {
+#pragma warning disable CA2007 // Consider calling ConfigureAwait on the awaited task
                 var result = await tcsTask;
                 await Task.Yield();
+#pragma warning restore CA2007 // Consider calling ConfigureAwait on the awaited task
                 return result;
             }
         }

@@ -6,7 +6,6 @@ using System.Linq;
 using System.Text.Json;
 using ConfigCat.Client.Evaluation;
 using ConfigCat.Client.Tests.Helpers;
-using ConfigCat.Client.Utils;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 

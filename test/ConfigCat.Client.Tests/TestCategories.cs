@@ -1,6 +1,6 @@
 namespace ConfigCat.Client.Tests;
 
-public class TestCategories
+public static class TestCategories
 {
     public const string Integration = nameof(Integration);
 }

@@ -321,7 +321,7 @@ public class BasicConfigCatClientIntegrationTests
             options.ConfigFetcher = ConfigFetcherHelper.CreateFetcherWithCustomHandler(fakeHandler);
         });
 
-        manualPollClient.ForceRefreshAsync().ContinueWith(_ => defer.Set());
+        manualPollClient.ForceRefreshAsync().ContinueWith(_ => defer.Set(), TaskScheduler.Default);
         manualPollClient.Dispose();
         defer.WaitOne();
 

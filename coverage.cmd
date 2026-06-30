@@ -1,1 +1,1 @@
-OpenCover.Console.exe -register:user -target:dotnet.exe -targetargs:"test src\ConfigCat.Client.Tests\ConfigCat.Client.Tests.csproj -c Release" -output:.\coverage.xml -filter:"+[*]ConfigCat.Client.* -[ConfigCatClientTests]* -[*]ConfigCat.Client.Versioning.*" -oldstyle -returntargetcode
+OpenCover.Console.exe -register:user -target:dotnet.exe -targetargs:"test test\ConfigCat.Client.Tests\ConfigCat.Client.Tests.csproj -c Release" -output:.\coverage.xml -filter:"+[*]ConfigCat.Client.* -[ConfigCatClientTests]* -[*]ConfigCat.Client.Versioning.*" -oldstyle -returntargetcode

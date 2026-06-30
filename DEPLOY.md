@@ -9,7 +9,7 @@ Make sure the CI is running: https://github.com/configcat/.net-sdk/actions/workf
 1. Run tests
 
    ```PowerShell
-   dotnet test src/ConfigCatClient.sln
+   dotnet test ConfigCatSdk.sln
    ```
 
 1. Create tag on GitHub or push tag to remote

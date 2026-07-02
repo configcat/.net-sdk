@@ -10,6 +10,27 @@
     <link rel="stylesheet" href="css/app.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
     <link href="BlazorWasm.styles.css" rel="stylesheet" />
+
+    <script>
+      function isLocalStorageAvailable() {
+        const testKey = "__configcat_localStorage_test";
+        try {
+          const storage = localStorage;
+          storage.setItem(testKey, testKey);
+
+          let retrievedItem;
+          try {
+              retrievedItem = storage.getItem(testKey);
+          } finally {
+              storage.removeItem(testKey);
+          }
+
+          return retrievedItem === testKey;
+        } catch {
+          return false;
+        }
+      }
+    </script>
 </head>
 
 <body>

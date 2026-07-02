@@ -1,5 +1,8 @@
 using System;
+
+#if !(NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER)
 using System.Buffers;
+#endif
 
 namespace ConfigCat.Client.Utils;
 

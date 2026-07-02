@@ -1,10 +1,11 @@
+#if !NET6_0_OR_GREATER
+
 using ConfigCat.Client.Shims;
 
 namespace System.Threading.Tasks;
 
 internal static class TaskExtensions
 {
-#if !NET6_0_OR_GREATER
     // Polyfill for Task.WaitAsync(CancellationToken) introduced in .NET 6
     // See also: https://github.com/dotnet/runtime/blob/v6.0.13/src/libraries/System.Private.CoreLib/src/System/Threading/Tasks/Task.cs#L2758
 
@@ -47,5 +48,6 @@ internal static class TaskExtensions
             }
         }
     }
-#endif
 }
+
+#endif

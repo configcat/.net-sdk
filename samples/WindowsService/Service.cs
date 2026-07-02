@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace WindowsService;
 
-internal class Service : BackgroundService
+internal sealed class Service : BackgroundService
 {
     private readonly IConfigCatClient configCatClient;
     private readonly ILogger<Service> logger;

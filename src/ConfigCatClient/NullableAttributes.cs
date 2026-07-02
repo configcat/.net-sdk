@@ -4,6 +4,7 @@
 // Source: https://github.com/dotnet/runtime/blob/v6.0.5/src/libraries/System.Private.CoreLib/src/System/Diagnostics/CodeAnalysis/NullableAttributes.cs
 
 #pragma warning disable IDE0161 // Convert to file-scoped namespace
+#pragma warning disable CA1019 // Define accessors for attribute arguments
 
 namespace System.Diagnostics.CodeAnalysis
 {

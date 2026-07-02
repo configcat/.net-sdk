@@ -99,7 +99,7 @@ internal sealed class ConfigCatInitializer : IConfigCatInitializer
 
                 if (throwOnInitFailure)
                 {
-                    throw new TimeoutException(string.Format(messageFormat, clientNames));
+                    throw new TimeoutException(string.Format(CultureInfo.CurrentCulture, messageFormat, clientNames));
                 }
                 else
                 {

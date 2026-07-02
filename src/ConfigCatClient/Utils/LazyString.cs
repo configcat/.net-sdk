@@ -49,7 +49,7 @@ internal struct LazyString
         }
     }
 
-    public bool IsValueCreated => this.argsOrValue is null or string;
+    public readonly bool IsValueCreated => this.argsOrValue is null or string;
 
     public override string ToString() => Value ?? string.Empty;
 

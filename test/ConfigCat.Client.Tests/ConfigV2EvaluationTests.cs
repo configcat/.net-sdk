@@ -237,7 +237,7 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
         var logger = new Mock<IConfigCatLogger>().Object.AsWrapper();
         var evaluator = new RolloutEvaluator(logger);
 
-        var ex = Assert.ThrowsException<InvalidConfigModelException>(() => evaluator.Evaluate<object?>(config!.SettingsOrEmpty, key, defaultValue: null, user: null, remoteConfig: null, logger));
+        var ex = Assert.ThrowsException<InvalidConfigModelException>(() => evaluator.Evaluate<object?>(config.SettingsOrEmpty, key, defaultValue: null, user: null, remoteConfig: null, logger));
 
         StringAssert.Contains(ex.Message, "Circular dependency detected");
         StringAssert.Contains(ex.Message, dependencyCycle);
@@ -432,7 +432,7 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
         var user = new User("12345") { Custom = { [customAttributeName] = customAttributeValue } };
 
         const string key = "boolTextEqualsNumber";
-        var evaluationDetails = evaluator.Evaluate<bool?>(config!.SettingsOrEmpty, key, defaultValue: null, user, remoteConfig: null, logger);
+        var evaluationDetails = evaluator.Evaluate<bool?>(config.SettingsOrEmpty, key, defaultValue: null, user, remoteConfig: null, logger);
 
         Assert.AreEqual(true, evaluationDetails.Value);
 
@@ -440,7 +440,7 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
         Assert.AreEqual(1, warnings.Length);
         Assert.AreEqual(3005, warnings[0].EventId);
 
-        var message = warnings[0].Message.ToString();
+        var message = warnings[0].Message.ToString(CultureInfo.InvariantCulture);
         var expectedAttributeValueText = ((double)customAttributeValue).ToString(CultureInfo.InvariantCulture);
         Assert.AreEqual($"Evaluation of condition (User.{customAttributeName} EQUALS '{expectedAttributeValueText}') for setting '{key}' may not produce the expected result (the User.{customAttributeName} attribute is not a string value, thus it was automatically converted to the string value '{expectedAttributeValueText}'). Please make sure that using a non-string value was intended.", message);
     }
@@ -608,7 +608,7 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
             }
             else if (s.StartsWith(decimalPrefix, StringComparison.Ordinal))
             {
-                customAttributeValue = decimal.Parse(s.Substring(decimalPrefix.Length));
+                customAttributeValue = decimal.Parse(s.Substring(decimalPrefix.Length), CultureInfo.InvariantCulture);
             }
             else if (s.StartsWith(dateTimePrefix, StringComparison.Ordinal))
             {
@@ -688,7 +688,7 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
                 mutableListPrefix = "mutablelist:";
             if (s.StartsWith(decimalPrefix, StringComparison.Ordinal))
             {
-                customAttributeValue = decimal.Parse(s.Substring(decimalPrefix.Length));
+                customAttributeValue = decimal.Parse(s.Substring(decimalPrefix.Length), CultureInfo.InvariantCulture);
             }
             else if (s.StartsWith(dateTimePrefix, StringComparison.Ordinal))
             {
@@ -782,7 +782,7 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
         };
 
         const string defaultValue = "default";
-        var actualReturnValue = evaluator.Evaluate(config!.SettingsOrEmpty, key, defaultValue, user, remoteConfig: null, logger).Value;
+        var actualReturnValue = evaluator.Evaluate(config.SettingsOrEmpty, key, defaultValue, user, remoteConfig: null, logger).Value;
 
         Assert.AreEqual(expectedReturnValue, actualReturnValue);
     }
@@ -837,7 +837,7 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
 
         const string defaultValue = "default";
         string actualReturnValue;
-        try { actualReturnValue = evaluator.Evaluate(config!.SettingsOrEmpty, key, defaultValue, user, remoteConfig: null, logger).Value; }
+        try { actualReturnValue = evaluator.Evaluate(config.SettingsOrEmpty, key, defaultValue, user, remoteConfig: null, logger).Value; }
         catch (InvalidOperationException) { actualReturnValue = defaultValue; }
 
         Assert.AreEqual(expectedReturnValue, actualReturnValue);

@@ -123,7 +123,7 @@ public class LoggerTests
         var loggerMock = new Mock<IConfigCatLogger>();
         loggerMock.SetupGet(m => m.LogLevel).Returns(LogLevel.Info);
 
-        LogFilterCallback logFilter = (LogLevel level, LogEventId eventId, ref FormattableLogMessage message, Exception? exception)
+        LogFilterCallback logFilter = (level, eventId, ref message, exception)
             => eventId.Id is not (1001 or 3001 or 5001);
 
         var logger = loggerMock.Object.AsWrapper(logFilter);

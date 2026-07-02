@@ -633,7 +633,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
     {
         EnsureComparisonValue(comparisonValue);
 
-        var version2 = parsedComparisonValue!;
+        var version2 = parsedComparisonValue;
         if (version2 is null)
         {
             return false;

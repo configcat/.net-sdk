@@ -53,23 +53,11 @@ internal abstract class ConfigServiceBase : IDisposable
     /// <remarks>
     /// Note for inheritors. Beware, this method is called within a lock statement.
     /// </remarks>
-    protected virtual void DisposeSynchronized(bool disposing)
+    protected virtual void DisposeSynchronized()
     {
         // Pending asynchronous operations (waiting for ready state, cache sync up, config refresh, etc.) should stop.
         this.disposeTokenSource.Cancel();
-
-        if (disposing)
-        {
-            this.disposeTokenSource.Dispose();
-        }
-    }
-
-    protected virtual void Dispose(bool disposing)
-    {
-        if (disposing)
-        {
-            (this.ConfigFetcher as IDisposable)?.Dispose();
-        }
+        this.disposeTokenSource.Dispose();
     }
 
     public void Dispose()
@@ -83,10 +71,10 @@ internal abstract class ConfigServiceBase : IDisposable
 
             this.status = Status.Disposed;
 
-            DisposeSynchronized(true);
+            DisposeSynchronized();
         }
 
-        Dispose(true);
+        (this.ConfigFetcher as IDisposable)?.Dispose();
     }
 
     public ProjectConfig GetInMemoryConfig() => this.ConfigCache.LocalCachedConfig;
@@ -155,7 +143,7 @@ internal abstract class ConfigServiceBase : IDisposable
                     }
 
                     return new ConfigWithFetchResult(latestConfig, fetchResult);
-                });
+                }, CancellationToken.None);
             }
         }
 
@@ -308,7 +296,7 @@ internal abstract class ConfigServiceBase : IDisposable
                 }
                 else
                 {
-                    AwaitAndCleanUp(cacheGetTask, cacheSyncUpTcs, cacheSyncUpTask!);
+                    AwaitAndCleanUp(cacheGetTask, cacheSyncUpTcs, cacheSyncUpTask);
                 }
             }
         }
@@ -328,7 +316,7 @@ internal abstract class ConfigServiceBase : IDisposable
                     // this is why we do these checks here (see also https://learn.microsoft.com/en-us/dotnet/standard/threading/destroying-threads).
                     || (Thread.CurrentThread.ThreadState & System.Threading.ThreadState.AbortRequested) != 0)
                 {
-                    try { _ = exception is not null ? cacheSyncUpTcs.TrySetException(exception) : cacheSyncUpTcs.TrySetCanceled(); }
+                    try { _ = exception is not null ? cacheSyncUpTcs.TrySetException(exception) : cacheSyncUpTcs.TrySetCanceled(default); }
 #else
                 if (exception is not null)
                 {

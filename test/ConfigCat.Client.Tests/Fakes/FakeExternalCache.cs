@@ -6,7 +6,7 @@ namespace ConfigCat.Client.Tests.Fakes;
 
 internal sealed class FakeExternalCache : IConfigCatCache
 {
-    public volatile string? CachedValue = null;
+    public volatile string? CachedValue;
 
     public ValueTask<string?> GetAsync(string key, CancellationToken cancellationToken = default)
     {
@@ -22,7 +22,7 @@ internal sealed class FakeExternalCache : IConfigCatCache
 
 internal sealed class FakeExternalAsyncCache : IConfigCatCache
 {
-    public volatile string? CachedValue = null;
+    public volatile string? CachedValue;
 
     private readonly TimeSpan delay;
 

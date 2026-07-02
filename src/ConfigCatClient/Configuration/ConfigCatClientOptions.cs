@@ -2,8 +2,11 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http;
-using System.Runtime.Versioning;
 using ConfigCat.Client.Cache;
+
+#if NET6_0_OR_GREATER
+using System.Runtime.Versioning;
+#endif
 
 namespace ConfigCat.Client.Configuration;
 

@@ -13,10 +13,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		coverage.cmd = coverage.cmd
 		DEPLOY.md = DEPLOY.md
 		Directory.Build.props = Directory.Build.props
-		format-code.ps1 = format-code.ps1
+		format-code.cmd = format-code.cmd
+		format-code.sh = format-code.sh
 		LICENSE = LICENSE
 		README.md = README.md
-		set-debug-type.ps1 = set-debug-type.ps1
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{286FC7F6-3D7D-4D43-BAFB-52056E83EE0B}"

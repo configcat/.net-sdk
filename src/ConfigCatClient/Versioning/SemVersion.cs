@@ -109,7 +109,7 @@ public sealed partial class SemVersion : IEquatable<SemVersion>, IComparable<Sem
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SemVersion"/> class from
-    /// a <see cref="System.Version"/>.
+    /// a <see cref="Version"/>.
     /// </summary>
     /// <param name="version">The <see cref="Version"/> that is used to initialize
     /// the Major, Minor, Patch and Build.</param>

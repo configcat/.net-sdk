@@ -8,7 +8,7 @@ namespace ConfigCat.Client.Benchmarks.Old;
 namespace ConfigCat.Client.Benchmarks.New;
 #endif
 
-internal class EvaluationServices
+internal sealed class EvaluationServices
 {
     public EvaluationServices(bool logInfo)
     {

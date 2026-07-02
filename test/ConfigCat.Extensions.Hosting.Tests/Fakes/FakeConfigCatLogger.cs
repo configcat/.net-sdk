@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Globalization;
 using ConfigCat.Client;
 
 namespace ConfigCat.Extensions.Hosting.Tests.Fakes;
@@ -17,6 +18,6 @@ internal sealed class FakeConfigCatLogger : IConfigCatLogger
 
     public void Log(LogLevel level, LogEventId eventId, ref FormattableLogMessage message, Exception? exception = null)
     {
-        LogEvents.Enqueue((level, eventId, message.ToString(), exception));
+        LogEvents.Enqueue((level, eventId, message.ToString(CultureInfo.InvariantCulture), exception));
     }
 }

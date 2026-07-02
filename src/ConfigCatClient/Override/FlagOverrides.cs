@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Runtime.Versioning;
 using ConfigCat.Client.Override;
+
+#if NET6_0_OR_GREATER
+using System.Runtime.Versioning;
+#endif
 
 namespace ConfigCat.Client;
 

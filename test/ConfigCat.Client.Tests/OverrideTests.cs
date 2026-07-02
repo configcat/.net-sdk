@@ -620,7 +620,7 @@ public class OverrideTests
 
         var asTaskMethod = typeof(ValueTask<>)
             .MakeGenericType(typeof(EvaluationDetails<>).MakeGenericType(defaultValue.GetType()))
-            .GetMethod(nameof(ValueTask<object>.AsTask))!;
+            .GetMethod(nameof(ValueTask<>.AsTask))!;
 
         var getValueDetailsTask = (Task)asTaskMethod.Invoke(getValueDetailsValueTask, Array.Empty<object>())!;
 
@@ -628,7 +628,7 @@ public class OverrideTests
 
         var actualEvaluatedValueDetails = (IEvaluationDetails)typeof(Task<>)
             .MakeGenericType(typeof(EvaluationDetails<>).MakeGenericType(defaultValue.GetType()))
-            .GetProperty(nameof(Task<object>.Result))!
+            .GetProperty(nameof(Task<>.Result))!
             .GetValue(getValueDetailsTask, null)!;
         var actualEvaluatedValue = actualEvaluatedValueDetails.Value;
         var actualEvaluatedValues = await client.GetAllValuesAsync(user: null);
@@ -713,7 +713,7 @@ public class OverrideTests
 
             var asTaskMethod = typeof(ValueTask<>)
                 .MakeGenericType(typeof(EvaluationDetails<>).MakeGenericType(defaultValue.GetType()))
-                .GetMethod(nameof(ValueTask<object>.AsTask))!;
+                .GetMethod(nameof(ValueTask<>.AsTask))!;
 
             var getValueDetailsTask = (Task)asTaskMethod.Invoke(getValueDetailsValueTask, Array.Empty<object>())!;
 
@@ -721,7 +721,7 @@ public class OverrideTests
 
             var actualEvaluatedValueDetails = (IEvaluationDetails)typeof(Task<>)
                 .MakeGenericType(typeof(EvaluationDetails<>).MakeGenericType(defaultValue.GetType()))
-                .GetProperty(nameof(Task<object>.Result))!
+                .GetProperty(nameof(Task<>.Result))!
                 .GetValue(getValueDetailsTask, null)!;
             var actualEvaluatedValue = actualEvaluatedValueDetails.Value;
             var actualEvaluatedValues = await client.GetAllValuesAsync(user: null);

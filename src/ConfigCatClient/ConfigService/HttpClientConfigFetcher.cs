@@ -5,12 +5,15 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Configuration;
 using ConfigCat.Client.Shims;
 using ConfigCat.Client.Utils;
+
+#if NET6_0_OR_GREATER
+using System.Runtime.Versioning;
+#endif
 
 namespace ConfigCat.Client;
 

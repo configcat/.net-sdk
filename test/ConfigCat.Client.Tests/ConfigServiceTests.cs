@@ -957,7 +957,7 @@ public class ConfigServiceTests
 
         Assert.IsTrue(clientReadyCalled);
 
-        Assert.IsTrue(configFetchedEvents.Count > 0);
+        Assert.IsTrue(!configFetchedEvents.IsEmpty);
         Assert.IsTrue(configFetchedEvents.TryDequeue(out var configFetchedEvent));
         Assert.IsFalse(configFetchedEvent.IsInitiatedByUser);
         Assert.AreEqual(failure, !configFetchedEvent.Result.IsSuccess);
@@ -1221,7 +1221,7 @@ public class ConfigServiceTests
 
         Assert.AreEqual(1, Volatile.Read(ref clientReadyEventCount));
 
-        Assert.IsTrue(configFetchedEvents.Count > 0);
+        Assert.IsTrue(!configFetchedEvents.IsEmpty);
         Assert.IsTrue(configFetchedEvents.TryDequeue(out var configFetchedEvent));
         Assert.IsFalse(configFetchedEvent.IsInitiatedByUser);
         Assert.IsTrue(configFetchedEvent.Result.IsSuccess);
@@ -1246,7 +1246,7 @@ public class ConfigServiceTests
         var externalCache = new Mock<IConfigCatCache>();
         externalCache
             .Setup(m => m.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .Returns(async (string _, CancellationToken _) => { await Task.Delay(delay); return cachedPcSerialized; });
+            .Returns(async (string _, CancellationToken ct) => { await Task.Delay(delay, ct); return cachedPcSerialized; });
 
         var logger = this.loggerMock.Object.AsWrapper();
 

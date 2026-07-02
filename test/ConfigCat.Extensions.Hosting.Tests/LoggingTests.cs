@@ -1,11 +1,7 @@
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client;
@@ -18,6 +14,13 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+#if NET10_0_OR_GREATER
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using System.Text.Json.Nodes;
+#endif
 
 namespace ConfigCat.Extensions.Hosting.Tests;
 

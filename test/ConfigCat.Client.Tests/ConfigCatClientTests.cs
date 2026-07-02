@@ -200,9 +200,9 @@ public class ConfigCatClientTests
         var sw = new Stopwatch();
         sw.Start();
         using var client = CreateClientWithMockedFetcher("1", this.loggerMock, this.fetcherMock,
-            onFetchAsync: async (cfg, _) =>
+            onFetchAsync: async (cfg, ct) =>
             {
-                await Task.Delay(delay);
+                await Task.Delay(delay, ct);
                 return FetchResult.Success(pc.With(ProjectConfig.GenerateTimeStamp()));
             },
             configServiceFactory: (fetcher, cacheParams, loggerWrapper, _) => new AutoPollConfigService(PollingModes.AutoPoll(maxInitWaitTime: maxInitWaitTime), this.fetcherMock.Object, cacheParams, loggerWrapper),
@@ -230,9 +230,9 @@ public class ConfigCatClientTests
         var sw = new Stopwatch();
         sw.Start();
         using var client = CreateClientWithMockedFetcher("1", this.loggerMock, this.fetcherMock,
-            onFetchAsync: async (cfg, _) =>
+            onFetchAsync: async (cfg, ct) =>
             {
-                await Task.Delay(delay);
+                await Task.Delay(delay, ct);
                 return FetchResult.Success(pc.With(ProjectConfig.GenerateTimeStamp()));
             },
             configServiceFactory: (fetcher, cacheParams, loggerWrapper, _) => new AutoPollConfigService(PollingModes.AutoPoll(maxInitWaitTime: maxInitWaitTime), this.fetcherMock.Object, cacheParams, loggerWrapper),
@@ -289,9 +289,9 @@ public class ConfigCatClientTests
         var sw = new Stopwatch();
         sw.Start();
         using var client = CreateClientWithMockedFetcher("1", this.loggerMock, this.fetcherMock,
-            onFetchAsync: async (cfg, _) =>
+            onFetchAsync: async (cfg, ct) =>
             {
-                await Task.Delay(delay);
+                await Task.Delay(delay, ct);
                 return FetchResult.Success(pc.With(ProjectConfig.GenerateTimeStamp()));
             },
             configServiceFactory: (fetcher, cacheParams, loggerWrapper, hooks) => new AutoPollConfigService(PollingModes.AutoPoll(maxInitWaitTime: maxInitWaitTime), this.fetcherMock.Object, cacheParams, loggerWrapper, hooks: hooks),
@@ -334,9 +334,9 @@ public class ConfigCatClientTests
         var sw = new Stopwatch();
         sw.Start();
         using var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
-            onFetchAsync: async (cfg, _) =>
+            onFetchAsync: async (cfg, ct) =>
             {
-                await Task.Delay(delay);
+                await Task.Delay(delay, ct);
                 return FetchResult.NotModified(pc.With(ProjectConfig.GenerateTimeStamp()));
             },
             configServiceFactory: (fetcher, cacheParams, loggerWrapper, hooks) => new AutoPollConfigService(PollingModes.AutoPoll(pollInterval, maxInitWaitTime), this.fetcherMock.Object, cacheParams, loggerWrapper, hooks: hooks),
@@ -508,7 +508,7 @@ public class ConfigCatClientTests
         };
 
         var client = CreateClientWithMockedFetcher(cacheKey, this.loggerMock, this.fetcherMock,
-            onFetchAsync: (_, _) => Task.FromResult<FetchResult>(default!),
+            onFetchAsync: (_, _) => Task.FromResult<FetchResult>(default),
             configServiceFactory,
             evaluatorFactory: null,
             configCacheFactory: logger => new ExternalConfigCache(externalCache, logger),
@@ -842,7 +842,7 @@ public class ConfigCatClientTests
         // Assert
 
         Assert.IsNotNull(actual);
-        Assert.AreEqual(key, actual!.Key);
+        Assert.AreEqual(key, actual.Key);
         Assert.AreEqual(defaultValue, actual.Value);
         Assert.IsTrue(actual.IsDefaultValue);
         Assert.IsNull(actual.VariationId);
@@ -895,7 +895,7 @@ public class ConfigCatClientTests
         // Assert
 
         Assert.IsNotNull(actual);
-        Assert.AreEqual(key, actual!.Key);
+        Assert.AreEqual(key, actual.Key);
         Assert.AreEqual(defaultValue, actual.Value);
         Assert.IsTrue(actual.IsDefaultValue);
         Assert.IsNull(actual.VariationId);
@@ -1066,7 +1066,7 @@ public class ConfigCatClientTests
             var actualDetails = actual.FirstOrDefault(details => details.Key == key);
 
             Assert.IsNotNull(actualDetails);
-            Assert.AreEqual(key, actualDetails!.Key);
+            Assert.AreEqual(key, actualDetails.Key);
             Assert.IsNull(actualDetails.Value);
             Assert.IsTrue(actualDetails.IsDefaultValue);
             Assert.IsNull(actualDetails.VariationId);
@@ -1115,7 +1115,7 @@ public class ConfigCatClientTests
         // Assert
 
         Assert.IsNotNull(actualKeys);
-        Assert.AreEqual(0, actualKeys.Count());
+        Assert.AreEqual(0, actualKeys.Count);
         this.loggerMock.Verify(m => m.Log(LogLevel.Error, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
     }
 
@@ -1139,7 +1139,7 @@ public class ConfigCatClientTests
         // Assert
 
         Assert.IsNotNull(actualKeys);
-        Assert.AreEqual(0, actualKeys.Count());
+        Assert.AreEqual(0, actualKeys.Count);
         this.loggerMock.Verify(m => m.Log(LogLevel.Error, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
     }
 
@@ -1162,7 +1162,7 @@ public class ConfigCatClientTests
         // Assert
 
         Assert.IsNotNull(actualKeys);
-        Assert.AreEqual(0, actualKeys.Count());
+        Assert.AreEqual(0, actualKeys.Count);
         this.loggerMock.Verify(m => m.Log(LogLevel.Error, It.IsAny<LogEventId>(), ref It.Ref<FormattableLogMessage>.IsAny, It.IsAny<Exception>()), Times.Once);
     }
 
@@ -1413,7 +1413,7 @@ public class ConfigCatClientTests
         if (passConfigureToSecondGet)
         {
             var messages = warnings2.Where(msg => msg.Contains("configuration action is ignored")).ToArray();
-            Assert.IsTrue(messages.Any());
+            Assert.IsTrue(messages.Length != 0);
             StringAssert.EndsWith(messages[0], "SDK Key: '**********************/****************789012'.");
         }
         else
@@ -2099,7 +2099,7 @@ public class ConfigCatClientTests
         var options = new ConfigCatClientOptions
         {
             Logger = logger,
-            LogFilter = (LogLevel level, LogEventId eventId, ref FormattableLogMessage message, Exception? exception) => eventId != 3001,
+            LogFilter = (level, eventId, ref message, exception) => eventId != 3001,
             FlagOverrides = FlagOverrides.LocalFile(Path.Combine("data", "sample_variationid_v5.json"), autoReload: false, OverrideBehaviour.LocalOnly)
         };
 
@@ -2189,7 +2189,7 @@ public class ConfigCatClientTests
         return int.TryParse(etag, NumberStyles.None, CultureInfo.InvariantCulture, out var value) ? value : 0;
     }
 
-    internal class FakeConfigService : ConfigServiceBase, IConfigService
+    internal sealed class FakeConfigService : ConfigServiceBase, IConfigService
     {
         public byte DisposeCount { get; private set; }
 
@@ -2198,10 +2198,10 @@ public class ConfigCatClientTests
         {
         }
 
-        protected override void Dispose(bool disposing)
+        protected override void DisposeSynchronized()
         {
             DisposeCount++;
-            base.Dispose(disposing);
+            base.DisposeSynchronized();
         }
 
         public Task<ClientCacheState> ReadyTask => Task.FromResult(ClientCacheState.NoFlagData);

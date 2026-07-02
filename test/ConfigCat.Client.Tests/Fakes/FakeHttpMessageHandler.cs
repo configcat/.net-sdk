@@ -8,17 +8,17 @@ using System.Threading.Tasks;
 
 namespace ConfigCat.Client.Tests;
 
-internal class FakeHttpMessageHandler : HttpMessageHandler
+internal sealed class FakeHttpMessageHandler : HttpMessageHandler
 {
     private readonly HttpStatusCode httpStatusCode;
     private readonly string? responseContent;
     private readonly TimeSpan? delay;
     private readonly EntityTagHeaderValue? httpETag;
 
-    private int sendInvokeCount = 0;
+    private int sendInvokeCount;
     public byte SendInvokeCount => (byte)this.sendInvokeCount;
 
-    public bool Disposed { get; private set; } = false;
+    public bool Disposed { get; private set; }
 
     public SortedList<byte, HttpRequestMessage> Requests = new();
 
@@ -60,7 +60,7 @@ internal class FakeHttpMessageHandler : HttpMessageHandler
         var sendInvokeCount = Interlocked.Increment(ref this.sendInvokeCount);
 
         if (this.delay is not null)
-            Task.Delay(this.delay.Value, cancellationToken).Wait();
+            Task.Delay(this.delay.Value, cancellationToken).Wait(CancellationToken.None);
 
         this.Requests.Add((byte)(sendInvokeCount - 1), request);
 

@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+
+#if NET6_0_OR_GREATER
 using System.Text;
+#endif
 
 namespace ConfigCat.Client.Utils;
 

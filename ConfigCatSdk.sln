@@ -19,15 +19,18 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{286FC7F6-3D7D-4D43-BAFB-52056E83EE0B}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{8CCADD48-53C9-44EA-B52C-3637EDFF90C3}"
+	ProjectSection(SolutionItems) = preProject
+		.github\CODEOWNERS = .github\CODEOWNERS
+		.github\dependabot.yml = .github\dependabot.yml
+	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConfigCat.Client.Tests", "test\ConfigCat.Client.Tests\ConfigCat.Client.Tests.csproj", "{88B138B9-E95F-4532-B8BB-058346810CE9}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConfigCatClient", "src\ConfigCatClient\ConfigCatClient.csproj", "{3046A17C-28AC-49A7-8B7B-E618FB5992F0}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConfigCat.Extensions.Hosting", "src\ConfigCat.Extensions.Hosting\ConfigCat.Extensions.Hosting.csproj", "{7184A706-6E3F-6ABC-692C-D82345EC3911}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConfigCat.Extensions.Hosting.Tests", "test\ConfigCat.Extensions.Hosting.Tests\ConfigCat.Extensions.Hosting.Tests.csproj", "{11D246D1-AB80-76A5-2019-B026A57E4059}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{1BF02D07-1BB2-4D1F-9550-555C5130B8B5}"
+	ProjectSection(SolutionItems) = preProject
+		.github\workflows\dotnet-sdk-ci.yml = .github\workflows\dotnet-sdk-ci.yml
+		.github\workflows\sonar-analysis.yml = .github\workflows\sonar-analysis.yml
+		.github\workflows\stale.yml = .github\workflows\stale.yml
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{986BD4B9-235F-4D2D-B162-105B46C6C471}"
 	ProjectSection(SolutionItems) = preProject
@@ -38,6 +41,16 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{FED0D97D-4
 	ProjectSection(SolutionItems) = preProject
 		test\Directory.Build.props = test\Directory.Build.props
 	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{286FC7F6-3D7D-4D43-BAFB-52056E83EE0B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConfigCat.Client.Tests", "test\ConfigCat.Client.Tests\ConfigCat.Client.Tests.csproj", "{88B138B9-E95F-4532-B8BB-058346810CE9}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConfigCatClient", "src\ConfigCatClient\ConfigCatClient.csproj", "{3046A17C-28AC-49A7-8B7B-E618FB5992F0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConfigCat.Extensions.Hosting", "src\ConfigCat.Extensions.Hosting\ConfigCat.Extensions.Hosting.csproj", "{7184A706-6E3F-6ABC-692C-D82345EC3911}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConfigCat.Extensions.Hosting.Tests", "test\ConfigCat.Extensions.Hosting.Tests\ConfigCat.Extensions.Hosting.Tests.csproj", "{11D246D1-AB80-76A5-2019-B026A57E4059}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -70,6 +83,8 @@ Global
 		{11D246D1-AB80-76A5-2019-B026A57E4059} = {286FC7F6-3D7D-4D43-BAFB-52056E83EE0B}
 		{986BD4B9-235F-4D2D-B162-105B46C6C471} = {5D0EDC2D-B06E-44C7-B722-A95605E4D58C}
 		{FED0D97D-4015-4F18-B785-DE5F193CF051} = {5D0EDC2D-B06E-44C7-B722-A95605E4D58C}
+		{8CCADD48-53C9-44EA-B52C-3637EDFF90C3} = {5D0EDC2D-B06E-44C7-B722-A95605E4D58C}
+		{1BF02D07-1BB2-4D1F-9550-555C5130B8B5} = {8CCADD48-53C9-44EA-B52C-3637EDFF90C3}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {603D984C-2D2B-40A1-A2D9-CDD598DC4AA8}

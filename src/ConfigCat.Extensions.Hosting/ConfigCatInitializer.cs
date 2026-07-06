@@ -62,13 +62,13 @@ internal sealed class ConfigCatInitializer : IConfigCatInitializer
 
         if (this.initMode.Value is null or ConfigCatInitMode.DoNotWaitForClientReady)
         {
-            logger?.LogInformation($"All registered {nameof(ConfigCatClient)} instances are created but may still be initializing.");
+            logger?.LogInformation($"All registered {nameof(IConfigCatClient)} services are created but may still be initializing.");
             return;
         }
 
         var throwOnInitFailure = ((ConfigCatInitMode.WaitForClientReady)this.initMode.Value).ThrowOnFailure;
 
-        logger?.LogInformation($"Waiting for {{CLIENT_COUNT}} {nameof(ConfigCatClient)} instance(s) to initalize...", clients.Count);
+        logger?.LogInformation($"Waiting for {{CLIENT_COUNT}} {nameof(IConfigCatClient)} service(s) to initalize...", clients.Count);
 
         var cacheStates = await Task.WhenAll(clients.Keys.Select(client => client.WaitForReadyAsync(cancellationToken)))
             .ConfigureAwait(TaskShim.ContinueOnCapturedContext);
@@ -87,11 +87,11 @@ internal sealed class ConfigCatInitializer : IConfigCatInitializer
 
             if (uninitalizedClients.Length == 0)
             {
-                logger?.LogInformation($"All registered {nameof(ConfigCatClient)} instances are initialized and ready to evaluate feature flags.");
+                logger?.LogInformation($"All registered {nameof(IConfigCatClient)} services are initialized and ready to evaluate feature flags.");
             }
             else
             {
-                const string messageFormat = $"One or more {nameof(ConfigCatClient)} instances failed to initialize within {nameof(AutoPoll.MaxInitWaitTime)}: {{0}}.";
+                const string messageFormat = $"One or more {nameof(IConfigCatClient)} services failed to initialize within {nameof(AutoPoll.MaxInitWaitTime)}: {{0}}.";
 
                 var clientNames = string.Join(", ", uninitalizedClients
                     .SelectMany(client => clients[client])

@@ -112,7 +112,7 @@ public class ConfigCatInitializerTests
         var ex = await Assert.ThrowsExceptionAsync<TimeoutException>(
             () => initializer.InitializeAsync(CancellationToken.None));
 
-        StringAssert.StartsWith(ex.Message, $"One or more {nameof(ConfigCatClient)} instances failed to initialize within {nameof(AutoPoll.MaxInitWaitTime)}:");
+        StringAssert.StartsWith(ex.Message, $"One or more {nameof(IConfigCatClient)} services failed to initialize within {nameof(AutoPoll.MaxInitWaitTime)}:");
     }
 
     [TestMethod]

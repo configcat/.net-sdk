@@ -622,7 +622,7 @@ public class ServiceRegistrationTests
 
         Assert.AreEqual(1, fakeLogger.LogEvents.Count(item =>
             item.logLevel == Microsoft.Extensions.Logging.LogLevel.Information
-            && item.message == $"All registered {nameof(ConfigCatClient)} instances are initialized and ready to evaluate feature flags."));
+            && item.message == $"All registered {nameof(IConfigCatClient)} services are initialized and ready to evaluate feature flags."));
 
         await host.StopAsync();
     }
@@ -670,7 +670,7 @@ public class ServiceRegistrationTests
 
         var ex = await Assert.ThrowsExceptionAsync<TimeoutException>(async () => await host.StartAsync());
 
-        Assert.AreEqual($"One or more {nameof(ConfigCatClient)} instances failed to initialize within {nameof(AutoPoll.MaxInitWaitTime)}: (default).", ex.Message);
+        Assert.AreEqual($"One or more {nameof(IConfigCatClient)} services failed to initialize within {nameof(AutoPoll.MaxInitWaitTime)}: (default).", ex.Message);
 
         await host.StopAsync();
     }
@@ -730,7 +730,7 @@ public class ServiceRegistrationTests
 
         var ex = await Assert.ThrowsExceptionAsync<TimeoutException>(async () => await host.StartAsync());
 
-        Assert.AreEqual($"One or more {nameof(ConfigCatClient)} instances failed to initialize within {nameof(AutoPoll.MaxInitWaitTime)}: (default).", ex.Message);
+        Assert.AreEqual($"One or more {nameof(IConfigCatClient)} services failed to initialize within {nameof(AutoPoll.MaxInitWaitTime)}: (default).", ex.Message);
 
         await host.StopAsync();
     }
@@ -811,11 +811,11 @@ public class ServiceRegistrationTests
 
         Assert.AreEqual(1, fakeLogger.LogEvents.Count(item =>
             item.logLevel == Microsoft.Extensions.Logging.LogLevel.Information
-            && item.message.ToString() == $"Waiting for 2 {nameof(ConfigCatClient)} instance(s) to initalize..."));
+            && item.message.ToString() == $"Waiting for 2 {nameof(IConfigCatClient)} service(s) to initalize..."));
 
         Assert.AreEqual(1, fakeLogger.LogEvents.Count(item =>
             item.logLevel == Microsoft.Extensions.Logging.LogLevel.Warning
-            && item.message.ToString() == $"One or more {nameof(ConfigCatClient)} instances failed to initialize within {nameof(AutoPoll.MaxInitWaitTime)}: '{clientName}'. They may still be able to initialize later."));
+            && item.message.ToString() == $"One or more {nameof(IConfigCatClient)} services failed to initialize within {nameof(AutoPoll.MaxInitWaitTime)}: '{clientName}'. They may still be able to initialize later."));
 
         await host.StopAsync();
     }
@@ -892,7 +892,7 @@ public class ServiceRegistrationTests
 
         Assert.AreEqual(1, fakeLogger.LogEvents.Count(item =>
             item.logLevel == Microsoft.Extensions.Logging.LogLevel.Information
-            && item.message == $"All registered {nameof(ConfigCatClient)} instances are created but may still be initializing."));
+            && item.message == $"All registered {nameof(IConfigCatClient)} services are created but may still be initializing."));
 
         await host.StopAsync();
     }

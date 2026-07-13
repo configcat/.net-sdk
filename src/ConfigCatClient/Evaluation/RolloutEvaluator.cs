@@ -1,9 +1,12 @@
 using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Linq;
 using System.Text;
+using ConfigCat.Client.Models;
 using ConfigCat.Client.Utils;
 using ConfigCat.Client.Versioning;
 
@@ -59,12 +62,12 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                 // 1. when the setting type is missing from the config JSON (which should occur in the case of a full config JSON flag override only) or
                 // 2. when the setting comes from a non-full config JSON flag override and has an unsupported value (see also ObjectExtensions.ToSetting).
                 // The latter case is handled by SettingValue.GetValue<T> below.
-                if (context.Setting.SettingType != Setting.UnknownType && context.Setting.SettingType != expectedSettingType)
+                if (context.Setting.settingType != Setting.UnknownType && context.Setting.settingType != expectedSettingType)
                 {
                     throw new EvaluationErrorException(EvaluationErrorCode.SettingValueTypeMismatch,
                         "The type of a setting must match the type of the specified default value. "
-                        + $"Setting's type was {context.Setting.SettingType} but the default value's type was {typeof(T)}. "
-                        + $"Please use a default value which corresponds to the setting type {context.Setting.SettingType}. "
+                        + $"Setting's type was {context.Setting.settingType} but the default value's type was {typeof(T)}. "
+                        + $"Please use a default value which corresponds to the setting type {context.Setting.settingType}. "
                         + "Learn more: https://configcat.com/docs/sdk-reference/dotnet/#setting-type-mapping");
                 }
 
@@ -76,8 +79,8 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             {
                 result = EvaluateSetting(ref context);
 
-                returnValue = (T)(context.Setting.SettingType != Setting.UnknownType
-                    ? result.Value.GetValue(context.Setting.SettingType)!
+                returnValue = (T)(context.Setting.settingType != Setting.UnknownType
+                    ? result.Value.GetValue(context.Setting.settingType)!
                     : result.Value.GetValue()!);
             }
 
@@ -105,13 +108,13 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
     private EvaluateResult EvaluateSetting(ref EvaluateContext context)
     {
-        var targetingRules = context.Setting.TargetingRules;
+        var targetingRules = context.Setting.TargetingRulesOrEmpty;
         if (targetingRules.Length > 0 && TryEvaluateTargetingRules(targetingRules, ref context, out var evaluateResult))
         {
             return evaluateResult;
         }
 
-        var percentageOptions = context.Setting.PercentageOptions;
+        var percentageOptions = context.Setting.PercentageOptionsOrEmpty;
         if (percentageOptions.Length > 0 && TryEvaluatePercentageOptions(percentageOptions, matchedTargetingRule: null, ref context, out evaluateResult))
         {
             return evaluateResult;
@@ -130,7 +133,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         for (var i = 0; i < targetingRules.Length; i++)
         {
             var targetingRule = targetingRules[i];
-            var conditions = targetingRule.Conditions;
+            var conditions = targetingRule.ConditionsOrEmpty;
 
             var isMatch = EvaluateConditions(conditions, targetingRule, contextSalt: context.Key, ref context, out var error);
             if (!isMatch)
@@ -145,13 +148,13 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                 continue;
             }
 
-            if (targetingRule.SimpleValue is { } simpleValue)
+            if (targetingRule.SimpleValueOrNull is { } simpleValue)
             {
                 result = new EvaluateResult(simpleValue, matchedTargetingRule: targetingRule);
                 return true;
             }
 
-            var percentageOptions = targetingRule.PercentageOptions;
+            var percentageOptions = targetingRule.PercentageOptionsOrNull;
             if (percentageOptions is not { Length: > 0 })
             {
                 throw new InvalidConfigModelException("Targeting rule THEN part is missing or invalid.");
@@ -192,7 +195,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             return false;
         }
 
-        var percentageOptionsAttributeName = context.Setting.PercentageOptionsAttribute;
+        var percentageOptionsAttributeName = context.Setting.percentageOptionsAttribute;
         object? percentageOptionsAttributeValue;
 
         if (percentageOptionsAttributeName is null)
@@ -238,7 +241,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         {
             var percentageOption = percentageOptions[i];
 
-            bucket += percentageOption.Percentage;
+            bucket += percentageOption.percentage;
 
             if (hashValue >= bucket)
             {
@@ -247,8 +250,8 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
             if (logBuilder is not null)
             {
-                var percentageOptionValue = percentageOption.Value.GetValue(throwIfInvalid: false) ?? EvaluateLogHelper.InvalidValuePlaceholder;
-                logBuilder.NewLine().Append($"- Hash value {hashValue} selects % option {i + 1} ({percentageOption.Percentage}%), '{percentageOptionValue}'.");
+                var percentageOptionValue = percentageOption.value.GetValue(throwIfInvalid: false) ?? EvaluateLogHelper.InvalidValuePlaceholder;
+                logBuilder.NewLine().Append($"- Hash value {hashValue} selects % option {i + 1} ({percentageOption.percentage}%), '{percentageOptionValue}'.");
             }
 
             result = new EvaluateResult(percentageOption, matchedTargetingRule, matchedPercentageOption: percentageOption);
@@ -360,17 +363,17 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             return false;
         }
 
-        var userAttributeName = condition.ComparisonAttribute ?? throw new InvalidConfigModelException("Comparison attribute name is missing.");
+        var userAttributeName = condition.comparisonAttribute ?? throw new InvalidConfigModelException("Comparison attribute name is missing.");
         var userAttributeValue = context.User.GetAttribute(userAttributeName);
 
-        if (userAttributeValue is null || userAttributeValue is string { Length: 0 })
+        if (userAttributeValue is null or string { Length: 0 })
         {
             this.logger.UserObjectAttributeIsMissing(condition, context.Key, userAttributeName);
             error = string.Format(CultureInfo.InvariantCulture, MissingUserAttributeError, userAttributeName);
             return false;
         }
 
-        var comparator = condition.Comparator;
+        var comparator = condition.comparator;
         switch (comparator)
         {
             case UserComparator.TextEquals:
@@ -382,7 +385,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             case UserComparator.SensitiveTextNotEquals:
                 text = GetUserAttributeValueAsText(userAttributeName, userAttributeValue, condition, context.Key);
                 return EvaluateSensitiveTextEquals(text, condition.StringValue,
-                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, negate: comparator == UserComparator.SensitiveTextNotEquals);
+                    EnsureConfigJsonSalt(context.Setting.configJsonSalt), contextSalt, negate: comparator == UserComparator.SensitiveTextNotEquals);
 
             case UserComparator.TextIsOneOf:
             case UserComparator.TextIsNotOneOf:
@@ -393,7 +396,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             case UserComparator.SensitiveTextIsNotOneOf:
                 text = GetUserAttributeValueAsText(userAttributeName, userAttributeValue, condition, context.Key);
                 return EvaluateSensitiveTextIsOneOf(text, condition.StringListValue,
-                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, negate: comparator == UserComparator.SensitiveTextIsNotOneOf);
+                    EnsureConfigJsonSalt(context.Setting.configJsonSalt), contextSalt, negate: comparator == UserComparator.SensitiveTextIsNotOneOf);
 
             case UserComparator.TextStartsWithAnyOf:
             case UserComparator.TextNotStartsWithAnyOf:
@@ -404,7 +407,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             case UserComparator.SensitiveTextNotStartsWithAnyOf:
                 text = GetUserAttributeValueAsText(userAttributeName, userAttributeValue, condition, context.Key);
                 return EvaluateSensitiveTextSliceEqualsAnyOf(text, condition.StringListValue,
-                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, startsWith: true, negate: comparator == UserComparator.SensitiveTextNotStartsWithAnyOf);
+                    EnsureConfigJsonSalt(context.Setting.configJsonSalt), contextSalt, startsWith: true, negate: comparator == UserComparator.SensitiveTextNotStartsWithAnyOf);
 
             case UserComparator.TextEndsWithAnyOf:
             case UserComparator.TextNotEndsWithAnyOf:
@@ -415,7 +418,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             case UserComparator.SensitiveTextNotEndsWithAnyOf:
                 text = GetUserAttributeValueAsText(userAttributeName, userAttributeValue, condition, context.Key);
                 return EvaluateSensitiveTextSliceEqualsAnyOf(text, condition.StringListValue,
-                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, startsWith: false, negate: comparator == UserComparator.SensitiveTextNotEndsWithAnyOf);
+                    EnsureConfigJsonSalt(context.Setting.configJsonSalt), contextSalt, startsWith: false, negate: comparator == UserComparator.SensitiveTextNotEndsWithAnyOf);
 
             case UserComparator.TextContainsAnyOf:
             case UserComparator.TextNotContainsAnyOf:
@@ -425,14 +428,14 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             case UserComparator.SemVerIsOneOf:
             case UserComparator.SemVerIsNotOneOf:
                 var version = GetUserAttributeValueAsSemVer(userAttributeName, userAttributeValue, condition, context.Key, out error);
-                return error is null && EvaluateSemVerIsOneOf(version!, condition.StringListValue, negate: comparator == UserComparator.SemVerIsNotOneOf);
+                return error is null && EvaluateSemVerIsOneOf(version!, condition.StringListValue, condition.SemVerListValue, negate: comparator == UserComparator.SemVerIsNotOneOf);
 
             case UserComparator.SemVerLess:
             case UserComparator.SemVerLessOrEquals:
             case UserComparator.SemVerGreater:
             case UserComparator.SemVerGreaterOrEquals:
                 version = GetUserAttributeValueAsSemVer(userAttributeName, userAttributeValue, condition, context.Key, out error);
-                return error is null && EvaluateSemVerRelation(version!, comparator, condition.StringValue);
+                return error is null && EvaluateSemVerRelation(version!, comparator, condition.StringValue, condition.SemVerValue);
 
             case UserComparator.NumberEquals:
             case UserComparator.NumberNotEquals:
@@ -450,14 +453,14 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
             case UserComparator.ArrayContainsAnyOf:
             case UserComparator.ArrayNotContainsAnyOf:
-                var stringArray = GetUserAttributeValueAsStringArray(userAttributeName, userAttributeValue, condition, context.Key, out error);
-                return error is null && EvaluateArrayContainsAnyOf(stringArray!, condition.StringListValue, negate: comparator == UserComparator.ArrayNotContainsAnyOf);
+                var stringList = GetUserAttributeValueAsStringList(userAttributeName, userAttributeValue, condition, context.Key, out error);
+                return error is null && EvaluateArrayContainsAnyOf(stringList!, condition.StringListValue, negate: comparator == UserComparator.ArrayNotContainsAnyOf);
 
             case UserComparator.SensitiveArrayContainsAnyOf:
             case UserComparator.SensitiveArrayNotContainsAnyOf:
-                stringArray = GetUserAttributeValueAsStringArray(userAttributeName, userAttributeValue, condition, context.Key, out error);
-                return error is null && EvaluateSensitiveArrayContainsAnyOf(stringArray!, condition.StringListValue,
-                    EnsureConfigJsonSalt(context.Setting.ConfigJsonSalt), contextSalt, negate: comparator == UserComparator.SensitiveArrayNotContainsAnyOf);
+                stringList = GetUserAttributeValueAsStringList(userAttributeName, userAttributeValue, condition, context.Key, out error);
+                return error is null && EvaluateSensitiveArrayContainsAnyOf(stringList!, condition.StringListValue,
+                    EnsureConfigJsonSalt(context.Setting.configJsonSalt), contextSalt, negate: comparator == UserComparator.SensitiveArrayNotContainsAnyOf);
 
             default:
                 throw new InvalidConfigModelException("Comparison operator is invalid.");
@@ -589,7 +592,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return negate;
     }
 
-    private static bool EvaluateSemVerIsOneOf(SemVersion version, string[]? comparisonValues, bool negate)
+    private static bool EvaluateSemVerIsOneOf(SemVersion version, string[]? comparisonValues, SemVersion?[]? parsedComparisonValues, bool negate)
     {
         EnsureComparisonValue(comparisonValues);
 
@@ -606,7 +609,8 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
                 continue;
             }
 
-            if (!SemVersion.TryParse(item.Trim(), out var version2, strict: true))
+            var version2 = parsedComparisonValues![i];
+            if (version2 is null)
             {
                 // NOTE: Previous versions of the evaluation algorithm ignored invalid comparison values.
                 // We keep this behavior for backward compatibility.
@@ -625,11 +629,12 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return result ^ negate;
     }
 
-    private static bool EvaluateSemVerRelation(SemVersion version, UserComparator comparator, string? comparisonValue)
+    private static bool EvaluateSemVerRelation(SemVersion version, UserComparator comparator, string? comparisonValue, SemVersion? parsedComparisonValue)
     {
         EnsureComparisonValue(comparisonValue);
 
-        if (!SemVersion.TryParse(comparisonValue.Trim(), out var version2, strict: true))
+        var version2 = parsedComparisonValue;
+        if (version2 is null)
         {
             return false;
         }
@@ -669,19 +674,39 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return before ? number < number2 : number > number2;
     }
 
-    private static bool EvaluateArrayContainsAnyOf(string[] array, string[]? comparisonValues, bool negate)
+    private static bool EvaluateArrayContainsAnyOf(IReadOnlyList<string> list, string[]? comparisonValues, bool negate)
     {
         EnsureComparisonValue(comparisonValues);
 
-        for (var i = 0; i < array.Length; i++)
+        // Enumerating an array directly is faster than enumerating through an interface,
+        // so we special-case it for better performance.
+        if (list is string[] array)
         {
-            var text = array[i];
-
-            for (var j = 0; j < comparisonValues.Length; j++)
+            for (var i = 0; i < array.Length; i++)
             {
-                if (text.Equals(EnsureComparisonValue(comparisonValues[j])))
+                var text = array[i];
+
+                for (var j = 0; j < comparisonValues.Length; j++)
                 {
-                    return !negate;
+                    if (text.Equals(EnsureComparisonValue(comparisonValues[j])))
+                    {
+                        return !negate;
+                    }
+                }
+            }
+        }
+        else
+        {
+            for (int i = 0, n = list.Count; i < n; i++)
+            {
+                var text = list[i];
+
+                for (var j = 0; j < comparisonValues.Length; j++)
+                {
+                    if (text.Equals(EnsureComparisonValue(comparisonValues[j])))
+                    {
+                        return !negate;
+                    }
                 }
             }
         }
@@ -689,19 +714,39 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return negate;
     }
 
-    private static bool EvaluateSensitiveArrayContainsAnyOf(string[] array, string[]? comparisonValues, string configJsonSalt, string contextSalt, bool negate)
+    private static bool EvaluateSensitiveArrayContainsAnyOf(IReadOnlyList<string> list, string[]? comparisonValues, string configJsonSalt, string contextSalt, bool negate)
     {
         EnsureComparisonValue(comparisonValues);
 
-        for (var i = 0; i < array.Length; i++)
+        // Enumerating an array directly is faster than enumerating through an interface,
+        // so we special-case it for better performance.
+        if (list is string[] array)
         {
-            var hash = HashComparisonValue(array[i], configJsonSalt, contextSalt);
-
-            for (var j = 0; j < comparisonValues.Length; j++)
+            for (var i = 0; i < array.Length; i++)
             {
-                if (hash.Equals(hexString: EnsureComparisonValue(comparisonValues[j]).AsSpan()))
+                var hash = HashComparisonValue(array[i], configJsonSalt, contextSalt);
+
+                for (var j = 0; j < comparisonValues.Length; j++)
                 {
-                    return !negate;
+                    if (hash.Equals(hexString: EnsureComparisonValue(comparisonValues[j]).AsSpan()))
+                    {
+                        return !negate;
+                    }
+                }
+            }
+        }
+        else
+        {
+            for (int i = 0, n = list.Count; i < n; i++)
+            {
+                var hash = HashComparisonValue(list[i], configJsonSalt, contextSalt);
+
+                for (var j = 0; j < comparisonValues.Length; j++)
+                {
+                    if (hash.Equals(hexString: EnsureComparisonValue(comparisonValues[j]).AsSpan()))
+                    {
+                        return !negate;
+                    }
                 }
             }
         }
@@ -715,7 +760,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         logBuilder?.AppendPrerequisiteFlagCondition(condition, context.Settings);
 
         Setting? prerequisiteFlag;
-        var prerequisiteFlagKey = condition.PrerequisiteFlagKey;
+        var prerequisiteFlagKey = condition.prerequisiteFlagKey;
         if (prerequisiteFlagKey is null)
         {
             throw new InvalidConfigModelException("Prerequisite flag key is missing.");
@@ -725,10 +770,10 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             throw new InvalidConfigModelException("Prerequisite flag is missing.");
         }
 
-        var comparisonValue = EnsureComparisonValue(condition.ComparisonValue.GetValue(throwIfInvalid: false));
+        var comparisonValue = EnsureComparisonValue(condition.comparisonValue.GetValue(throwIfInvalid: false));
 
         var expectedSettingType = comparisonValue.GetType().ToSettingType();
-        if (prerequisiteFlag.SettingType != Setting.UnknownType && prerequisiteFlag.SettingType != expectedSettingType)
+        if (prerequisiteFlag.settingType != Setting.UnknownType && prerequisiteFlag.settingType != expectedSettingType)
         {
             throw new InvalidConfigModelException($"Type mismatch between comparison value '{comparisonValue}' and prerequisite flag '{prerequisiteFlagKey}'.");
         }
@@ -754,7 +799,7 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
         var prerequisiteFlagValue = prerequisiteFlagEvaluateResult.Value.GetValue(expectedSettingType, throwIfInvalid: true)!;
 
-        var comparator = condition.Comparator;
+        var comparator = condition.comparator;
         var result = comparator switch
         {
             PrerequisiteFlagComparator.Equals => prerequisiteFlagValue.Equals(comparisonValue),
@@ -792,9 +837,9 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
             return false;
         }
 
-        var segment = condition.Segment ?? throw new InvalidConfigModelException("Segment reference is invalid.");
+        var segment = condition.segment ?? throw new InvalidConfigModelException("Segment reference is invalid.");
 
-        if (segment.Name is not { Length: > 0 })
+        if (segment.name is not { Length: > 0 })
         {
             throw new InvalidConfigModelException("Segment name is missing.");
         }
@@ -802,11 +847,11 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         logBuilder?
             .NewLine("(")
             .IncreaseIndent()
-            .NewLine().Append($"Evaluating segment '{segment.Name}':");
+            .NewLine().Append($"Evaluating segment '{segment.name}':");
 
-        var segmentResult = EvaluateConditions(segment.Conditions, targetingRule: null, contextSalt: segment.Name, ref context, out error);
+        var segmentResult = EvaluateConditions(segment.ConditionsOrEmpty, targetingRule: null, contextSalt: segment.name, ref context, out error);
 
-        var comparator = condition.Comparator;
+        var comparator = condition.comparator;
         var result = error is null && comparator switch
         {
             SegmentComparator.IsIn => segmentResult,
@@ -912,6 +957,11 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         {
             return SerializationHelper.SerializeStringArray(stringArray, unescapeAstral: true);
         }
+        else if (attributeValue is IReadOnlyList<string> stringList
+            || attributeValue is IList<string> mutableStringList && (stringList = mutableStringList.ToReadOnly()) is not null)
+        {
+            return SerializationHelper.SerializeStringList(stringList, unescapeAstral: true);
+        }
         else if (attributeValue.TryConvertNumericToDouble(out var number))
         {
             var format = Math.Abs(number) is >= 1e-6 and < 1e21
@@ -942,7 +992,17 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
 
     private SemVersion? GetUserAttributeValueAsSemVer(string attributeName, object attributeValue, UserCondition condition, string key, out string? error)
     {
-        if (attributeValue is string text && SemVersion.TryParse(text.Trim(), out var version, strict: true))
+        if (attributeValue is SemVersion version)
+        {
+            error = null;
+            return version;
+        }
+        else if (attributeValue is Version clrVersion)
+        {
+            error = null;
+            return new SemVersion(clrVersion);
+        }
+        else if (attributeValue is string text && SemVersion.TryParse(text.Trim(), out version!, strict: true))
         {
             error = null;
             return version;
@@ -983,15 +1043,24 @@ internal sealed class RolloutEvaluator : IRolloutEvaluator
         return default;
     }
 
-    private string[]? GetUserAttributeValueAsStringArray(string attributeName, object attributeValue, UserCondition condition, string key, out string? error)
+    private IReadOnlyList<string>? GetUserAttributeValueAsStringList(string attributeName, object attributeValue, UserCondition condition, string key, out string? error)
     {
         if (attributeValue is string[] stringArray
-            || attributeValue is string json && (stringArray = SerializationHelper.DeserializeStringArray(json.AsMemory(), throwOnError: false)!) is not null)
+            || attributeValue is string json && (stringArray = SerializationHelper.DeserializeStringArray(json.AsSpan(), throwOnError: false)!) is not null)
         {
             if (!Array.Exists(stringArray, item => item is null))
             {
                 error = null;
                 return stringArray;
+            }
+        }
+        else if (attributeValue is IReadOnlyList<string> stringList
+            || attributeValue is IList<string> mutableStringList && (stringList = mutableStringList.ToReadOnly()) is not null)
+        {
+            if (!stringList.Any(item => item is null))
+            {
+                error = null;
+                return stringList;
             }
         }
 

@@ -2,7 +2,7 @@ using System;
 using ConfigCat.Client;
 
 // Creating the ConfigCat client instance using the SDK Key
-using var client = ConfigCatClient.Get("PKDVCLf-Hq-h-kCzMp-L7Q/HhOWfwVtZ0mb30i9wi17GQ");
+using var client = ConfigCatClient.Get("configcat-sdk-1/PKDVCLf-Hq-h-kCzMp-L7Q/tiOvFw5gkky9LFu1Duuvzw");
 
 // Setting log level to Info to show detailed feature flag evaluation
 client.LogLevel = LogLevel.Info;

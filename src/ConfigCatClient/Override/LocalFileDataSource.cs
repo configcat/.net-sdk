@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using ConfigCat.Client.Models;
 using ConfigCat.Client.Shims;
 using ConfigCat.Client.Utils;
 
@@ -47,9 +50,7 @@ internal sealed class LocalFileDataSource : IOverrideDataSource, IDisposable
         }
     }
 
-    public Dictionary<string, Setting> GetOverrides() => this.overrideValues ?? new Dictionary<string, Setting>();
-
-    public Task<Dictionary<string, Setting>> GetOverridesAsync(CancellationToken cancellationToken = default) => Task.FromResult(this.overrideValues ?? new Dictionary<string, Setting>());
+    public IReadOnlyDictionary<string, Setting> GetOverrides() => this.overrideValues ?? new Dictionary<string, Setting>();
 
     private void StartWatch()
     {
@@ -108,15 +109,15 @@ internal sealed class LocalFileDataSource : IOverrideDataSource, IDisposable
                 try
                 {
                     var content = File.ReadAllText(this.fullPath);
-                    var simplified = SerializationHelper.DeserializeSimplifiedConfig(content.AsMemory(), tolerant: true, throwOnError: false);
+                    var simplified = SerializationHelper.DeserializeSimplifiedConfig(content.AsSpan(), tolerant: true, throwOnError: false);
                     if (simplified?.Entries is not null)
                     {
-                        this.overrideValues = simplified.Entries.ToDictionary(kv => kv.Key, kv => kv.Value.ToSetting());
+                        this.overrideValues = simplified.Entries.ToDictionary(kv => kv.Key, kv => Setting.FromValue(kv.Value));
                         break;
                     }
 
-                    var deserialized = Config.Deserialize(content.AsMemory(), tolerant: true);
-                    this.overrideValues = deserialized.Settings;
+                    var deserialized = Config.Deserialize(content.AsSpan(), tolerant: true);
+                    this.overrideValues = deserialized.SettingsOrEmpty;
                     break;
                 }
                 // this logic ensures that we keep trying to open the file for max 10s
@@ -158,12 +159,7 @@ internal sealed class LocalFileDataSource : IOverrideDataSource, IDisposable
 
     internal sealed class SimplifiedConfig
     {
-#if USE_NEWTONSOFT_JSON
-        [Newtonsoft.Json.JsonProperty(PropertyName = "flags")]
-        public Dictionary<string, object>? Entries { get; set; }
-#else
-        [System.Text.Json.Serialization.JsonPropertyName("flags")]
-        public Dictionary<string, System.Text.Json.JsonElement>? Entries { get; set; }
-#endif
+        [JsonPropertyName("flags")]
+        public Dictionary<string, JsonElement>? Entries { get; set; }
     }
 }

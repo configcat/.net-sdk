@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using ConfigCat.Client.Models;
 
 namespace ConfigCat.Client;
 
@@ -37,13 +38,13 @@ internal class Hooks : IProvidesHooks
     public void RaiseClientReady(ClientCacheState cacheState)
         => this.events.RaiseClientReady(this.client, cacheState);
 
-    public void RaiseFlagEvaluated(EvaluationDetails evaluationDetails)
+    public void RaiseFlagEvaluated(in EvaluationDetails evaluationDetails)
         => this.events.RaiseFlagEvaluated(this.client, evaluationDetails);
 
     public void RaiseConfigFetched(RefreshResult result, bool isInitiatedByUser)
         => this.events.RaiseConfigFetched(this.client, result, isInitiatedByUser);
 
-    public void RaiseConfigChanged(IConfig newConfig)
+    public void RaiseConfigChanged(Config newConfig)
         => this.events.RaiseConfigChanged(this.client, newConfig);
 
     public void RaiseError(ref FormattableLogMessage message, Exception? exception)
@@ -82,9 +83,9 @@ internal class Hooks : IProvidesHooks
     public class Events : IProvidesHooks
     {
         public virtual void RaiseClientReady(IConfigCatClient? client, ClientCacheState cacheState) { /* intentional no-op */ }
-        public virtual void RaiseFlagEvaluated(IConfigCatClient? client, EvaluationDetails evaluationDetails) { /* intentional no-op */ }
+        public virtual void RaiseFlagEvaluated(IConfigCatClient? client, in EvaluationDetails evaluationDetails) { /* intentional no-op */ }
         public virtual void RaiseConfigFetched(IConfigCatClient? client, RefreshResult result, bool isInitiatedByUser) { /* intentional no-op */ }
-        public virtual void RaiseConfigChanged(IConfigCatClient? client, IConfig newConfig) { /* intentional no-op */ }
+        public virtual void RaiseConfigChanged(IConfigCatClient? client, Config newConfig) { /* intentional no-op */ }
         public virtual void RaiseError(IConfigCatClient? client, ref FormattableLogMessage message, Exception? exception) { /* intentional no-op */ }
 
         public virtual event EventHandler<ClientReadyEventArgs>? ClientReady { add { /* intentional no-op */ } remove { /* intentional no-op */ } }
@@ -101,7 +102,7 @@ internal class Hooks : IProvidesHooks
             ClientReady?.Invoke(client, new ClientReadyEventArgs(cacheState));
         }
 
-        public override void RaiseFlagEvaluated(IConfigCatClient? client, EvaluationDetails evaluationDetails)
+        public override void RaiseFlagEvaluated(IConfigCatClient? client, in EvaluationDetails evaluationDetails)
         {
             FlagEvaluated?.Invoke(client, new FlagEvaluatedEventArgs(evaluationDetails));
         }
@@ -111,7 +112,7 @@ internal class Hooks : IProvidesHooks
             ConfigFetched?.Invoke(client, new ConfigFetchedEventArgs(result, isInitiatedByUser));
         }
 
-        public override void RaiseConfigChanged(IConfigCatClient? client, IConfig newConfig)
+        public override void RaiseConfigChanged(IConfigCatClient? client, Config newConfig)
         {
             ConfigChanged?.Invoke(client, new ConfigChangedEventArgs(newConfig));
         }

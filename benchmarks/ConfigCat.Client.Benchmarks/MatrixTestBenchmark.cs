@@ -32,13 +32,13 @@ public class MatrixTestBenchmark
     public bool LogInfo { get; set; }
 
     [Benchmark]
-    public int MatrixTests_ConfigV5()
+    public int MatrixTests_v9()
     {
         return Old.BenchmarkHelper.RunAllMatrixTests(this.testRunnerOld, this.evaluationServicesOld, this.tests);
     }
 
     [Benchmark]
-    public int MatrixTests_ConfigV6()
+    public int MatrixTests_vNext()
     {
         return New.BenchmarkHelper.RunAllMatrixTests(this.testRunnerNew, this.evaluationServicesNew, this.tests);
     }

@@ -15,7 +15,8 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
     private readonly TimeSpan pollInterval;
     private readonly TimeSpan pollExpiration;
     private readonly TimeSpan maxInitWaitTime;
-    private readonly CancellationTokenSource initSignalCancellationTokenSource = new(); // used for signalling initialization ready
+    private readonly TaskCompletionSource<object?> initSignalTcs; // used for signalling initialization ready
+    private readonly Task<object?> initSignalTask;
     private CancellationTokenSource timerCancellationTokenSource = new(); // used for signalling background work to stop
 
     internal AutoPollConfigService(
@@ -44,12 +45,14 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
 
         this.maxInitWaitTime = options.MaxInitWaitTime >= TimeSpan.Zero ? options.MaxInitWaitTime : Timeout.InfiniteTimeSpan;
 
+        this.initSignalTcs = TaskShim.CreateSafeCompletionSource(out this.initSignalTask);
+
         PrepareClientForEvents(this, hooks);
 
         var initialCacheSyncUpTask = SyncUpWithCacheAsync().AsTask();
 
         // This task will complete as soon as
-        // 1. a cache sync operation completes, and the obtained config is up-to-date (see GetConfig/GetConfigAsync and PollCoreAsync),
+        // 1. a cache sync operation completes, and the obtained config is up-to-date (see GetConfigAsync and PollCoreAsync),
         // 2. or, in case the client is online and the internal cache is still empty or expired after the initial cache sync-up,
         //    the first config fetch operation completes, regardless of success or failure (see OnConfigFetched).
         // If the service gets disposed before any of these events happen, the task will also complete, but with a canceled status.
@@ -69,88 +72,59 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
 
     public Task<ClientCacheState> ReadyTask { get; }
 
-    protected override void DisposeSynchronized(bool disposing)
+    protected override void DisposeSynchronized()
     {
         // Background work should stop under all circumstances
         this.timerCancellationTokenSource.Cancel();
+        this.timerCancellationTokenSource.Dispose();
 
-        if (disposing)
-        {
-            this.timerCancellationTokenSource.Dispose();
-        }
-
-        base.DisposeSynchronized(disposing);
-    }
-
-    protected override void Dispose(bool disposing)
-    {
-        if (disposing)
-        {
-            this.initSignalCancellationTokenSource.Dispose();
-        }
-
-        base.Dispose(disposing);
+        base.DisposeSynchronized();
     }
 
     private bool IsInitialized => InitializationTask.Status == TaskStatus.RanToCompletion;
 
     private void SignalInitialization()
     {
-        try
-        {
-            if (!this.initSignalCancellationTokenSource.IsCancellationRequested)
-            {
-                this.initSignalCancellationTokenSource.Cancel();
-                this.initSignalCancellationTokenSource.Dispose();
-            }
-        }
-        catch (ObjectDisposedException)
-        {
-            // Since SignalInitialization and Dispose are not synchronized,
-            // in extreme conditions a call to SignalInitialization may slip past the disposal of initializationCancellationTokenSource.
-            // In such cases we get an ObjectDisposedException here, which means that the config service has been disposed in the meantime.
-            // Thus, we can safely swallow this exception.
-        }
+        this.initSignalTcs.TrySetResult(null);
     }
 
     private async Task<bool> WaitForInitializationAsync(CancellationToken cancellationToken = default)
     {
+#if NET6_0_OR_GREATER
         try
         {
-            await TaskShim.Current.Delay(this.maxInitWaitTime, this.initSignalCancellationTokenSource.Token)
-                .WaitAsync(cancellationToken).ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+            await this.initSignalTask.WaitAsync(this.maxInitWaitTime, cancellationToken)
+                .ConfigureAwait(TaskShim.ContinueOnCapturedContext);
 
-            return false;
-        }
-        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
-        {
             return true;
         }
+        catch (TimeoutException)
+        {
+            return false;
+        }
+#else
+        using var timerCts = new CancellationTokenSource();
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(timerCts.Token, cancellationToken);
+        var completedTask = await Task.WhenAny(this.initSignalTask, TaskShim.Current.Delay(this.maxInitWaitTime, linkedCts.Token))
+            .ConfigureAwait(TaskShim.ContinueOnCapturedContext);
+
+        if (ReferenceEquals(completedTask, this.initSignalTask))
+        {
+            timerCts.Cancel(); // make sure that the underlying timer of the Delay task is released
+            return true;
+        }
+        else if (completedTask.IsCanceled)
+        {
+            completedTask.GetAwaiter().GetResult(); // propagate cancellation
+        }
+        return false;
+#endif
     }
 
     protected override async ValueTask<ClientCacheState> WaitForReadyAsync(Task<ProjectConfig> initialCacheSyncUpTask)
     {
         await InitializationTask.ConfigureAwait(TaskShim.ContinueOnCapturedContext);
         return GetCacheState(this.ConfigCache.LocalCachedConfig);
-    }
-
-    public ProjectConfig GetConfig()
-    {
-        var cachedConfig = SyncUpWithCache();
-
-        if (!cachedConfig.IsExpired(expiration: this.pollInterval))
-        {
-            SignalInitialization();
-        }
-        else if (!IsOffline && !IsInitialized)
-        {
-            // NOTE: We go sync over async here, however it's safe to do that in this case as
-            // the task will be completed on a thread pool thread (either by the polling loop or a timer callback).
-            InitializationTask.GetAwaiter().GetResult();
-            cachedConfig = this.ConfigCache.LocalCachedConfig;
-        }
-
-        return cachedConfig;
     }
 
     public async ValueTask<ProjectConfig> GetConfigAsync(CancellationToken cancellationToken = default)

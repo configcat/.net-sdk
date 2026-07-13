@@ -5,12 +5,15 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Configuration;
 using ConfigCat.Client.Shims;
 using ConfigCat.Client.Utils;
+
+#if NET6_0_OR_GREATER
+using System.Runtime.Versioning;
+#endif
 
 namespace ConfigCat.Client;
 
@@ -32,14 +35,13 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
     /// Represents a method that is called by <see cref="HttpClientConfigFetcher"/> when it makes an HTTP request, if it is configured to use
     /// externally created <see cref="HttpClient"/> instances.
     /// </summary>
-    /// <param name="request">The request for which a new <see cref="HttpClient"/> instance needs to be provided.</param>
-    /// <param name="isRetry">Indicates whether it is a retried request.</param>
+    /// <param name="request">An object that describes the config fetch request to be made.</param>
+    /// <param name="isRetry">Indicates whether the request is a retry of a previously failed request.</param>
     /// <returns>The <see cref="HttpClient"/> instance to use for making the request.</returns>
     public delegate HttpClient HttpClientFactory(FetchRequest request, bool isRetry);
 
     // either null (indicating disposed state)
     // or a HandlerState (internally managed handler)
-    // or a HttpMessageHandler (externally created handler)
     // or a HttpClientFactory (callback for full external control over HttpClient management, e.g. integration with IHttpClientFactory)
     private volatile object? handlerState;
 
@@ -66,11 +68,6 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
     protected internal HttpClientConfigFetcher(IWebProxy proxy)
     {
         this.handlerState = new HandlerState(proxy ?? throw new ArgumentNullException(nameof(proxy)));
-    }
-
-    internal HttpClientConfigFetcher(HttpMessageHandler externalHandler)
-    {
-        this.handlerState = externalHandler ?? throw new ArgumentNullException(nameof(externalHandler));
     }
 
     /// <summary>
@@ -164,10 +161,6 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
         {
             httpClient = CreateHttpClient(handlerState.Handler, request.Timeout);
         }
-        else if (handlerStateObj is HttpMessageHandler externalHandler)
-        {
-            httpClient = CreateHttpClient(externalHandler, request.Timeout);
-        }
         else if (handlerStateObj is HttpClientFactory httpClientFactory)
         {
             httpClient = httpClientFactory(request, isRetry: false);
@@ -222,7 +215,7 @@ public class HttpClientConfigFetcher : IConfigCatConfigFetcher
                 {
                     if (debugLogger is not null)
                     {
-                        var proxy = handlerState is not null ? handlerState.Proxy : (handlerStateObj as HttpClientHandler)?.Proxy;
+                        var proxy = handlerState?.Proxy;
                         if (proxy is null || proxy.IsBypassed(request.Uri))
                         {
                             debugLogger.LogInterpolated(LogLevel.Debug, 0,

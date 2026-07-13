@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using ConfigCat.Client.Models;
 using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client;
@@ -89,13 +90,13 @@ internal sealed class ProjectConfig
         var httpETagSpan = value.AsSpan(index, endIndex - index);
 
         index = endIndex + 1;
-        var configJsonSpan = value.AsMemory(index);
+        var configJsonSpan = value.AsSpan(index);
 
         Config? config;
         string? configJson;
         if (configJsonSpan.Length > 0)
         {
-            config = Config.Deserialize(configJsonSpan);
+            config = Config.Deserialize(configJsonSpan, tolerant: false);
             configJson = configJsonSpan.ToString();
         }
         else

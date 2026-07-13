@@ -1,4 +1,4 @@
-namespace ConfigCat.Client;
+namespace ConfigCat.Client.Models;
 
 /// <summary>
 /// User Object attribute comparison operator used during the evaluation process.

@@ -1,122 +1,90 @@
+using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Diagnostics.CodeAnalysis;
-using ConfigCat.Client.Utils;
-using ConfigCat.Client.Evaluation;
-
-#if USE_NEWTONSOFT_JSON
-using Newtonsoft.Json;
-#else
 using System.Text.Json.Serialization;
-#endif
+using ConfigCat.Client.Evaluation;
+using ConfigCat.Client.Utils;
+using ConfigCat.Client.Versioning;
 
-namespace ConfigCat.Client;
+namespace ConfigCat.Client.Models;
 
 /// <summary>
-/// Feature flag or setting.
+/// Describes a feature flag or setting.
 /// </summary>
-public interface ISetting : ISettingValueContainer
+public sealed class Setting : SettingValueContainer
 {
+    /// <summary>
+    /// Creates a setting that can be used for feature flag evaluation from the specified value.
+    /// </summary>
+    public static Setting FromValue(object value)
+    {
+        return value.ToSetting();
+    }
+
+    internal const SettingType UnknownType = (SettingType)byte.MaxValue;
+
+    [JsonConstructor]
+    internal Setting() { }
+
+    [JsonInclude, JsonPropertyName("t")]
+    internal SettingType settingType = UnknownType;
+
     /// <summary>
     /// Setting type.
     /// </summary>
-    SettingType SettingType { get; }
+    /// <remarks>
+    /// Can also be <see cref="byte.MaxValue"/> when the setting comes from a simple flag override with an unsupported value.
+    /// </remarks>
+    [JsonIgnore]
+    public SettingType SettingType => this.settingType;
+
+    [JsonInclude, JsonPropertyName("a")]
+    internal string? percentageOptionsAttribute;
 
     /// <summary>
     /// The User Object attribute which serves as the basis of percentage options evaluation.
     /// </summary>
-    string PercentageOptionsAttribute { get; }
+    [JsonIgnore]
+    public string PercentageOptionsAttribute => this.percentageOptionsAttribute ?? nameof(User.Identifier);
+
+    [JsonInclude, JsonPropertyName("r")]
+    internal TargetingRule[]? targetingRules;
+
+    internal TargetingRule[] TargetingRulesOrEmpty => this.targetingRules ?? Array.Empty<TargetingRule>();
+
+    private IReadOnlyList<TargetingRule>? targetingRulesReadOnly;
 
     /// <summary>
     /// The list of targeting rules (where there is a logical OR relation between the items).
     /// </summary>
-    IReadOnlyList<ITargetingRule> TargetingRules { get; }
+    [JsonIgnore]
+    public IReadOnlyList<TargetingRule> TargetingRules => this.targetingRulesReadOnly ??= this.targetingRules.ToReadOnlyOrEmptyIfNull();
+
+    [JsonInclude, JsonPropertyName("p")]
+    internal PercentageOption[]? percentageOptions;
+
+    internal PercentageOption[] PercentageOptionsOrEmpty => this.percentageOptions ?? Array.Empty<PercentageOption>();
+
+    private IReadOnlyList<PercentageOption>? percentageOptionsReadOnly;
 
     /// <summary>
     /// The list of percentage options.
     /// </summary>
-    IReadOnlyList<IPercentageOption> PercentageOptions { get; }
-}
-
-internal sealed class Setting : SettingValueContainer, ISetting
-{
-    public const SettingType UnknownType = (SettingType)byte.MaxValue;
-
-    private SettingType settingType = UnknownType;
-
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "t")]
-#else
-    [JsonPropertyName("t")]
-#endif
-    public SettingType SettingType
-    {
-        get => this.settingType;
-        set => ModelHelper.SetEnum(ref this.settingType, value);
-    }
-
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "a")]
-#else
-    [JsonPropertyName("a")]
-#endif
-    [NotNull]
-    public string? PercentageOptionsAttribute { get; set; }
-
-    string ISetting.PercentageOptionsAttribute => PercentageOptionsAttribute ?? nameof(User.Identifier);
-
-    private TargetingRule[]? targetingRules;
-
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "r")]
-#else
-    [JsonPropertyName("r")]
-#endif
-    [NotNull]
-    public TargetingRule[]? TargetingRules
-    {
-        get => this.targetingRules ?? ArrayUtils.EmptyArray<TargetingRule>();
-        set => this.targetingRules = value;
-    }
-
-    private IReadOnlyList<ITargetingRule>? targetingRulesReadOnly;
-
-    IReadOnlyList<ITargetingRule> ISetting.TargetingRules => this.targetingRulesReadOnly ??= this.targetingRules is { Length: > 0 }
-        ? new ReadOnlyCollection<ITargetingRule>(this.targetingRules)
-        : ArrayUtils.EmptyArray<ITargetingRule>();
-
-    private PercentageOption[]? percentageOptions;
-
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "p")]
-#else
-    [JsonPropertyName("p")]
-#endif
-    [NotNull]
-    public PercentageOption[]? PercentageOptions
-    {
-        get => this.percentageOptions ?? ArrayUtils.EmptyArray<PercentageOption>();
-        set => this.percentageOptions = value;
-    }
-
-    private IReadOnlyList<IPercentageOption>? percentageOptionsReadOnly;
-    IReadOnlyList<IPercentageOption> ISetting.PercentageOptions => this.percentageOptionsReadOnly ??= this.percentageOptions is { Length: > 0 }
-        ? new ReadOnlyCollection<IPercentageOption>(this.percentageOptions)
-        : ArrayUtils.EmptyArray<IPercentageOption>();
-
     [JsonIgnore]
-    public string? ConfigJsonSalt { get; private set; }
+    public IReadOnlyList<PercentageOption> PercentageOptions => this.percentageOptionsReadOnly ??= this.percentageOptions.ToReadOnlyOrEmptyIfNull();
 
-    internal void OnConfigDeserialized(Config config)
+    internal string? configJsonSalt;
+
+    internal void OnConfigDeserialized(Config config, ref Dictionary<string, SemVersion?>? semVerCache)
     {
-        ConfigJsonSalt = config.Preferences?.Salt;
+        this.configJsonSalt = config.preferences?.Salt;
 
-        foreach (var targetingRule in TargetingRules)
+        foreach (var targetingRule in TargetingRulesOrEmpty)
         {
-            targetingRule.OnConfigDeserialized(config);
+            targetingRule.OnConfigDeserialized(config, ref semVerCache);
         }
     }
 
+    /// <inheritdoc />
     public override string ToString()
     {
         return new IndentedTextBuilder()

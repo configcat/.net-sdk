@@ -2,10 +2,15 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http;
-using System.Runtime.Versioning;
 using ConfigCat.Client.Cache;
 
+#if NET6_0_OR_GREATER
+using System.Runtime.Versioning;
+#endif
+
 namespace ConfigCat.Client.Configuration;
+
+// Note for maintainers. If you change the options, update ExtendedConfigCatClientOptions.BindingWrapper as well.
 
 /// <summary>
 /// Options used to configure the ConfigCat SDK.
@@ -60,10 +65,8 @@ public class ConfigCatClientOptions : IProvidesHooks
     /// </remarks>
     public IConfigCatConfigFetcher? ConfigFetcher { get; set; }
 
-    internal static IConfigCatConfigFetcher CreateDefaultConfigFetcher(IWebProxy? proxy, HttpClientHandler? httpClientHandler) =>
-        httpClientHandler is null
-        ? (proxy is null ? new HttpClientConfigFetcher() : new HttpClientConfigFetcher(proxy))
-        : new HttpClientConfigFetcher(httpClientHandler);
+    internal static IConfigCatConfigFetcher CreateDefaultConfigFetcher(IWebProxy? proxy) =>
+        proxy is null ? new HttpClientConfigFetcher() : new HttpClientConfigFetcher(proxy);
 
     /// <summary>
     /// The cache implementation to use for storing and retrieving downloaded config data.
@@ -81,12 +84,6 @@ public class ConfigCatClientOptions : IProvidesHooks
     public PollingMode? PollingMode { get; set; }
 
     internal static PollingMode CreateDefaultPollingMode() => PollingModes.AutoPoll();
-
-    /// <summary>
-    /// An optional <see cref="System.Net.Http.HttpClientHandler"/> for providing network credentials and proxy settings.
-    /// </summary>
-    [Obsolete($"This option is deprecated, thus it will be removed from the public API in a future major version. Please use the {nameof(Proxy)} option instead, or set the {nameof(ConfigFetcher)} option (e.g., to an instance of {nameof(HttpClientConfigFetcher)}) if you need more control over HTTP communication.")]
-    public HttpClientHandler? HttpClientHandler { get; set; }
 
     /// <summary>
     /// Optional proxy settings to route HTTP requests through a HTTP, HTTPS, SOCKS, etc. proxy.<br/>
@@ -126,7 +123,7 @@ public class ConfigCatClientOptions : IProvidesHooks
     public FlagOverrides? FlagOverrides { get; set; }
 
     /// <summary>
-    /// The default user, used as fallback when there's no user parameter is passed to the setting evaluation methods like <see cref="IConfigCatClient.GetValue"/>, <see cref="IConfigCatClient.GetValueDetails"/>, etc.
+    /// The default user, used as fallback when there's no user parameter is passed to the setting evaluation methods like <see cref="IConfigCatClient.GetValueAsync"/>, <see cref="IConfigCatClient.GetValueDetailsAsync"/>, etc.
     /// </summary>
     public User? DefaultUser { get; set; }
 

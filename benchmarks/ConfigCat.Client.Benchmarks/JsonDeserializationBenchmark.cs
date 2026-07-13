@@ -1,7 +1,10 @@
 extern alias from_nuget;
 extern alias from_project;
+
 using BenchmarkDotNet.Attributes;
 using System;
+
+#pragma warning disable CS0618 // Type or member is obsolete
 
 namespace ConfigCat.Client.Benchmarks;
 
@@ -27,7 +30,7 @@ public class JsonDeserializationBenchmark
     public void Setup()
     {
         this.oldClient.ForceRefresh();
-        this.newClient.ForceRefresh();
+        this.newClient.ForceRefreshAsync().GetAwaiter().GetResult();
     }
 
     [Benchmark(Baseline = true)]
@@ -39,6 +42,6 @@ public class JsonDeserializationBenchmark
     [Benchmark]
     public object New()
     {
-        return this.newClient.GetValue("asd", false, this.newUser);
+        return this.newClient.Snapshot().GetValue("asd", false, this.newUser);
     }
 }

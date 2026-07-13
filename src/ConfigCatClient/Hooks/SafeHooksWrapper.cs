@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.CompilerServices;
+using ConfigCat.Client.Models;
 
 namespace ConfigCat.Client;
 
@@ -7,13 +8,13 @@ namespace ConfigCat.Client;
 // E.g. if a strong reference chain like AutoPollConfigService -> ... -> ConfigCatClient existed, the client instance could not be collected
 // because the background polling loop would keep the AutoPollConfigService alive indefinetely, which in turn would keep alive ConfigCatClient.
 // We need to break such strong reference chains with a weak reference somewhere. As consumers are free to add hook event handlers which
-// close over the client instance (e.g. client.ConfigChanged += (_, e) => { client.GetValue(...) }), that is, a chain like
+// close over the client instance (e.g. client.ConfigChanged += (_, e) => { client.Snapshot().GetValue(...); }), that is, a chain like
 // AutoPollConfigService -> Hooks -> EventHandler.Target -> ConfigCatClient can be created, it is the hooks reference that we need to make weak.
 internal readonly struct SafeHooksWrapper
 {
     private readonly WeakReference<Hooks> hooksWeakRef;
 
-    public Hooks Hooks => this.hooksWeakRef is { } hooksWeakRef && hooksWeakRef.TryGetTarget(out var hooks) ? hooks! : NullHooks.Instance;
+    public Hooks Hooks => this.hooksWeakRef is { } hooksWeakRef && hooksWeakRef.TryGetTarget(out var hooks) ? hooks : NullHooks.Instance;
 
     public SafeHooksWrapper(Hooks hooks)
     {
@@ -25,7 +26,7 @@ internal readonly struct SafeHooksWrapper
         => Hooks.RaiseClientReady(cacheState);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public void RaiseFlagEvaluated(EvaluationDetails evaluationDetails)
+    public void RaiseFlagEvaluated(in EvaluationDetails evaluationDetails)
         => Hooks.RaiseFlagEvaluated(evaluationDetails);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -33,7 +34,7 @@ internal readonly struct SafeHooksWrapper
         => Hooks.RaiseConfigFetched(result, isInitiatedByUser);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public void RaiseConfigChanged(IConfig newConfig)
+    public void RaiseConfigChanged(Config newConfig)
         => Hooks.RaiseConfigChanged(newConfig);
 
     [MethodImpl(MethodImplOptions.NoInlining)]

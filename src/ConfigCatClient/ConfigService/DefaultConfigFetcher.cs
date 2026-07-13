@@ -5,6 +5,7 @@ using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 using ConfigCat.Client.Configuration;
+using ConfigCat.Client.Models;
 using ConfigCat.Client.Shims;
 
 namespace ConfigCat.Client;
@@ -47,13 +48,6 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
         this.ownsConfigFetcher = ownsConfigFetcher;
         this.isCustomUri = isCustomUri;
         this.timeout = timeout;
-    }
-
-    public FetchResult Fetch(ProjectConfig lastConfig)
-    {
-        // NOTE: This method is unused now, we keep it because of tests for now,
-        // until the synchronous code paths are deleted soon.
-        return TaskShim.Current.Run(() => FetchAsync(lastConfig)).GetAwaiter().GetResult();
     }
 
     public async Task<FetchResult> FetchAsync(ProjectConfig lastConfig, CancellationToken cancellationToken = default)
@@ -159,22 +153,22 @@ internal sealed class DefaultConfigFetcher : IConfigFetcher, IDisposable
             }
 
             Config config;
-            try { config = Config.Deserialize(response.Body.AsMemory()); }
+            try { config = Config.Deserialize(response.Body.AsSpan(), tolerant: false); }
             catch (Exception ex) { return new DeserializedResponse(response, ex); }
 
-            if (config.Preferences is null)
+            if (config.preferences is null)
             {
                 return new DeserializedResponse(response, config);
             }
 
             Uri newBaseUri;
 
-            if (config.Preferences.BaseUrl is not { } newBaseUrl || this.baseUri.Equals(newBaseUri = GetBaseUri(newBaseUrl)))
+            if (config.preferences.BaseUrl is not { } newBaseUrl || this.baseUri.Equals(newBaseUri = GetBaseUri(newBaseUrl)))
             {
                 return new DeserializedResponse(response, config);
             }
 
-            RedirectMode redirect = config.Preferences.RedirectMode;
+            RedirectMode redirect = config.preferences.RedirectMode;
 
             if (this.isCustomUri && redirect != RedirectMode.Force)
             {

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ConfigCat.Client.Models;
 
 namespace ConfigCat.Client;
 
@@ -16,7 +17,7 @@ public interface IConfigCatClientSnapshot
     /// <summary>
     /// The internally cached config at the time the snapshot was created.
     /// </summary>
-    IConfig? FetchedConfig { get; }
+    Config? FetchedConfig { get; }
 
     /// <summary>
     /// Returns the available setting keys.

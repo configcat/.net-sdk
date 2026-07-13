@@ -1,8 +1,11 @@
 using System;
 using System.Diagnostics;
 using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Text;
+
+#if NET6_0_OR_GREATER
+using System.Runtime.CompilerServices;
+#endif
 
 namespace ConfigCat.Client.Utils;
 

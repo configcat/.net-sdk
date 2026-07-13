@@ -20,12 +20,14 @@ internal static class StringExtensions
 
     public static byte[] Sha1(this ArraySegment<byte> bytes)
     {
+#pragma warning disable CA5350 // Do Not Use Weak Cryptographic Algorithms
 #if NET5_0_OR_GREATER
         return SHA1.HashData(bytes.AsSpan());
 #else
         using var hash = SHA1.Create();
         return hash.ComputeHash(bytes.Array, bytes.Offset, bytes.Count);
 #endif
+#pragma warning restore CA5350 // Do Not Use Weak Cryptographic Algorithms
     }
 
     public static byte[] Sha256(this ArraySegment<byte> bytes)

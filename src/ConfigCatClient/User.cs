@@ -1,11 +1,6 @@
 using System;
 using System.Collections.Generic;
-
-#if USE_NEWTONSOFT_JSON
-using Newtonsoft.Json;
-#else
-using System.Text.Json.Serialization;
-#endif
+using ConfigCat.Client.Versioning;
 
 namespace ConfigCat.Client;
 
@@ -50,6 +45,8 @@ public class User
     /// </para>
     /// <para>
     /// SemVer-based comparators (IS ONE OF, &lt;, &gt;=, etc.)<br/>
+    /// * accept <see cref="SemVersion"/> values containing a preparsed semver value,<br/>
+    /// * accept <see cref="Version"/> values, which are automatically converted to a semver value,<br/>
     /// * accept <see cref="string"/> values containing a properly formatted, valid semver value,<br/>
     /// * all other values are considered invalid (a warning will be logged and the currently evaluated targeting rule will be skipped).
     /// </para>
@@ -68,7 +65,7 @@ public class User
     /// </para>
     /// <para>
     /// String array-based comparators (ARRAY CONTAINS ANY OF / ARRAY NOT CONTAINS ANY OF)<br/>
-    /// * accept arrays of <see cref="string"/>,<br/>
+    /// * accept arrays of <see cref="string"/>, <see cref="IReadOnlyList{T}"/> of <see cref="string"/> or <see cref="IList{T}"/> of <see cref="string"/><br/>
     /// * accept <see cref="string"/> values containing a valid JSON string which can be deserialized to an array of <see cref="string"/>,<br/>
     /// * all other values are considered invalid (a warning will be logged and the currently evaluated targeting rule will be skipped).
     /// </para>

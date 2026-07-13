@@ -1,0 +1,46 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net462;net481;netcoreapp2.1;netcoreapp3.1;net6.0;net8.0;net9.0;net10.0</TargetFrameworks>
+    <AssemblyName>ConfigCatClientTests</AssemblyName>
+
+    <NoWarn>CS1685;NU1902;NU1903</NoWarn>
+    <SuppressTfmSupportBuildWarnings Condition="'$(TargetFramework)' == 'netcoreapp2.1' OR '$(TargetFramework)' == 'netcoreapp3.1'">true</SuppressTfmSupportBuildWarnings>
+
+    <MSTestVersion>2.2.10</MSTestVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <!-- DynamicData matrix tests won't show up in VS 2022+ using MSTest.TestAdapter v2.2.10.
+      It seems we'd need v3.x to make that work. But v3.x supports .NET 4.6.2+ only...
+      However, as test discovery may be pretty slow because of the large number of test cases,
+      it's usually sufficient to see separate test results for only one of the target frameworks,
+      so we enable v3.x on the latest .NET LTS version only. -->
+    <MSTestVersion>3.1.1</MSTestVersion>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Web" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="3.1.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.2.0" />
+    <PackageReference Include="MSTest.TestAdapter" Version="$(MSTestVersion)" />
+    <PackageReference Include="MSTest.TestFramework" Version="$(MSTestVersion)" />
+    <PackageReference Include="Moq" Version="4.16.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ConfigCatClient\ConfigCatClient.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="data\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>

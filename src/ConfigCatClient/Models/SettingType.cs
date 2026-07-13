@@ -1,4 +1,4 @@
-namespace ConfigCat.Client;
+namespace ConfigCat.Client.Models;
 
 /// <summary>
 /// Setting type.

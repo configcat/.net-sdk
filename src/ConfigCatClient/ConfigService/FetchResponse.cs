@@ -32,27 +32,30 @@ public readonly struct FetchResponse
     /// <summary>
     /// Initializes a new instance of the <see cref="FetchResponse"/> struct.
     /// </summary>
-    public FetchResponse(HttpStatusCode statusCode, string? reasonPhrase, IEnumerable<KeyValuePair<string, string>> headers, string? body = null)
+    public FetchResponse(HttpStatusCode statusCode, string? reasonPhrase, IEnumerable<KeyValuePair<string, string>>? headers, string? body = null)
         : this(statusCode, reasonPhrase, body)
     {
         string? eTag = null, rayId = null;
 
-        foreach (var header in headers)
+        if (headers is not null)
         {
-            if (eTag is null && "ETag".Equals(header.Key, StringComparison.OrdinalIgnoreCase))
+            foreach (var header in headers)
             {
-                eTag = header.Value;
-                if (rayId is not null)
+                if (eTag is null && "ETag".Equals(header.Key, StringComparison.OrdinalIgnoreCase))
                 {
-                    break;
+                    eTag = header.Value;
+                    if (rayId is not null)
+                    {
+                        break;
+                    }
                 }
-            }
-            else if (rayId is null && "CF-RAY".Equals(header.Key, StringComparison.OrdinalIgnoreCase))
-            {
-                rayId = header.Value;
-                if (eTag is not null)
+                else if (rayId is null && "CF-RAY".Equals(header.Key, StringComparison.OrdinalIgnoreCase))
                 {
-                    break;
+                    rayId = header.Value;
+                    if (eTag is not null)
+                    {
+                        break;
+                    }
                 }
             }
         }

@@ -1,8 +1,6 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+using ConfigCat.Client.Models;
 
 namespace ConfigCat.Client.Override;
 
@@ -13,18 +11,14 @@ internal sealed class LocalDictionaryDataSource : IOverrideDataSource
 
     public LocalDictionaryDataSource(IDictionary<string, object> overrideValues, bool watchChanges)
     {
-        this.initialSettings = overrideValues.ToDictionary(kv => kv.Key, kv => kv.Value.ToSetting());
+        this.initialSettings = overrideValues.ToDictionary(kv => kv.Key, kv => Setting.FromValue(kv.Value));
         if (watchChanges)
         {
             this.overrideValues = overrideValues;
         }
     }
 
-    public Dictionary<string, Setting> GetOverrides() => GetSettingsFromSource();
-
-    public Task<Dictionary<string, Setting>> GetOverridesAsync(CancellationToken cancellationToken = default) => Task.FromResult(GetSettingsFromSource());
-
-    private Dictionary<string, Setting> GetSettingsFromSource() => this.overrideValues is not null
-        ? this.overrideValues.ToDictionary(kv => kv.Key, kv => kv.Value.ToSetting())
+    public IReadOnlyDictionary<string, Setting> GetOverrides() => this.overrideValues is not null
+        ? this.overrideValues.ToDictionary(kv => kv.Key, kv => Setting.FromValue(kv.Value))
         : this.initialSettings;
 }

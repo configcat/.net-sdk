@@ -2,13 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using ConfigCat.Client.Models;
 using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client.Evaluation;
 
 internal static class EvaluationHelper
 {
-    public static EvaluationDetails<T> Evaluate<T>(this IRolloutEvaluator evaluator, Dictionary<string, Setting>? settings, string key, T defaultValue, User? user,
+    public static EvaluationDetails<T> Evaluate<T>(this IRolloutEvaluator evaluator, IReadOnlyDictionary<string, Setting>? settings, string key, T defaultValue, User? user,
         ProjectConfig? remoteConfig, LoggerWrapper logger)
     {
         FormattableLogMessage logMessage;
@@ -22,7 +23,7 @@ internal static class EvaluationHelper
 
         if (!settings.TryGetValue(key, out var setting))
         {
-            var availableKeys = new StringListFormatter(settings.Keys);
+            var availableKeys = new StringListFormatter(settings.KeyCollection());
             logMessage = logger.SettingEvaluationFailedDueToMissingKey(key, nameof(defaultValue), defaultValue, availableKeys);
             return EvaluationDetails.FromDefaultValue(key, defaultValue, fetchTime: remoteConfig?.TimeStamp, user,
                 logMessage.ToLazyString(), errorCode: EvaluationErrorCode.SettingKeyMissing);
@@ -37,13 +38,13 @@ internal static class EvaluationHelper
         return EvaluationDetails.FromEvaluateResult(key, value, evaluateResult, fetchTime: remoteConfig?.TimeStamp, user);
     }
 
-    public static EvaluationDetails[] EvaluateAll(this IRolloutEvaluator evaluator, Dictionary<string, Setting>? settings, User? user,
+    public static EvaluationDetails[] EvaluateAll(this IRolloutEvaluator evaluator, IReadOnlyDictionary<string, Setting>? settings, User? user,
         ProjectConfig? remoteConfig, LoggerWrapper logger, string defaultReturnValue, out IReadOnlyList<Exception>? exceptions)
     {
         if (!CheckSettingsAvailable(settings, logger, defaultReturnValue))
         {
             exceptions = null;
-            return ArrayUtils.EmptyArray<EvaluationDetails>();
+            return Array.Empty<EvaluationDetails>();
         }
 
         var evaluationDetailsArray = new EvaluationDetails[settings.Count];
@@ -79,7 +80,7 @@ internal static class EvaluationHelper
         return evaluationDetailsArray;
     }
 
-    internal static KeyValuePair<string, T>? GetKeyAndValue<T>(Dictionary<string, Setting>? settings, string variationId, LoggerWrapper logger, string defaultReturnValue)
+    internal static KeyValuePair<string, T>? GetKeyAndValue<T>(IReadOnlyDictionary<string, Setting>? settings, string variationId, LoggerWrapper logger, string defaultReturnValue)
     {
         if (!CheckSettingsAvailable(settings, logger, defaultReturnValue))
         {
@@ -113,37 +114,37 @@ internal static class EvaluationHelper
         return null;
     }
 
-    private static KeyValuePair<string, SettingValue>? FindKeyAndValue(Dictionary<string, Setting> settings, string variationId, out SettingType settingType)
+    private static KeyValuePair<string, SettingValue>? FindKeyAndValue(IReadOnlyDictionary<string, Setting> settings, string variationId, out SettingType settingType)
     {
         foreach (var kvp in settings)
         {
             var key = kvp.Key;
             var setting = kvp.Value;
 
-            if (setting.VariationId == variationId)
+            if (setting.variationId == variationId)
             {
-                settingType = setting.SettingType;
-                return new KeyValuePair<string, SettingValue>(key, setting.Value);
+                settingType = setting.settingType;
+                return new KeyValuePair<string, SettingValue>(key, setting.value);
             }
 
-            foreach (var targetingRule in setting.TargetingRules)
+            foreach (var targetingRule in setting.TargetingRulesOrEmpty)
             {
-                if (targetingRule.SimpleValue is { } simpleValue)
+                if (targetingRule.SimpleValueOrNull is { } simpleValue)
                 {
-                    if (simpleValue.VariationId == variationId)
+                    if (simpleValue.variationId == variationId)
                     {
-                        settingType = setting.SettingType;
-                        return new KeyValuePair<string, SettingValue>(key, simpleValue.Value);
+                        settingType = setting.settingType;
+                        return new KeyValuePair<string, SettingValue>(key, simpleValue.value);
                     }
                 }
-                else if (targetingRule.PercentageOptions is { Length: > 0 } percentageOptions)
+                else if (targetingRule.PercentageOptionsOrNull is { Length: > 0 } percentageOptions)
                 {
                     foreach (var percentageOption in percentageOptions)
                     {
-                        if (percentageOption.VariationId == variationId)
+                        if (percentageOption.variationId == variationId)
                         {
-                            settingType = setting.SettingType;
-                            return new KeyValuePair<string, SettingValue>(key, percentageOption.Value);
+                            settingType = setting.settingType;
+                            return new KeyValuePair<string, SettingValue>(key, percentageOption.value);
                         }
                     }
                 }
@@ -153,12 +154,12 @@ internal static class EvaluationHelper
                 }
             }
 
-            foreach (var percentageOption in setting.PercentageOptions)
+            foreach (var percentageOption in setting.PercentageOptionsOrEmpty)
             {
-                if (percentageOption.VariationId == variationId)
+                if (percentageOption.variationId == variationId)
                 {
-                    settingType = setting.SettingType;
-                    return new KeyValuePair<string, SettingValue>(key, percentageOption.Value);
+                    settingType = setting.settingType;
+                    return new KeyValuePair<string, SettingValue>(key, percentageOption.value);
                 }
             }
         }
@@ -167,7 +168,7 @@ internal static class EvaluationHelper
         return null;
     }
 
-    internal static bool CheckSettingsAvailable([NotNullWhen(true)] Dictionary<string, Setting>? settings, LoggerWrapper logger, string defaultReturnValue)
+    internal static bool CheckSettingsAvailable([NotNullWhen(true)] IReadOnlyDictionary<string, Setting>? settings, LoggerWrapper logger, string defaultReturnValue)
     {
         if (settings is null)
         {

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using ConfigCat.Client.Evaluation;
-using ConfigCat.Client.Utils;
+using ConfigCat.Client.Models;
 
 using static ConfigCat.Client.ConfigCatClient;
 
@@ -43,7 +43,7 @@ public readonly struct ConfigCatClientSnapshot : IConfigCatClientSnapshot
         : ((IConfigCatClientSnapshot?)this.evaluationServicesOrFakeImpl)?.CacheState ?? ClientCacheState.NoFlagData;
 
     /// <inheritdoc/>
-    public IConfig? FetchedConfig => this.evaluationServicesOrFakeImpl is EvaluationServices
+    public Config? FetchedConfig => this.evaluationServicesOrFakeImpl is EvaluationServices
         ? this.settings.RemoteConfig?.Config
         : ((IConfigCatClientSnapshot?)this.evaluationServicesOrFakeImpl)?.FetchedConfig ?? null;
 
@@ -54,10 +54,10 @@ public readonly struct ConfigCatClientSnapshot : IConfigCatClientSnapshot
         {
             return this.evaluationServicesOrFakeImpl is not null
                 ? ((IConfigCatClientSnapshot)this.evaluationServicesOrFakeImpl).GetAllKeys()
-                : ArrayUtils.EmptyArray<string>();
+                : Array.Empty<string>();
         }
 
-        return this.settings.Value is { } settings ? settings.ReadOnlyKeys() : ArrayUtils.EmptyArray<string>();
+        return this.settings.Value is { } settings ? settings.KeyCollection() : Array.Empty<string>();
     }
 
     /// <inheritdoc/>

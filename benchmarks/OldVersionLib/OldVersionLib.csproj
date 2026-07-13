@@ -5,30 +5,26 @@
          to which the interals are made visible by ConfigCat.Client. -->
     <AssemblyName>ConfigCatClientTests</AssemblyName>
     <RootNamespace>ConfigCat.Client.Benchmarks.New</RootNamespace>
-    <TargetFrameworks>net48;net8.0</TargetFrameworks>
-    <LangVersion>12.0</LangVersion>
-    <Nullable>enable</Nullable>
-    <WarningsAsErrors>nullable</WarningsAsErrors>
-    <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>..\..\src\ConfigCatClient.snk</AssemblyOriginatorKeyFile>
+    <TargetFrameworks>net48;net10.0</TargetFrameworks>
     <DefineConstants>BENCHMARK_OLD;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ConfigCat.Client" Version="8.2.0" />
+    <PackageReference Include="ConfigCat.Client" Version="9.5.1" />
+    <PackageReference Include="System.Text.Json" Version="8.0.5" Condition="'$(TargetFramework)' == 'net48'" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="..\NewVersionLib\BenchmarkHelper.Shared.cs" Link="BenchmarkHelper.Shared.cs" />
     <Compile Include="..\NewVersionLib\ConfigHelper.cs" Link="ConfigHelper.cs" />
-    <Compile Include="..\..\src\ConfigCat.Client.Tests\MatrixTestRunnerBase.cs" Link="MatrixTestRunnerBase.cs" />
-    <Compile Include="..\..\src\ConfigCat.Client.Tests\Helpers\ConfigLocation.cs" Link="ConfigLocation.cs" />
-    <Compile Include="..\..\src\ConfigCat.Client.Tests\Helpers\ConfigLocation.LocalFile.cs" Link="ConfigLocation.LocalFile.cs" />
+    <Compile Include="..\..\test\ConfigCat.Client.Tests\MatrixTestRunnerBase.cs" Link="MatrixTestRunnerBase.cs" />
+    <Compile Include="..\..\test\ConfigCat.Client.Tests\Helpers\ConfigLocation.cs" Link="ConfigLocation.cs" />
+    <Compile Include="..\..\test\ConfigCat.Client.Tests\Helpers\ConfigLocation.LocalFile.cs" Link="ConfigLocation.LocalFile.cs" />
     <Compile Include="..\NewVersionLib\NullLogger.cs" Link="NullLogger.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="data\sample_v5_old.json">
+    <None Include="..\..\test\ConfigCat.Client.Tests\data\*" Link="data\%(Filename)%(Extension)">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

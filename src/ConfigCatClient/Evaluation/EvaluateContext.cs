@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using ConfigCat.Client.Models;
 using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client.Evaluation;

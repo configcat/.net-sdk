@@ -1,0 +1,11 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+    <DelaySign>false</DelaySign>
+    <AssemblyOriginatorKeyFile>..\..\src\ConfigCatClient.snk</AssemblyOriginatorKeyFile>
+
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+</Project>

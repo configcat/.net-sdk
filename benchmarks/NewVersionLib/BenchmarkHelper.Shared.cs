@@ -1,5 +1,6 @@
 using System.Linq;
 using ConfigCat.Client.Evaluation;
+using ConfigCat.Client.Tests.Helpers;
 
 #if BENCHMARK_OLD
 namespace ConfigCat.Client.Benchmarks.Old;
@@ -7,7 +8,7 @@ namespace ConfigCat.Client.Benchmarks.Old;
 namespace ConfigCat.Client.Benchmarks.New;
 #endif
 
-internal class EvaluationServices
+internal sealed class EvaluationServices
 {
     public EvaluationServices(bool logInfo)
     {
@@ -46,12 +47,12 @@ public static partial class BenchmarkHelper
     public static EvaluationDetails<T> Evaluate<T>(object evaluationServices, string key, T defaultValue, User? user = null)
     {
         var services = (EvaluationServices)evaluationServices;
-        return services.Evaluator.Evaluate(Config.Settings, key, defaultValue, user, remoteConfig: null, services.Logger);
+        return services.Evaluator.Evaluate(Config.GetSettings(), key, defaultValue, user, remoteConfig: null, services.Logger);
     }
 
     public static EvaluationDetails[] EvaluateAll(object evaluationServices, User? user = null)
     {
         var services = (EvaluationServices)evaluationServices;
-        return services.Evaluator.EvaluateAll(Config.Settings, user, remoteConfig: null, services.Logger, "empty array", out _);
+        return services.Evaluator.EvaluateAll(Config.GetSettings(), user, remoteConfig: null, services.Logger, "empty array", out _);
     }
 }

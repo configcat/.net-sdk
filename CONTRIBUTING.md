@@ -29,24 +29,24 @@ In general, we follow the ["fork-and-pull" Git workflow](https://github.com/susa
 
 With Visual Studio:
 
-1. Open `src/ConfigCatClient.sln` solution in Visual Studio
-2. Build `ConfigCatClient` project
+1. Open the `ConfigCatSdk.sln` solution in Visual Studio 2026 or another IDE compatible with .NET 10/C# 14
+2. Build the `ConfigCatClient` project
 
 From command line:
 
 ```bash
-dotnet build src/ConfigCatClient.sln
+dotnet build ConfigCatSdk.sln
 ```
 
 ## Running tests
 
 With Visual Studio:
 
-1. Open `src/ConfigCatClient.sln` solution in Visual Studio
-2. Run `ConfigCat.Client.Tests` project
+1. Open `ConfigCatSdk.sln` solution in Visual Studio
+2. Run the `ConfigCat.Client.Tests` project
 
 From command line:
 
 ```bash
-dotnet test src/ConfigCatClient.sln
+dotnet test ConfigCatSdk.sln
 ```

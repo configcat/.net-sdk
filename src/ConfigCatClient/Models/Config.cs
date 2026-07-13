@@ -1,110 +1,85 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using ConfigCat.Client.Utils;
-
-#if USE_NEWTONSOFT_JSON
-using Newtonsoft.Json;
-using System.Runtime.Serialization;
-#else
 using System.Text.Json.Serialization;
-#endif
+using ConfigCat.Client.Utils;
+using ConfigCat.Client.Versioning;
 
-namespace ConfigCat.Client;
+namespace ConfigCat.Client.Models;
 
 /// <summary>
-/// Details of a ConfigCat config.
+/// Describes a ConfigCat config's data model used for feature flag evaluation.
 /// </summary>
-public interface IConfig
+public sealed class Config : IJsonOnDeserialized
 {
+    /// <summary>
+    /// Deserializes the specified config JSON to a <see cref="Config"/> model that can be used for feature flag evaluation.
+    /// </summary>
+    /// <remarks>
+    /// Does superficial model validation only, meaning that the method makes sure that the specified config JSON
+    /// matches the type definition of the <see cref="Config"/> model, but doesn't check for semantic issues. E.g. doesn't validate
+    /// whether referenced segments and feature flags actually exist. (Such issues are checked during feature flag evaluation.)
+    /// </remarks>
+    public static Config Deserialize(ReadOnlySpan<char> configJson)
+    {
+        return Deserialize(configJson, tolerant: true);
+    }
+
+    internal static Config Deserialize(ReadOnlySpan<char> configJson, bool tolerant)
+    {
+        return SerializationHelper.DeserializeConfig(configJson, tolerant)
+            ?? throw new ArgumentException("Invalid config JSON content: " + configJson.ToString(), nameof(configJson));
+    }
+
+    [JsonConstructor]
+    internal Config() { }
+
+    [JsonInclude, JsonPropertyName("p")]
+    internal Preferences? preferences;
+
     /// <summary>
     /// The salt that was used to hash sensitive comparison values.
     /// </summary>
-    string? Salt { get; }
+    [JsonIgnore]
+    public string? Salt => this.preferences?.Salt;
+
+    [JsonInclude, JsonPropertyName("s")]
+    internal Segment[]? segments;
+
+    internal Segment[] SegmentsOrEmpty => this.segments ?? Array.Empty<Segment>();
+
+    private IReadOnlyList<Segment>? segmentsReadOnly;
 
     /// <summary>
     /// The list of segments.
     /// </summary>
-    IReadOnlyList<ISegment> Segments { get; }
+    [JsonIgnore]
+    public IReadOnlyList<Segment> Segments => this.segmentsReadOnly ??= this.segments.ToReadOnlyOrEmptyIfNull();
+
+    [JsonInclude, JsonPropertyName("f")]
+    internal Dictionary<string, Setting>? settings;
+
+    internal Dictionary<string, Setting> SettingsOrEmpty => this.settings ??= new Dictionary<string, Setting>();
+
+    private IReadOnlyDictionary<string, Setting>? settingsReadOnly;
 
     /// <summary>
     /// The dictionary of settings.
     /// </summary>
-    IReadOnlyDictionary<string, ISetting> Settings { get; }
-}
+    [JsonIgnore]
+    public IReadOnlyDictionary<string, Setting> Settings => this.settingsReadOnly ??= this.settings is { Count: > 0 }
+        ? this.settings.ToDictionary(kvp => kvp.Key, kvp => kvp.Value)
+        : new Dictionary<string, Setting>();
 
-internal sealed class Config : IConfig
-#if !USE_NEWTONSOFT_JSON
-    , IJsonOnDeserialized
-#endif
-{
-    public static Config Deserialize(ReadOnlyMemory<char> configJson, bool tolerant = false)
-    {
-        return SerializationHelper.DeserializeConfig(configJson, tolerant)
-            ?? throw new ArgumentException("Invalid config JSON content: " + configJson, nameof(configJson));
-    }
-
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "p")]
-#else
-    [JsonPropertyName("p")]
-#endif
-    public Preferences? Preferences { get; set; }
-
-    string? IConfig.Salt => Preferences?.Salt;
-
-    private Segment[]? segments;
-
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "s")]
-#else
-    [JsonPropertyName("s")]
-#endif
-    [NotNull]
-    public Segment[]? Segments
-    {
-        get => this.segments ?? ArrayUtils.EmptyArray<Segment>();
-        set => this.segments = value;
-    }
-
-    private IReadOnlyList<ISegment>? segmentsReadOnly;
-    IReadOnlyList<ISegment> IConfig.Segments => this.segmentsReadOnly ??= this.segments is { Length: > 0 }
-        ? new ReadOnlyCollection<ISegment>(this.segments)
-        : ArrayUtils.EmptyArray<ISegment>();
-
-    private Dictionary<string, Setting>? settings;
-
-#if USE_NEWTONSOFT_JSON
-    [JsonProperty(PropertyName = "f")]
-#else
-    [JsonPropertyName("f")]
-#endif
-    [NotNull]
-    public Dictionary<string, Setting>? Settings
-    {
-        get => this.settings ??= new Dictionary<string, Setting>();
-        set => this.settings = value;
-    }
-
-    private IReadOnlyDictionary<string, ISetting>? settingsReadOnly;
-    IReadOnlyDictionary<string, ISetting> IConfig.Settings => this.settingsReadOnly ??= this.settings is { Count: > 0 }
-        ? this.settings.ToDictionary(kvp => kvp.Key, kvp => (ISetting)kvp.Value)
-        : new Dictionary<string, ISetting>();
-
-#if USE_NEWTONSOFT_JSON
-    [OnDeserialized]
-    internal void OnDeserialized(StreamingContext context) => OnDeserialized();
-#endif
-
-    public void OnDeserialized()
+    void IJsonOnDeserialized.OnDeserialized()
     {
         if (this.settings is { Count: > 0 })
         {
+            Dictionary<string, SemVersion?>? semVerCache = null;
+
             foreach (var setting in this.settings.Values)
             {
-                setting.OnConfigDeserialized(this);
+                setting.OnConfigDeserialized(this, ref semVerCache);
             }
         }
     }

@@ -2,9 +2,9 @@ using BenchmarkDotNet.Running;
 
 namespace ConfigCatClient.Benchmarks;
 
-internal class Program
+public static class Program
 {
-    private static void Main(string[] args)
+    public static void Main(string[] args)
     {
         BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args);
     }

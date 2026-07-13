@@ -17,8 +17,8 @@ public struct FormattableLogMessage : IFormattable
     internal static FormattableLogMessage FromInterpolated(ValueFormattableString message, string[] argNames)
     {
         return new FormattableLogMessage(message.Format,
-            argNames ?? ArrayUtils.EmptyArray<string>(),
-            message.GetArguments() ?? ArrayUtils.EmptyArray<object?>());
+            argNames ?? Array.Empty<string>(),
+            message.GetArguments() ?? Array.Empty<object?>());
     }
 
     private readonly string? format;
@@ -52,6 +52,8 @@ public struct FormattableLogMessage : IFormattable
         this.invariantFormattedMessage = null;
     }
 
+    internal readonly bool IsFormat => this.format is not null;
+
     /// <summary>
     /// Log message format.
     /// </summary>
@@ -60,19 +62,19 @@ public struct FormattableLogMessage : IFormattable
     /// <summary>
     /// Names of the named arguments.
     /// </summary>
-    public readonly string[] ArgNames => this.argNames ?? ArrayUtils.EmptyArray<string>();
+    public readonly string[] ArgNames => this.argNames ?? Array.Empty<string>();
 
     /// <summary>
     /// Values of the named arguments.
     /// </summary>
-    public readonly object?[] ArgValues => this.argValues ?? ArrayUtils.EmptyArray<object?>();
+    public readonly object?[] ArgValues => this.argValues ?? Array.Empty<object?>();
 
     /// <summary>
     /// The log message formatted using <see cref="CultureInfo.InvariantCulture"/>.
     /// </summary>
     public string InvariantFormattedMessage => this.invariantFormattedMessage ??= ToString(CultureInfo.InvariantCulture);
 
-    internal LazyString ToLazyString()
+    internal readonly LazyString ToLazyString()
     {
         return this.invariantFormattedMessage
             ?? new LazyString(this.format ?? string.Empty, this.argValues);

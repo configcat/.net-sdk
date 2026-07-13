@@ -1,10 +1,11 @@
 using System;
+using System.Threading;
 
 namespace ConfigCat.Client.Tests;
 
 internal sealed class CounterLogger : IConfigCatLogger
 {
-    public byte LogMessageInvokeCount = 0;
+    public int LogMessageInvokeCount;
 
     public LogLevel LogLevel { get; set; }
 
@@ -17,6 +18,6 @@ internal sealed class CounterLogger : IConfigCatLogger
 
     public void Log(LogLevel level, LogEventId eventId, ref FormattableLogMessage message, Exception? exception = null)
     {
-        this.LogMessageInvokeCount++;
+        Interlocked.Increment(ref this.LogMessageInvokeCount);
     }
 }

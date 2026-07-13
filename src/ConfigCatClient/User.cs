@@ -65,7 +65,7 @@ public class User
     /// </para>
     /// <para>
     /// String array-based comparators (ARRAY CONTAINS ANY OF / ARRAY NOT CONTAINS ANY OF)<br/>
-    /// * accept arrays of <see cref="string"/>,<br/>
+    /// * accept arrays of <see cref="string"/>, <see cref="IReadOnlyList{T}"/> of <see cref="string"/> or <see cref="IList{T}"/> of <see cref="string"/><br/>
     /// * accept <see cref="string"/> values containing a valid JSON string which can be deserialized to an array of <see cref="string"/>,<br/>
     /// * all other values are considered invalid (a warning will be logged and the currently evaluated targeting rule will be skipped).
     /// </para>

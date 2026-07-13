@@ -6,7 +6,7 @@ using ConfigCat.Client.Evaluation;
 using ConfigCat.Client.Utils;
 using ConfigCat.Client.Versioning;
 
-namespace ConfigCat.Client;
+namespace ConfigCat.Client.Models;
 
 /// <summary>
 /// Describes a targeting rule.
@@ -48,7 +48,7 @@ public sealed class TargetingRule
     /// </summary>
     [JsonIgnore]
     public IReadOnlyList<PercentageOption>? PercentageOptions => this.percentageOptionsReadOnly ??= this.then is PercentageOption[] percentageOptions
-        ? percentageOptions.AsReadOnly()
+        ? percentageOptions.ToReadOnlyOrEmptyIfNull()
         : null;
 
     [JsonInclude, JsonPropertyName("s")]

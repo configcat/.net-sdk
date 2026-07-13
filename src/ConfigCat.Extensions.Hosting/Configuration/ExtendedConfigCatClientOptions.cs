@@ -30,7 +30,7 @@ public sealed class ExtendedConfigCatClientOptions : ConfigCatClientOptions
         [DisallowNull]
         public string? SdkKey
         {
-            get => options.SdkKey!;
+            get => options.SdkKey;
             set => options.SdkKey = value;
         }
 

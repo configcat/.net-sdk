@@ -1,6 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
-using ConfigCat.Client;
+using ConfigCat.Client.Models;
 
 namespace System;
 

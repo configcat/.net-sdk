@@ -67,7 +67,7 @@ public class ConfigCatToMSLoggerAdapter : IConfigCatLogger
             {
                 if (this.message.ArgNames is { } argNames && (uint)index < (uint)argNames.Length)
                 {
-                    return new KeyValuePair<string, object?>(argNames[index], this.message.ArgValues![index]);
+                    return new KeyValuePair<string, object?>(argNames[index], this.message.ArgValues[index]);
                 }
 
                 if (index == Count - 1)
@@ -75,7 +75,7 @@ public class ConfigCatToMSLoggerAdapter : IConfigCatLogger
                     return new KeyValuePair<string, object?>("{OriginalFormat}", GetOriginalFormat());
                 }
 
-                throw new IndexOutOfRangeException(nameof(index));
+                throw new ArgumentOutOfRangeException(nameof(index), index, null);
             }
         }
 

@@ -319,6 +319,7 @@ public sealed class ConfigCatBuilder
     private sealed class ClientFactory(string clientName) : ClientFactoryBase(clientName)
     {
 #pragma warning disable CA1822 // Member '{0}' does not access instance data and can be marked as static
+#pragma warning disable CA1859 // Use concrete types when possible for improved performance
         public IConfigCatClient CreateDefault(IServiceProvider serviceProvider)
         {
             var options = serviceProvider.GetRequiredService<IOptions<ExtendedConfigCatClientOptions>>().Value;
@@ -335,12 +336,14 @@ public sealed class ConfigCatBuilder
             }
             return ConfigCatClient.Get(options.SdkKey!, options);
         }
+#pragma warning restore CA1859 // Use concrete types when possible for improved performance
 #pragma warning restore CA1822 // Member '{0}' does not access instance data and can be marked as static
     }
 
     private sealed class ClientSnapshotFactory(string clientName) : ClientFactoryBase(clientName)
     {
 #pragma warning disable CA1822 // Member '{0}' does not access instance data and can be marked as static
+#pragma warning disable CA1859 // Use concrete types when possible for improved performance
         public IConfigCatClientSnapshot CreateDefault(IServiceProvider serviceProvider)
         {
             return serviceProvider.GetRequiredService<IConfigCatClient>().Snapshot();
@@ -351,6 +354,7 @@ public sealed class ConfigCatBuilder
             Debug.Assert(Equals(name, this.ClientName));
             return serviceProvider.GetRequiredKeyedService<IConfigCatClient>(this.ClientName).Snapshot();
         }
+#pragma warning restore CA1859 // Use concrete types when possible for improved performance
 #pragma warning restore CA1822 // Member '{0}' does not access instance data and can be marked as static
     }
 
@@ -376,11 +380,13 @@ public sealed class ConfigCatBuilder
 
             if (name == Name)
             {
+#pragma warning disable IDE0031 // Use null propagation
                 if (this.configuration is not null)
                 {
                     // In .NET 8+ builds, configuration binding is source generated (see also csproj).
                     this.configuration.Bind(new ExtendedConfigCatClientOptions.BindingWrapper(options));
                 }
+#pragma warning restore IDE0031 // Use null propagation
 
                 Action?.Invoke(options);
             }
@@ -413,7 +419,7 @@ public sealed class ConfigCatBuilder
                 this.originalFormatCache ??= new();
                 var categoryName = typeof(ConfigCatClient).FullName + (name == Options.DefaultName ? "^" : $"[{name}]");
                 var logger = this.loggerFactory.CreateLogger(categoryName);
-                options.Logger ??= new ConfigCatToMSLoggerAdapter(logger, this.originalFormatCache!);
+                options.Logger ??= new ConfigCatToMSLoggerAdapter(logger, this.originalFormatCache);
             }
         }
     }

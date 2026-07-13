@@ -72,17 +72,13 @@ internal sealed class AutoPollConfigService : ConfigServiceBase, IConfigService
 
     public Task<ClientCacheState> ReadyTask { get; }
 
-    protected override void DisposeSynchronized(bool disposing)
+    protected override void DisposeSynchronized()
     {
         // Background work should stop under all circumstances
         this.timerCancellationTokenSource.Cancel();
+        this.timerCancellationTokenSource.Dispose();
 
-        if (disposing)
-        {
-            this.timerCancellationTokenSource.Dispose();
-        }
-
-        base.DisposeSynchronized(disposing);
+        base.DisposeSynchronized();
     }
 
     private bool IsInitialized => InitializationTask.Status == TaskStatus.RanToCompletion;

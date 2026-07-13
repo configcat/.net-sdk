@@ -5,7 +5,7 @@ using ConfigCat.Client.Evaluation;
 using ConfigCat.Client.Utils;
 using ConfigCat.Client.Versioning;
 
-namespace ConfigCat.Client;
+namespace ConfigCat.Client.Models;
 
 /// <summary>
 /// Describes a feature flag or setting.
@@ -57,7 +57,7 @@ public sealed class Setting : SettingValueContainer
     /// The list of targeting rules (where there is a logical OR relation between the items).
     /// </summary>
     [JsonIgnore]
-    public IReadOnlyList<TargetingRule> TargetingRules => this.targetingRulesReadOnly ??= this.targetingRules.AsReadOnly();
+    public IReadOnlyList<TargetingRule> TargetingRules => this.targetingRulesReadOnly ??= this.targetingRules.ToReadOnlyOrEmptyIfNull();
 
     [JsonInclude, JsonPropertyName("p")]
     internal PercentageOption[]? percentageOptions;
@@ -70,7 +70,7 @@ public sealed class Setting : SettingValueContainer
     /// The list of percentage options.
     /// </summary>
     [JsonIgnore]
-    public IReadOnlyList<PercentageOption> PercentageOptions => this.percentageOptionsReadOnly ??= this.percentageOptions.AsReadOnly();
+    public IReadOnlyList<PercentageOption> PercentageOptions => this.percentageOptionsReadOnly ??= this.percentageOptions.ToReadOnlyOrEmptyIfNull();
 
     internal string? configJsonSalt;
 

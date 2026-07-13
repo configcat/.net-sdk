@@ -74,7 +74,7 @@ public struct FormattableLogMessage : IFormattable
     /// </summary>
     public string InvariantFormattedMessage => this.invariantFormattedMessage ??= ToString(CultureInfo.InvariantCulture);
 
-    internal LazyString ToLazyString()
+    internal readonly LazyString ToLazyString()
     {
         return this.invariantFormattedMessage
             ?? new LazyString(this.format ?? string.Empty, this.argValues);

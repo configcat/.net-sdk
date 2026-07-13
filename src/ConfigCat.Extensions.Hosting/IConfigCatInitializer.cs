@@ -7,12 +7,12 @@ using ConfigCat.Client.Configuration;
 namespace ConfigCat.Extensions.Hosting;
 
 /// <summary>
-/// Provides functionality for initializing <see cref="IConfigCatClient"/> instances registered in the DI container.
+/// Provides functionality for initializing <see cref="IConfigCatClient"/> services registered in the DI container.
 /// </summary>
 public interface IConfigCatInitializer
 {
     /// <summary>
-    /// Initializes all <see cref="IConfigCatClient"/> instances registered in the DI container.
+    /// Initializes all <see cref="IConfigCatClient"/> services registered in the DI container.
     /// </summary>
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>

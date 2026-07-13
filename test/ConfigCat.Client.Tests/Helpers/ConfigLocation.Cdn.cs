@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using ConfigCat.Client.Configuration;
+using ConfigCat.Client.Models;
 
 namespace ConfigCat.Client.Tests.Helpers;
 

@@ -5,7 +5,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace ConfigCat.Extensions.Hosting.Tests.Fakes;
 
-internal class FakeHost(IServiceProvider services,
+internal sealed class FakeHost(IServiceProvider services,
     Func<IServiceProvider, CancellationToken, Task>? startAsync = null,
     Func<IServiceProvider, CancellationToken, Task>? stopAsync = null)
     : IHost

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -7,7 +8,9 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ConfigCat.Client.Configuration;
 using ConfigCat.Client.Evaluation;
+using ConfigCat.Client.Models;
 using ConfigCat.Client.Tests.Helpers;
+using ConfigCat.Client.Utils;
 using ConfigCat.Client.Versioning;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
@@ -234,7 +237,7 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
         var logger = new Mock<IConfigCatLogger>().Object.AsWrapper();
         var evaluator = new RolloutEvaluator(logger);
 
-        var ex = Assert.ThrowsException<InvalidConfigModelException>(() => evaluator.Evaluate<object?>(config!.SettingsOrEmpty, key, defaultValue: null, user: null, remoteConfig: null, logger));
+        var ex = Assert.ThrowsException<InvalidConfigModelException>(() => evaluator.Evaluate<object?>(config.SettingsOrEmpty, key, defaultValue: null, user: null, remoteConfig: null, logger));
 
         StringAssert.Contains(ex.Message, "Circular dependency detected");
         StringAssert.Contains(ex.Message, dependencyCycle);
@@ -429,7 +432,7 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
         var user = new User("12345") { Custom = { [customAttributeName] = customAttributeValue } };
 
         const string key = "boolTextEqualsNumber";
-        var evaluationDetails = evaluator.Evaluate<bool?>(config!.SettingsOrEmpty, key, defaultValue: null, user, remoteConfig: null, logger);
+        var evaluationDetails = evaluator.Evaluate<bool?>(config.SettingsOrEmpty, key, defaultValue: null, user, remoteConfig: null, logger);
 
         Assert.AreEqual(true, evaluationDetails.Value);
 
@@ -437,7 +440,7 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
         Assert.AreEqual(1, warnings.Length);
         Assert.AreEqual(3005, warnings[0].EventId);
 
-        var message = warnings[0].Message.ToString();
+        var message = warnings[0].Message.ToString(CultureInfo.InvariantCulture);
         var expectedAttributeValueText = ((double)customAttributeValue).ToString(CultureInfo.InvariantCulture);
         Assert.AreEqual($"Evaluation of condition (User.{customAttributeName} EQUALS '{expectedAttributeValueText}') for setting '{key}' may not produce the expected result (the User.{customAttributeName} attribute is not a string value, thus it was automatically converted to the string value '{expectedAttributeValueText}'). Please make sure that using a non-string value was intended.", message);
     }
@@ -566,6 +569,14 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
     // String array-based comparisons
     [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "stringArrayContainsAnyOfDogDefaultCat", "12345", "Custom1", new string[] { "x", "read" }, "Dog")]
     [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "stringArrayContainsAnyOfDogDefaultCat", "12345", "Custom1", new string[] { "x", "Read" }, "Cat")]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "stringArrayContainsAnyOfDogDefaultCat", "12345", "Custom1", "list:[\"x\", \"read\"]", "Dog")]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "stringArrayContainsAnyOfDogDefaultCat", "12345", "Custom1", "list:[\"x\", \"Read\"]", "Cat")]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "stringArrayContainsAnyOfCleartextDogDefaultCat", "12345", "Custom1", "list:[\"x\", \"read\"]", "Dog")]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "stringArrayContainsAnyOfCleartextDogDefaultCat", "12345", "Custom1", "list:[\"x\", \"Read\"]", "Cat")]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "stringArrayContainsAnyOfDogDefaultCat", "12345", "Custom1", "mutablelist:[\"x\", \"read\"]", "Dog")]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "stringArrayContainsAnyOfDogDefaultCat", "12345", "Custom1", "mutablelist:[\"x\", \"Read\"]", "Cat")]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "stringArrayContainsAnyOfCleartextDogDefaultCat", "12345", "Custom1", "mutablelist:[\"x\", \"read\"]", "Dog")]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "stringArrayContainsAnyOfCleartextDogDefaultCat", "12345", "Custom1", "mutablelist:[\"x\", \"Read\"]", "Cat")]
     [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "stringArrayContainsAnyOfDogDefaultCat", "12345", "Custom1", "[\"x\", \"read\"]", "Dog")]
     [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "stringArrayContainsAnyOfDogDefaultCat", "12345", "Custom1", "[\"x\", \"Read\"]", "Cat")]
     [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "stringArrayContainsAnyOfDogDefaultCat", "12345", "Custom1", "x, read", "Cat")]
@@ -584,7 +595,9 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
                 versionPrefix = "version:",
                 decimalPrefix = "decimal:",
                 dateTimePrefix = "datetime:",
-                dateTimeOffsetPrefix = "datetimeoffset:";
+                dateTimeOffsetPrefix = "datetimeoffset:",
+                listPrefix = "list:",
+                mutableListPrefix = "mutablelist:";
             if (s.StartsWith(semVersionPrefix, StringComparison.Ordinal))
             {
                 customAttributeValue = SemVersion.Parse(s.Substring(semVersionPrefix.Length));
@@ -595,7 +608,7 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
             }
             else if (s.StartsWith(decimalPrefix, StringComparison.Ordinal))
             {
-                customAttributeValue = decimal.Parse(s.Substring(decimalPrefix.Length));
+                customAttributeValue = decimal.Parse(s.Substring(decimalPrefix.Length), CultureInfo.InvariantCulture);
             }
             else if (s.StartsWith(dateTimePrefix, StringComparison.Ordinal))
             {
@@ -605,6 +618,14 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
             else if (s.StartsWith(dateTimeOffsetPrefix, StringComparison.Ordinal))
             {
                 customAttributeValue = DateTimeOffset.ParseExact(s.Substring(dateTimeOffsetPrefix.Length), "o", CultureInfo.InvariantCulture);
+            }
+            else if (s.StartsWith(listPrefix, StringComparison.Ordinal))
+            {
+                customAttributeValue = new ReadOnlyCollection<string>(SerializationHelper.DeserializeStringArray(s.AsSpan(listPrefix.Length))!);
+            }
+            else if (s.StartsWith(mutableListPrefix, StringComparison.Ordinal))
+            {
+                customAttributeValue = new MutableOnlyList<string>(SerializationHelper.DeserializeStringArray(s.AsSpan(mutableListPrefix.Length))!);
             }
         }
 
@@ -642,6 +663,14 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
     [DataRow("stringArrayToStringConversionEmpty", new string[0], "5")]
     [DataRow("stringArrayToStringConversionSpecialChars", new[] { "+<>%\"'\\/\t\r\n" }, "3")]
     [DataRow("stringArrayToStringConversionUnicode", new[] { "äöüÄÖÜçéèñışğâ¢™✓😀" }, "2")]
+    [DataRow("stringArrayToStringConversion", "list:[\"read\",\"Write\",\" eXecute \"]", "4")]
+    [DataRow("stringArrayToStringConversionEmpty", "list:[]", "5")]
+    [DataRow("stringArrayToStringConversionSpecialChars", "list:[\"\\u002B\\u003C\\u003E%\\u0022\\u0027\\\\/\\t\\r\\n\"]", "3")]
+    [DataRow("stringArrayToStringConversionUnicode", "list:[\"\\u00E4\\u00F6\\u00FC\\u00C4\\u00D6\\u00DC\\u00E7\\u00E9\\u00E8\\u00F1\\u0131\\u015F\\u011F\\u00E2\\u00A2\\u2122\\u2713\\uD83D\\uDE00\"]", "2")]
+    [DataRow("stringArrayToStringConversion", "mutablelist:[\"read\",\"Write\",\" eXecute \"]", "4")]
+    [DataRow("stringArrayToStringConversionEmpty", "mutablelist:[]", "5")]
+    [DataRow("stringArrayToStringConversionSpecialChars", "mutablelist:[\"\\u002B\\u003C\\u003E%\\u0022\\u0027\\\\/\\t\\r\\n\"]", "3")]
+    [DataRow("stringArrayToStringConversionUnicode", "mutablelist:[\"\\u00E4\\u00F6\\u00FC\\u00C4\\u00D6\\u00DC\\u00E7\\u00E9\\u00E8\\u00F1\\u0131\\u015F\\u011F\\u00E2\\u00A2\\u2122\\u2713\\uD83D\\uDE00\"]", "2")]
     public void ComparisonAttributeConversionToCanonicalStringRepresentation_Test(string key, object customAttributeValue, string expectedReturnValue)
     {
         var config = new ConfigLocation.LocalFile("data", "comparison_attribute_conversion.json").FetchConfig();
@@ -651,10 +680,15 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
 
         if (customAttributeValue is string s)
         {
-            const string decimalPrefix = "decimal:", dateTimePrefix = "datetime:", dateTimeOffsetPrefix = "datetimeoffset:";
+            const string
+                decimalPrefix = "decimal:",
+                dateTimePrefix = "datetime:",
+                dateTimeOffsetPrefix = "datetimeoffset:",
+                listPrefix = "list:",
+                mutableListPrefix = "mutablelist:";
             if (s.StartsWith(decimalPrefix, StringComparison.Ordinal))
             {
-                customAttributeValue = decimal.Parse(s.Substring(decimalPrefix.Length));
+                customAttributeValue = decimal.Parse(s.Substring(decimalPrefix.Length), CultureInfo.InvariantCulture);
             }
             else if (s.StartsWith(dateTimePrefix, StringComparison.Ordinal))
             {
@@ -664,6 +698,14 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
             else if (s.StartsWith(dateTimeOffsetPrefix, StringComparison.Ordinal))
             {
                 customAttributeValue = DateTimeOffset.ParseExact(s.Substring(dateTimeOffsetPrefix.Length), "o", CultureInfo.InvariantCulture);
+            }
+            else if (s.StartsWith(listPrefix, StringComparison.Ordinal))
+            {
+                customAttributeValue = new ReadOnlyCollection<string>(SerializationHelper.DeserializeStringArray(s.AsSpan(listPrefix.Length))!);
+            }
+            else if (s.StartsWith(mutableListPrefix, StringComparison.Ordinal))
+            {
+                customAttributeValue = new MutableOnlyList<string>(SerializationHelper.DeserializeStringArray(s.AsSpan(mutableListPrefix.Length))!);
             }
         }
 
@@ -740,7 +782,7 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
         };
 
         const string defaultValue = "default";
-        var actualReturnValue = evaluator.Evaluate(config!.SettingsOrEmpty, key, defaultValue, user, remoteConfig: null, logger).Value;
+        var actualReturnValue = evaluator.Evaluate(config.SettingsOrEmpty, key, defaultValue, user, remoteConfig: null, logger).Value;
 
         Assert.AreEqual(expectedReturnValue, actualReturnValue);
     }
@@ -795,7 +837,7 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
 
         const string defaultValue = "default";
         string actualReturnValue;
-        try { actualReturnValue = evaluator.Evaluate(config!.SettingsOrEmpty, key, defaultValue, user, remoteConfig: null, logger).Value; }
+        try { actualReturnValue = evaluator.Evaluate(config.SettingsOrEmpty, key, defaultValue, user, remoteConfig: null, logger).Value; }
         catch (InvalidOperationException) { actualReturnValue = defaultValue; }
 
         Assert.AreEqual(expectedReturnValue, actualReturnValue);

@@ -1,5 +1,6 @@
 using System;
 using ConfigCat.Client.Evaluation;
+using ConfigCat.Client.Models;
 using ConfigCat.Client.Tests.Helpers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -47,7 +48,7 @@ public class ModelTests
         var setting = config.Settings[settingKey];
         var targetingRule = setting.TargetingRules[targetingRuleIndex];
         var condition = targetingRule.Conditions[conditionIndex];
-        var actualResult = condition!.ToString();
+        var actualResult = condition.ToString();
         var expectedResult = string.Join(Environment.NewLine, expectedResultLines);
         Assert.AreEqual(expectedResult, actualResult);
     }

@@ -1,7 +1,13 @@
 using System;
-using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using ConfigCat.Client.Shims;
+
+#if !NET5_0_OR_GREATER && !NETFRAMEWORK
+using System.Runtime.InteropServices;
+#endif
+
+#if NETSTANDARD
+using System.Threading.Tasks;
+#endif
 
 namespace ConfigCat.Client.Configuration;
 
@@ -14,14 +20,14 @@ public sealed class PlatformCompatibilityOptions
 internal sealed class PlatformCompatibilityOptions
 #endif
 {
-    internal static readonly bool IsRunningInBrowser =
+    internal static readonly bool
 #if NET5_0_OR_GREATER
-        OperatingSystem.IsBrowser();
+        IsRunningInBrowser = OperatingSystem.IsBrowser();
 #elif !NETFRAMEWORK
         // See also: https://github.com/dotnet/aspnetcore/issues/18268
-        RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")) || RuntimeInformation.IsOSPlatform(OSPlatform.Create("WEBASSEMBLY"));
+        IsRunningInBrowser = RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")) || RuntimeInformation.IsOSPlatform(OSPlatform.Create("WEBASSEMBLY"));
 #else
-        false;
+        IsRunningInBrowser;
 #endif
 
     internal bool continueOnCapturedContext;

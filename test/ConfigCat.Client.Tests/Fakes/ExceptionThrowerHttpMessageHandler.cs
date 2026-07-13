@@ -10,7 +10,7 @@ internal sealed class ExceptionThrowerHttpMessageHandler : HttpMessageHandler
     private readonly Exception exception;
     private readonly TimeSpan? delay;
 
-    private int sendInvokeCount = 0;
+    private int sendInvokeCount;
     public byte SendInvokeCount => (byte)this.sendInvokeCount;
 
     public ExceptionThrowerHttpMessageHandler(Exception? ex = null, TimeSpan? delay = null)
@@ -35,7 +35,7 @@ internal sealed class ExceptionThrowerHttpMessageHandler : HttpMessageHandler
         Interlocked.Increment(ref this.sendInvokeCount);
 
         if (this.delay is not null)
-            Task.Delay(this.delay.Value, cancellationToken).Wait();
+            Task.Delay(this.delay.Value, cancellationToken).Wait(CancellationToken.None);
 
         throw this.exception;
     }

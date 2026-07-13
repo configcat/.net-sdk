@@ -1,3 +1,5 @@
+using ConfigCat.Client.Models;
+
 namespace ConfigCat.Client.Evaluation;
 
 internal readonly struct EvaluateResult

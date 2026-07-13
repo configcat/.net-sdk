@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.CompilerServices;
+using ConfigCat.Client.Models;
 
 namespace ConfigCat.Client;
 
@@ -13,7 +14,7 @@ internal readonly struct SafeHooksWrapper
 {
     private readonly WeakReference<Hooks> hooksWeakRef;
 
-    public Hooks Hooks => this.hooksWeakRef is { } hooksWeakRef && hooksWeakRef.TryGetTarget(out var hooks) ? hooks! : NullHooks.Instance;
+    public Hooks Hooks => this.hooksWeakRef is { } hooksWeakRef && hooksWeakRef.TryGetTarget(out var hooks) ? hooks : NullHooks.Instance;
 
     public SafeHooksWrapper(Hooks hooks)
     {

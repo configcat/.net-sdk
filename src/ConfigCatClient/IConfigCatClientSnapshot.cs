@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ConfigCat.Client.Models;
 
 namespace ConfigCat.Client;
 

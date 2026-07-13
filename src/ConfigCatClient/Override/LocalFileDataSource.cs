@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using ConfigCat.Client.Models;
 using ConfigCat.Client.Shims;
 using ConfigCat.Client.Utils;
 

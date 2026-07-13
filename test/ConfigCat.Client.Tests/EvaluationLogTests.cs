@@ -277,11 +277,11 @@ public class EvaluationLogTests
 
     public class TestCase
     {
-        public string key { get; set; } = null!;
-        public JsonValue defaultValue { get; set; } = default!;
-        public JsonObject? user { get; set; } = default!;
-        public JsonValue returnValue { get; set; } = default!;
-        public string expectedLog { get; set; } = null!;
+        public string key { get => field!; set; }
+        public JsonValue defaultValue { get; set; }
+        public JsonObject? user { get; set; }
+        public JsonValue returnValue { get; set; }
+        public string expectedLog { get => field!; set; }
     }
 #pragma warning restore IDE1006 // Naming Styles
 

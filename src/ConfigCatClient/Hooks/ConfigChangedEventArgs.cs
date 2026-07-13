@@ -1,4 +1,5 @@
 using System;
+using ConfigCat.Client.Models;
 
 namespace ConfigCat.Client;
 

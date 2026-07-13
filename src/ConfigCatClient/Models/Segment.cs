@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 using ConfigCat.Client.Evaluation;
 using ConfigCat.Client.Utils;
 
-namespace ConfigCat.Client;
+namespace ConfigCat.Client.Models;
 
 /// <summary>
 /// Describes a segment.
@@ -34,7 +34,7 @@ public sealed class Segment
     /// The list of segment rule conditions (where there is a logical AND relation between the items).
     /// </summary>
     [JsonIgnore]
-    public IReadOnlyList<UserCondition> Conditions => this.conditionsReadOnly ??= this.conditions.AsReadOnly();
+    public IReadOnlyList<UserCondition> Conditions => this.conditionsReadOnly ??= this.conditions.ToReadOnlyOrEmptyIfNull();
 
     /// <inheritdoc />
     public override string ToString()

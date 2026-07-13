@@ -49,7 +49,9 @@ public readonly struct LogEventId : IEquatable<LogEventId>
     /// <inheritdoc/>
     public override string ToString()
     {
+#pragma warning disable CA1305 // Specify IFormatProvider
         return Id.ToString();
+#pragma warning restore CA1305 // Specify IFormatProvider
     }
 
     /// <inheritdoc/>

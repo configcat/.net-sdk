@@ -6,17 +6,16 @@
 // It creates value type instances instead of reference type instances to avoid unnecessary heap allocations.
 
 #pragma warning disable IDE0161 // Convert to file-scoped namespace
-#pragma warning disable CS0436 // Type conflicts with imported type
 
 namespace System.Runtime.CompilerServices
 {
     /// <summary>
-    /// A factory type used by compilers to create instances of the type <see cref="FormattableString"/>.
+    /// A factory type used by compilers to create instances of the type <see cref="ValueFormattableString"/>.
     /// </summary>
     internal static class FormattableStringFactory
     {
         /// <summary>
-        /// Create a <see cref="FormattableString"/> from a composite format string and object
+        /// Create a <see cref="ValueFormattableString"/> from a composite format string and object
         /// array containing zero or more objects to format.
         /// </summary>
         public static ValueFormattableString Create(string format, params object?[] arguments)

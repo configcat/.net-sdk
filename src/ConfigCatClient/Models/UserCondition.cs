@@ -4,7 +4,7 @@ using ConfigCat.Client.Evaluation;
 using ConfigCat.Client.Utils;
 using ConfigCat.Client.Versioning;
 
-namespace ConfigCat.Client;
+namespace ConfigCat.Client.Models;
 
 /// <summary>
 /// Describes a condition that is based on a User Object attribute.
@@ -61,7 +61,7 @@ public sealed class UserCondition : Condition
 
     internal SemVersion?[]? SemVerListValue => this.comparisonValueReadOnly is SemVerList semVerList ? semVerList.Parsed : null;
 
-    private object? comparisonValueReadOnly; // also used for storing a preparsed value (StrongBox<SemVersion?> or SemVerList)
+    private object? comparisonValueReadOnly; // also used for storing a preparsed value (SemVersion or SemVerList)
 
     /// <summary>
     /// The value that the User Object attribute is compared to.
@@ -77,13 +77,13 @@ public sealed class UserCondition : Condition
                 case null:
                     var comparisonValue = GetComparisonValue();
                     return this.comparisonValueReadOnly = comparisonValue is string[] stringListValue
-                        ? stringListValue.AsReadOnly()
+                        ? stringListValue.ToReadOnlyOrEmptyIfNull()
                         : comparisonValue!;
                 case SemVersion:
                     return this.comparisonValue!;
                 case SemVerList semVerList:
                     stringListValue = (string[])this.comparisonValue!;
-                    return semVerList.ReadOnly ??= stringListValue.AsReadOnly();
+                    return semVerList.ReadOnly ??= stringListValue.ToReadOnlyOrEmptyIfNull();
                 default:
                     return this.comparisonValueReadOnly;
             }

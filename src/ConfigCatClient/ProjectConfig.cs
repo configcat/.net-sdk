@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using ConfigCat.Client.Models;
 using ConfigCat.Client.Utils;
 
 namespace ConfigCat.Client;

@@ -569,6 +569,7 @@ public class ConfigV2EvaluationTests : EvaluationTestsBase
     // String array-based comparisons
     [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "stringArrayContainsAnyOfDogDefaultCat", "12345", "Custom1", new string[] { "x", "read" }, "Dog")]
     [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "stringArrayContainsAnyOfDogDefaultCat", "12345", "Custom1", new string[] { "x", "Read" }, "Cat")]
+    [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "stringArrayContainsAnyOfDogDefaultCat", "12345", "Custom1", new string[] { "x", "Read", null! }, "Cat")]
     [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "stringArrayContainsAnyOfDogDefaultCat", "12345", "Custom1", "list:[\"x\", \"read\"]", "Dog")]
     [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "stringArrayContainsAnyOfDogDefaultCat", "12345", "Custom1", "list:[\"x\", \"Read\"]", "Cat")]
     [DataRow("configcat-sdk-1/JcPbCGl_1E-K9M-fJOyKyQ/OfQqcTjfFUGBwMKqtyEOrQ", "stringArrayContainsAnyOfCleartextDogDefaultCat", "12345", "Custom1", "list:[\"x\", \"read\"]", "Dog")]

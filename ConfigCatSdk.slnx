@@ -1,0 +1,37 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitattributes" />
+    <File Path=".gitignore" />
+    <File Path="CHANGELOG.md" />
+    <File Path="CONTRIBUTING.md" />
+    <File Path="coverage.cmd" />
+    <File Path="DEPLOY.md" />
+    <File Path="Directory.Build.props" />
+    <File Path="format-code.cmd" />
+    <File Path="format-code.sh" />
+    <File Path="LICENSE" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/Solution Items/.github/">
+    <File Path=".github/CODEOWNERS" />
+    <File Path=".github/dependabot.yml" />
+  </Folder>
+  <Folder Name="/Solution Items/.github/workflows/">
+    <File Path=".github/workflows/dotnet-sdk-ci.yml" />
+    <File Path=".github/workflows/sonar-analysis.yml" />
+    <File Path=".github/workflows/stale.yml" />
+  </Folder>
+  <Folder Name="/Solution Items/src/">
+    <File Path="src/Directory.Build.props" />
+  </Folder>
+  <Folder Name="/Solution Items/test/">
+    <File Path="test/Directory.Build.props" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="test/ConfigCat.Client.Tests/ConfigCat.Client.Tests.csproj" />
+    <Project Path="test/ConfigCat.Extensions.Hosting.Tests/ConfigCat.Extensions.Hosting.Tests.csproj" />
+  </Folder>
+  <Project Path="src/ConfigCat.Extensions.Hosting/ConfigCat.Extensions.Hosting.csproj" />
+  <Project Path="src/ConfigCatClient/ConfigCatClient.csproj" />
+</Solution>

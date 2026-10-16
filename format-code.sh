@@ -2,4 +2,4 @@
 
 # Run this script to format code manually.
 
-dotnet format ConfigCatSdk.sln --severity warn --report .
+dotnet format ConfigCatSdk.slnx --severity warn --report .

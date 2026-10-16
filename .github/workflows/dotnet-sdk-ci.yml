@@ -78,7 +78,7 @@ jobs:
           dotnet build test/ConfigCat.Extensions.Hosting.Tests/ConfigCat.Extensions.Hosting.Tests.csproj -c Release -f ${{ matrix.dotnet-version.tfm }}
       - name: Pin dotnet SDK version
         run: |
-          dotnet new global.json --sdk-version ${{ matrix.dotnet-version.sdk }} --roll-forward latestFeature
+          dotnet new global.json --sdk-version ${{ matrix.dotnet-version.sdk }} --roll-forward latestFeature --force
       - name: Test
         run: |
           dotnet test test/ConfigCat.Client.Tests/ConfigCat.Client.Tests.csproj -c Release -f ${{ matrix.dotnet-version.tfm }} --no-build
@@ -108,7 +108,7 @@ jobs:
     # See also: https://andrewlock.net/version-vs-versionsuffix-vs-packageversion-what-do-they-all-mean/
     - name: Build
       run: |
-        dotnet build ConfigCatSdk.sln -c Release /p:ContinuousIntegrationBuild=true /p:Version=$VERSION /p:BuildNumber=$GITHUB_RUN_NUMBER
+        dotnet build ConfigCatSdk.slnx -c Release /p:ContinuousIntegrationBuild=true /p:Version=$VERSION /p:BuildNumber=$GITHUB_RUN_NUMBER
 
     - name: Pack
       run: |

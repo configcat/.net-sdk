@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/ProjectReferences/">
+    <Project Path="src/ConfigCat.Extensions.Hosting/ConfigCat.Extensions.Hosting.csproj" />
+    <Project Path="src/ConfigCatClient/ConfigCatClient.csproj" />
+  </Folder>
+  <Project Path="samples/ASP.NETCore/WebApplication/WebApplication.csproj" />
+  <Project Path="samples/BlazorWasm/BlazorWasm.csproj" />
+  <Project Path="samples/ConsoleApp/ConsoleApp.csproj" />
+  <Project Path="samples/MAUI/MauiSample.csproj">
+    <Deploy />
+  </Project>
+  <Project Path="samples/WindowsService/WindowsService.csproj" />
+</Solution>

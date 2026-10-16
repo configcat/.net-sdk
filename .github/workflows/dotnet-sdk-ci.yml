@@ -108,7 +108,7 @@ jobs:
     # See also: https://andrewlock.net/version-vs-versionsuffix-vs-packageversion-what-do-they-all-mean/
     - name: Build
       run: |
-        dotnet build ConfigCatSdk.sln -c Release /p:ContinuousIntegrationBuild=true /p:Version=$VERSION /p:BuildNumber=$GITHUB_RUN_NUMBER
+        dotnet build ConfigCatSdk.slnx -c Release /p:ContinuousIntegrationBuild=true /p:Version=$VERSION /p:BuildNumber=$GITHUB_RUN_NUMBER
 
     - name: Pack
       run: |

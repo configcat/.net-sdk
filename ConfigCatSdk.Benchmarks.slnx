@@ -1,0 +1,18 @@
+<Solution>
+  <Configurations>
+    <BuildType Name="Benchmark" />
+  </Configurations>
+  <Folder Name="/ProjectReferences/">
+    <Project Path="src/ConfigCatClient/ConfigCatClient.csproj" />
+  </Folder>
+  <Project Path="benchmarks/ConfigCat.Client.Benchmarks/ConfigCat.Client.Benchmarks.csproj">
+    <BuildDependency Project="src/ConfigCatClient/ConfigCatClient.csproj" />
+    <BuildType Project="Release" />
+  </Project>
+  <Project Path="benchmarks/NewVersionLib/NewVersionLib.csproj">
+    <BuildType Project="Release" />
+  </Project>
+  <Project Path="benchmarks/OldVersionLib/OldVersionLib.csproj">
+    <BuildType Project="Release" />
+  </Project>
+</Solution>

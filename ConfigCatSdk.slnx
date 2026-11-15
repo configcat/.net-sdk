@@ -10,6 +10,7 @@
     <File Path="Directory.Build.props" />
     <File Path="format-code.cmd" />
     <File Path="format-code.sh" />
+    <File Path="global.json" />
     <File Path="LICENSE" />
     <File Path="README.md" />
   </Folder>

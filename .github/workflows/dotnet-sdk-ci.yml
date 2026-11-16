@@ -86,10 +86,38 @@ jobs:
           dotnet test test/ConfigCat.Client.Tests/ConfigCat.Client.Tests.csproj -c Release -f ${{ matrix.dotnet-version.tfm }} --no-build /p:CITargetFramework=${{ matrix.dotnet-version.tfm }}
           dotnet test test/ConfigCat.Extensions.Hosting.Tests/ConfigCat.Extensions.Hosting.Tests.csproj -c Release -f ${{ matrix.dotnet-version.tfm }} --no-build /p:CITargetFramework=${{ matrix.dotnet-version.tfm }}
 
+  build-and-test-nativeaot:
+    strategy:
+      matrix:
+        dotnet-version: [
+          {sdk: "10.0.x", tfm: net10.0},
+          {sdk: "11.0.x", tfm: net11.0},
+        ]
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+    name: Build & test on .NET NativeAOT ${{ matrix.dotnet-version.sdk }} (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: |
+            ${{ env.BUILD_SDK_VER }}
+            ${{ matrix.dotnet-version.sdk }}
+
+      - uses: actions/checkout@v7
+
+      - name: Publish test project
+        run: |
+          dotnet publish samples/ConsoleAppWithDI/ConsoleAppWithDI.csproj -c Release -f ${{ matrix.dotnet-version.tfm }} -o artifacts/publish /p:CITargetFramework=${{ matrix.dotnet-version.tfm }}
+
+      - name: Run tests
+        run: |
+          artifacts/publish/ConsoleAppWithDI
+
   publish:
     needs: [
       build-and-test-netfw,
-      build-and-test-netcore
+      build-and-test-netcore,
+      build-and-test-nativeaot
     ]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags')

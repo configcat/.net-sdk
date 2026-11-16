@@ -1997,7 +1997,7 @@ public class ConfigCatClientTests
         Assert.IsTrue(configFetchedEvents[0].Result.IsSuccess);
         Assert.AreEqual(RefreshErrorCode.None, configFetchedEvents[1].Result.ErrorCode);
         Assert.AreEqual(2, configChangedEvents.Count);
-        Assert.IsTrue(configChangedEvents[0].NewConfig.Settings.Any());
+        Assert.IsTrue(configChangedEvents[0].NewConfig.Settings.Count != 0);
         Assert.AreSame(configChangedEvents[0], configChangedEvents[1]);
 
         // 3. Non-existent flag is evaluated

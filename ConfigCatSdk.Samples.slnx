@@ -6,6 +6,7 @@
   <Project Path="samples/ASP.NETCore/WebApplication/WebApplication.csproj" />
   <Project Path="samples/BlazorWasm/BlazorWasm.csproj" />
   <Project Path="samples/ConsoleApp/ConsoleApp.csproj" />
+  <Project Path="samples/ConsoleAppWithDI/ConsoleAppWithDI.csproj" />
   <Project Path="samples/MAUI/MauiSample.csproj">
     <Deploy />
   </Project>
